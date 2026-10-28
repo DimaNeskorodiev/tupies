@@ -153,7 +153,6 @@ body.pearl-studio {
 .pearl-studio .brand, .pearl-studio .pearl-brand { display: flex; align-items: center; gap: 9px; min-height: 38px; margin: 0 10px 22px; padding: 0; color: var(--ink); font-size: 15px; letter-spacing: -.45px; }
 .pearl-studio .pearl-brand strong { font-weight: 550; }
 .pearl-studio .brand-name { font-size: 15px; font-weight: 500; }
-.pearl-studio .brand-mark { background: linear-gradient(145deg, #ffd18c, #ff922e); color: #342c27; border: 1px solid rgba(255,255,255,.8); border-radius: 12px; box-shadow: 0 4px 14px rgba(228, 140, 49, .14); }
 
 /* Pages and home. Optional home classes contain only real navigation/actions. */
 .pearl-studio .page { max-width: 1440px; padding: 32px clamp(24px, 3.5vw, 52px) 40px; }

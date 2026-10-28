@@ -888,7 +888,7 @@
   /* Sign-in */
   body.pearl-studio .auth-screen{min-height:100dvh;padding:calc(env(safe-area-inset-top) + 32px) var(--ios-gutter-end) calc(env(safe-area-inset-bottom) + 24px) var(--ios-gutter)}
   body.pearl-studio .auth-layout{gap:32px;width:100%;max-width:440px}
-  body.pearl-studio .auth-intro .brand-mark.large{width:72px;height:72px;border-radius:17px;font-size:40px;box-shadow:0 8px 24px rgba(228,140,49,.22),inset 0 1px 0 rgba(255,255,255,.6)}
+  body.pearl-studio .auth-intro .brand-mark.large{width:96px;height:96px}
   body.pearl-studio .auth-intro h1{margin:20px 0 8px;font:var(--ios-large-title);letter-spacing:var(--ios-track-large-title);color:var(--ios-label)}
   body.pearl-studio .auth-intro p{max-width:none;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
   body.pearl-studio .auth-intro .bottom-note{font:var(--ios-footnote);color:var(--ios-label-2)}

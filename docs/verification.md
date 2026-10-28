@@ -1,5 +1,13 @@
 # Verification — Tupies Engine 0.5
 
+## Tupies mascot branding (28 October 2026, source and signed candidates)
+
+- Replaced letter-T branding with the owner's cream cushion mascot across web loading/sign-in/sidebar/system messages and native onboarding/connection/pairing. Browser favicons, Apple touch icon and macOS/iOS icons share the master. Graphite is the default; Pearl and Sky alternatives are included. [Source and exact built-in ImageGen prompt](../assets/brand/README.md).
+- The isolated branding branch contains no engine, provider, permission or protocol change. **37/37** focused navigation, pearl and mobile UI tests pass, and `npm run check` passes for **72 modules** on Node **22.23.1**. `npm run build` passes, including all brand/companion assets, browser bundles, **19 guide pages** and notices for **399 dependencies**. The complete engine suite was not rerun for this visual-only change.
+- Actual disposable Chrome checks of this branch show the loaded transparent mascot on desktop sign-in/sidebar and phone sign-in at **375×812** in system dark mode, with no horizontal overflow. Earlier broader-checkout image review also passed. Synthetic screenshots/logs are under ignored `output/branding/`; operational account data was not used.
+- Signed Release candidates for **macOS and physical iOS** build from the compatible native-build-3 baseline. Both retain **0.5.0 (3)** and the existing bundle/signing identity; strict signature verification passes. The iPhone app has no push entitlement. The iOS source icon is **1024×1024 RGB with no alpha channel**; macOS icons retain transparent margins. An isolated web-only build reproduced all **11 exports** byte-for-byte without creating native assets.
+- The earlier unsigned iOS Simulator/macOS builds and compiled iPhone icon review passed. Sandbox loopback/CoreSimulator limitations were resolved with permitted service access. At this commit the candidates are prepared, not installed; engine static deployment and app installation are recorded separately after the PR is opened. This is local development signing, not notarized/App Store distribution.
+
 Checked on 27 October 2026. Current build: **0.5.0**. Earlier 0.4, 0.3 and 0.2 evidence is retained below as historical records.
 
 ## Full Tupies release to both engines and both apps (28 October 2026, 14:22 UTC)
