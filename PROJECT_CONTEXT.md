@@ -2,9 +2,9 @@
 
 Last updated: 28 October 2026. Current application version: 0.5.0.
 
-## Tupies mascot branding (28 October 2026, source only)
+## Tupies mascot branding (28 October 2026, deployed)
 
-The owner's cream cushion avatar now replaces the letter T across web and Apple branding: app icons, browser favicons/Apple touch icon, web loading/sign-in/sidebar/system-message marks and native onboarding/connection/pairing screens. The transparent master is `assets/brand/tupies-avatar.png`; `npm run brand:build` reproduces every export, including the native `TupiesAvatar` imageset. Graphite is the default icon background, with Pearl and Sky alternatives. The [brand source notes](assets/brand/README.md) retain the exact built-in ImageGen prompt. Existing bot companion selections and installation identities remain unchanged. Verification is in `docs/verification.md`; these branding assets have not been deployed to operational engines or installed apps.
+The owner's cream cushion avatar now replaces the letter T across web and Apple branding: app icons, browser favicons/Apple touch icon, web loading/sign-in/sidebar/system-message marks and native onboarding/connection/pairing screens. The transparent master is `assets/brand/tupies-avatar.png`; `npm run brand:build` reproduces every export, including the native `TupiesAvatar` imageset. Graphite is the default icon background, with Pearl and Sky alternatives. The [brand source notes](assets/brand/README.md) retain the exact built-in ImageGen prompt. Existing bot companion selections and installation identities remain unchanged. The owner requested a commit/PR followed by installation: PR #2 contains the isolated branding change, both engines now serve the exact static branding exports without a restart, and the Mac/iPhone apps were updated in place with their compatible build-3 identity and pairings retained. Verification is in `docs/verification.md`; unrelated later engine/native migration work remains separate.
 
 ## iPhone polish, name check and full Tupies release (28 October 2026)
 
