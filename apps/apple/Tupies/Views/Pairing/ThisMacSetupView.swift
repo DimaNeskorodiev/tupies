@@ -171,7 +171,7 @@ struct LocalEnginePathsForm: View {
         panel.allowsMultipleSelection = false
         panel.showsHiddenFiles = !directory
         panel.prompt = "Choose"
-        panel.message = directory ? "Choose your hermes-studio folder (it contains server.mjs)." : "Choose the node executable (Node 22 or newer)."
+        panel.message = directory ? "Choose your Tupies folder (it contains server.mjs)." : "Choose the node executable (Node 22 or newer)."
         let current = (directory ? local.studioFolder : local.nodePath) as NSString
         panel.directoryURL = URL(fileURLWithPath: directory ? current.expandingTildeInPath : current.deletingLastPathComponent)
         if panel.runModal() == .OK, let url = panel.url {

@@ -43,15 +43,38 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
 
     let id: UUID
     let webView: WKWebView
-    @Published private(set) var phase: Phase = .idle
+    @Published private(set) var phase: Phase = .idle {
+        didSet {
+            // After an error, wait for the next page to draw again before showing it.
+            if phase.isError, isPageVisible {
+                revealTask?.cancel()
+                isPageVisible = false
+            }
+        }
+    }
     @Published private(set) var progress: Double = 0
     @Published private(set) var isNavigating = false
     @Published private(set) var hasLoadedEngine = false
     /// The page draws its own phone navigation (tab bar, Settings) and reaches the app's settings through the bridge,
     /// so the iPhone app hides its engine bar and lets the page run under the status bar. Older engines never send it.
     @Published private(set) var webOwnsChrome = false
+    /// The first real page has drawn its interface, so the native loading state can crossfade into it. It stays true
+    /// through reloads (the old page stays on screen until the new one commits) and resets only when the device is revoked.
+    @Published private(set) var isPageVisible = false
+    /// Set only when the page draws the other appearance than the system's (an engine without a dark theme), so the
+    /// status bar and native sheets match the page. `nil` means follow the system.
+    @Published private(set) var pageColorScheme: ColorScheme?
+    /// The page's own background color (`underPageBackgroundColor`), drawn behind the web view so pull-to-refresh and
+    /// rubber-banding reveal the page's color instead of a native one.
+    @Published private(set) var pageBackground: Color?
     @Published var popup: PopupPage?
     @Published var sharedFile: SharedFile?
+    #if os(iOS)
+    /// How far the page is pulled down toward a reload (0…1), and whether a pull-to-refresh reload is running. The page
+    /// runs under the status bar, where the system spinner would hide behind the Dynamic Island, so the app draws its own.
+    @Published private(set) var pullProgress: CGFloat = 0
+    @Published private(set) var isPullRefreshing = false
+    #endif
 
     private weak var store: ConnectionStore?
     private var connection: Connection
@@ -63,8 +86,12 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     private var notificationNavigation = NotificationNavigation()
     private var authenticationGeneration = 0
     private var authenticatedPage = false
+    /// The current document has drawn its interface (it sent a `chrome` message since its last commit).
+    private var pageDrewInterface = false
+    private var revealTask: Task<Void, Never>?
     #if os(iOS)
     private let refreshControl = UIRefreshControl()
+    private var pullTimeout: Task<Void, Never>?
     #endif
 
     private static let messageHandlerName = "hermesStudio"
@@ -111,13 +138,33 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.keyboardDismissMode = .interactive
         webView.scrollView.contentInsetAdjustmentBehavior = .never
-        refreshControl.tintColor = UIColor(Brand.ink)
+        // The page draws its own long-press menus on chat messages and bot cards; `contextMenuConfigurationFor`
+        // keeps the system link preview for links to other sites only.
+        webView.allowsLinkPreview = true
+        // The control provides the gesture and holds the page while it reloads; `PullToRefreshIndicator` is the visual.
+        refreshControl.tintColor = .clear
         refreshControl.addTarget(self, action: #selector(handlePullToRefresh), for: .valueChanged)
         webView.scrollView.refreshControl = refreshControl
+        webView.scrollView.publisher(for: \.contentOffset)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updatePullProgress() }
+            .store(in: &cancellables)
         NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.updateTextSize() }
             .store(in: &cancellables)
+        // WebKit derives this from the page's <html>/<body> background; it follows the page's own light/dark theme.
+        webView.publisher(for: \.underPageBackgroundColor)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updatePageAppearance() }
+            .store(in: &cancellables)
+        // A page without a theme for the new system appearance keeps its color; check again once it has re-rendered.
+        webView.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: WKWebView, _: UITraitCollection) in
+            Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                self?.updatePageAppearance()
+            }
+        }
         #else
         webView.underPageBackgroundColor = NSColor(Brand.canvas)
         #endif
@@ -233,6 +280,7 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     func tearDown() {
         signInTask?.cancel()
         retryTask?.cancel()
+        revealTask?.cancel()
         webView.stopLoading()
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
@@ -252,6 +300,9 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
         phase = .revoked(message)
         hasLoadedEngine = false
         webOwnsChrome = false
+        revealTask?.cancel()
+        isPageVisible = false
+        pageDrewInterface = false
         popup = nil
         webView.stopLoading()
         webView.loadHTMLString("", baseURL: nil)
@@ -322,10 +373,87 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
         signIn()
     }
 
+    // MARK: - Reveal
+
+    /// Crossfades from the native loading state to the page once it has drawn its interface: on its `chrome`
+    /// message, or shortly after the load finishes for engines whose page never sends one.
+    private func revealWhenDrawn() {
+        guard hasLoadedEngine, !isPageVisible else { return }
+        revealTask?.cancel()
+        if pageDrewInterface {
+            revealPage()
+            return
+        }
+        revealTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            self?.revealPage()
+        }
+    }
+
+    private func revealPage() {
+        revealTask?.cancel()
+        guard hasLoadedEngine, !isPageVisible else { return }
+        #if os(iOS)
+        // Measure the drawn page while it is still hidden: if it pins the app to another appearance, that switch
+        // (and the relayout it causes) happens under the loading state, not on the visible page.
+        updatePageAppearance()
+        StudioHaptics.prepare()
+        #endif
+        isPageVisible = true
+    }
+
     #if os(iOS)
+    /// Reads the page's background (WebKit derives it from <html>/<body>) and whether it is light or dark. The app
+    /// follows the system unless the page draws the other appearance (an engine without a dark theme).
+    private func updatePageAppearance() {
+        guard hasLoadedEngine, let url = webView.url, isEngineOrigin(url) else { return }
+        let color = webView.underPageBackgroundColor.resolvedColor(with: webView.traitCollection)
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        guard color.getRed(&red, green: &green, blue: &blue, alpha: &alpha), alpha > 0.5 else { return }
+        let pageIsDark = (0.2126 * red + 0.7152 * green + 0.0722 * blue) < 0.5
+        let systemIsDark = webView.traitCollection.userInterfaceStyle == .dark
+        let pinned: ColorScheme? = pageIsDark == systemIsDark ? nil : (pageIsDark ? .dark : .light)
+        if pageColorScheme != pinned { pageColorScheme = pinned }
+        pageBackground = Color(uiColor: UIColor(red: red, green: green, blue: blue, alpha: 1))
+    }
+
+    private func updatePullProgress() {
+        let scrollView = webView.scrollView
+        let pulled = -(scrollView.contentOffset.y + scrollView.adjustedContentInset.top)
+        let progress = isPullRefreshing ? 0 : min(1, max(0, pulled / 110))
+        // Quantized, so SwiftUI updates a few times per pull rather than on every scroll frame.
+        let stepped = (progress * 20).rounded() / 20
+        if stepped != pullProgress { pullProgress = stepped }
+    }
+
     @objc private func handlePullToRefresh() {
-        StudioHaptics.play("light")
-        reload()
+        // A reload would throw away an open sheet or a message being typed (drafts live only in the page's memory),
+        // so a pull then only bounces.
+        webView.evaluateJavaScript("""
+        (() => {
+          const active = document.activeElement;
+          const editing = !!active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName));
+          return editing || !!document.querySelector('dialog[open]');
+        })()
+        """) { [weak self] result, _ in
+            guard let self else { return }
+            if (result as? Bool) == true {
+                self.endRefreshing()
+                return
+            }
+            StudioHaptics.play(.light)
+            self.isPullRefreshing = true
+            self.pullProgress = 0
+            self.reload()
+            // Never leave the indicator spinning if the page doesn't report back.
+            self.pullTimeout?.cancel()
+            self.pullTimeout = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 12_000_000_000)
+                guard !Task.isCancelled else { return }
+                self?.endRefreshing()
+            }
+        }
     }
 
     /// CSS keeps the engine layout responsive while following the owner's system text size.
@@ -342,6 +470,8 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     private func endRefreshing() {
         #if os(iOS)
         if refreshControl.isRefreshing { refreshControl.endRefreshing() }
+        if isPullRefreshing { isPullRefreshing = false }
+        pullTimeout?.cancel()
         #endif
     }
 
@@ -418,18 +548,22 @@ extension EngineWebSession: WKScriptMessageHandler {
             reauthenticate()
         case "chrome":
             webOwnsChrome = (body["ownsChrome"] as? Bool) == true
+            // The page has drawn its interface (app, sign-in or error screen): it is ready to be shown.
+            pageDrewInterface = true
+            revealWhenDrawn()
         case "app-settings":
             // Only the page on screen may open the app's settings.
             guard store?.activeID == id else { return }
             #if os(iOS)
-            StudioHaptics.play("selection")
+            StudioHaptics.play(.selection)
             #endif
             store?.showSettings = true
         #if os(iOS)
         case "haptic":
-            // A hidden engine cannot buzz the device. Styles and frequency are bounded natively.
+            // A hidden engine cannot buzz the device. Only the fixed vocabulary is accepted; frequency is bounded natively.
             guard store?.activeID == id, hasLoadedEngine, !phase.isError,
-                  let style = body["style"] as? String else { return }
+                  let name = body["style"] as? String,
+                  let style = StudioHaptics.Style(rawValue: name) else { return }
             StudioHaptics.play(style)
         #endif
         default:
@@ -515,6 +649,12 @@ extension EngineWebSession: WKNavigationDelegate {
         closePopupIfNeeded(webView)
     }
 
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard webView === self.webView else { return }
+        // A new document: wait for it to draw before showing it the first time.
+        pageDrewInterface = false
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard webView === self.webView else { return }
         endRefreshing()
@@ -528,6 +668,7 @@ extension EngineWebSession: WKNavigationDelegate {
         retryTask?.cancel()
         store?.markReachability(.online, for: id)
         verifyAuthentication()
+        revealWhenDrawn()
     }
 
     /// The engine's own address is trusted through its identity key (see `ServerTrust`); other hosts get the system's checks.
@@ -617,6 +758,41 @@ extension EngineWebSession: WKUIDelegate {
     func webViewDidClose(_ webView: WKWebView) {
         closePopupIfNeeded(webView)
     }
+
+    #if os(iOS)
+    /// Long-press on a link. Links inside the engine (routes, files, bot cards) belong to the page, which draws its own
+    /// menus, so the system stays out of the way. Links to other sites, `mailto:`/`tel:` and images keep the standard
+    /// system menu (WebKit passes its default actions as `suggestedActions`); the page can still opt any element out
+    /// with `-webkit-touch-callout: none`.
+    func webView(
+        _ webView: WKWebView,
+        contextMenuConfigurationForElement elementInfo: WKContextMenuElementInfo,
+        completionHandler: @escaping @MainActor (UIContextMenuConfiguration?) -> Void
+    ) {
+        if let url = elementInfo.linkURL, isEngineOrigin(url) {
+            completionHandler(nil)
+            return
+        }
+        let title = elementInfo.linkURL?.host ?? ""
+        completionHandler(UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggestedActions in
+            UIMenu(title: title, children: suggestedActions)
+        })
+    }
+
+    /// Tapping the lifted link opens it, outside the app for other sites.
+    func webView(
+        _ webView: WKWebView,
+        contextMenuForElement elementInfo: WKContextMenuElementInfo,
+        willCommitWithAnimator animator: UIContextMenuInteractionCommitAnimating
+    ) {
+        guard let url = elementInfo.linkURL else { return }
+        animator.addCompletion { [weak self] in
+            guard let self else { return }
+            if self.isEngineOrigin(url) { return }
+            self.openExternally(url)
+        }
+    }
+    #endif
 
     func webView(
         _ webView: WKWebView,

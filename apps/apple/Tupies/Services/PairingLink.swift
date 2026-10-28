@@ -20,7 +20,7 @@ struct PairingLink: Hashable, Identifiable {
         var errorDescription: String? {
             switch self {
             case .notAPairingLink:
-                return "That isn’t a Tupies pairing link. It should start with hermes-studio://pair."
+                return "That isn’t a Tupies pairing link. Copy it again from Devices & sync in Tupies."
             case .unsupportedVersion(let version):
                 return "This pairing link uses a newer format (v\(version)). Update Tupies and try again."
             case .engineLink:

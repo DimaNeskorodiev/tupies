@@ -53,7 +53,7 @@ struct PairingFlowView: View {
         .toolbar {
             if isRoot {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    SheetCloseButton(title: "Cancel") { dismiss() }
                 }
             }
         }
@@ -88,10 +88,12 @@ struct AddConnectionView: View {
         ScrollView {
             VStack(spacing: 22) {
                 VStack(spacing: 10) {
-                    BrandMark(size: 56)
-                    Text("Add a Tupies")
+                    BrandMark(size: 60)
+                        .padding(.bottom, 4)
+                    Text("Add a server")
                         .font(.title2.weight(.bold))
-                    Text("Pair this \(DeviceInfo.kindLabel) with another Tupies engine. You can switch between engines at any time.")
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Pair this \(DeviceInfo.kindLabel) with another Tupies engine. Switch between them at any time in Settings.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

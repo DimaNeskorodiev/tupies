@@ -13,9 +13,35 @@ struct ConnectionDetailView: View {
         Group {
             if let connection = store.connection(connectionID) {
                 Form {
+                    Section {
+                        VStack(spacing: 10) {
+                            Image(systemName: connection.kind == .local ? "desktopcomputer" : "server.rack")
+                                .font(.system(size: 26, weight: .medium))
+                                .foregroundStyle(.white)
+                                .frame(width: 60, height: 60)
+                                .background(LinearGradient(colors: [Brand.slateTop, Brand.slateBottom], startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .accessibilityHidden(true)
+                            Text(connection.name)
+                                .font(.title3.weight(.semibold))
+                                .multilineTextAlignment(.center)
+                            HStack(spacing: 6) {
+                                StatusDot(color: store.statusColor(for: connection), size: 7, pulsing: store.reachabilityState(for: connection.id) == .unknown)
+                                Text(connection.id == store.activeID ? "\(store.statusLabel(for: connection)) · On screen" : store.statusLabel(for: connection))
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .listRowBackground(Color.clear)
+                        .accessibilityElement(children: .combine)
+                    }
+
                     Section("Name") {
                         TextField("Name", text: $name)
+                            .submitLabel(.done)
                             .onSubmit { store.rename(connectionID, to: name) }
+                            .accessibilityLabel("Server name")
                     }
 
                     Section("Engine") {
@@ -55,13 +81,23 @@ struct ConnectionDetailView: View {
 
                     Section {
                         if connection.id != store.activeID {
-                            Button("Switch to \(connection.name)") { store.activate(connection.id) }
+                            Button {
+                                withAnimation(.snappy) { store.activate(connection.id) }
+                            } label: {
+                                Label("Switch to \(connection.name)", systemImage: "arrow.left.arrow.right")
+                            }
                         }
-                        Button("Remove Connection", role: .destructive) { confirmRemove = true }
+                        Button(role: .destructive) {
+                            confirmRemove = true
+                        } label: {
+                            Label("Remove Connection", systemImage: "trash")
+                                .foregroundStyle(.red)
+                        }
                     }
                 }
                 .formStyle(.grouped)
                 #if os(iOS)
+                .contentMargins(.top, 0, for: .scrollContent)
                 .scrollDismissesKeyboard(.interactively)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
@@ -74,11 +110,10 @@ struct ConnectionDetailView: View {
                         dismiss()
                     }
                 } message: {
-                    Text("This device’s key for \(connection.name) will be deleted. To use it again, pair with a new code from Tupies. You can also remove this device in Tupies’s device list.")
+                    Text("This \(DeviceInfo.kindLabel)’s key for \(connection.name) will be deleted. To connect again, pair with a new code from Tupies.")
                 }
             } else {
-                Text("This connection was removed.")
-                    .foregroundStyle(.secondary)
+                ContentUnavailableView("Connection removed", systemImage: "server.rack", description: Text("This server is no longer paired with this \(DeviceInfo.kindLabel)."))
             }
         }
     }

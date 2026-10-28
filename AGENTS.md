@@ -33,7 +33,7 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 | Internet sign-in policy, proxy-aware client addresses, shell pairing | `lib/access.mjs`, `lib/control.mjs` and `openControl` in `server.mjs`, `scripts/pair.mjs` |
 | Engine TLS with the identity key and certificate pinning | `lib/sync/certificate.mjs`, `lib/sync/transport.mjs`, `STUDIO_TLS` in `server.mjs`, `apps/apple/Tupies/Services/ServerTrust.swift`, the app's ATS setting in `apps/apple/Config/Info.plist` |
 | Apple app (macOS + iOS shell) | `apps/apple/`; see `apps/apple/README.md` |
-| UI, avatars, rich content and browser voice | `public/app.js` (shell, sidebar, phone tab bar and menus, chat, rooms, Settings tabs), `public/mobile.css` + `public/mobile.js` (phone layout, viewport, motion, gestures, session drafts and native haptic requests), `public/dashboard.js` + `lib/dashboard.mjs` (Dashboard), `public/bot-profile.js` (bot profile: Brain, Memory, Files), `public/thinking-waves.js` + `.css` (the animated thinking window in chats and rooms), `public/style.css`, `public/buttons.css` + `public/liquid.js` (buttons, pills and the liquid press animation), `public/creature-avatars.js`, `public/creature-avatars.css`, `public/avatar-settings.css`, `public/rich-content.mjs`, `public/speech.mjs` |
+| UI, avatars, rich content and browser voice | `public/app.js` (shell, sidebar, phone tab bar and menus, chat, rooms, Settings tabs), `public/mobile.css` + `public/mobile.js` + `public/mobile-motion.css` (phone layout, viewport, navigation transitions, gestures, context menus, session drafts and native haptic requests), `public/dashboard.js` + `lib/dashboard.mjs` (Dashboard), `public/bot-profile.js` (bot profile: Brain, Memory, Files), `public/thinking-waves.js` + `.css` (the animated thinking window in chats and rooms), `public/style.css`, `public/buttons.css` + `public/liquid.js` (buttons, pills and the liquid press animation), `public/creature-avatars.js`, `public/creature-avatars.css`, `public/avatar-settings.css`, `public/rich-content.mjs`, `public/speech.mjs` |
 
 ## Invariants to preserve
 
@@ -55,7 +55,7 @@ Use temporary data directories and deterministic local fixtures for tests. Do no
 
 ## Verification and handoff
 
-Run checks appropriate to the change and fix regressions. For provider, tool, persistence, authorization or lifecycle changes, run the complete suite. For visible UI changes, also exercise the actual browser; speech stubs do not prove microphone accuracy. Report actual evidence and remaining limits instead of claiming parity with another product. The latest recorded baseline is 589 passing tests; consult `docs/verification.md` and rerun after changes.
+Run checks appropriate to the change and fix regressions. For provider, tool, persistence, authorization or lifecycle changes, run the complete suite. For visible UI changes, also exercise the actual browser; speech stubs do not prove microphone accuracy. Report actual evidence and remaining limits instead of claiming parity with another product. The latest recorded baseline is 603 passing tests; consult `docs/verification.md` and rerun after changes.
 
 Update relevant docs, `PROJECT_CONTEXT.md` and the roadmap when behavior or project status changes. Preserve dependency/font notices and the package lock. Ship source, built public assets, fonts and notices; exclude runtime data and `node_modules` from release archives.
 

@@ -7,19 +7,46 @@ import WebKit
 struct WebViewHost: UIViewRepresentable {
     let webView: WKWebView
 
-    func makeUIView(context: Context) -> UIView {
-        let container = UIView()
+    func makeUIView(context: Context) -> WebContainerView {
+        let container = WebContainerView()
         container.backgroundColor = .clear
         return container
     }
 
-    func updateUIView(_ container: UIView, context: Context) {
+    func updateUIView(_ container: WebContainerView, context: Context) {
         guard webView.superview !== container else { return }
         container.subviews.forEach { $0.removeFromSuperview() }
         webView.removeFromSuperview()
         webView.frame = container.bounds
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         container.addSubview(webView)
+        container.applySystemAppearance()
+    }
+}
+
+/// Keeps the page on the system's light/dark appearance even while the app's chrome is pinned to the page's own
+/// appearance (`.preferredColorScheme`), so `prefers-color-scheme` in the page always tells the truth.
+final class WebContainerView: UIView {
+    private var registration: UITraitChangeRegistration?
+    private weak var observedScene: UIWindowScene?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if let scene = window?.windowScene, scene !== observedScene {
+            if let registration { observedScene?.unregisterForTraitChanges(registration) }
+            observedScene = scene
+            registration = scene.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: UIWindowScene, _: UITraitCollection) in
+                self?.applySystemAppearance()
+            }
+        }
+        applySystemAppearance()
+    }
+
+    func applySystemAppearance() {
+        guard let style = window?.windowScene?.traitCollection.userInterfaceStyle else { return }
+        for case let webView as WKWebView in subviews where webView.overrideUserInterfaceStyle != style {
+            webView.overrideUserInterfaceStyle = style
+        }
     }
 }
 
@@ -67,9 +94,15 @@ struct PopupWebSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
                 .toolbar {
+                    #if os(iOS)
+                    ToolbarItem(placement: .topBarTrailing) {
+                        SheetCloseButton(action: onClose)
+                    }
+                    #else
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done", action: onClose)
                     }
+                    #endif
                 }
         }
         #if os(macOS)

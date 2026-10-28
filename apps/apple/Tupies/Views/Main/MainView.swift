@@ -4,28 +4,31 @@ import WebKit
 /// The engine UI for the active connection, with the native switcher.
 struct MainView: View {
     @EnvironmentObject private var store: ConnectionStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
             if let connection = store.activeConnection {
+                // Each engine keeps its own live web view; switching crossfades between them.
                 EngineContentView(connection: connection, session: store.webSession(for: connection.id))
+                    .id(connection.id)
+                    .transition(.opacity)
             } else {
                 Color.clear.onAppear {
                     if let first = store.connections.first { store.activate(first.id) }
                 }
             }
         }
+        .animation(reduceMotion ? .easeInOut(duration: 0.15) : .smooth(duration: 0.32), value: store.activeID)
         #if os(macOS)
         .toolbar { MacToolbar() }
         #else
-        .background(Brand.canvas.ignoresSafeArea())
-        .preferredColorScheme(.light)
+        .background(Brand.base.ignoresSafeArea())
         .sheet(isPresented: $store.showSettings) {
             SettingsView()
                 .environmentObject(store)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
         }
         .sensoryFeedback(.selection, trigger: store.activeID)
         #endif
@@ -39,48 +42,83 @@ struct EngineContentView: View {
     let connection: Connection
     @ObservedObject var session: EngineWebSession
 
+    /// The page has drawn and nothing is wrong: show it instead of the native state.
+    private var showsPage: Bool { session.isPageVisible && !session.phase.isError }
+
+    private var isPullRefreshing: Bool {
+        #if os(iOS)
+        return session.isPullRefreshing
+        #else
+        return false
+        #endif
+    }
+
     #if os(iOS)
-    /// The engine bar (switcher and sync) stays until the page shows its own navigation; it comes back while the
-    /// engine is loading or unreachable, so another engine is always one tap away.
+    /// The engine bar (switcher and sync) is for pages without their own navigation (older engines), for errors, and,
+    /// while connecting, for switching to another engine. A page with its own navigation runs edge to edge.
     private var showsEngineBar: Bool {
-        !(session.webOwnsChrome && session.hasLoadedEngine && !session.phase.isError)
+        if session.phase.isError { return true }
+        if showsPage { return !session.webOwnsChrome }
+        return store.connections.count > 1
     }
     #endif
 
     var body: some View {
         ZStack(alignment: .top) {
+            #if os(iOS)
+            // Behind the (transparent) web view: pull-to-refresh and rubber-banding reveal the page's own color.
+            (session.pageBackground ?? Brand.base)
+                .ignoresSafeArea()
+            #endif
+
             WebViewHost(webView: session.webView)
                 #if os(iOS)
-                // WebKit keeps the page inside the safe area itself and fills the home-indicator area with the page background.
                 // A page with its own navigation runs edge to edge and pads itself with env(safe-area-inset-*).
                 .ignoresSafeArea(.container, edges: showsEngineBar ? .bottom : .all)
                 #endif
-                .opacity(session.hasLoadedEngine && !session.phase.isError ? 1 : 0)
+                .opacity(showsPage ? 1 : 0)
+                .allowsHitTesting(showsPage)
+                .accessibilityHidden(!showsPage)
                 .sheet(item: $session.popup) { page in
                     PopupWebSheet(page: page, title: connection.name) { session.popup = nil }
                 }
 
-            if session.hasLoadedEngine && session.isNavigating && session.progress < 1 {
+            if showsPage && session.isNavigating && session.progress < 1 && !isPullRefreshing {
                 ProgressView(value: session.progress)
                     .progressViewStyle(.linear)
                     .tint(Brand.purple)
                     .frame(height: 2)
                     .transition(.opacity)
+                    .accessibilityLabel("Loading \(connection.name)")
             }
 
-            if session.phase.isError || !session.hasLoadedEngine {
+            #if os(iOS)
+            if showsPage && (session.isPullRefreshing || session.pullProgress > 0) {
+                PullToRefreshIndicator(progress: session.pullProgress, refreshing: session.isPullRefreshing)
+                    .padding(.top, 6)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+            }
+            #endif
+
+            if !showsPage {
                 ConnectionStateOverlay(connection: connection, phase: session.phase)
-                    .transition(.opacity)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.02)))
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: session.phase)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: session.hasLoadedEngine)
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.42), value: showsPage)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: isPullRefreshing)
+        .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: session.phase)
         .task(id: connection.id) { session.start() }
         #if os(iOS)
         .safeAreaInset(edge: .top, spacing: 0) {
-            if showsEngineBar { PhoneTopBar() }
+            if showsEngineBar {
+                PhoneTopBar(background: showsPage ? session.pageBackground ?? Brand.base : .clear)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: showsEngineBar)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: showsEngineBar)
+        // Status bar, Settings and sheets follow the appearance the page actually draws.
+        .preferredColorScheme(session.pageColorScheme)
         .sheet(item: $session.sharedFile) { file in
             ShareSheet(url: file.url)
                 .presentationDetents([.medium, .large])
@@ -90,72 +128,137 @@ struct EngineContentView: View {
     }
 }
 
+#if os(iOS)
+/// Pull-to-refresh, drawn below the status bar (the system spinner would sit behind the Dynamic Island on pages that run
+/// edge to edge): an arrow that turns as the page is pulled, then a spinner while it reloads.
+struct PullToRefreshIndicator: View {
+    let progress: CGFloat
+    let refreshing: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            if refreshing {
+                ProgressView()
+                    .controlSize(.regular)
+                    .transition(.opacity)
+            } else {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(progress >= 1 ? Brand.purple : Brand.muted)
+                    .rotationEffect(.degrees(reduceMotion ? 0 : Double(progress) * 270))
+                    .symbolEffect(.bounce, value: progress >= 1)
+                    .transition(.opacity)
+            }
+        }
+        .frame(width: 40, height: 40)
+        .glassSurface(Circle())
+        .scaleEffect(refreshing ? 1 : 0.7 + 0.3 * progress)
+        .opacity(refreshing ? 1 : min(1, Double(progress) * 1.6))
+        .accessibilityElement()
+        .accessibilityLabel(refreshing ? "Reloading" : "Pull down to reload")
+    }
+}
+#endif
+
 /// Loading, unreachable, revoked and failure states.
 struct ConnectionStateOverlay: View {
     @EnvironmentObject private var store: ConnectionStore
     #if os(macOS)
     @EnvironmentObject private var local: LocalEngineController
     #endif
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let connection: Connection
     let phase: EngineWebSession.Phase
     @State private var confirmRemove = false
     @State private var startingLocal = false
+    @State private var retries = 0
 
     var body: some View {
         ZStack {
             AmbientBackground()
-            VStack(spacing: 18) {
-                switch phase {
-                case .unreachable(let message):
-                    stateIcon("wifi.exclamationmark", tint: .orange)
-                    title("Can’t reach \(connection.name)")
-                    detail(message)
-                    actions {
-                        primary("Retry", systemImage: "arrow.clockwise") { store.webSession(for: connection.id).signIn() }
-                        #if os(macOS)
-                        if connection.kind == .local {
-                            secondary(startingLocal ? "Starting…" : "Start Local Engine", systemImage: "play.fill") { startLocal() }
-                                .disabled(startingLocal)
-                        }
-                        #endif
+            content
+                .frame(maxWidth: 460)
+                .padding(.horizontal, 24)
+        }
+        .sensoryFeedback(.impact(weight: .light), trigger: retries)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch phase {
+        case .unreachable:
+            ContentUnavailableView {
+                Label("Can’t reach \(connection.name)", systemImage: "wifi.exclamationmark")
+            } description: {
+                Text("Make sure the server is running and this \(DeviceInfo.kindLabel) can reach \(connection.hostLabel) over Wi‑Fi, VPN or Tailscale.")
+            } actions: {
+                retryButton("Try Again")
+                #if os(macOS)
+                if connection.kind == .local {
+                    Button {
+                        startLocal()
+                    } label: {
+                        Label(startingLocal ? "Starting…" : "Start Local Engine", systemImage: "play.fill")
                     }
-                    Text("Retrying automatically…")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                case .revoked(let message):
-                    stateIcon("person.crop.circle.badge.xmark", tint: .red)
-                    title("Pair \(connection.name) again")
-                    detail(message)
-                    actions {
-                        primary("Pair Again", systemImage: "qrcode") { pairAgain() }
-                        secondary("Remove", systemImage: "trash") { confirmRemove = true }
-                            .confirmationDialog("Remove \(connection.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
-                                Button("Remove Connection", role: .destructive) { store.remove(connection.id) }
-                            } message: {
-                                Text("This device’s key for \(connection.name) will be deleted.")
-                            }
-                    }
-                case .failed(let message):
-                    stateIcon("exclamationmark.triangle", tint: .orange)
-                    title("Something went wrong")
-                    detail(message)
-                    actions {
-                        primary("Try Again", systemImage: "arrow.clockwise") { store.webSession(for: connection.id).signIn() }
-                    }
-                default:
-                    BrandMark(size: 64)
-                    title("Connecting to \(connection.name)…")
-                    ProgressView()
-                        .controlSize(.regular)
-                        .padding(.top, 4)
-                    Text(connection.hostLabel)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    .secondaryActionStyle()
+                    .disabled(startingLocal)
+                }
+                #endif
+                Label("Retrying automatically", systemImage: "clock.arrow.circlepath")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                    .padding(.top, 4)
+            }
+        case .revoked:
+            ContentUnavailableView {
+                Label("Pair \(connection.name) again", systemImage: "person.crop.circle.badge.xmark")
+            } description: {
+                Text("This \(DeviceInfo.kindLabel) was removed from \(connection.name). Pair it again with a new code from Tupies, or remove the connection.")
+            } actions: {
+                Button {
+                    pairAgain()
+                } label: {
+                    Label("Pair Again", systemImage: "qrcode.viewfinder")
+                        .frame(minWidth: 180)
+                }
+                .primaryActionStyle()
+                Button(role: .destructive) {
+                    confirmRemove = true
+                } label: {
+                    Label("Remove Connection", systemImage: "trash")
+                        .foregroundStyle(.red)
+                }
+                .secondaryActionStyle()
+                .confirmationDialog("Remove \(connection.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
+                    Button("Remove Connection", role: .destructive) { store.remove(connection.id) }
+                } message: {
+                    Text("This \(DeviceInfo.kindLabel)’s key for \(connection.name) will be deleted.")
                 }
             }
-            .padding(32)
-            .frame(maxWidth: 440)
+        case .failed(let message):
+            ContentUnavailableView {
+                Label("Something went wrong", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(message)
+            } actions: {
+                retryButton("Try Again")
+            }
+        default:
+            ConnectingView(connection: connection)
         }
+    }
+
+    private func retryButton(_ title: String) -> some View {
+        Button {
+            retries += 1
+            store.webSession(for: connection.id).signIn()
+        } label: {
+            Label(title, systemImage: "arrow.clockwise")
+                .frame(minWidth: 180)
+        }
+        .primaryActionStyle()
     }
 
     private func pairAgain() {
@@ -187,50 +290,53 @@ struct ConnectionStateOverlay: View {
         }
     }
     #endif
+}
 
-    private func stateIcon(_ name: String, tint: Color) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 34, weight: .medium))
-            .foregroundStyle(tint)
-            .frame(width: 76, height: 76)
-            .glassSurface(Circle())
-    }
+/// The calm first moment: the Tupies mark breathing softly while the engine signs in.
+private struct ConnectingView: View {
+    let connection: Connection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showsDetail = false
 
-    private func title(_ text: String) -> some View {
-        Text(text)
-            .font(.title2.weight(.bold))
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func detail(_ text: String) -> some View {
-        Text(text)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func actions<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        HStack(spacing: 12) { content() }
-            .padding(.top, 4)
-    }
-
-    private func primary(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .padding(.horizontal, 6)
+    var body: some View {
+        VStack(spacing: 22) {
+            mark
+            // A quick connection shows only the mark; the words fade in if it takes a moment.
+            VStack(spacing: 18) {
+                VStack(spacing: 6) {
+                    Text("Connecting to \(connection.name)")
+                        .font(.title3.weight(.semibold))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(connection.hostLabel)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                ProgressView()
+                    .controlSize(.regular)
+            }
+            .opacity(showsDetail ? 1 : 0)
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
+        .task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            withAnimation(.smooth(duration: 0.35)) { showsDetail = true }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Connecting to \(connection.name)")
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
-    private func secondary(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .padding(.horizontal, 6)
+    @ViewBuilder
+    private var mark: some View {
+        if reduceMotion {
+            BrandMark(size: 72)
+        } else {
+            BrandMark(size: 72)
+                .phaseAnimator([false, true]) { view, breathing in
+                    view.scaleEffect(breathing ? 1.04 : 0.98)
+                } animation: { _ in
+                    .easeInOut(duration: 1.4)
+                }
         }
-        .buttonStyle(.bordered)
-        .controlSize(.large)
     }
 }
