@@ -1,0 +1,81 @@
+{
+  "id": "pistachio",
+  "source": "pistachio-source.png",
+  "prompt": "pistachio-prompt.txt",
+  "sha256": "269c01cb541ddc666b8bf83dbe472bbfa314c1db6bb956f5dc55fc0ac09bddc1",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 805407,
+  "opaquePixels": 725399,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 184065,
+        "left": 75,
+        "top": 101,
+        "width": 532,
+        "height": 503
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 184276,
+        "left": 46,
+        "top": 101,
+        "width": 534,
+        "height": 503
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 182631,
+        "left": 89,
+        "top": 56,
+        "width": 529,
+        "height": 505
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 180163,
+        "left": 35,
+        "top": 69,
+        "width": 551,
+        "height": 492
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 35,
+    "top": 56,
+    "width": 583,
+    "height": 548
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}

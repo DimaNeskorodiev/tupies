@@ -1,0 +1,81 @@
+{
+  "id": "lemon",
+  "source": "lemon-source.png",
+  "prompt": "lemon-prompt.txt",
+  "sha256": "c64020a01d198c13afb9bd5b874e55fbc43398b0ae7e0ab8d5e10b89a95216f7",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 905975,
+  "opaquePixels": 630786,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 160678,
+        "left": 104,
+        "top": 100,
+        "width": 453,
+        "height": 506
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 159395,
+        "left": 70,
+        "top": 100,
+        "width": 452,
+        "height": 505
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 156627,
+        "left": 103,
+        "top": 63,
+        "width": 453,
+        "height": 492
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 159343,
+        "left": 82,
+        "top": 61,
+        "width": 483,
+        "height": 496
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 70,
+    "top": 61,
+    "width": 495,
+    "height": 545
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}

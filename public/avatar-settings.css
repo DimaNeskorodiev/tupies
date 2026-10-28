@@ -1,0 +1,9 @@
+.bot-appearance{display:flex;align-items:center;gap:24px;margin:5px 0 24px;padding:22px 24px;border:1px solid #fff;background:linear-gradient(135deg,#ffffffb8,#efeff64d);border-radius:20px}
+.bot-avatar-preview{display:grid;place-items:center;width:112px;min-height:112px;flex:none}
+.bot-avatar-preview .avatar.large{width:96px;height:96px}
+.bot-appearance-controls{flex:1;min-width:0}
+.bot-avatar-name{display:block;font-size:22px;line-height:1.2;letter-spacing:-.7px;font-weight:600;color:var(--ink)}
+.bot-avatar-badge{display:inline-block;margin-top:8px;padding:4px 8px;border-radius:20px;border:1px solid #d5d8e47a;background:#ffffff9c;color:var(--muted);font-size:9px;line-height:1.4;font-weight:550}
+.bot-avatar-hint{max-width:300px;font-size:11px;line-height:1.8;color:var(--muted);margin:10px 0 0}
+@media(max-width:520px){.bot-appearance{gap:16px;padding:18px 16px}.bot-avatar-preview{width:88px;min-height:100px}.bot-avatar-preview .avatar.large{width:80px;height:80px}.bot-avatar-name{font-size:21px}}
+@media(max-width:380px){.bot-appearance{flex-direction:column;text-align:center;gap:8px}.bot-avatar-hint{margin-left:auto;margin-right:auto}}

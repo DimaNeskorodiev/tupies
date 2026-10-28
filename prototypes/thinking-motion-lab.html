@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Thinking — Hermes Studio Motion Lab</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #101216; --surface: #181b21; --surface-raised: #1e222a; --stage: #14171d;
+    --text: #f0f1f5; --secondary: #a0a5b2; --quiet: #808795; --line: #ffffff12;
+    --edge: #ffffff18; --bubble: #272b34; --selected: #ffffff0a;
+    --accent: #b9a8ff; --accent-rgb: 185,168,255; --wash: #8a70e80d;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    font-synthesis: none; -webkit-font-smoothing: antialiased;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #eff0f5; --surface: #f8f9fc; --surface-raised: #fff; --stage: #f7f8fc;
+    --text: #252938; --secondary: #646b7e; --quiet: #717a8d; --line: #25293810;
+    --edge: #fff; --bubble: #e8eaf2; --selected: #7660b209;
+    --accent: #7560bd; --accent-rgb: 117,96,189; --wash: #8a70e80a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); min-width: 320px; }
+  body::before { content: ""; position: absolute; inset: 0 0 auto; height: 650px; background: radial-gradient(ellipse at 48% -35%, #9d8fe315, transparent 70%); pointer-events: none; }
+  button, input { font: inherit; }
+  button { color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:disabled { cursor: default; opacity: .45; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  button { transition: background .2s, border-color .2s, box-shadow .2s; }
+  button:active { transform: translateY(1px); }
+  .page { position: relative; max-width: 1376px; margin: auto; padding: 30px 48px 28px; }
+  .masthead { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 550; letter-spacing: -.15px; }
+  .brand-mark { display: grid; grid-template-columns: 5px 5px; align-items: center; gap: 4px; width: 29px; height: 29px; transform: rotate(-13deg); }
+  .brand-mark i { display: block; background: var(--text); border-radius: 6px; height: 23px; }
+  .brand-mark i:last-child { height: 16px; }
+  .brand .divider { height: 14px; width: 1px; background: var(--line); margin: 0 4px; }
+  .brand .muted { color: var(--quiet); font-weight: 400; }
+  .mast-actions { display: flex; align-items: center; gap: 20px; }
+  .edition { font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; color: var(--quiet); }
+  .theme-toggle { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 8px 12px; font-size: 11px; display: flex; align-items: center; gap: 8px; }
+  .theme-icon { width: 11px; height: 11px; border-radius: 50%; border: 1px solid currentColor; background: linear-gradient(90deg,currentColor 50%,transparent 50%); }
+  .intro { padding: 49px 0 31px; display: flex; justify-content: space-between; align-items: flex-end; gap: 25px; }
+  .overline { margin: 0 0 12px; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .15em; color: var(--accent); text-transform: uppercase; }
+  h1 { font-size: clamp(32px, 3.8vw, 49px); font-weight: 480; line-height: 1.07; letter-spacing: -2px; margin: 0; }
+  .intro p:last-child { margin: 13px 0 0; color: var(--secondary); font-size: 13px; line-height: 1.65; }
+  .intro-note { font-size: 11px; color: var(--quiet); line-height: 1.6; max-width: 184px; margin-bottom: 3px; }
+  .intro-note span { color: var(--secondary); }
+  .workspace { display: grid; grid-template-columns: minmax(0,1fr) 287px; gap: 18px; align-items: stretch; }
+  .preview { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--edge); border-radius: 23px; background: var(--surface); overflow: hidden; box-shadow: 0 20px 60px #0000000a; }
+  .preview-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 19px; border-bottom: 1px solid var(--line); }
+  .preview-label { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--secondary); }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(var(--accent-rgb),.3); }
+  .segments { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; }
+  .segments button { border: 0; border-radius: 6px; padding: 5px 9px; background: transparent; font-size: 10px; color: var(--quiet); }
+  .segments button[aria-pressed="true"] { background: var(--surface-raised); color: var(--text); box-shadow: 0 1px 4px #00000012; }
+  .chat { flex: 1; background: radial-gradient(ellipse at 40% 55%,var(--wash),transparent 68%),var(--stage); padding: 21px 28px 19px; min-height: 380px; }
+  .chat-header { display: flex; align-items: center; gap: 10px; }
+  .avatar { position: relative; flex: none; width: 29px; height: 31px; border-radius: 12px 12px 10px 10px; background: radial-gradient(circle at 30% 15%,#eee1ff99,transparent 60%),linear-gradient(160deg,#b2a2f1,#7153b8); box-shadow: inset 0 1px 1px #ffffff60,0 4px 10px #00000014; }
+  .avatar::before,.avatar::after { content: ""; position: absolute; background: #fff; top: 13px; width: 3px; height: 5px; border-radius: 3px; }
+  .avatar::before { left: 9px; } .avatar::after { right: 9px; }
+  .identity strong { display: block; font-size: 12px; font-weight: 550; }
+  .identity span { display: block; color: var(--quiet); font-size: 10px; margin-top: 3px; }
+  .chat-header .session { margin-left: auto; color: var(--quiet); font-size: 10px; }
+  .user-message { display: flex; justify-content: flex-end; padding: 27px 0 22px 45px; }
+  .user-message p { margin: 0; max-width: 340px; padding: 11px 15px; border-radius: 14px 14px 4px 14px; background: var(--bubble); color: var(--text); font-size: 12px; line-height: 1.6; }
+  .assistant-meta { display: flex; align-items: center; gap: 7px; color: var(--secondary); font-size: 10px; }
+  .tiny-avatar { width: 7px; height: 7px; background: var(--accent); border-radius: 3px; }
+  .assistant-body { margin: 0 0 0 14px; }
+  .effect-field { position: relative; height: 145px; transition: height .65s cubic-bezier(.22,.7,.2,1); overflow: hidden; }
+  .effect-field canvas { display: block; width: 100%; height: 100%; }
+  .effect-field.is-inline { height: 56px; }
+  .effect-field.is-answering { height: 50px; }
+  .effect-field.is-settled { height: 0; }
+  .effect-caption { display: flex; align-items: center; gap: 8px; min-height: 27px; margin-top: -1px; }
+  .phase-symbol { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; opacity: .8; }
+  #phase-caption { color: var(--secondary); font-size: 11px; }
+  #elapsed { font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--quiet); margin-left: auto; }
+  .reply { margin: 10px 0 4px; font-size: 12px; color: var(--text); line-height: 1.8; max-width: 550px; }
+  .reply[hidden] { display: none; }
+  .reply::after { content: ""; display: inline-block; width: 2px; height: 12px; background: var(--accent); margin-left: 3px; vertical-align: -2px; }
+  .reply.is-complete::after { display: none; }
+  .composer { display: flex; gap: 10px; align-items: center; margin-top: 24px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; background: var(--surface); color: var(--quiet); font-size: 11px; }
+  .composer .plus { font-size: 18px; font-weight: 300; line-height: 1; }
+  .composer .send { display: grid; place-items: center; width: 22px; height: 22px; margin-left: auto; border-radius: 7px; font-size: 15px; background: var(--bubble); color: var(--secondary); }
+  .preview-foot { padding: 11px 20px; font-size: 10px; color: var(--quiet); display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--line); }
+  .preview-foot .play-state { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+  .preview-foot .play-state i { width: 3px; height: 8px; border-radius: 2px; background: var(--accent); }
+  .preview-foot .play-state i:nth-child(2) { height: 5px; }
+  .inspector { background: var(--surface); border: 1px solid var(--edge); border-radius: 23px; padding: 24px 22px 20px; display: flex; flex-direction: column; min-width: 0; }
+  .concept-number { font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--quiet); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .concept-number::after { content: ""; height: 1px; width: 24px; background: var(--line); }
+  .inspector h2 { font-size: 27px; font-weight: 480; letter-spacing: -.9px; margin: 0 0 8px; }
+  .concept-description { font-size: 12px; color: var(--secondary); line-height: 1.7; margin: 0; min-height: 61px; }
+  .concept-tag { display: inline-block; align-self: flex-start; margin-top: 12px; color: var(--accent); font-size: 10px; background: rgba(var(--accent-rgb),.07); padding: 5px 8px; border-radius: 5px; }
+  .control-group { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 17px; }
+  .control-label { display: flex; align-items: center; justify-content: space-between; color: var(--quiet); font-size: 10px; margin-bottom: 10px; }
+  .phase-options { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .phase-options button { display: flex; align-items: center; gap: 6px; padding: 8px 9px; border: 1px solid transparent; background: transparent; text-align: left; color: var(--secondary); border-radius: 8px; font-size: 10px; }
+  .phase-options button span { width: 13px; font-size: 12px; text-align: center; color: var(--quiet); }
+  .phase-options button[aria-pressed="true"] { border-color: var(--line); color: var(--text); background: var(--surface-raised); }
+  .phase-options button[aria-pressed="true"] span { color: var(--accent); }
+  .color-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .color-options { display: flex; gap: 10px; }
+  .swatch { background: var(--swatch); padding: 0; width: 19px; height: 19px; border: 3px solid var(--surface); border-radius: 50%; outline: 1px solid transparent; outline-offset: 2px; }
+  .swatch[aria-pressed="true"] { outline-color: var(--secondary); }
+  #palette-name { color: var(--secondary); font-size: 10px; }
+  input[type="range"] { width: 100%; display: block; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .range-labels { display: flex; justify-content: space-between; color: var(--quiet); font-size: 9px; margin-top: 5px; }
+  .play-sequence { border: 1px solid rgba(var(--accent-rgb),.25); border-radius: 9px; background: rgba(var(--accent-rgb),.09); color: var(--accent); margin-top: 20px; padding: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px; }
+  .play-sequence:hover { background: rgba(var(--accent-rgb),.16); }
+  .pause { margin: 9px 0 0; padding: 7px 0; background: none; border: 0; color: var(--quiet); font-size: 10px; }
+  .pause:hover { color: var(--text); }
+  .sequence-note { margin: 7px 0 0; color: var(--quiet); font-size: 9px; text-align: center; line-height: 1.5; }
+  .collection-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 28px 0 13px; }
+  .collection-header h2 { font-size: 12px; font-weight: 500; letter-spacing: -.15px; margin: 0; }
+  .collection-header p { font-size: 10px; color: var(--quiet); margin: 0; }
+  .concepts { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 11px; }
+  .concept { min-width: 0; position: relative; border: 1px solid var(--line); padding: 0 0 13px; border-radius: 14px; background: transparent; text-align: left; overflow: hidden; }
+  .concept:hover { background: var(--selected); border-color: rgba(var(--accent-rgb),.3); }
+  .concept[aria-pressed="true"] { background: var(--selected); border-color: rgba(var(--accent-rgb),.55); box-shadow: inset 0 1px 0 rgba(var(--accent-rgb),.08); }
+  .concept canvas { display: block; width: 100%; height: 94px; }
+  .concept .tile-number { position: absolute; top: 11px; left: 12px; color: var(--quiet); font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .concept .selected-mark { display: none; position: absolute; top: 12px; right: 12px; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+  .concept[aria-pressed="true"] .selected-mark { display: block; }
+  .concept strong { display: block; font-weight: 500; color: var(--text); font-size: 11px; padding: 0 12px; }
+  .concept small { display: block; color: var(--quiet); font-size: 9px; padding: 4px 12px 0; }
+  .editorial { display: flex; gap: 18px; padding: 19px 0 0; align-items: baseline; }
+  .editorial .label { white-space: nowrap; color: var(--accent); font-size: 10px; }
+  .editorial p { margin: 0; font-size: 11px; line-height: 1.7; color: var(--secondary); }
+  .editorial strong { color: var(--text); font-weight: 500; }
+  .footer { display: flex; justify-content: space-between; gap: 20px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 9px; line-height: 1.6; color: var(--quiet); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  @media(min-width:1500px) { .page { padding-top: 40px; } .intro { padding-top: 62px; } .chat { min-height: 400px; } .effect-field { height: 165px; } }
+  @media(max-width:1100px) { .page { padding: 26px 30px; } .workspace { grid-template-columns: minmax(0,1fr) 263px; } .inspector { padding: 23px 18px 17px; } .concepts { grid-template-columns: repeat(3,minmax(0,1fr)); } .concept canvas { height: 100px; } }
+  @media(max-width:760px) { .page { padding: 22px 20px; } .edition,.intro-note { display: none; } .intro { padding: 34px 0 25px; } h1 { letter-spacing: -1.3px; } .workspace { grid-template-columns: 1fr; } .chat { padding: 20px; min-height: 0; } .inspector { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; } .concept-info { grid-row: span 2; } .concept-description { min-height: 0; } .inspector .control-group { padding-top: 13px; margin-top: 13px; } .inspector .phase-control { border: 0; padding: 0; margin: 0; } .inspector .sequence-controls { grid-column: 2; } .play-sequence { margin-top: 15px; } .pause { width: 100%; } .sequence-note { margin-top: 1px; } .concepts { gap: 9px; } .editorial { gap: 12px; } }
+  @media(max-width:440px) { .page { padding: 18px 14px; } .brand { gap: 7px; font-size: 12px; } .brand .divider { margin: 0 2px; } .theme-toggle { font-size: 10px; padding: 8px 10px; } h1 { font-size: 33px; } .intro p:last-child { font-size: 12px; max-width: 270px; } .chat { padding: 18px 15px; } .preview-toolbar { padding: 12px 14px; } .preview-label { font-size: 10px; } .user-message { padding-left: 30px; } .user-message p { font-size: 11px; } .effect-field { height: 122px; } .inspector { display: flex; padding: 20px; } .concept-number { margin-bottom: 8px; } .inspector h2 { font-size: 25px; } .concept-description { min-height: 0; } .concept-tag { margin-top: 10px; } .inspector .phase-control { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 18px; } .phase-options { grid-template-columns: repeat(2,1fr); } .phase-options button { font-size: 11px; padding: 10px; } .color-row { justify-content: flex-start; gap: 18px; } .concepts { grid-template-columns: repeat(2,minmax(0,1fr)); } .collection-header { align-items: flex-start; } .collection-header p { font-size: 9px; max-width: 100px; text-align: right; } .editorial { display: block; } .editorial p { margin-top: 7px; } .footer { flex-direction: column; gap: 5px; } }
+  @media(pointer:coarse) { .theme-toggle,.segments button,.phase-options button,.pause { min-height: 44px; } .swatch { width: 28px; height: 28px; border-width: 6px; margin: 6px 2px; } .color-options { gap: 10px; } input[type="range"] { height: 32px; } }
+  @media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition: none !important; } }
+  /* Recorded work is the content. Motion frames it; selectable DOM text stays still. */
+  .intro { padding-top: 36px; }
+  .intro-note { max-width: 210px; }
+  .activity-display { position: relative; min-height: 227px; margin: 13px 0 0; isolation: isolate; }
+  .activity-display .effect-field { position: absolute; inset: 0; height: 100%; pointer-events: none; z-index: -1; transition: opacity .5s; }
+  .activity-display .effect-field.is-settled { height: 100%; opacity: .25; }
+  .activity-content { position: relative; min-height: 227px; padding: 19px 0 14px; }
+  .event-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 10px; color: var(--accent); margin-bottom: 10px; }
+  .event-kicker .tool-name { font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--quiet); border-left: 1px solid var(--line); padding-left: 7px; }
+  .event-title { margin: 0; font-size: 19px; line-height: 1.3; font-weight: 500; letter-spacing: -.5px; text-wrap: balance; }
+  .event-target { display: block; color: var(--secondary); font: 11px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 8px; overflow-wrap: anywhere; }
+  .event-description { margin: 8px 0 0; color: var(--secondary); font-size: 11px; line-height: 1.75; max-width: 520px; }
+  .observed-label { display: block; font-size: 9px; color: var(--quiet); margin-bottom: 5px; }
+  .event-facts { display: flex; flex-wrap: wrap; gap: 8px 19px; margin-top: 16px; }
+  .event-fact { font-size: 12px; color: var(--text); line-height: 1.6; }
+  .event-fact strong { font-weight: 500; }
+  .event-fact small { color: var(--quiet); font-size: 10px; margin-left: 4px; }
+  .action-badge { font-size: 9px; line-height: 1.5; color: var(--accent); background: rgba(var(--accent-rgb),.07); border: 1px solid rgba(var(--accent-rgb),.12); padding: 3px 6px; border-radius: 5px; }
+  .data-provenance { color: var(--quiet); font-size: 9px; margin-top: 12px; line-height: 1.6; }
+  .activity-display[data-direction="silk"] .effect-field { inset: auto 0 0; height: 82px; opacity: .7; }
+  .activity-display[data-direction="silk"] .activity-content { padding-bottom: 65px; }
+  .activity-display[data-direction="silk"] .event-facts { margin-top: 12px; }
+  .activity-display[data-direction="orbit"] .effect-field,
+  .activity-display[data-direction="prism"] .effect-field { width: 140px; height: 155px; inset: 25px auto auto 0; }
+  .activity-display[data-direction="orbit"] .activity-content,
+  .activity-display[data-direction="prism"] .activity-content { padding-left: 153px; }
+  .visual-key { display: grid; place-content: center; position: absolute; left: 0; top: 25px; width: 140px; height: 155px; text-align: center; pointer-events: none; }
+  .visual-key strong { font: 500 17px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: -1px; }
+  .visual-key span { color: var(--secondary); font-size: 8px; margin-top: 5px; }
+  .activity-display[data-direction="orbit"] .effect-field { opacity: .65; }
+  .activity-display[data-direction="prism"] .visual-key strong { font-size: 30px; }
+  .activity-display[data-direction="prism"] .event-facts { display: grid; gap: 5px; margin-top: 12px; }
+  .activity-display[data-direction="prism"] .event-fact { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  .activity-display[data-direction="prism"] .observed-label { display: block; margin: 0; font-size: 10px; }
+  .ribbon-points { position: absolute; left: 0; right: 0; bottom: 4px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+  .ribbon-point { min-width: 0; font-size: 9px; color: var(--quiet); }
+  .ribbon-point:nth-child(2) { text-align: center; }
+  .ribbon-point:last-child { text-align: right; }
+  .ribbon-point strong { display: block; color: var(--secondary); font-size: 10px; font-weight: 450; margin-top: 4px; overflow-wrap: anywhere; }
+  .activity-display[data-direction="constellation"] .effect-field { inset: auto 0 12px; height: 105px; opacity: .3; }
+  .branch-track { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-top: 25px; position: relative; }
+  .branch { position: relative; padding-top: 17px; min-width: 0; }
+  .branch::before { content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--quiet); opacity: .5; }
+  .branch.done::before { background: var(--accent); opacity: 1; box-shadow: 0 0 7px rgba(var(--accent-rgb),.3); }
+  .branch.current::before { background: var(--accent); opacity: 1; box-shadow: 0 0 0 4px rgba(var(--accent-rgb),.12); }
+  .branch strong { display: block; font-size: 10px; font-weight: 500; overflow-wrap: anywhere; }
+  .branch span { display: block; color: var(--quiet); font-size: 9px; margin-top: 5px; line-height: 1.5; }
+  .branch.current span { color: var(--accent); }
+  .activity-display[data-direction="horizon"] .effect-field { inset: auto 0 35px; height: 66px; opacity: .55; }
+  .milestone-track { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; margin-top: 30px; }
+  .milestone { font-size: 9px; color: var(--quiet); position: relative; border-top: 1px solid var(--line); padding-top: 10px; }
+  .milestone::before { content: ''; position: absolute; width: 4px; height: 4px; top: -2px; left: 0; border-radius: 50%; background: var(--quiet); }
+  .milestone.done { color: var(--secondary); border-color: rgba(var(--accent-rgb),.35); }
+  .milestone.current { color: var(--accent); }
+  .milestone.done::before,.milestone.current::before { background: var(--accent); }
+  .activity-display[data-direction="filament"] .effect-field { inset: -2px 0 auto auto; width: 115px; height: 120px; opacity: .75; }
+  .activity-display[data-direction="filament"] .event-copy { padding-right: 114px; }
+  .event-thread { list-style: none; padding: 0; margin: 17px 0 0; display: grid; gap: 9px; }
+  .event-thread li { display: flex; align-items: baseline; gap: 8px; font-size: 10px; color: var(--quiet); }
+  .event-thread li::before { content: '✓'; color: var(--accent); font-size: 9px; flex: none; }
+  .event-thread li:last-child { color: var(--secondary); }
+  .event-thread li:last-child::before { content: '↳'; }
+  .activity-display.is-inline { min-height: 96px; }
+  .activity-display.is-inline .activity-content { min-height: 96px; padding: 13px 0 10px 65px; }
+  .activity-display.is-inline .effect-field { inset: 15px auto auto 0; width: 55px; height: 55px; opacity: .85; }
+  .activity-display.is-inline .event-title { font-size: 14px; letter-spacing: -.2px; }
+  .activity-display.is-inline .event-target { font-size: 10px; margin-top: 6px; }
+  .activity-display.is-inline .event-kicker { margin-bottom: 6px; }
+  .compact-outcome { color: var(--secondary); font-size: 10px; line-height: 1.7; margin-top: 6px; }
+  .effect-caption { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 10px; min-height: 30px; }
+  .step-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 12px 0 0; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .step-position { font-size: 10px; color: var(--quiet); }
+  .step-buttons { display: flex; gap: 5px; }
+  .step-buttons button { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 8px; font-size: 10px; }
+  .work-details { margin-top: 10px; }
+  .work-details>summary { cursor: pointer; color: var(--secondary); font-size: 10px; padding: 6px 0; }
+  .work-details>summary span { color: var(--quiet); margin-left: 7px; font-size: 9px; }
+  .work-entries { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 3px; }
+  .work-entry { width: 100%; display: flex; align-items: baseline; gap: 8px; padding: 7px 8px; border: 0; text-align: left; background: none; border-radius: 6px; color: var(--secondary); font-size: 10px; line-height: 1.6; }
+  .work-entry:hover,.work-entry[aria-current="step"] { background: var(--selected); }
+  .work-entry .entry-index { color: var(--quiet); font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; flex: none; }
+  .work-entry strong { display: block; font-weight: 450; }
+  .work-entry small { display: block; color: var(--quiet); font-size: 9px; overflow-wrap: anywhere; }
+  .work-entry .entry-state { margin-left: auto; white-space: nowrap; color: var(--accent); font-size: 9px; }
+  .technical-details { border-top: 1px solid var(--line); padding-top: 6px; }
+  .technical-details>summary { cursor: pointer; color: var(--quiet); font-size: 10px; padding: 4px 0; }
+  .technical-details pre { margin: 9px 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font: 10px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--secondary); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 280px; overflow: auto; }
+  .recording-note { color: var(--quiet); font-size: 9px; line-height: 1.7; margin-top: 10px; }
+  .recording-note summary { cursor: pointer; }
+  .recording-note p { margin: 7px 0 0; }
+  .recording-note a,.file-link { color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .file-link { display: inline-flex; gap: 6px; align-items: center; margin-top: 9px; font-size: 10px; }
+  .concept .tile-activity { position: absolute; top: 69px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 5px; color: var(--secondary); font-size: 9px; }
+  .concept canvas { height: 100px; }
+  .inspector .phase-options button:last-child { grid-column: span 2; }
+  .sequence-note { max-width: 220px; margin-left: auto; margin-right: auto; }
+  .reply { border-left: 2px solid rgba(var(--accent-rgb),.3); padding-left: 12px; margin-top: 15px; }
+  @media(max-width:1100px) { .activity-display[data-direction="orbit"] .activity-content,.activity-display[data-direction="prism"] .activity-content { padding-left: 112px; } .activity-display[data-direction="orbit"] .effect-field,.activity-display[data-direction="prism"] .effect-field,.visual-key { width: 103px; height: 130px; top: 30px; } .activity-display[data-direction="filament"] .event-copy { padding-right: 85px; } .activity-display[data-direction="filament"] .effect-field { width: 85px; height: 105px; } .event-title { font-size: 17px; } .event-facts { gap: 8px 14px; } .activity-display.is-inline .activity-content { padding-left: 65px; } .activity-display.is-inline .effect-field { width: 55px; height: 55px; top: 15px; } }
+  @media(max-width:760px) { .intro-note { display: none; } .event-title { font-size: 19px; } .activity-display[data-direction="orbit"] .activity-content,.activity-display[data-direction="prism"] .activity-content { padding-left: 145px; } .activity-display[data-direction="orbit"] .effect-field,.activity-display[data-direction="prism"] .effect-field,.visual-key { width: 130px; } .activity-display.is-inline .activity-content { padding-left: 65px; } .activity-display.is-inline .effect-field { width: 55px; } .recording-note { margin-top: 12px; } }
+  @media(max-width:520px) { .assistant-body { margin-left: 0; } .activity-display,.activity-content { min-height: 240px; } .activity-content { padding-top: 15px; } .event-title { font-size: 17px; } .event-target { font-size: 10px; } .activity-display[data-direction="orbit"] .activity-content,.activity-display[data-direction="prism"] .activity-content { padding-left: 0; padding-bottom: 92px; } .activity-display[data-direction="orbit"] .effect-field,.activity-display[data-direction="prism"] .effect-field,.visual-key { top: auto; bottom: -5px; left: auto; right: 0; width: 100px; height: 95px; } .visual-key strong { font-size: 14px; } .activity-display[data-direction="prism"] .visual-key strong { font-size: 24px; } .activity-display[data-direction="prism"] .event-facts { padding-right: 105px; display: grid; } .activity-display[data-direction="constellation"] .branch-track { grid-template-columns: 1fr 1fr; gap: 18px 14px; margin-top: 18px; } .branch { padding-top: 12px; } .branch-track+.data-provenance { margin-top: 13px; } .activity-display[data-direction="constellation"] .effect-field { height: 130px; } .activity-display[data-direction="filament"] .event-copy { padding-right: 0; } .activity-display[data-direction="filament"] .effect-field { top: auto; bottom: 0; height: 70px; width: 85px; } .event-thread { padding-right: 55px; } .activity-display.is-inline,.activity-display.is-inline .activity-content { min-height: 100px; } .activity-display.is-inline .activity-content { padding: 13px 0 10px 60px; } .activity-display.is-inline .effect-field { top: 15px; bottom: auto; left: 0; right: auto; width: 50px; height: 55px; } .preview-foot { font-size: 9px; } .event-facts { gap: 8px 15px; } .step-buttons button { padding: 7px; } .work-entry { padding-left: 0; padding-right: 0; } .work-entry .entry-state { display: none; } }
+  @media(pointer:coarse) { .step-buttons button,.work-entry { min-height: 40px; } .work-details>summary,.technical-details>summary,.recording-note>summary { min-height: 40px; padding-top: 12px; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="masthead">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span>Hermes Studio<span class="divider"></span><span class="muted">Motion lab</span></div>
+    <div class="mast-actions"><span class="edition">ACTIVITY STUDIES / 01—06</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light appearance"><span class="theme-icon" aria-hidden="true"></span><span id="theme-label">Light</span></button></div>
+  </header>
+  <section class="intro" aria-labelledby="page-title">
+    <div><p class="overline">Presence, with purpose</p><h1 id="page-title">The art of thinking.</h1><p>Beautiful motion. Clear actions. Six ways to see the work as it happens.</p></div>
+    <div class="intro-note">One real weather response.<br><span>Six ways to tell the story.</span></div>
+  </section>
+  <div class="workspace">
+    <section class="preview" aria-label="Simulated chat preview">
+      <div class="preview-toolbar"><div class="preview-label"><span class="live-dot" aria-hidden="true"></span>Recorded data · demo workflow</div><div class="segments" role="group" aria-label="Animation size"><button type="button" data-size="full" aria-pressed="true">Expanded</button><button type="button" data-size="inline" aria-pressed="false">Inline</button></div></div>
+      <div class="chat">
+        <div class="chat-header"><span class="avatar" aria-hidden="true"></span><div class="identity"><strong>Atlas</strong><span>Your creative partner</span></div><span class="session">Chat preview</span></div>
+        <div class="user-message"><p>Check the weather for a Warsaw meetup. Ask Nova to review the plan and save a short brief.</p></div>
+        <div class="assistant-meta"><span class="tiny-avatar" aria-hidden="true"></span>Atlas</div>
+        <div class="assistant-body">
+          <div class="activity-display" id="activity-display" data-direction="silk"><div class="effect-field" id="effect-field"><canvas id="hero-canvas" aria-hidden="true"></canvas></div><div class="activity-content" id="activity-content"></div></div>
+          <div class="effect-caption"><span class="phase-symbol" aria-hidden="true"></span><span id="phase-caption">Recorded response</span><span id="elapsed">177 ms</span></div>
+          <div class="step-controls"><span class="step-position" id="step-position">Step 4 of 10</span><div class="step-buttons"><button type="button" id="previous-step" aria-label="Previous activity step">← Previous</button><button type="button" id="next-step" aria-label="Next activity step">Next →</button></div></div>
+          <p class="reply" id="reply" hidden></p>
+          <details class="work-details" id="work-details"><summary>Work log <span id="work-count">4 events · show details</span></summary><ol class="work-entries" id="work-entries"></ol><details class="technical-details"><summary>Exact event & tool data</summary><pre id="technical-data"></pre></details></details>
+          <details class="recording-note"><summary id="recording-summary">About the recorded example</summary><p id="recording-provenance"></p><p><a id="response-download" download="warsaw-weather-response.json">Download captured response</a></p></details>
+        </div>
+        <div class="composer" aria-hidden="true"><span class="plus">+</span>Message Atlas…<span class="send">↑</span></div>
+      </div>
+      <div class="preview-foot"><span id="preview-foot-label">01 / Silk</span><span class="play-state"><i aria-hidden="true"></i><i aria-hidden="true"></i><span id="motion-status">Motion on</span></span></div>
+    </section>
+    <aside class="inspector" aria-label="Explore this motion direction">
+      <div class="concept-info"><div class="concept-number" id="concept-number">DIRECTION 01</div><h2 id="concept-name">Silk</h2><p class="concept-description" id="concept-description">A flowing activity stream. The source, action and result stay readable while light gathers underneath.</p><span class="concept-tag" id="concept-tag">A readable stream</span></div>
+      <div class="control-group phase-control"><div class="control-label" id="phase-label">Jump to an activity</div><div class="phase-options" role="group" aria-labelledby="phase-label"><button type="button" data-phase="thinking" aria-pressed="false"><span aria-hidden="true">✧</span>Reasoning</button><button type="button" data-phase="research" aria-pressed="true"><span aria-hidden="true">⌕</span>Search</button><button type="button" data-phase="acting" aria-pressed="false"><span aria-hidden="true">↳</span>Action</button><button type="button" data-phase="collaborating" aria-pressed="false"><span aria-hidden="true">∞</span>With Nova</button><button type="button" data-phase="answering" aria-pressed="false"><span aria-hidden="true">↗</span>Reply & saved brief</button></div></div>
+      <div class="control-group"><div class="control-label" id="color-label">Bot palette</div><div class="color-row"><div class="color-options" role="group" aria-labelledby="color-label"><button type="button" class="swatch" data-palette="iris" style="--swatch:#b8a3f4" aria-label="Iris palette" aria-pressed="true"></button><button type="button" class="swatch" data-palette="mint" style="--swatch:#78d6bc" aria-label="Mint palette" aria-pressed="false"></button><button type="button" class="swatch" data-palette="ember" style="--swatch:#f0b28f" aria-label="Ember palette" aria-pressed="false"></button></div><span id="palette-name">Iris</span></div></div>
+      <div class="control-group"><label class="control-label" for="energy">Motion intensity<output id="energy-value" for="energy">Balanced</output></label><input id="energy" type="range" min="0" max="100" value="45"><div class="range-labels"><span>Whisper</span><span>Expressive</span></div></div>
+      <div class="sequence-controls"><button type="button" class="play-sequence" id="play-sequence"><span aria-hidden="true">▷</span><span id="sequence-label">Replay all 10 steps</span></button><button type="button" class="pause" id="pause" aria-pressed="false">Pause motion</button><p class="sequence-note">Manual stepping is always available</p></div>
+    </aside>
+  </div>
+  <section aria-labelledby="collection-title">
+    <div class="collection-header"><h2 id="collection-title">One task. Six ways to follow it.</h2><p>Switch designs without losing your place</p></div>
+    <div class="concepts" role="group" aria-label="Motion directions">
+      <button type="button" class="concept" data-concept="silk" aria-label="Try Silk, soft and fluid" aria-pressed="true"><span class="tile-number">01</span><span class="selected-mark" aria-hidden="true"></span><canvas data-preview="silk" aria-hidden="true"></canvas><strong>Silk</strong><small>Soft & fluid</small></button>
+      <button type="button" class="concept" data-concept="orbit" aria-label="Try Orbit, precise and celestial" aria-pressed="false"><span class="tile-number">02</span><span class="selected-mark" aria-hidden="true"></span><canvas data-preview="orbit" aria-hidden="true"></canvas><strong>Orbit</strong><small>Precise & celestial</small></button>
+      <button type="button" class="concept" data-concept="prism" aria-label="Try Prism, luminous and sculptural" aria-pressed="false"><span class="tile-number">03</span><span class="selected-mark" aria-hidden="true"></span><canvas data-preview="prism" aria-hidden="true"></canvas><strong>Prism</strong><small>Luminous & sculptural</small></button>
+      <button type="button" class="concept" data-concept="constellation" aria-label="Try Constellation, connected and curious" aria-pressed="false"><span class="tile-number">04</span><span class="selected-mark" aria-hidden="true"></span><canvas data-preview="constellation" aria-hidden="true"></canvas><strong>Constellation</strong><small>Connected & curious</small></button>
+      <button type="button" class="concept" data-concept="horizon" aria-label="Try Horizon, minimal and meditative" aria-pressed="false"><span class="tile-number">05</span><span class="selected-mark" aria-hidden="true"></span><canvas data-preview="horizon" aria-hidden="true"></canvas><strong>Horizon</strong><small>Minimal & meditative</small></button>
+      <button type="button" class="concept" data-concept="filament" aria-label="Try Filament, intricate and continuous" aria-pressed="false"><span class="tile-number">06</span><span class="selected-mark" aria-hidden="true"></span><canvas data-preview="filament" aria-hidden="true"></canvas><strong>Filament</strong><small>Intricate & continuous</small></button>
+    </div>
+  </section>
+  <div class="editorial"><span class="label">Designed around the work</span><p><strong>Silk</strong> for readable updates. <strong>Constellation</strong> for connected tasks. <strong>Horizon</strong> for a quiet, precise work log. Every direction keeps the source and outcome visible.</p></div>
+  <footer class="footer"><span>Real captured weather · Verified example file · Illustrative bot workflow</span><span>Self-contained · No external requests · Respects reduced motion</span></footer>
+  <div class="sr-only" aria-live="polite" id="announcement"></div>
+</main>
+<script type="application/json" id="recording-data">{"source":{"url":"https://wttr.in/Warsaw?format=j1","status":200,"contentType":"text/plain;charset=utf-8","durationMs":177,"capturedAt":"2026-10-27T15:46:45.955Z","observationTime":"03:12 PM","city":"Warsaw","tempC":10,"feelsLikeC":8,"condition":"Sunny","windKmph":4,"bytes":39294},"file":{"path":"examples/warsaw-meetup-brief.md","name":"warsaw-meetup-brief.md","size":1085,"sha256":"bd4cb9fe093a16aa37377f503f8d1884587a75eb12ab2d0a0130043a97201c8c","content":"# Warsaw meetup weather brief\n\nRecorded public-data example, captured on 27 October 2026. These are the saved observation values used by the Motion Lab prototype.\n\n## Recorded conditions\n\n- Location requested: Warsaw, Poland (nearest reporting area: Powazki).\n- Temperature: 10°C.\n- Feels like: 8°C.\n- Conditions: Sunny.\n- Wind: 4 km/h, ESE.\n\n## Brief recommendation\n\nBased on this recorded observation, plan a short outdoor welcome, suggest a warm layer, and keep an indoor table available. Confirm conditions for the actual meetup date. This recommendation is an example interpretation of the recorded response.\n\n## Provenance\n\n- Source: https://wttr.in/Warsaw?format=j1\n- Captured at: 2026-10-27T15:46:45.955Z\n- Source observation time: 03:12 PM (as reported by the source).\n- HTTP status: 200.\n- Response content type: text/plain;charset=utf-8.\n- Request duration: 177 ms.\n- Saved raw response: warsaw-weather-response.json (39,294 bytes).\n\nThis local example file was created for interface exploration. It does not record a bot run, and no teammate was contacted to produce it.\n"},"rawResponse":"{\n  \"current_condition\": [\n    {\n      \"FeelsLikeC\": \"8\",\n      \"FeelsLikeF\": \"46\",\n      \"cloudcover\": \"2\",\n      \"humidity\": \"69\",\n      \"observation_time\": \"03:12 PM\",\n      \"precipInches\": \"0.0\",\n      \"precipMM\": \"0.0\",\n      \"pressure\": \"1026\",\n      \"pressureInches\": \"30\",\n      \"temp_C\": \"10\",\n      \"temp_F\": \"49\",\n      \"uvIndex\": \"0\",\n      \"visibility\": \"10\",\n      \"visibilityMiles\": \"6\",\n      \"weatherCode\": \"113\",\n      \"weatherDesc\": [\n        {\n          \"value\": \"Sunny\"\n        }\n      ],\n      \"weatherIconUrl\": [\n        {\n          \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0001_sunny.png\"\n        }\n      ],\n      \"winddir16Point\": \"ESE\",\n      \"winddirDegree\": \"120\",\n      \"windspeedKmph\": \"4\",\n      \"windspeedMiles\": \"2\"\n    }\n  ],\n  \"nearest_area\": [\n    {\n      \"areaName\": [\n        {\n          \"value\": \"Powazki\"\n        }\n      ],\n      \"country\": [\n        {\n          \"value\": \"Poland\"\n        }\n      ],\n      \"latitude\": \"52.250\",\n      \"longitude\": \"20.967\",\n      \"population\": \"0\",\n      \"region\": [\n        {\n          \"value\": \"\"\n        }\n      ],\n      \"weatherUrl\": [\n        {\n          \"value\": \"https://www.worldweatheronline.com/v2/weather.aspx?q=52.25,20.967\"\n        }\n      ]\n    }\n  ],\n  \"request\": [\n    {\n      \"query\": \"Lat 52.23 and Lon 21.01\",\n      \"type\": \"LatLon\"\n    }\n  ],\n  \"weather\": [\n    {\n      \"astronomy\": [\n        {\n          \"moon_illumination\": \"99\",\n          \"moon_phase\": \"Waning Gibbous\",\n          \"moonrise\": \"04:16 PM\",\n          \"moonset\": \"08:21 AM\",\n          \"sunrise\": \"06:22 AM\",\n          \"sunset\": \"04:16 PM\"\n        }\n      ],\n      \"avgtempC\": \"8\",\n      \"avgtempF\": \"47\",\n      \"date\": \"2026-10-27\",\n      \"hourly\": [\n        {\n          \"DewPointC\": \"4\",\n          \"DewPointF\": \"38\",\n          \"FeelsLikeC\": \"7\",\n          \"FeelsLikeF\": \"45\",\n          \"HeatIndexC\": \"7\",\n          \"HeatIndexF\": \"45\",\n          \"WindChillC\": \"7\",\n          \"WindChillF\": \"45\",\n          \"WindGustKmph\": \"6\",\n          \"WindGustMiles\": \"4\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"8\",\n          \"chanceofremdry\": \"92\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"76\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1023\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"7\",\n          \"tempF\": \"45\",\n          \"time\": \"0\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Clear \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0008_clear_sky_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"WSW\",\n          \"winddirDegree\": \"250\",\n          \"windspeedKmph\": \"5\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"3\",\n          \"DewPointF\": \"38\",\n          \"FeelsLikeC\": \"6\",\n          \"FeelsLikeF\": \"44\",\n          \"HeatIndexC\": \"7\",\n          \"HeatIndexF\": \"44\",\n          \"WindChillC\": \"6\",\n          \"WindChillF\": \"44\",\n          \"WindGustKmph\": \"4\",\n          \"WindGustMiles\": \"3\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"9\",\n          \"chanceofremdry\": \"91\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"79\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1024\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"7\",\n          \"tempF\": \"44\",\n          \"time\": \"300\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Clear \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0008_clear_sky_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"SW\",\n          \"winddirDegree\": \"234\",\n          \"windspeedKmph\": \"4\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"3\",\n          \"DewPointF\": \"38\",\n          \"FeelsLikeC\": \"6\",\n          \"FeelsLikeF\": \"44\",\n          \"HeatIndexC\": \"7\",\n          \"HeatIndexF\": \"44\",\n          \"WindChillC\": \"6\",\n          \"WindChillF\": \"44\",\n          \"WindGustKmph\": \"4\",\n          \"WindGustMiles\": \"2\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"0\",\n          \"chanceofrain\": \"9\",\n          \"chanceofremdry\": \"91\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"0\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"80\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"7\",\n          \"tempF\": \"44\",\n          \"time\": \"600\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Clear \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0008_clear_sky_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"S\",\n          \"winddirDegree\": \"177\",\n          \"windspeedKmph\": \"4\",\n          \"windspeedMiles\": \"2\"\n        },\n        {\n          \"DewPointC\": \"3\",\n          \"DewPointF\": \"38\",\n          \"FeelsLikeC\": \"8\",\n          \"FeelsLikeF\": \"47\",\n          \"HeatIndexC\": \"9\",\n          \"HeatIndexF\": \"48\",\n          \"WindChillC\": \"8\",\n          \"WindChillF\": \"47\",\n          \"WindGustKmph\": \"7\",\n          \"WindGustMiles\": \"4\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"6\",\n          \"chanceofremdry\": \"94\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"96\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"93.3\",\n          \"humidity\": \"69\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1026\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"224.0\",\n          \"tempC\": \"9\",\n          \"tempF\": \"48\",\n          \"time\": \"900\",\n          \"uvIndex\": \"1\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Sunny\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0001_sunny.png\"\n            }\n          ],\n          \"winddir16Point\": \"SSE\",\n          \"winddirDegree\": \"164\",\n          \"windspeedKmph\": \"5\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"3\",\n          \"DewPointF\": \"37\",\n          \"FeelsLikeC\": \"11\",\n          \"FeelsLikeF\": \"52\",\n          \"HeatIndexC\": \"11\",\n          \"HeatIndexF\": \"53\",\n          \"WindChillC\": \"11\",\n          \"WindChillF\": \"52\",\n          \"WindGustKmph\": \"8\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"43\",\n          \"chanceofrain\": \"7\",\n          \"chanceofremdry\": \"93\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"14\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"58\",\n          \"diffRad\": \"111.3\",\n          \"humidity\": \"55\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1026\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"394.0\",\n          \"tempC\": \"11\",\n          \"tempF\": \"53\",\n          \"time\": \"1200\",\n          \"uvIndex\": \"1\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"116\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Partly Cloudy \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0002_sunny_intervals.png\"\n            }\n          ],\n          \"winddir16Point\": \"SSE\",\n          \"winddirDegree\": \"156\",\n          \"windspeedKmph\": \"6\",\n          \"windspeedMiles\": \"4\"\n        },\n        {\n          \"DewPointC\": \"2\",\n          \"DewPointF\": \"36\",\n          \"FeelsLikeC\": \"11\",\n          \"FeelsLikeF\": \"53\",\n          \"HeatIndexC\": \"12\",\n          \"HeatIndexF\": \"54\",\n          \"WindChillC\": \"11\",\n          \"WindChillF\": \"53\",\n          \"WindGustKmph\": \"9\",\n          \"WindGustMiles\": \"6\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"2\",\n          \"chanceofremdry\": \"98\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"96\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"84.6\",\n          \"humidity\": \"52\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"185.7\",\n          \"tempC\": \"12\",\n          \"tempF\": \"54\",\n          \"time\": \"1500\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Sunny\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0001_sunny.png\"\n            }\n          ],\n          \"winddir16Point\": \"SE\",\n          \"winddirDegree\": \"145\",\n          \"windspeedKmph\": \"7\",\n          \"windspeedMiles\": \"4\"\n        },\n        {\n          \"DewPointC\": \"3\",\n          \"DewPointF\": \"37\",\n          \"FeelsLikeC\": \"9\",\n          \"FeelsLikeF\": \"48\",\n          \"HeatIndexC\": \"10\",\n          \"HeatIndexF\": \"49\",\n          \"WindChillC\": \"9\",\n          \"WindChillF\": \"48\",\n          \"WindGustKmph\": \"16\",\n          \"WindGustMiles\": \"10\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"4\",\n          \"chanceofremdry\": \"96\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"63\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1026\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"10\",\n          \"tempF\": \"49\",\n          \"time\": \"1800\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Clear \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0008_clear_sky_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"SE\",\n          \"winddirDegree\": \"126\",\n          \"windspeedKmph\": \"7\",\n          \"windspeedMiles\": \"4\"\n        },\n        {\n          \"DewPointC\": \"2\",\n          \"DewPointF\": \"36\",\n          \"FeelsLikeC\": \"7\",\n          \"FeelsLikeF\": \"44\",\n          \"HeatIndexC\": \"8\",\n          \"HeatIndexF\": \"47\",\n          \"WindChillC\": \"7\",\n          \"WindChillF\": \"44\",\n          \"WindGustKmph\": \"20\",\n          \"WindGustMiles\": \"13\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"5\",\n          \"chanceofremdry\": \"95\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"66\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1026\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"8\",\n          \"tempF\": \"47\",\n          \"time\": \"2100\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"149\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Smoky haze\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0006_mist.png\"\n            }\n          ],\n          \"winddir16Point\": \"SE\",\n          \"winddirDegree\": \"135\",\n          \"windspeedKmph\": \"8\",\n          \"windspeedMiles\": \"5\"\n        }\n      ],\n      \"maxtempC\": \"12\",\n      \"maxtempF\": \"54\",\n      \"mintempC\": \"4\",\n      \"mintempF\": \"39\",\n      \"sunHour\": \"10.0\",\n      \"totalSnow_cm\": \"0.0\",\n      \"uvIndex\": \"1\"\n    },\n    {\n      \"astronomy\": [\n        {\n          \"moon_illumination\": \"95\",\n          \"moon_phase\": \"Waning Gibbous\",\n          \"moonrise\": \"04:53 PM\",\n          \"moonset\": \"09:51 AM\",\n          \"sunrise\": \"06:24 AM\",\n          \"sunset\": \"04:15 PM\"\n        }\n      ],\n      \"avgtempC\": \"9\",\n      \"avgtempF\": \"49\",\n      \"date\": \"2026-10-28\",\n      \"hourly\": [\n        {\n          \"DewPointC\": \"3\",\n          \"DewPointF\": \"38\",\n          \"FeelsLikeC\": \"7\",\n          \"FeelsLikeF\": \"44\",\n          \"HeatIndexC\": \"8\",\n          \"HeatIndexF\": \"46\",\n          \"WindChillC\": \"7\",\n          \"WindChillF\": \"44\",\n          \"WindGustKmph\": \"16\",\n          \"WindGustMiles\": \"10\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"8\",\n          \"chanceofremdry\": \"92\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"5\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"74\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1026\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"8\",\n          \"tempF\": \"46\",\n          \"time\": \"0\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Clear \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0008_clear_sky_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"SE\",\n          \"winddirDegree\": \"139\",\n          \"windspeedKmph\": \"6\",\n          \"windspeedMiles\": \"4\"\n        },\n        {\n          \"DewPointC\": \"4\",\n          \"DewPointF\": \"39\",\n          \"FeelsLikeC\": \"6\",\n          \"FeelsLikeF\": \"44\",\n          \"HeatIndexC\": \"7\",\n          \"HeatIndexF\": \"45\",\n          \"WindChillC\": \"6\",\n          \"WindChillF\": \"44\",\n          \"WindGustKmph\": \"10\",\n          \"WindGustMiles\": \"6\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"3\",\n          \"chanceofrain\": \"10\",\n          \"chanceofremdry\": \"90\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"15\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"78\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"7\",\n          \"tempF\": \"45\",\n          \"time\": \"300\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"113\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Clear \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0008_clear_sky_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"SE\",\n          \"winddirDegree\": \"130\",\n          \"windspeedKmph\": \"6\",\n          \"windspeedMiles\": \"4\"\n        },\n        {\n          \"DewPointC\": \"5\",\n          \"DewPointF\": \"41\",\n          \"FeelsLikeC\": \"6\",\n          \"FeelsLikeF\": \"43\",\n          \"HeatIndexC\": \"7\",\n          \"HeatIndexF\": \"45\",\n          \"WindChillC\": \"6\",\n          \"WindChillF\": \"43\",\n          \"WindGustKmph\": \"8\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"55\",\n          \"chanceofrain\": \"18\",\n          \"chanceofremdry\": \"82\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"63\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"84\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1024\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"7\",\n          \"tempF\": \"45\",\n          \"time\": \"600\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"119\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Cloudy \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0004_black_low_cloud.png\"\n            }\n          ],\n          \"winddir16Point\": \"ESE\",\n          \"winddirDegree\": \"109\",\n          \"windspeedKmph\": \"6\",\n          \"windspeedMiles\": \"4\"\n        },\n        {\n          \"DewPointC\": \"7\",\n          \"DewPointF\": \"44\",\n          \"FeelsLikeC\": \"9\",\n          \"FeelsLikeF\": \"48\",\n          \"HeatIndexC\": \"9\",\n          \"HeatIndexF\": \"49\",\n          \"WindChillC\": \"9\",\n          \"WindChillF\": \"48\",\n          \"WindGustKmph\": \"13\",\n          \"WindGustMiles\": \"8\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"26\",\n          \"chanceofremdry\": \"66\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"41.6\",\n          \"humidity\": \"84\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"42.0\",\n          \"tempC\": \"9\",\n          \"tempF\": \"49\",\n          \"time\": \"900\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"122\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Overcast \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0004_black_low_cloud.png\"\n            }\n          ],\n          \"winddir16Point\": \"ESE\",\n          \"winddirDegree\": \"119\",\n          \"windspeedKmph\": \"5\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"46\",\n          \"FeelsLikeC\": \"11\",\n          \"FeelsLikeF\": \"53\",\n          \"HeatIndexC\": \"11\",\n          \"HeatIndexF\": \"52\",\n          \"WindChillC\": \"11\",\n          \"WindChillF\": \"53\",\n          \"WindGustKmph\": \"7\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"25\",\n          \"chanceofremdry\": \"68\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"106.3\",\n          \"humidity\": \"82\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1024\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"108.1\",\n          \"tempC\": \"11\",\n          \"tempF\": \"52\",\n          \"time\": \"1200\",\n          \"uvIndex\": \"1\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"122\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Overcast \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0004_black_low_cloud.png\"\n            }\n          ],\n          \"winddir16Point\": \"SSE\",\n          \"winddirDegree\": \"154\",\n          \"windspeedKmph\": \"3\",\n          \"windspeedMiles\": \"2\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"47\",\n          \"FeelsLikeC\": \"12\",\n          \"FeelsLikeF\": \"54\",\n          \"HeatIndexC\": \"12\",\n          \"HeatIndexF\": \"53\",\n          \"WindChillC\": \"12\",\n          \"WindChillF\": \"54\",\n          \"WindGustKmph\": \"8\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"23\",\n          \"chanceofremdry\": \"69\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"68.8\",\n          \"humidity\": \"79\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1024\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"70.3\",\n          \"tempC\": \"12\",\n          \"tempF\": \"53\",\n          \"time\": \"1500\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"122\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Overcast \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0004_black_low_cloud.png\"\n            }\n          ],\n          \"winddir16Point\": \"ESE\",\n          \"winddirDegree\": \"106\",\n          \"windspeedKmph\": \"4\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"47\",\n          \"FeelsLikeC\": \"11\",\n          \"FeelsLikeF\": \"51\",\n          \"HeatIndexC\": \"11\",\n          \"HeatIndexF\": \"52\",\n          \"WindChillC\": \"11\",\n          \"WindChillF\": \"51\",\n          \"WindGustKmph\": \"8\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"26\",\n          \"chanceofremdry\": \"67\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"83\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1024\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"11\",\n          \"tempF\": \"52\",\n          \"time\": \"1800\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"5\",\n          \"visibilityMiles\": \"2\",\n          \"weatherCode\": \"143\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Mist\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0006_mist.png\"\n            }\n          ],\n          \"winddir16Point\": \"SE\",\n          \"winddirDegree\": \"129\",\n          \"windspeedKmph\": \"5\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"46\",\n          \"FeelsLikeC\": \"11\",\n          \"FeelsLikeF\": \"52\",\n          \"HeatIndexC\": \"11\",\n          \"HeatIndexF\": \"51\",\n          \"WindChillC\": \"11\",\n          \"WindChillF\": \"52\",\n          \"WindGustKmph\": \"4\",\n          \"WindGustMiles\": \"2\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"97\",\n          \"chanceofrain\": \"25\",\n          \"chanceofremdry\": \"68\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"98\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"82\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"11\",\n          \"tempF\": \"51\",\n          \"time\": \"2100\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"3\",\n          \"visibilityMiles\": \"2\",\n          \"weatherCode\": \"149\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Smoky haze\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0006_mist.png\"\n            }\n          ],\n          \"winddir16Point\": \"SSE\",\n          \"winddirDegree\": \"154\",\n          \"windspeedKmph\": \"4\",\n          \"windspeedMiles\": \"2\"\n        }\n      ],\n      \"maxtempC\": \"12\",\n      \"maxtempF\": \"54\",\n      \"mintempC\": \"5\",\n      \"mintempF\": \"41\",\n      \"sunHour\": \"1.0\",\n      \"totalSnow_cm\": \"0.0\",\n      \"uvIndex\": \"1\"\n    },\n    {\n      \"astronomy\": [\n        {\n          \"moon_illumination\": \"89\",\n          \"moon_phase\": \"Waning Gibbous\",\n          \"moonrise\": \"05:48 PM\",\n          \"moonset\": \"11:11 AM\",\n          \"sunrise\": \"06:26 AM\",\n          \"sunset\": \"04:13 PM\"\n        }\n      ],\n      \"avgtempC\": \"10\",\n      \"avgtempF\": \"51\",\n      \"date\": \"2026-10-29\",\n      \"hourly\": [\n        {\n          \"DewPointC\": \"7\",\n          \"DewPointF\": \"45\",\n          \"FeelsLikeC\": \"10\",\n          \"FeelsLikeF\": \"50\",\n          \"HeatIndexC\": \"10\",\n          \"HeatIndexF\": \"50\",\n          \"WindChillC\": \"10\",\n          \"WindChillF\": \"50\",\n          \"WindGustKmph\": \"1\",\n          \"WindGustMiles\": \"0\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"93\",\n          \"chanceofrain\": \"24\",\n          \"chanceofremdry\": \"68\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"89\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"84\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"10\",\n          \"tempF\": \"50\",\n          \"time\": \"0\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"176\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Patchy rain nearby\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0025_light_rain_showers_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"ESE\",\n          \"winddirDegree\": \"105\",\n          \"windspeedKmph\": \"1\",\n          \"windspeedMiles\": \"0\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"47\",\n          \"FeelsLikeC\": \"10\",\n          \"FeelsLikeF\": \"50\",\n          \"HeatIndexC\": \"10\",\n          \"HeatIndexF\": \"50\",\n          \"WindChillC\": \"10\",\n          \"WindChillF\": \"50\",\n          \"WindGustKmph\": \"3\",\n          \"WindGustMiles\": \"2\",\n          \"chanceoffog\": \"57\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"57\",\n          \"chanceofremdry\": \"34\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"90\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.3\",\n          \"pressure\": \"1025\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"10\",\n          \"tempF\": \"50\",\n          \"time\": \"300\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"2\",\n          \"visibilityMiles\": \"1\",\n          \"weatherCode\": \"266\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Light drizzle\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0033_cloudy_with_light_rain_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"NNW\",\n          \"winddirDegree\": \"343\",\n          \"windspeedKmph\": \"3\",\n          \"windspeedMiles\": \"2\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"47\",\n          \"FeelsLikeC\": \"10\",\n          \"FeelsLikeF\": \"50\",\n          \"HeatIndexC\": \"10\",\n          \"HeatIndexF\": \"50\",\n          \"WindChillC\": \"10\",\n          \"WindChillF\": \"50\",\n          \"WindGustKmph\": \"9\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"32\",\n          \"chanceofremdry\": \"54\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"90\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1026\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"10\",\n          \"tempF\": \"50\",\n          \"time\": \"600\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"176\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Patchy rain nearby\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0025_light_rain_showers_night.png\"\n            }\n          ],\n          \"winddir16Point\": \"NNW\",\n          \"winddirDegree\": \"338\",\n          \"windspeedKmph\": \"5\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"47\",\n          \"FeelsLikeC\": \"11\",\n          \"FeelsLikeF\": \"51\",\n          \"HeatIndexC\": \"10\",\n          \"HeatIndexF\": \"51\",\n          \"WindChillC\": \"11\",\n          \"WindChillF\": \"51\",\n          \"WindGustKmph\": \"6\",\n          \"WindGustMiles\": \"4\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"98\",\n          \"chanceofrain\": \"28\",\n          \"chanceofremdry\": \"57\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"100\",\n          \"diffRad\": \"56.9\",\n          \"humidity\": \"86\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1027\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"57.7\",\n          \"tempC\": \"10\",\n          \"tempF\": \"51\",\n          \"time\": \"900\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"7\",\n          \"visibilityMiles\": \"4\",\n          \"weatherCode\": \"149\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Smoky haze\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0006_mist.png\"\n            }\n          ],\n          \"winddir16Point\": \"NNW\",\n          \"winddirDegree\": \"338\",\n          \"windspeedKmph\": \"4\",\n          \"windspeedMiles\": \"2\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"47\",\n          \"FeelsLikeC\": \"12\",\n          \"FeelsLikeF\": \"53\",\n          \"HeatIndexC\": \"12\",\n          \"HeatIndexF\": \"53\",\n          \"WindChillC\": \"12\",\n          \"WindChillF\": \"53\",\n          \"WindGustKmph\": \"9\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"86\",\n          \"chanceofrain\": \"19\",\n          \"chanceofremdry\": \"73\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"3\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"81\",\n          \"diffRad\": \"129.2\",\n          \"humidity\": \"79\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1028\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"132.1\",\n          \"tempC\": \"12\",\n          \"tempF\": \"53\",\n          \"time\": \"1200\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"119\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Cloudy \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0003_white_cloud.png\"\n            }\n          ],\n          \"winddir16Point\": \"NW\",\n          \"winddirDegree\": \"325\",\n          \"windspeedKmph\": \"5\",\n          \"windspeedMiles\": \"3\"\n        },\n        {\n          \"DewPointC\": \"8\",\n          \"DewPointF\": \"46\",\n          \"FeelsLikeC\": \"13\",\n          \"FeelsLikeF\": \"55\",\n          \"HeatIndexC\": \"12\",\n          \"HeatIndexF\": \"54\",\n          \"WindChillC\": \"13\",\n          \"WindChillF\": \"55\",\n          \"WindGustKmph\": \"8\",\n          \"WindGustMiles\": \"5\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"42\",\n          \"chanceofrain\": \"13\",\n          \"chanceofremdry\": \"87\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"15\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"0\",\n          \"cloudcover\": \"57\",\n          \"diffRad\": \"95.9\",\n          \"humidity\": \"75\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1028\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"107.2\",\n          \"tempC\": \"12\",\n          \"tempF\": \"54\",\n          \"time\": \"1500\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"10\",\n          \"visibilityMiles\": \"6\",\n          \"weatherCode\": \"116\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Partly Cloudy \"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0002_sunny_intervals.png\"\n            }\n          ],\n          \"winddir16Point\": \"NW\",\n          \"winddirDegree\": \"311\",\n          \"windspeedKmph\": \"3\",\n          \"windspeedMiles\": \"2\"\n        },\n        {\n          \"DewPointC\": \"7\",\n          \"DewPointF\": \"45\",\n          \"FeelsLikeC\": \"10\",\n          \"FeelsLikeF\": \"51\",\n          \"HeatIndexC\": \"11\",\n          \"HeatIndexF\": \"52\",\n          \"WindChillC\": \"10\",\n          \"WindChillF\": \"51\",\n          \"WindGustKmph\": \"17\",\n          \"WindGustMiles\": \"10\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"7\",\n          \"chanceofrain\": \"10\",\n          \"chanceofremdry\": \"90\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"27\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"76\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1029\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"11\",\n          \"tempF\": \"52\",\n          \"time\": \"1800\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"9\",\n          \"visibilityMiles\": \"5\",\n          \"weatherCode\": \"149\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Smoky haze\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0006_mist.png\"\n            }\n          ],\n          \"winddir16Point\": \"NNW\",\n          \"winddirDegree\": \"330\",\n          \"windspeedKmph\": \"8\",\n          \"windspeedMiles\": \"5\"\n        },\n        {\n          \"DewPointC\": \"7\",\n          \"DewPointF\": \"45\",\n          \"FeelsLikeC\": \"9\",\n          \"FeelsLikeF\": \"48\",\n          \"HeatIndexC\": \"9\",\n          \"HeatIndexF\": \"49\",\n          \"WindChillC\": \"9\",\n          \"WindChillF\": \"48\",\n          \"WindGustKmph\": \"13\",\n          \"WindGustMiles\": \"8\",\n          \"chanceoffog\": \"0\",\n          \"chanceoffrost\": \"0\",\n          \"chanceofhightemp\": \"1\",\n          \"chanceofovercast\": \"1\",\n          \"chanceofrain\": \"12\",\n          \"chanceofremdry\": \"77\",\n          \"chanceofsnow\": \"0\",\n          \"chanceofsunshine\": \"0\",\n          \"chanceofthunder\": \"0\",\n          \"chanceofwindy\": \"1\",\n          \"cloudcover\": \"8\",\n          \"diffRad\": \"0.0\",\n          \"humidity\": \"87\",\n          \"precipInches\": \"0.0\",\n          \"precipMM\": \"0.0\",\n          \"pressure\": \"1030\",\n          \"pressureInches\": \"30\",\n          \"shortRad\": \"0.0\",\n          \"tempC\": \"9\",\n          \"tempF\": \"49\",\n          \"time\": \"2100\",\n          \"uvIndex\": \"0\",\n          \"visibility\": \"6\",\n          \"visibilityMiles\": \"3\",\n          \"weatherCode\": \"149\",\n          \"weatherDesc\": [\n            {\n              \"value\": \"Smoky haze\"\n            }\n          ],\n          \"weatherIconUrl\": [\n            {\n              \"value\": \"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0006_mist.png\"\n            }\n          ],\n          \"winddir16Point\": \"NNW\",\n          \"winddirDegree\": \"348\",\n          \"windspeedKmph\": \"6\",\n          \"windspeedMiles\": \"4\"\n        }\n      ],\n      \"maxtempC\": \"12\",\n      \"maxtempF\": \"54\",\n      \"mintempC\": \"9\",\n      \"mintempF\": \"48\",\n      \"sunHour\": \"2.0\",\n      \"totalSnow_cm\": \"0.0\",\n      \"uvIndex\": \"0\"\n    }\n  ]\n}","steps":[{"phase":"thinking","kind":"Plan","title":"Check the weather, then shape the meetup","detail":"Illustrative plan: check Warsaw weather → review an indoor fallback → save a brief. Plan metadata describes intended work, not completed actions.","target":"Check weather → review fallback → save brief","status":"complete","badge":"3 plan steps","provenance":"Illustrative plan","event":{"id":"demo_weather:1","seq":1,"type":"plan.updated","createdAt":"2026-10-27T15:46:41.955Z","version":1,"completed":0,"total":3}},{"phase":"thinking","kind":"Reasoning","title":"Preparing the weather check","detail":"Current plan step: check Warsaw weather. This is a visible task label, not a transcript of private reasoning.","target":"Check Warsaw weather","status":"active","badge":"Current plan step","provenance":"Illustrative plan","event":{"id":"demo_weather:2","seq":2,"type":"model.started","createdAt":"2026-10-27T15:46:42.955Z","step":1,"provider":"demo","model":"demo-model"}},{"phase":"research","kind":"Search","title":"Reading Warsaw weather","detail":"Requesting the public weather response used by this recorded example.","target":"https://wttr.in/Warsaw?format=j1","status":"active","badge":"Public source","provenance":"Recorded response","event":{"id":"demo_weather:3","seq":3,"type":"tool.started","createdAt":"2026-10-27T15:46:45.778Z","tool":"http_fetch","toolCallId":"demo_weather_fetch_1","arguments":{"url":"https://wttr.in/Warsaw?format=j1"}},"tool":"http_fetch"},{"phase":"research","kind":"Search","title":"Weather received","detail":"10°C · feels like 8°C · Sunny · wind 4 km/h. These values come from the saved response.","target":"https://wttr.in/Warsaw?format=j1","status":"complete","badge":"HTTP 200 · 177 ms","provenance":"Recorded response","event":{"id":"demo_weather:4","seq":4,"type":"tool.completed","createdAt":"2026-10-27T15:46:45.955Z","tool":"http_fetch","toolCallId":"demo_weather_fetch_1","error":false,"preview":"{\"url\":\"https://wttr.in/Warsaw?format=j1\",\"status\":200,\"contentType\":\"text/plain;charset=utf-8\",\"text\":\"{\\n  \\\"current_condition\\\": [\\n    {\\n      \\\"FeelsLikeC\\\": \\\"8\\\",\\n      \\\"FeelsLikeF\\\": \\\"46\\\",\\n      \\\"cloudcover\\\": \\\"2\\\",\\n      \\\"humidity\\\": \\\"69\\\",\\n      \\\"observation_time\\\": \\\"03:12 PM\\\",\\n      \\\"precipInches\\\": \\\"0.0\\\",\\n      \\\"precipMM\\\": \\\"0.0\\\",\\n      \\\"pressure\\\": \\\"1026\\\",\\n      \\\"pressureInches\\\": \\\"30\\\",\\n      \\\"temp_C\\\": \\\"10\\\",\\n      \\\"temp_F\\\": \\\"49\\\",\\n      \\\"uvIndex\\\": \\\"0\\\",\\n      \\\"visibility\\\": \\\"10\\\",\\n      \\\"visibilityMiles\\\": \\\"6\\\",\\n      \\\"weatherCode\\\": \\\"113\\\",\\n      \\\"weatherDesc\\\": [\\n        {\\n          \\\"value\\\": \\\"Sunny\\\"\\n        }\\n      ],\\n      \\\"weatherIconUrl\\\": [\\n        {\\n          \\\"value\\\": \\\"https://cdn.worldweatheronline.com/images/wsymbols01_png_64/wsymbol_0001_sunny.png\\\"\\n        }\\n      ],\\n      \\\"winddir16Point\\\": \\\"ESE\\\",\\n      \\\"winddirDegree\\\": \\\"120\\\",\\n      \\\"windspeedKmph\\\": \\\"4\\\",\\n      \\\"windspeedMiles\\\": \\\"2\\\"\\n    }\\n  ],\\n  \\\"nearest_area\\\": [\\n    {\\n      \\\"areaName\\\": [\\n        {\\n          \\\"value\\\": \\\"Powazki\\\"\\n        }\\n      ],\\n      \\\"country\\\": [\\n        {\\n          \\\"value\\\": \\\"Poland\\\"\\n        }\\n      ],\\n      \\\"latitude\\\": \\\"52.250\\\",\\n      \\\"longitude\\\": \\\"20.967\\\",\\n      \\\"population\\\": \\\"0\\\",\\n      \\\"region\\\": [\\n        {\\n          \\\"value\\\": \\\"\\\"\\n        }\\n      ],\\n      \\\"weatherUrl\\\": [\\n        {\\n          \\\"value\\\": \\\"https://www.worldweatheronline.com/v2/weather.aspx?q=52.25,20.967\\\"\\n        }\\n      ]\\n    }\\n  ],\\n  \\\"request\\\": [\\n    {\\n      \\\"query\\\": \\\"Lat 52.23 and Lon 21.01\\\",\\n      \\\"type\\\": \\\"LatLon\\\"\\n    }\\n  ],\\n  \\\"weather\\\": [\\n    {\\n      \\\"astronomy\\\": [\\n        {\\n          \\\"moon_illumination\\\": \\\"99\\\",\\n          \\\"moon_phase\\\": \\\"Waning Gibbous\\\",\\n          \\\"moonrise\\\": \\\"04:16 PM\\\",\\n          \\\"moonset\\\": \\\"08:21 AM\\\",\\n          \\\"sunrise\\\": \\\"06:22 AM\\\",\\n          \\\"sunset\\\": \\\"04:16 PM\\\"\\n        }\\n      ]"},"tool":"http_fetch"},{"phase":"thinking","kind":"Reasoning","title":"Reviewing the recorded weather","detail":"Current plan step: review an indoor fallback. The source values remain available while the bot prepares its next action.","target":"Review an indoor fallback","status":"active","badge":"Current plan step","provenance":"Illustrative plan","event":{"id":"demo_weather:5","seq":5,"type":"model.started","createdAt":"2026-10-27T15:46:46.955Z","step":2,"provider":"demo","model":"demo-model"}},{"phase":"collaborating","kind":"Teamwork","title":"Previewing a handoff to Nova","detail":"Illustrative handoff only: Given the recorded Warsaw weather (10°C, feels like 8°C, Sunny), suggest a simple indoor fallback for the meetup.","target":"Nova · meetup fallback","status":"active","badge":"Demo handoff","provenance":"Illustrative handoff","event":{"id":"demo_weather:6","seq":6,"type":"delegation.started","createdAt":"2026-10-27T15:46:47.955Z","botId":"demo_nova","targetBotId":"demo_nova","depth":1},"tool":"delegate_task"},{"phase":"collaborating","kind":"Teamwork","title":"Nova’s sample reply","detail":"Illustrative teammate reply: Keep an indoor table available and use the outdoor space for a short welcome only.","target":"Nova · sample reply","status":"complete","badge":"Demo reply","provenance":"Illustrative handoff","event":{"id":"demo_weather:7","seq":7,"type":"delegation.completed","createdAt":"2026-10-27T15:46:48.955Z","botId":"demo_nova","targetBotId":"demo_nova","runId":"demo_nova_weather","childRunId":"demo_nova_weather","status":"completed","outputPreview":"Illustrative teammate reply: Keep an indoor table available and use the outdoor space for a short welcome only."},"tool":"delegate_task"},{"phase":"acting","kind":"Action","title":"Writing the meetup brief","detail":"Saving recorded conditions, an example recommendation and the source details to a local prototype file.","target":"examples/warsaw-meetup-brief.md","status":"active","badge":"Local example file","provenance":"Verified local example file","event":{"id":"demo_weather:8","seq":8,"type":"tool.started","createdAt":"2026-10-27T15:46:49.955Z","tool":"workspace_write","toolCallId":"demo_weather_write_1","arguments":{"path":"examples/warsaw-meetup-brief.md","content":"# Warsaw meetup weather brief\n\nRecorded public-data example, captured on 27 October 2026. These are the saved observation values used by the Motion Lab prototype.\n\n## Recorded conditions\n\n- Location requested: Warsaw, Poland (nearest reporting area: Powazki).\n- Temperature: 10°C.\n- Feels like: 8°C.\n- Conditions: Sunny.\n- Wind: 4 km/h, ESE.\n\n## Brief recommendation\n\nBased on this recorded observation, plan a short outdoor welcome, suggest a warm layer, and keep an indoor table available. Confirm conditions for the actual meetup date. This recommendation is an example interpretation of the recorded response.\n\n## Provenance\n\n- Source: https://wttr.in/Warsaw?format=j1\n- Captured at: 2026-10-27T15:46:45.955Z\n- Source observation time: 03:12 PM (as reported by the source).\n- HTTP status: 200.\n- Response content type: text/plain;charset=utf-8.\n- Request duration: 177 ms.\n- Saved raw response: warsaw-weather-response.json (39,294 bytes).\n\nThis local example file was created for interface exploration. It does not record a bot run, and no teammate was contacted to produce it.\n"}},"tool":"workspace_write"},{"phase":"acting","kind":"Action","title":"Meetup brief saved","detail":"Verified local example file · 1,085 bytes · SHA-256 recorded.","target":"examples/warsaw-meetup-brief.md","status":"complete","badge":"1,085 bytes saved","provenance":"Verified local example file","event":{"id":"demo_weather:9","seq":9,"type":"tool.completed","createdAt":"2026-10-27T15:46:50.955Z","tool":"workspace_write","toolCallId":"demo_weather_write_1","error":false,"preview":"{\"path\":\"examples/warsaw-meetup-brief.md\",\"size\":1085,\"written\":true}"},"tool":"workspace_write"},{"phase":"answering","kind":"Reply","title":"Your recorded-weather brief is ready","detail":"The recorded Warsaw observation was 10°C, feeling like 8°C, with sunny conditions and 4 km/h wind. I prepared a local example brief with a short outdoor-welcome suggestion, an indoor fallback and the source details: examples/warsaw-meetup-brief.md.","target":"examples/warsaw-meetup-brief.md","status":"complete","badge":"Grounded in the saved response","provenance":"Illustrative reply","event":{"id":"demo_weather:10","seq":10,"type":"model.completed","createdAt":"2026-10-27T15:46:51.955Z","step":3,"toolCalls":0,"preview":"The recorded Warsaw observation was 10°C, feeling like 8°C, with sunny conditions and 4 km/h wind. I prepared a local example brief with a short outdoor-welcome suggestion, an indoor fallback and the source details: examples/warsaw-meetup-brief.md."}}]}</script>
+<script>
+(() => {
+  'use strict';
+  const $ = selector => document.querySelector(selector);
+  const $$ = selector => [...document.querySelectorAll(selector)];
+  const TAU = Math.PI * 2;
+  const concepts = {
+    silk: {number:'01', name:'Silk', description:'A weightless ribbon folds in slow motion. Soft, continuous, and quietly alive.', tag:'The everyday favorite', summary:'a flowing ribbon of light'},
+    orbit: {number:'02', name:'Orbit', description:'Three fine orbits move around a glass core. A small celestial system, finding its balance.', tag:'The signature direction', summary:'three tilted orbits around a luminous core'},
+    prism: {number:'03', name:'Prism', description:'A liquid jewel catches light as it turns. Iridescent edges, a soft center, a little mystery.', tag:'The expressive one', summary:'a softly breathing, iridescent liquid jewel'},
+    constellation: {number:'04', name:'Constellation', description:'A handful of stars exchange small sparks. Separate ideas, gently finding a connection.', tag:'Made for teamwork', summary:'a constellation connected by travelling sparks'},
+    horizon: {number:'05', name:'Horizon', description:'A single line of light rises into a delicate lens. Just enough movement to feel present.', tag:'The minimalist choice', summary:'a fine line of light rising into a lens'},
+    filament: {number:'06', name:'Filament', description:'One unbroken thread loops through itself. Deliberate, intricate, and endlessly unfolding.', tag:'For a curious mind', summary:'a luminous continuous three-dimensional knot'}
+  };
+  const palettes = {
+    iris: {name:'Iris', dark:[[185,165,255],[111,149,244],[238,224,255]], light:[[119,86,192],[62,117,195],[155,101,197]], css:['#b9a8ff','185,168,255','#7560bd','117,96,189']},
+    mint: {name:'Mint', dark:[[122,227,203],[88,164,229],[220,255,233]], light:[[34,143,129],[62,117,185],[74,155,132]], css:['#8de0c9','141,224,201','#298d7a','41,141,122']},
+    ember: {name:'Ember', dark:[[248,183,148],[202,133,195],[255,232,195]], light:[[180,104,68],[147,92,163],[201,130,72]], css:['#f2ba9b','242,186,155','#a95f3f','169,95,63']}
+  };
+  const recording = JSON.parse($('#recording-data').textContent);
+  const steps = recording.steps, source = recording.source, exampleFile = recording.file;
+  const fullReply = steps[9].event.preview;
+  const media = matchMedia('(prefers-reduced-motion: reduce)');
+  const state = {concept:'silk', phase:'research', step:3, palette:'iris', theme:'dark', size:'full', energy:.45, paused:false, reduced:media.matches, time:3.5, answerTime:0, sequence:false, stepTime:0};
+  let raf=0,last=0,lastPaint=0,dirty=true,blend=0,settle=0;
+  let colors=palettes.iris.dark.map(color=>[...color]);
+  const hero=$('#hero-canvas'),field=$('#effect-field'),display=$('#activity-display'),reply=$('#reply');
+  const surfaces=[hero,...$$('[data-preview]')].map(canvas=>({canvas,ctx:canvas.getContext('2d'),width:0,height:0,visible:true}));
+  const rgba=(color,alpha=1)=>`rgba(${color.map(Math.round).join(',')},${Math.max(0,Math.min(1,alpha))})`;
+  const mix=(a,b,k)=>a.map((v,i)=>v+(b[i]-v)*k);
+  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const announce=text=>{$('#announcement').textContent=text;};
+  const selectButtons=(attr,value)=>$$(`[${attr}]`).forEach(button=>button.setAttribute('aria-pressed',String(button.getAttribute(attr)===value)));
+  const captureLabel=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Warsaw'}).format(new Date(source.capturedAt));
+  const fileHref=`data:text/markdown;charset=utf-8,${encodeURIComponent(exampleFile.content)}`;
+  $('#response-download').href=`data:application/json;charset=utf-8,${encodeURIComponent(recording.rawResponse)}`;
+  $('#recording-summary').textContent=`Real weather captured ${captureLabel} · about this example`;
+  $('#recording-provenance').textContent=`The public Warsaw response was captured from wttr.in (HTTP ${source.status}, ${source.bytes.toLocaleString('en-GB')} bytes; measured request: ${source.durationMs} ms). Weather values and the downloadable ${exampleFile.size.toLocaleString('en-GB')}-byte brief are real saved data. The bot plan, Nova exchange and final reply are illustrative; this is a replay, not a connected bot run. Event timestamps are arranged for the demo. Source observation time: ${source.observationTime}, as reported. The full captured response is retained, separately from the truncated work-log preview.`;
+
+  const descriptions={
+    silk:{description:'A flowing activity stream. The source, action and result stay readable while light gathers underneath.',tag:'A readable stream'},
+    orbit:{description:'The active tool sits at the center of a small system. Its exact target and observed result stay beside it.',tag:'A tool in focus'},
+    prism:{description:'A result lens. The jewel carries the returned value, while source details remain in plain sight.',tag:'The result, illuminated'},
+    constellation:{description:'A map of the work: weather, review, teammate, brief. Each point shows what happened and what comes next.',tag:'Connected work, made visible'},
+    horizon:{description:'One clear action above a quiet milestone rail. A precise, minimal alternative to a scrolling log.',tag:'A quiet progress rail'},
+    filament:{description:'A short thread of concrete events. Recent work stays visible as the current action moves forward.',tag:'A living activity thread'}
+  };
+  const shortTitles=['Meetup plan prepared','Preparing weather lookup','Reading Warsaw weather','Warsaw weather received','Reviewing the weather','Asking Nova to review','Nova’s sample reply','Saving the weather brief','Weather brief saved','Brief ready to review'];
+  const shortDetails=[
+    'Visible plan: check the weather, review a fallback, then save the brief.',
+    'Current plan step: retrieve the conditions for Warsaw.',
+    'Opening the public weather source. The response has not arrived at this point in the replay.',
+    `${source.condition}. Feels like ${source.feelsLikeC}°C, with ${source.windKmph} km/h wind in the recorded response.`,
+    'Current plan step: review an indoor fallback using the weather result.',
+    `“Given ${source.tempC}°C, feeling like ${source.feelsLikeC}°C, suggest an indoor fallback for the Warsaw meetup.”`,
+    '“Keep an indoor table available; use the outdoor space for a short welcome.”',
+    'Writing the recorded conditions, recommendation and source into a local example file.',
+    'The example file exists. Its byte count and SHA-256 have been verified.',
+    'The recorded source and a downloadable example brief are ready.'
+  ];
+  const actionNames=['Planning','Reasoning','Reading a source','Source received','Reasoning','Teamwork · example','Teamwork · example','Writing a file','File saved','Preparing a reply'];
+  function factsForStep() {
+    const index=state.step;
+    if(index<3)return index===2?[['GET','Request'],['Awaiting response','Status']]:[['Weather → Fallback → Brief','Visible plan']];
+    if(index>=7)return index>=8?[[`${exampleFile.size.toLocaleString('en-GB')} B`,'Saved'],['Markdown','Format'],['SHA-256','Verified']]:[['Markdown','Format'],['Write requested','Status']];
+    return [[`${source.tempC}°C`,'Recorded'],[`${source.feelsLikeC}°C`,'Feels like'],[source.condition,'Conditions'],[`${source.windKmph} km/h`,'Wind']];
+  }
+  function factMarkup() {
+    return `<div class="event-facts">${factsForStep().map(([value,label])=>`<div class="event-fact"><span class="observed-label">${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>`;
+  }
+  function resultKey() {
+    if(state.step<2)return ['3','PLAN STEPS'];
+    if(state.step===2)return ['GET','REQUEST'];
+    if(state.step>=7)return ['MD',state.step>=8?'SAVED FILE':'WRITING'];
+    if(state.phase==='collaborating')return ['N','NOVA · DEMO'];
+    return state.concept==='prism'?[`${source.tempC}°`,'RECORDED']:[String(source.status),'HTTP RESPONSE'];
+  }
+  function branches() {
+    const index=state.step;
+    const current=index<=3?0:index===4?1:index<=6?2:3;
+    return [
+      {name:'Weather',detail:index>=3?`${source.tempC}°C · HTTP 200`:index===2?'Requesting':'Planned',done:index>=3},
+      {name:'Review',detail:index>=5?'Fallback reviewed':index===4?'Reviewing':'Planned',done:index>=5},
+      {name:'Nova',detail:index>=6?'Sample reply':index===5?'Asking · demo':'Planned · demo',done:index>=6},
+      {name:'Brief',detail:index>=8?`${exampleFile.size.toLocaleString('en-GB')} B saved`:index===7?'Writing':'Planned',done:index>=8}
+    ].map((branch,i)=>({...branch,current:i===current}));
+  }
+  function renderActivity() {
+    const step=steps[state.step],index=state.step,compact=state.size==='inline';
+    display.dataset.direction=state.concept;
+    display.classList.toggle('is-inline',compact);
+    const target=index===0?'Weather → Fallback → Brief':index===1?'Warsaw · current conditions':index===4?source.url:step.target;
+    const kicker=`<div class="event-kicker">${esc(actionNames[index])}${step.tool?`<span class="tool-name">${esc(step.tool)}</span>`:''}<span class="action-badge">${esc(step.badge)}</span></div>`;
+    const copy=`<div class="event-copy">${kicker}<h3 class="event-title">${esc(shortTitles[index])}</h3><span class="event-target">${esc(target)}</span>${compact?'':`<p class="event-description">${esc(shortDetails[index])}</p>`}</div>`;
+    const provenance=`<div class="data-provenance">${esc(step.provenance)}${index>=3&&index<7?` · ${esc(captureLabel)} · Warsaw`:''}</div>`;
+    let body='';
+    if(compact) {
+      body=copy+`<div class="compact-outcome">${esc(factsForStep().map(([value,label])=>`${label}: ${value}`).join(' · '))}</div>`;
+    } else if(state.concept==='orbit'||state.concept==='prism') {
+      const [key,label]=resultKey();
+      body=`<div class="visual-key" aria-hidden="true"><strong>${esc(key)}</strong><span>${esc(label)}</span></div>${copy}${factMarkup()}${provenance}`;
+    } else if(state.concept==='constellation') {
+      body=copy+`<div class="branch-track">${branches().map(branch=>`<div class="branch ${branch.done?'done':''} ${branch.current?'current':''}"><strong>${esc(branch.name)}</strong><span>${esc(branch.detail)}</span></div>`).join('')}</div>`+provenance;
+    } else if(state.concept==='horizon') {
+      body=copy+factMarkup()+`<div class="milestone-track">${branches().map(branch=>`<div class="milestone ${branch.done?'done':''} ${branch.current?'current':''}">${branch.done?'✓ ':''}${esc(branch.name)}</div>`).join('')}</div>`+provenance;
+    } else if(state.concept==='filament') {
+      const previous=steps.slice(Math.max(0,index-2),index+1);
+      body=copy+`<ol class="event-thread">${previous.map((event,i)=>`<li><span>${esc(shortTitles[Math.max(0,index-2)+i])}${event.event.type==='tool.completed'&&event.tool==='http_fetch'?` · HTTP ${source.status}`:''}</span></li>`).join('')}</ol>`+factMarkup()+provenance;
+    } else {
+      const marks=index<2?[['Plan','Weather'],['Plan','Fallback'],['Plan','Brief']]:index<5?[['Source','wttr.in'],['Request',index>=3?'200 OK':'GET'],['Result',index>=3?`${source.tempC}°C`:'Waiting']]:index<7?[['From','Atlas'],['To','Nova'],['Demo result',index===6?'Sample reply':'Awaiting']]:[['File','Weather brief'],['Action','workspace_write'],['Result',index>=8?'Saved':'Writing']];
+      body=copy+factMarkup()+provenance+`<div class="ribbon-points">${marks.map(([label,value])=>`<div class="ribbon-point">${esc(label)}<strong>${esc(value)}</strong></div>`).join('')}</div>`;
+    }
+    if(index>=8)body+=`<a class="file-link" href="${fileHref}" download="${esc(exampleFile.name)}">↓ Download example brief <span>· ${exampleFile.size.toLocaleString('en-GB')} B</span></a>`;
+    $('#activity-content').innerHTML=body;
+    $('#phase-caption').textContent=step.provenance;
+    $('#elapsed').textContent=index===3?`${source.durationMs} ms request`:step.status==='complete'?'Result available':'Activity preview';
+    $('#step-position').textContent=`Step ${index+1} of ${steps.length}`;
+    $('#previous-step').disabled=index===0;
+    $('#next-step').disabled=index===steps.length-1;
+    $('#work-count').textContent=`${index+1} moments · show details`;
+    $('#work-entries').innerHTML=steps.slice(0,index+1).map((item,i)=>`<li><button type="button" class="work-entry" data-step="${i}" ${i===index?'aria-current="step"':''}><span class="entry-index">${String(i+1).padStart(2,'0')}</span><span><strong>${esc(shortTitles[i])}</strong><small>${esc(item.target)}</small></span><span class="entry-state">${item.status==='complete'?'Result':'Started'}</span></button></li>`).join('');
+    const technical={provenance:'Demo event object using the Studio engine schema',event:step.event};
+    if(step.event.toolCallId) {
+      const request=steps.find(item=>item.event.type==='tool.started'&&item.event.toolCallId===step.event.toolCallId);
+      if(request)technical.input=request.event.arguments;
+    }
+    if(index===3) {
+      technical.recordedResponse={url:source.url,status:source.status,contentType:source.contentType,bodyBytes:source.bytes,previewTruncated:true,parsedFrom:'Full saved response (download available)',conditions:{tempC:source.tempC,feelsLikeC:source.feelsLikeC,condition:source.condition,windKmph:source.windKmph}};
+    }
+    if(index===5||index===6)technical.illustrativeTeammateRequest=steps[5].detail;
+    if(index>=8)technical.verifiedExampleFile={path:exampleFile.path,size:exampleFile.size,sha256:exampleFile.sha256};
+    $('#technical-data').textContent=JSON.stringify(technical,null,2);
+    $$('[data-concept]').forEach(button=>{
+      let context=button.querySelector('.tile-activity');
+      if(!context){context=document.createElement('span');context.className='tile-activity';button.insertBefore(context,button.querySelector('strong'));}
+      context.innerHTML=`<span>${esc(index>=7?'MD · Brief':index>=3?`${source.tempC}°C · Warsaw`:'GET · Warsaw')}</span><span>${esc(index>=8?'Saved':index===7?'Writing':index>=3?'HTTP 200':'Pending')}</span>`;
+      button.querySelector('small').textContent={silk:'An activity stream',orbit:'Action + source',prism:'A result lens',constellation:'A map of the work',horizon:'A milestone rail',filament:'An event thread'}[button.dataset.concept];
+    });
+  }
+  function stopSequence() {state.sequence=false;$('#sequence-label').textContent='Replay all 10 steps';}
+  function setStep(index,manual=false) {
+    if(manual)stopSequence();
+    state.step=Math.max(0,Math.min(steps.length-1,index));
+    state.phase=steps[state.step].phase;state.stepTime=0;state.answerTime=0;settle=0;
+    selectButtons('data-phase',state.phase);
+    if(state.reduced||state.paused)blend=state.phase==='collaborating'?1:0;
+    reply.hidden=state.phase!=='answering';
+    reply.classList.toggle('is-complete',state.reduced);
+    reply.textContent=state.phase==='answering'&&state.reduced?fullReply:'';
+    renderActivity();updateField();announce(`${shortTitles[state.step]}. ${steps[state.step].provenance}.`);wake();
+  }
+  function updateField() {
+    field.classList.toggle('is-inline',state.size==='inline');
+    field.classList.toggle('is-answering',state.phase==='answering');
+    field.classList.toggle('is-settled',state.phase==='answering'&&settle>=1);
+  }
+  function updateMotionLabel() {
+    $('#motion-status').textContent=state.reduced?'Reduced motion':state.paused?'Motion paused':'Motion on';
+    $('#pause').textContent=state.paused?'Resume motion':'Pause motion';
+    $('#pause').setAttribute('aria-pressed',String(state.paused));
+    $('#pause').disabled=state.reduced;$('#play-sequence').disabled=state.reduced;$('#energy').disabled=state.reduced;
+    if(state.reduced)stopSequence();
+    $('.sequence-note').textContent=state.reduced?'Still previews · step through every action':'Manual stepping is always available';
+  }
+  $$('[data-concept]').forEach(button=>button.addEventListener('click',()=>{
+    state.concept=button.dataset.concept;
+    const concept=concepts[state.concept],description=descriptions[state.concept];
+    selectButtons('data-concept',state.concept);
+    $('#concept-number').textContent=`DIRECTION ${concept.number}`;$('#concept-name').textContent=concept.name;
+    $('#concept-description').textContent=description.description;$('#concept-tag').textContent=description.tag;
+    $('#preview-foot-label').textContent=`${concept.number} / ${concept.name}`;
+    renderActivity();announce(`${concept.name}. ${shortTitles[state.step]}.`);wake();
+  }));
+  $$('[data-phase]').forEach(button=>button.addEventListener('click',()=>setStep({thinking:4,research:2,acting:7,collaborating:5,answering:9}[button.dataset.phase],true)));
+  $('#previous-step').addEventListener('click',()=>setStep(state.step-1,true));
+  $('#next-step').addEventListener('click',()=>setStep(state.step+1,true));
+  $('#work-entries').addEventListener('click',event=>{
+    const button=event.target.closest('[data-step]');
+    if(button){const index=Number(button.dataset.step);setStep(index,true);$('#work-entries').querySelector(`[data-step="${index}"]`)?.focus({preventScroll:true});}
+  });
+  $$('[data-size]').forEach(button=>button.addEventListener('click',()=>{state.size=button.dataset.size;selectButtons('data-size',state.size);renderActivity();updateField();wake();}));
+  $$('[data-palette]').forEach(button=>button.addEventListener('click',()=>{state.palette=button.dataset.palette;selectButtons('data-palette',state.palette);$('#palette-name').textContent=palettes[state.palette].name;applyPalette();wake();}));
+  function applyPalette() {
+    const palette=palettes[state.palette],offset=state.theme==='light'?2:0;
+    document.documentElement.style.setProperty('--accent',palette.css[offset]);document.documentElement.style.setProperty('--accent-rgb',palette.css[offset+1]);
+    $('.avatar').style.background=`radial-gradient(circle at 30% 15%,#ffffff66,transparent 60%),linear-gradient(160deg,${rgba(palette.dark[0])},${rgba(mix(palette.light[0],[35,25,50],.2))})`;
+    if(state.paused||state.reduced)colors=palette[state.theme].map(color=>[...color]);
+  }
+  $('#theme-toggle').addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=state.theme;$('#theme-label').textContent=state.theme==='dark'?'Light':'Dark';$('#theme-toggle').setAttribute('aria-label',`Switch to ${state.theme==='dark'?'light':'dark'} appearance`);applyPalette();wake();});
+  $('#energy').addEventListener('input',event=>{state.energy=Number(event.target.value)/100;$('#energy-value').textContent=state.energy<.3?'Whisper':state.energy>.7?'Expressive':'Balanced';wake();});
+  $('#pause').addEventListener('click',()=>{state.paused=!state.paused;updateMotionLabel();wake();});
+  $('#play-sequence').addEventListener('click',()=>{
+    if(state.sequence){stopSequence();wake();return;}
+    state.sequence=true;state.paused=false;$('#sequence-label').textContent='Stop replay';updateMotionLabel();setStep(0);
+  });
+  media.addEventListener('change',event=>{
+    state.reduced=event.matches;updateMotionLabel();
+    if(state.reduced){blend=state.phase==='collaborating'?1:0;if(state.phase==='answering'){reply.textContent=fullReply;reply.classList.add('is-complete');}applyPalette();}
+    wake();
+  });
+  function resize(surface) {
+    const {width,height}=surface.canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,1.75);
+    surface.width=width;surface.height=height;
+    const w=Math.round(width*ratio),h=Math.round(height*ratio);
+    if(surface.canvas.width!==w||surface.canvas.height!==h){surface.canvas.width=w;surface.canvas.height=h;surface.ctx.setTransform(ratio,0,0,ratio,0,0);}
+  }
+  const observer=new ResizeObserver(()=>wake());surfaces.forEach(surface=>observer.observe(surface.canvas));
+  const visibility=new IntersectionObserver(entries=>{for(const entry of entries)surfaces.find(surface=>surface.canvas===entry.target).visible=entry.isIntersecting;wake();});surfaces.forEach(surface=>visibility.observe(surface.canvas));
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;last=0;}else wake();});
+  window.addEventListener('pagehide',()=>{cancelAnimationFrame(raf);raf=0;observer.disconnect();visibility.disconnect();});
+  window.addEventListener('pageshow',event=>{if(event.persisted){surfaces.forEach(surface=>{observer.observe(surface.canvas);visibility.observe(surface.canvas);});wake();}});
+
+  // All studies share a timebase, palette and activity rhythm. No invented progress.
+  function glow(ctx,x,y,r,color,alpha) {
+    if(r<=0)return;
+    const gradient=ctx.createRadialGradient(x,y,0,x,y,r);
+    gradient.addColorStop(0,rgba(color,alpha));gradient.addColorStop(.35,rgba(color,alpha*.35));gradient.addColorStop(1,rgba(color,0));
+    ctx.fillStyle=gradient;ctx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  function line(ctx,points,color,width=1,alpha=1) {
+    ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
+    ctx.strokeStyle=rgba(color,alpha);ctx.lineWidth=width;ctx.stroke();
+  }
+  function pearl(ctx,x,y,r,color,alpha=1) {
+    glow(ctx,x,y,r*6,color,.18*alpha);
+    ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fillStyle=rgba(color,alpha);ctx.fill();
+  }
+  function silk(ctx,w,h,t,p,e,peer,activity) {
+    const width=w*.83, origin=(w-width)/2, amp=Math.min(h*.3,width*.13)*(.58+e*.6), mid=h*.5;
+    glow(ctx,w*.5,mid,Math.min(w*.3,h*1.2),p[0],.035);
+    for(let strand=0;strand<25;strand++) {
+      const v=strand/24, points=[];
+      for(let j=0;j<=105;j++) {
+        const u=j/105, envelope=Math.sin(u*Math.PI)**1.3;
+        const fold=Math.sin(u*TAU*1.18-t*.5+v*1.5)+.4*Math.sin(u*TAU*2+t*.32-v);
+        const twist=Math.cos(u*TAU-t*.25)*((v-.5)*amp*.9);
+        const sweep=activity==='research'?Math.exp(-((u-(t*.14%1.5-.25))**2)/.012)*amp*.28:0;
+        points.push([origin+u*width,mid+envelope*(fold*amp*.52+twist-sweep)]);
+      }
+      const g=ctx.createLinearGradient(origin,0,origin+width,0);
+      g.addColorStop(0,rgba(p[1],0));g.addColorStop(.2,rgba(p[1],.18));g.addColorStop(.47,rgba(p[0],.22+v*.36));g.addColorStop(.7,rgba(mix(p[2],[113,231,209],peer),.38));g.addColorStop(1,rgba(p[0],0));
+      ctx.beginPath();points.forEach((point,i)=>i?ctx.lineTo(...point):ctx.moveTo(...point));ctx.strokeStyle=g;ctx.lineWidth=strand%6===0?1.1:.65;ctx.stroke();
+    }
+    const at=(t*.08%1), x=origin+at*width, envelope=Math.sin(at*Math.PI)**1.3;
+    const y=mid+envelope*(Math.sin(at*TAU*1.18-t*.5+.75)+.4*Math.sin(at*TAU*2+t*.32-.5))*amp*.52;
+    pearl(ctx,x,y,1.5,p[2],envelope*.8);
+  }
+  function orbit(ctx,w,h,t,p,e,peer,activity) {
+    const cx=w/2, cy=h/2, r=Math.min(h*.37,w*.24), speed=activity==='research'?1.3:1;
+    glow(ctx,cx,cy,r*1.5,p[0],.075);
+    const sphere=ctx.createRadialGradient(cx-r*.09,cy-r*.13,0,cx,cy,r*.33);
+    sphere.addColorStop(0,rgba(p[2],.5));sphere.addColorStop(.5,rgba(p[0],.16));sphere.addColorStop(1,rgba(p[1],0));
+    ctx.fillStyle=sphere;ctx.beginPath();ctx.arc(cx,cy,r*.33,0,TAU);ctx.fill();
+    for(let ring=0;ring<3;ring++) {
+      const tilt=ring*Math.PI/3+t*.065, flatten=.35+.12*Math.sin(t*.19+ring), points=[];
+      for(let k=0;k<=150;k++) {
+        const a=k/150*TAU, x=Math.cos(a)*r, y=Math.sin(a)*r*flatten;
+        points.push([cx+x*Math.cos(tilt)-y*Math.sin(tilt),cy+x*Math.sin(tilt)+y*Math.cos(tilt)]);
+      }
+      const color=ring===2?mix(p[0],[113,231,209],peer):p[ring%2];
+      line(ctx,points,color,.85,.55);
+      const a=t*(.3+ring*.065)*speed+ring*2.1, x=Math.cos(a)*r, y=Math.sin(a)*r*flatten;
+      pearl(ctx,cx+x*Math.cos(tilt)-y*Math.sin(tilt),cy+x*Math.sin(tilt)+y*Math.cos(tilt),ring===0?2:1.5,p[2],.9);
+      const head=(Math.floor((a%TAU+TAU)%TAU/TAU*150));
+      line(ctx,points.slice(Math.max(0,head-13),head+1),p[2],1.2,.7);
+    }
+    pearl(ctx,cx,cy,2+Math.sin(t*.8)*.3,p[2],.9);
+  }
+  function prism(ctx,w,h,t,p,e,peer) {
+    const cx=w/2,cy=h/2,r=Math.min(h*.36,w*.22),points=[];
+    glow(ctx,cx,cy,r*1.8,p[0],.09);
+    for(let k=0;k<=170;k++) {
+      const a=k/170*TAU, radius=r*(.83+.095*Math.cos(4*a+t*.35)+.05*Math.sin(3*a-t*.43))*(1+Math.sin(t*.65)*.03*(.5+e));
+      points.push([cx+Math.cos(a)*radius*(1+.1*Math.sin(t*.2)),cy+Math.sin(a)*radius]);
+    }
+    ctx.save();ctx.beginPath();points.forEach((point,i)=>i?ctx.lineTo(...point):ctx.moveTo(...point));ctx.closePath();
+    const base=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);
+    base.addColorStop(0,rgba(p[2],.4));base.addColorStop(.23,rgba(p[0],.16));base.addColorStop(.5,rgba(p[1],.05));base.addColorStop(.8,rgba(mix(p[0],[113,231,209],peer),.3));base.addColorStop(1,rgba(p[2],.48));
+    ctx.fillStyle=base;ctx.fill();ctx.clip();
+    const drift=Math.sin(t*.35)*r*.5;
+    glow(ctx,cx-r*.55+drift,cy-r*.3,r*1.25,p[0],.42);
+    glow(ctx,cx+r*.65,cy+r*.55,r*.95,mix(p[1],[113,231,209],peer),.38);
+    for(let n=0;n<12;n++) {
+      const x=cx-r+n*r*.19+Math.sin(t*.27)*r*.25;
+      const streak=ctx.createLinearGradient(x-r*.3,0,x+r*.3,0);streak.addColorStop(0,rgba(p[2],0));streak.addColorStop(.5,rgba(p[2],.035));streak.addColorStop(1,rgba(p[2],0));
+      ctx.fillStyle=streak;ctx.save();ctx.translate(cx,cy);ctx.rotate(-.45);ctx.translate(-cx,-cy);ctx.fillRect(x-r*.3,cy-r*2,r*.6,r*4);ctx.restore();
+    }
+    ctx.restore();line(ctx,points,p[0],.85,.62);
+    line(ctx,points.slice(90,136),p[2],1.3,.75);
+    line(ctx,points.map(([x,y])=>[cx+(x-cx)*.91,cy+(y-cy)*.91]),p[2],.5,.16);
+  }
+  function constellation(ctx,w,h,t,p,e,peer,activity) {
+    const spread=Math.min(w*.76,h*2.5),height=Math.min(h*.68,spread*.34),cx=w/2,cy=h/2;
+    const coordinates=[[-.46,.03],[-.28,-.32],[-.16,.35],[.02,-.1],[.18,-.4],[.28,.28],[.47,-.04]];
+    const points=coordinates.map(([x,y],i)=>[cx+x*spread+Math.sin(t*.35+i*2)*2*(.5+e),cy+y*height+Math.cos(t*.32+i)*3*(.5+e)]);
+    const edges=[[0,1],[0,2],[1,3],[2,3],[1,4],[3,4],[3,5],[4,6],[5,6]];
+    edges.forEach(([a,b],i)=>{
+      const color=i>4?mix(p[0],[113,231,209],peer):p[0];
+      line(ctx,[points[a],points[b]],color,.75,.16);
+      const cycle=t*(activity==='research'?.32:.2)+i*.37,progress=cycle%2;
+      if(progress<1) {
+        const tail=Math.max(0,progress-.2),x=points[a][0]+(points[b][0]-points[a][0])*progress,y=points[a][1]+(points[b][1]-points[a][1])*progress;
+        line(ctx,[[points[a][0]+(points[b][0]-points[a][0])*tail,points[a][1]+(points[b][1]-points[a][1])*tail],[x,y]],color,1.2,.65*Math.sin(progress*Math.PI));
+        pearl(ctx,x,y,1.15,color,Math.sin(progress*Math.PI));
+      }
+    });
+    points.forEach(([x,y],i)=>{
+      const color=i>3?mix(p[0],[113,231,209],peer):p[0],size=i===3?2.6:1.6;
+      pearl(ctx,x,y,size,color,.75+.2*Math.sin(t*.65+i));
+      if(i===3){ctx.strokeStyle=rgba(p[0],.2);ctx.lineWidth=.7;ctx.beginPath();ctx.arc(x,y,6.5,0,TAU);ctx.stroke();}
+    });
+  }
+  function horizon(ctx,w,h,t,p,e,peer,activity) {
+    const width=w*.83,left=(w-width)/2,cy=h*.5,amplitude=Math.min(h*.27,width*.07)*(1+e*.4);
+    glow(ctx,w/2,cy,Math.min(width*.4,h*1.5),p[0],.035);
+    for(let strand=0;strand<8;strand++) {
+      const points=[],v=strand/7;
+      for(let j=0;j<=135;j++) {
+        const u=j/135,center=.5+Math.sin(t*.24)*.14;
+        const lens=Math.exp(-((u-center)**2)/(.016+Math.sin(t*.28)*.004));
+        const y=cy+lens*amplitude*Math.sin(v*Math.PI*1.5+t*.35)*(.55+v*.6);
+        points.push([left+u*width,y]);
+      }
+      const gradient=ctx.createLinearGradient(left,0,left+width,0);
+      gradient.addColorStop(0,rgba(p[1],0));gradient.addColorStop(.25,rgba(p[1],.2));gradient.addColorStop(.5,rgba(p[2],.55));gradient.addColorStop(.7,rgba(mix(p[0],[113,231,209],peer),.35));gradient.addColorStop(1,rgba(p[0],0));
+      ctx.beginPath();points.forEach((point,i)=>i?ctx.lineTo(...point):ctx.moveTo(...point));ctx.strokeStyle=gradient;ctx.lineWidth=.75;ctx.stroke();
+      line(ctx,points.map(([x,y])=>[x,cy+(cy-y)*.6+6]),p[0],.6,.045);
+    }
+    const at=activity==='research'?t*.13%1:.5+Math.sin(t*.24)*.14;
+    glow(ctx,left+at*width,cy,8,p[2],.2);
+  }
+  function filament(ctx,w,h,t,p,e,peer) {
+    const cx=w/2,cy=h/2,r=Math.min(h*.27,w*.16),points=[];
+    glow(ctx,cx,cy,r*2,p[0],.045);
+    for(let k=0;k<=300;k++) {
+      const a=k/300*TAU,roll=t*.1;
+      const x=(1+.32*Math.cos(3*a+t*.12))*Math.cos(2*a),y=(1+.32*Math.cos(3*a+t*.12))*Math.sin(2*a),z=.65*Math.sin(3*a+t*.12);
+      const px=x*Math.cos(roll)+z*Math.sin(roll),pz=-x*Math.sin(roll)+z*Math.cos(roll);
+      points.push([cx+px*r*1.2,cy+(y*.55+pz*.6)*r,pz]);
+    }
+    for(let i=1;i<points.length;i++) {
+      const depth=(points[i][2]+1.5)/3,highlight=(i/300-t*.09%1+1)%1;
+      const color=mix(p[1],mix(p[0],[113,231,209],peer),depth);
+      line(ctx,[points[i-1],points[i]],highlight<.1?p[2]:color,.55+depth*.8,.2+depth*.5+(highlight<.1?.25:0));
+    }
+    const head=points[Math.floor(t*.09%1*300)];pearl(ctx,head[0],head[1],1.5,p[2],.8);
+  }
+  const renderers={silk,orbit,prism,constellation,horizon,filament};
+  function draw(surface) {
+    if(!surface.visible||!surface.ctx)return;
+    resize(surface);
+    const {ctx,width:w,height:h,canvas}=surface;
+    if(w<1||h<1)return;
+    ctx.clearRect(0,0,w,h);
+    const isHero=canvas===hero,concept=isHero?state.concept:canvas.dataset.preview;
+    const t=state.reduced?5:state.time,peer=isHero?blend:0;
+    ctx.save();
+    if(isHero && state.phase==='answering') {
+      // Compress the same silhouette toward a horizon, then let the reply take over.
+      ctx.globalAlpha=1-settle;
+      ctx.translate(0,h*.5);ctx.scale(1,.65);ctx.translate(0,-h*.5);
+    }
+    renderers[concept](ctx,w,h,t,colors,state.energy,peer,isHero?state.phase:'thinking');
+    ctx.restore();
+  }
+  function tick(now) {
+    raf=0;
+    if(document.hidden)return;
+    const dt=last?Math.min((now-last)/1000,.1):0;last=now;
+    if(!state.paused&&!state.reduced) {
+      state.time+=dt*(.42+state.energy*.8)*(state.phase==='research'?1.2:1);
+      blend+=(Number(state.phase==='collaborating')-blend)*Math.min(1,dt*2);
+      const target=palettes[state.palette][state.theme];
+      colors=colors.map((color,i)=>mix(color,target[i],Math.min(1,dt*5)));
+      if(state.sequence) {
+        state.stepTime+=dt;
+        const duration=state.step===9?Math.max(7,fullReply.length/43+.7):state.step<2?2:3;
+        if(state.stepTime>=duration) {
+          if(state.step<steps.length-1)setStep(state.step+1);
+          else stopSequence();
+        }
+      }
+      if(state.phase==='answering') {
+        state.answerTime+=dt;
+        const count=Math.min(fullReply.length,Math.floor(state.answerTime*43));
+        reply.textContent=fullReply.slice(0,count);
+        if(count===fullReply.length) {
+          reply.classList.add('is-complete');settle=Math.min(1,Math.max(0,(state.answerTime-fullReply.length/43)/.6));
+          if(settle>=1 && !field.classList.contains('is-settled')) {updateField();announce('Example reply complete. The verified brief is available to download.');}
+        }
+      }
+    }
+    if(dirty||now-lastPaint>=1000/30) {
+      surfaces.forEach(draw);lastPaint=now;dirty=false;
+    }
+    const anyVisible=surfaces.some(surface=>surface.visible);
+    const timingActive=state.sequence||(state.phase==='answering'&&settle<1);
+    if(!state.reduced&&!state.paused&&(anyVisible||timingActive)) {
+      if(!raf)raf=requestAnimationFrame(tick);
+    } else last=0;
+  }
+  function wake() {dirty=true;if(!raf&&!document.hidden)raf=requestAnimationFrame(tick);}
+  updateMotionLabel();
+  setStep(3);
+})();
+</script>
+</body>
+</html>

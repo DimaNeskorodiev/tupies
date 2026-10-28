@@ -1,0 +1,81 @@
+{
+  "id": "tangerine",
+  "source": "tangerine-source.png",
+  "prompt": "tangerine-prompt.txt",
+  "sha256": "94bd70bf428a4ba84d9105a1beb0a59a539120e627182660c0e33af5c28ce350",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 869659,
+  "opaquePixels": 668340,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 167175,
+        "left": 96,
+        "top": 77,
+        "width": 481,
+        "height": 513
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 166912,
+        "left": 46,
+        "top": 77,
+        "width": 483,
+        "height": 513
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 170143,
+        "left": 94,
+        "top": 44,
+        "width": 494,
+        "height": 510
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 170050,
+        "left": 56,
+        "top": 48,
+        "width": 510,
+        "height": 507
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 46,
+    "top": 44,
+    "width": 542,
+    "height": 546
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}

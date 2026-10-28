@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cushion companions · Tupies</title>
+  <link rel="stylesheet" href="/creature-avatars.css">
+  <link rel="stylesheet" href="/companions-preview.css">
+  <script src="/companion-catalog.js" defer></script>
+  <script src="/creature-avatars.js" defer></script>
+  <script src="/companions-preview.js" defer></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Tupies · production artwork</p>
+    <h1>24 cushion companions</h1>
+    <p class="intro">Twenty new faces join the original four. Each has a gentle rhythm. The new characters blink, look around and wave, even at chat size.</p>
+    <section class="controls" aria-label="Preview controls">
+      <label>Task state <select id="state"></select></label>
+      <label class="pause"><input type="checkbox" id="paused"> Pause all animation</label>
+    </section>
+    <p id="motion-status" class="motion-note" role="status"></p>
+    <section id="companions" class="family" aria-label="Companion family"></section>
+    <section class="scale-panel">
+      <h2>At interface size</h2>
+      <p>52px roster portraits and 40px reply portraits. Motion stays gentle enough to keep names and task controls easy to read.</p>
+      <div id="roster" class="roster-preview"></div>
+    </section>
+  </main>
+</body>
+</html>

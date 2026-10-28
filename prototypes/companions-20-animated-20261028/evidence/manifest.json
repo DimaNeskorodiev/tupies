@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-28",
+  "source": "Actual browser screenshots of disposable fixture / portable generated-art gallery",
+  "tests": 568,
+  "passed": 568,
+  "syntaxModules": 69,
+  "screenshots": [
+    {
+      "file": "01-desktop-new-companion.jpg",
+      "sha256": "e2d0249cf68e9b88039e02b897557e284a738e33ea7221cf0838b9f173183c3a"
+    },
+    {
+      "file": "02-alpha-composited-dark.jpg",
+      "sha256": "7a389d80f554443ea95bc4ec021ab833e09d29f07d1e6f88597153fa7b5d988c"
+    },
+    {
+      "file": "03-animated-gallery-desktop.jpg",
+      "sha256": "015d5baa8502034a0dab91821109c9974ea3eec1f1c50e73b1dcf85b7059fd41"
+    },
+    {
+      "file": "04-mobile-gallery.jpg",
+      "sha256": "264332bf512f7fdea2defb77681eceec0f5f7d50fed19a8240857db71cd213c5"
+    }
+  ]
+}

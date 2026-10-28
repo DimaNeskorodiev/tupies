@@ -1,0 +1,114 @@
+{
+  "family": "Cushion companions",
+  "set": "expansion-a",
+  "generatedBy": "built-in image_gen",
+  "reference": "../cushion-family-source.png",
+  "frameOrder": [
+    "idle",
+    "blink",
+    "curious",
+    "wave"
+  ],
+  "entries": [
+    {
+      "id": "cloud",
+      "source": "cloud-source.png",
+      "prompt": "cloud-prompt.txt",
+      "metadata": "cloud-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "f9470487f3f0dd909628dda76bd26049739ab965017a467fe6669c04bf70fe87"
+    },
+    {
+      "id": "tangerine",
+      "source": "tangerine-source.png",
+      "prompt": "tangerine-prompt.txt",
+      "metadata": "tangerine-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "94bd70bf428a4ba84d9105a1beb0a59a539120e627182660c0e33af5c28ce350"
+    },
+    {
+      "id": "lagoon",
+      "source": "lagoon-source.png",
+      "prompt": "lagoon-prompt.txt",
+      "metadata": "lagoon-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "29929ad4899e90ebad3eb5958702d169d6ab0ad21687d388647eac5d3f9530c6"
+    },
+    {
+      "id": "cherry",
+      "source": "cherry-source.png",
+      "prompt": "cherry-prompt.txt",
+      "metadata": "cherry-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "1e9da25fce40bfb6e766717065f63359bfbff5c15152483471a3539a499ddf7a"
+    },
+    {
+      "id": "pistachio",
+      "source": "pistachio-source.png",
+      "prompt": "pistachio-prompt.txt",
+      "metadata": "pistachio-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "269c01cb541ddc666b8bf83dbe472bbfa314c1db6bb956f5dc55fc0ac09bddc1"
+    },
+    {
+      "id": "periwinkle",
+      "source": "periwinkle-source.png",
+      "prompt": "periwinkle-prompt.txt",
+      "metadata": "periwinkle-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "6daee1b47848fdfc87d8dd5ddce2daa4ef09a1ea6edaa02ad6616c8aeda60b9e"
+    },
+    {
+      "id": "peach",
+      "source": "peach-source.png",
+      "prompt": "peach-prompt.txt",
+      "metadata": "peach-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "ff2fbd1a49a8ab030213a2cc454bde3af307602a52d3a6067cd88656157153cf"
+    },
+    {
+      "id": "lemon",
+      "source": "lemon-source.png",
+      "prompt": "lemon-prompt.txt",
+      "metadata": "lemon-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "c64020a01d198c13afb9bd5b874e55fbc43398b0ae7e0ab8d5e10b89a95216f7"
+    },
+    {
+      "id": "rose",
+      "source": "rose-source.png",
+      "prompt": "rose-prompt.txt",
+      "metadata": "rose-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "fefaf72168e62e38d195cf18fee226f7a86a21afd436f6ced615bbd3b5019edc"
+    },
+    {
+      "id": "teal",
+      "source": "teal-source.png",
+      "prompt": "teal-prompt.txt",
+      "metadata": "teal-metadata.json",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "sha256": "07f90c2a1898e4acf4929606c7143cc744dc939227adf4c375c865bf4f4a686c"
+    }
+  ]
+}

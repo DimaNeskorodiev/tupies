@@ -1,0 +1,27 @@
+{
+  "variants": ["blue", "coral", "jade", "honey"],
+  "atlases": {
+    "mascot": {
+      "file": "cushion-family-source.png",
+      "width": 1254,
+      "height": 1254,
+      "regions": {
+        "blue": {"left": 40, "top": 140, "width": 614, "height": 470},
+        "coral": {"left": 676, "top": 90, "width": 524, "height": 522},
+        "jade": {"left": 48, "top": 689, "width": 582, "height": 492},
+        "honey": {"left": 629, "top": 755, "width": 621, "height": 420}
+      }
+    },
+    "portrait": {
+      "file": "cushion-portraits-source.png",
+      "width": 1254,
+      "height": 1254,
+      "regions": {
+        "blue": {"left": 70, "top": 145, "width": 550, "height": 480},
+        "coral": {"left": 735, "top": 75, "width": 435, "height": 550},
+        "jade": {"left": 65, "top": 682, "width": 540, "height": 534},
+        "honey": {"left": 671, "top": 770, "width": 540, "height": 448}
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+[Unit]
+Description=Tupies Bots workspace
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tupies
+Group=tupies
+WorkingDirectory=/opt/tupies
+ExecStart=/usr/bin/node /opt/tupies/server.mjs
+Environment=NODE_ENV=production
+Environment=STUDIO_HOST=127.0.0.1
+Environment=STUDIO_PORT=4310
+Environment=STUDIO_DATA_DIR=/var/lib/tupies
+# Optional operator-created file for explicit STUDIO_PUBLIC_URL, etc.
+EnvironmentFile=-/etc/tupies.env
+StateDirectory=tupies
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+MemoryMax=1G
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

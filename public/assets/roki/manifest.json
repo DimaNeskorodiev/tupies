@@ -1,0 +1,52 @@
+{
+  "character": "Roki",
+  "version": 2,
+  "portraits": [
+    "idle",
+    "happy",
+    "focused",
+    "curious",
+    "blink",
+    "sleepy"
+  ],
+  "poses": [
+    "idle",
+    "blink",
+    "look",
+    "thinking",
+    "working",
+    "success",
+    "greeting",
+    "sad",
+    "floating"
+  ],
+  "turns": [
+    "front",
+    "front-right",
+    "right",
+    "back-right",
+    "back",
+    "back-left",
+    "left",
+    "front-left"
+  ],
+  "expressions": [
+    "default",
+    "happy",
+    "focused",
+    "curious",
+    "sleepy",
+    "excited",
+    "surprised",
+    "winking"
+  ],
+  "iconSizes": [
+    32,
+    64,
+    128,
+    256,
+    512
+  ],
+  "format": "webp",
+  "transparency": true
+}

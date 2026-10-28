@@ -1,0 +1,48 @@
+{
+  "revision": 10,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "brief": "User asks for creatures like #11 in their attached collage: soft upholstered rounded square body, black oval eyes, tiny arms and feet.",
+  "scope": "Eight static creature/portrait image studies and one desktop/phone preview; no production implementation.",
+  "images": [
+    {
+      "id": "00-cushion-creatures",
+      "name": "Eight cushion creature variants",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-03412b2e-bd70-445d-9e14-ead934f4cd8a.png",
+      "destination": "prototypes/ui-cushion-creatures-v10-20261027/00-cushion-creatures.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1561747
+    },
+    {
+      "id": "01-cushion-in-ui",
+      "name": "Cushion creatures in desktop and phone chat",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-43f273fb-dd08-4705-8ff9-dd8fca78a7fe.png",
+      "destination": "prototypes/ui-cushion-creatures-v10-20261027/01-cushion-in-ui.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1673181
+    }
+  ],
+  "variants": [
+    "01 Cloud",
+    "02 Blue",
+    "03 Coral",
+    "04 Jade",
+    "05 Honey",
+    "06 Sky",
+    "07 Tangerine",
+    "08 Lime"
+  ],
+  "illustrative_ui_assignment": {
+    "Atlas": "02 Blue",
+    "Nova": "03 Coral",
+    "Scout": "04 Jade",
+    "Echo": "05 Honey"
+  },
+  "references": [
+    "references/reference-character-collage.jpg",
+    "references/approved-ui-larger-avatars.png"
+  ],
+  "prompts": "prompts.json"
+}

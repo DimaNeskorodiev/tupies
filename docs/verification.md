@@ -1,0 +1,705 @@
+# Verification — Tupies Engine 0.5
+
+Checked on 27 October 2026. Current build: **0.5.0**. Earlier 0.4, 0.3 and 0.2 evidence is retained below as historical records.
+
+## Tupies rename and initial GitHub upload preparation (28 October 2026)
+
+- **Source:** the package, current UI/product text, document authorship, native display/product names and Xcode project/scheme now use Tupies. Web/native T marks are generated from a local SVG by `npm run brand:build`. Existing pairing, signature, Keychain, cookie, discovery and Docker-volume identities are retained; no live engine or installed app was updated.
+- **Node:** all **589/589 tests** pass on Node **22.23.1**, with no failures, skips or cancellations. `npm run check` passes for **72 modules**. The full assets, companions, guide and notices build passes. Tests use temporary stores and local fixtures; they require local socket access outside the restricted command sandbox.
+- **Apple:** `xcodebuild -list` reports scheme `Tupies`; the Swift logic and Node↔Swift crypto checks pass. Unsigned generic iOS and macOS Debug builds both succeed with the renamed source directory, app product, project and icons. No signing, installation or device rollout was performed.
+- **Browser:** the real in-app browser loads a disposable engine with its scheduler disabled and shows the Tupies page title and T sign-in mark. The regenerated guide shows the Tupies title, T mark and updated getting-started content. No operational account data or provider requests are used.
+- **Upload review:** runtime/account directories, environment settings, dependencies, backups, local deployment notes and native build output are excluded. No credential-token or private-key patterns were found in upload candidates. Prototype manifests use portable references instead of private home-directory paths; original generation prompts are preserved.
+
+## Mobile and image-understanding rollout to both engines
+
+Completed on 27 October 2026 at 22:34 UTC after the owner explicitly selected both engines and the connected iPhone. Deferred notification implementation is excluded from this runtime release.
+
+- **Exact release:** 492/492 Node regressions pass, 62 syntax modules pass, full assets/notices build and the 18-page guide pass. A dependency symlink initially caused the document worker's filesystem permission gate to reject library reads; replacing it with isolated local dependencies fixed the packaging issue without weakening permissions. The focused 33 image/document tests and then the full suite pass.
+- **Engines:** fresh idle checks found no active runs/room drives or enabled routines/channels. Each sole engine was stopped, its complete runtime backed up privately, and started once. The home service and Mac engine are ready; all 383 checked public assets on each engine match the release hashes. State bytes, vault keys, engine identity files, authentication configuration and workspace counts remain unchanged. Root-only source rollback and complete runtime backups are retained; no real tasks or provider requests were created for verification.
+- **Mac isolation:** the active Mac engine uses `.runtime/mobile-vision-deploy-20261027/release/` with the original absolute data directory and configuration. This preserves the checkout's deferred notification work without loading it into production. The release has its own ordinary dependency directory, as required by the document worker's path permissions.
+- **iPhone:** independently verified one installed `dev.hermesstudio.app`, version 0.5.0, build 2, then terminated/relaunched it successfully to create fresh engine views. Build 2 contains the mobile native shell changes; image understanding is supplied by the updated engine. No push-enabled build was installed.
+- **Remaining limits:** physical keyboard/safe-area behavior, haptics, VoiceOver, large accessibility text and a real vision model's response still need hands-on verification. Engine readiness and device launch do not establish those qualities. Apple notification setup remains deferred. Exact payload, checksums, logs, backup and rollback pointers are in the ignored `.runtime/mobile-vision-deploy-20261027/` and `docs/local-workspace.md`.
+
+## Twenty animated companion additions (local source, 28 October 2026)
+
+The owner requested twenty more creatures in the selected cushion style and animation for all of them. Twenty separate built-in ImageGen generations produced four-pose transparent source sheets; a Cobalt gutter refinement was preserved alongside its original. All twenty final sources and exact prompts are kept in `assets/companions/expansion-a/` and `expansion-b/`. The production catalog now contains 24 selectable identities. Previous implicit assignments stay stable.
+
+- **Build and regressions:** `node scripts/build-companion-assets.mjs`, `npm run docs:build` and `npm run check` pass. The complete current-source suite passes **568/568 tests**, with no failures, skips or cancellations; syntax checks cover **69 modules**. The companion build ships 840 WebP pose/resolution files, 80 PNGs, twenty transparent animated WebPs and two manifests. Historical Roki assets were not rebuilt for this change. Five asset tests verify every catalogued frame's dimensions/alpha, twenty distinct four-pose originals, actual closed-eye pixel differences and all twenty native seven-frame WebP loops/timings. Five motion tests cover bounded identities/paths, live state changes without replacing art, shared observer cleanup/hidden-page suspension and preview controls. A real form test selects each new identity without mutating saved bot/color data until Save.
+- **Actual browser:** Chrome at its normal 1728×876 viewport and 320×740 responsive width. A disposable engine with an in-process fake provider and a disabled scheduler was used; no real account data or operational engine was touched. The editor's 24-choice gallery starts collapsed. Selecting Cloud updated the preview, Save preserved the choice after reload, and all visible pose layers loaded successfully. The 320px picker retained three legible columns within 244px, with 24 selectable buttons and no horizontal overflow. The portable gallery had twenty loaded animated images, five desktop columns/two mobile columns and no broken images or horizontal overflow.
+- **Motion proof:** browser-computed body transforms varied with active breathe/sway/float/rock animations. The live preview contained 24 identities; Pause forced all 80 mounted avatar instances to idle opacity with `animation:none` and `transform:none`. Selecting blink exposed the actual loaded blink frame at opacity 1. Offscreen avatars had paused animation state. The portable gallery's Pause replaced every animated URL with its still PNG and left zero animated image elements.
+- **Alpha verification:** a technical image viewer showed straight-alpha RGB edge data as apparent colored/white blocks. Actual browser RGBA compositing of Butter, Ice, Silver and Cloud on both pearl and #15191e surfaces showed clean silhouettes. Two attempted ImageGen cleanup pilots were rejected and moved to ignored diagnostics; no production source was replaced or color-keyed. Judge transparency by composited rendering rather than raw RGB previews.
+- **Delivery:** `prototypes/companions-20-animated-20261028/index.html` is an offline gallery with play/pause, twenty animations, stills, portraits, original sheets, exact prompts and portable hash manifests. `prototypes/companions-20-animated.zip` contains 104 files; copied image bytes were verified against production/source hashes. Browser evidence is under the gallery's `evidence/` directory. A read-only localhost gallery server may be kept running for the interactive handoff; it serves only that artifact folder.
+- **Limits:** animation combines registered rendered poses with CSS motion; it is not a rigged 3D model or task telemetry. CSS/preview pause and reduced-motion branches are covered; physical iPhone, VoiceOver and OS Reduce Motion interaction remain unverified. This avatar iteration was not deployed to the VPS and did not replace native binaries.
+
+## Pearl interface and cushion companions (local source)
+
+Checked on 27 October 2026 using Node **22.23.1**. Final current-source suite: **557/557 tests**, no failures, skips or cancellations; syntax checks cover **68 JavaScript modules**. `npm run build` passes, including both historical Roki and new companion exports, browser assets, 19 guide pages and dependency notices. This checkout also contains concurrent engine work; the suite count is the whole source snapshot, not a count of UI-only regressions.
+
+- **Actual browser:** Chrome at its default desktop viewport (**1728×876**), then explicit **393×852** and **320×740** responsive viewports; the override was reset afterwards. A disposable engine had a disabled scheduler, scratch data and an in-process fake provider. It contained four fictional teammates, a room, memory and real workspace files. No operational account data, real provider credentials, paid inference/audio or live engine restart was used.
+- **Verified workflows:** Dashboard teammate entry and hidden empty secondary sections; Bots cards and their contextual menus; distinct portraits; full-body Scout welcome; a companion choice updating preview/pressed state before Save; closed advanced editor controls expanding to retained settings; a focused single-column chat and its universal menu; three closed Chat options sections; saving untouched options preserved the draft and did not demand speech setup; sending the draft completed through the fixture engine, cleared only the accepted text and produced a genuinely created Markdown artifact; Preview opened the actual document. Profile kept Open chat primary and exposed Edit/Hide/model/permissions/team under Bot settings. Settings showed three essentials and revealed specialist routes under More settings. The 320px bot list/editor and 393px chat/dashboard had no horizontal document overflow.
+- **Browser-found fixes:** a phone artifact card had compressed its filename into a one-letter column. It now lays out icon/title above full-width touch actions. The More affordance gained a readable boundary/glyph; message/header avatars were enlarged. Optional voice setup and unavailable model options could otherwise affect an unrelated Save; only deliberately edited inference/voice sections now persist changes, retaining the actual selected model for validation. Settings disclosures preserve open state and keyboard focus during refresh.
+- **Regressions:** actual closed-form submission preserves provider/model/tools/action review/context/team/skills/integrations/enabled/hidden values; companion selection remains local until Save and preserves saved activity colors; canonical and unknown identities are deterministic; local asset URLs are bounded and alpha is verified. Asynchronous options, explicit reasoning changes, unavailable models, unconfigured paid voice preferences, required paid-voice consent, active-run history restrictions, room budgets, keyboard menus, desktop Escape, mobile details/drafts and Settings refresh focus are covered. Existing approval/question, cancellation, sanitization, auth, provider and lifecycle regressions remain passing.
+- **Evidence:** `prototypes/ui-pearl-implementation-20261027/` contains unaltered browser screenshots and a manifest. `/companions-preview.html` uses the production renderer. Source atlases, layout/alpha metadata and exact prompts are in `assets/companions/`.
+- **Limits:** responsive Chrome is not a physical iPhone or native-shell check. Physical keyboard/safe-area behavior, VoiceOver, physical-device reduced motion/transparency and long real daily tasks still need review. This iteration was not deployed to the VPS and did not change native app binaries. Browser extension Ethereum-injection errors appeared in Chrome's log; no application-origin error was observed.
+
+## Native iPhone notifications (source; Apple activation pending)
+
+Checked on 27 October 2026 using Node **22.23.1**, generated credentials and temporary fixture stores. No real provider/account data or APNs key was used, no notification was sent through Apple, and neither live engine was restarted or updated. The owner chose to finish Apple Developer/Xcode sign-in later.
+
+- **Suite:** **521/521 tests**, with no failures, skips or cancellations. Syntax checks pass for **64 JavaScript modules**. The full asset/guide/notices build passes; the guide now has 19 pages.
+- **New Node regressions (29):** `test/apns.test.mjs` (9) verifies P-256 key validation, ES256 signatures and JWT lifetime, fixed TLS destinations, headers, payload/response/queue bounds, safe provider errors, stable IDs, timeout/GOAWAY/close and no ambiguous replay. `test/notifications.test.mjs` (20) covers private sealed local storage, source filtering, chat/room/routine classification, ID deduplication/out-of-order sync, enrollment and historical-import boundaries, stale routine error clearing, opt-in/role/environment gates, revocation/rotation, in-flight unregister, explicit retry backoff, restart claims, startup serialization/catch-up, and damaged storage that preserves normal engine APIs. Real temporary HTTP tests check current-device iOS bearers, cookie/engine/Origin refusal and revocation.
+- **Native logic:** **79 passing Swift checks**, including bot/room payload validation, strict IDs/schema, paired-engine-only routing, cold-start authentication retention, stale callback protection and fixed error-copy behavior, plus existing Node↔Swift signature/fingerprint/TLS interop. The logic runner now keeps its module cache under the project build directory.
+- **Native HTTP integration:** `node apps/apple/Tests/notification-client.mjs` passes four checks using the real Swift `EngineClient` against a disposable Tupies server. GET→PUT→GET→DELETE→GET retains the category preferences, removes the registration, uses the paired bearer and sends DELETE's required JSON `{}` body. This caught and fixed a missing native DELETE body that isolated server tests could not detect. The fixture uses a fake Apple transport and makes no external push request.
+- **Native builds:** unsigned generic iOS and macOS compile checks pass. Signing/installing the physical-iPhone build is blocked by Apple setup: Xcode reports no signed-in developer account, and the existing wildcard profile has neither the Push Notifications capability nor `aps-environment`. This is distinct from a source compile failure. Build 3 is prepared in source; the installed phone remains build 2.
+- **Browser:** a disposable engine serves the new `guide.html#notifications` entry and renders its Apple/server setup content. An authenticated browser navigating to `/api/device/notifications` receives the expected “Use the paired app” refusal. This checks the guide and browser boundary, not native notification presentation.
+- **Historical targeted compatibility:** the ignored `.runtime/notifications-deploy-20261027/` contains the earlier four-file Phase 1 payload. All four syntax checks and **18/18 pure notification compatibility regressions** passed against that staged engine. The complete current-source suite above includes both HTTP regressions. No targeted deployment was run. Both engines now run Phase 2 vision, so this old payload must be rebased and reverified before activation.
+- **Not verified:** real APNs acceptance/delivery, push-enabled signed provisioning, actual iPhone permission UI, native notification Settings presentation, foreground/background/terminated-app banners and taps, Focus behavior, and physical-device interaction/accessibility quality. Apple setup, signed in-place installation and real delivery checks remain required before marking notifications active.
+
+## iPhone UX refinement
+
+Checked on 27 October 2026 using Node **22.23.1** and a disposable local workspace. The initial verification below preceded deployment; the subsequent iPhone installation and mobile-only home-server rollout are recorded at the end of this section.
+
+- **Suite:** **492/492 tests**, no failures, skips or cancellations. Syntax checks pass for **62 modules**. The full asset/guide/notices build passes; the updated guide contains 18 pages.
+- **New regressions (15):** `test/mobile-ui.test.mjs` covers phone Return versus explicit send shortcuts, desktop/IME/Shift behavior, isolated bot/room drafts, accepted/rejected submissions, edits while sending and while revisiting a chat, no draft restoration after sign-out, cancelled/short/vertical edge gestures, sheet drag cancellation, reduced-motion and replacement-sheet lifecycle, keyboard viewport/pinch-zoom handling, menu bounds and keyboard traversal, and mobile/desktop resize cleanup. The existing navigation, dialog and chat lifecycle regressions also pass.
+- **Actual browser:** in-app browser against a temporary engine with fixture bots, a seeded conversation, a team room, memory and a routine. At **393×852** and **320×568**, checked the Bots list, direct chat, team chat, action menus, bot editing and team-details sheets. Confirmed 17px chat text and fields, larger navigation/composer controls, no horizontal overflow, bounded scrolling, a stable composer, heading focus rather than an automatically raised keyboard in sheets, and restoration of a multiline draft after leaving and reopening a chat. At **1280×900**, confirmed desktop navigation/sidebar/inspector, 14px base type and the hidden phone tab bar. Browser checks do not establish actual iOS keyboard or touch-gesture feel.
+- **Apple builds:** compile-only generic iOS Simulator build passes for arm64 and x86_64; macOS build also passes. Outputs are under `apps/apple/build/DerivedData/Build/Products/Debug-iphonesimulator/` and `Debug/`. Existing signing configuration is unchanged. The standalone Apple logic script could not be rerun: the sandbox blocked compiler-cache writes and its escalation was cancelled. No pairing/crypto implementation changed.
+- **Native changes:** system Dynamic Type multiplier, bounded active-engine haptic bridge, native sheet grabbers and larger controls, reduced-motion behavior, iOS graphite palette and explicit web scroll inset ownership.
+- **Not verified:** physical iPhone keyboard transitions/safe areas, haptic feel, VoiceOver, large accessibility text sizes and actual coarse-pointer landscape rendering. Native UI inspection was unavailable while the Mac was locked. Successful device installation/launch below does not establish visual or interaction quality on that device.
+- **Subsequent requested installation:** signed **0.5.0 build 2** built for the paired physical iPhone 15 Pro using the existing app's signing team/profile. `devicectl` installed it in place, independently reported one matching installed app with version **0.5.0**, build **2**, and successfully launched it. No uninstall, pairing reset or account-data migration was performed.
+- **Mobile-only home-server rollout:** exactly four public files (`mobile.css`, `mobile.js`, `app.js`, `index.html`), with **27/27** staged mobile/navigation/dialog regressions passing. The remote baseline was byte-identical to the archived Phase 1 release. The installed `app.js` applies the mobile changes to that baseline and excludes all five Phase 2 vision regions; no backend or vision rollout occurred. Original assets and an executable rollback were retained, dependencies installed first with atomic renames, engine PID **1617418** stayed unchanged, and all four HTTPS-served SHA-256 values match the staged payload with `no-cache` and ETags. The TLS check used the local engine's certificate obtained inside the authenticated SSH connection, with hostname validation. Exact evidence and rollback pointers are in the ignored `.runtime/mobile-ux-deploy-20261027/` and `docs/local-workspace.md`.
+
+## Phase 5: reviewed learning
+
+Checked on 28 October 2026 with Node **22.23.1** and temporary data only. The live engines, `data/` and the home server were not touched, and nothing was deployed.
+
+- **Suite:** **589/589 tests**, with no failures, skips or cancellations. `npm run check` passes for **71 modules**.
+- **New regressions (14):**
+  - `test/learning.test.mjs` (10):
+    - A memory suggestion changes nothing while pending, records the current request and the cited message as sources, and applies all of its changes on accept. Undo puts back the old facts, pins included.
+    - A fact edited after the suggestion makes accept fail as out of date (status `stale`, the newer edit kept). Undo is refused once a fact was edited again.
+    - Identical suggestions are not duplicated, and a declined one is refused when made again. A removal of a missing fact, an unchanged value, duplicate keys, an empty reason, unknown fields, the pin limit and a cited message from another person's Telegram chat are all refused. The 21st waiting suggestion gets 429.
+    - Reviewed suggestions are pruned to the newest 30 per bot, and pending ones stay.
+    - A skill improvement needs the current sha256 and exact single matches, cannot rename the skill and must be for an assigned skill. Accepting it waits while another bot using the skill works. Undo restores the file, and a hand edit made after the suggestion makes it stale.
+    - A new skill exists only after accept, is assigned to the bot, and is removed from disk and from every bot on undo. A skill with the same name added in the meantime makes it stale instead of overwritten.
+    - Through the engine, a routine searched the day with an empty query and suggested a memory update under Strict policy without an approval. The run recorded `learning.proposed`, and a bot without Memory or Skills tools is not offered the tools.
+    - `session_search` lists a period in order with an empty query and `after`, and still refuses an empty query without `after`.
+    - Suggestions sync as `proposal:<id>` documents (write and delete). The Dashboard lists "1 memory update and 1 skill change to review", and the activity log names the suggestion and the decision.
+    - Over the API: listing, 404 for unknown bots and suggestions, 409 while the bot works, accept after it finishes, and removal with the bot.
+  - `test/bot-profile.test.mjs` (4):
+    - The Learning tab shows the reason, the fact changes with links and pins, the sources and a line diff with screen-reader labels, without rendering markup from the bot.
+    - Accept, Decline and Undo (with confirmation) post the right decision.
+    - An out-of-date suggestion offers only Decline, and a busy bot explains why accepting waits.
+    - The daily review opens a prepared routine dialog and is replaced by the saved routine's schedule; without Memory tools the tab says so.
+- **Browser check** (scratch engine on port 4459, scripted OpenAI-compatible provider):
+  - A chat request made the bot list the last days with `session_search` and call `memory_propose`. The chat reply said nothing had changed yet, and memory on disk was unchanged.
+  - The Dashboard showed the suggestion under **Needs you**, and **Review** opened the Learning tab.
+  - Accept changed the facts on disk. Undo, after its confirmation, put them back. Accepting a seeded skill improvement rewrote `SKILL.md` with both edits.
+  - **Set up a daily review** opened the routine dialog with the name, prompt and 21:00 filled in. The saved routine then showed as "Daily review · Every day at 21:00".
+  - At 375 px the five tabs fit and nothing scrolled sideways. The console had no errors.
+  - Two fixes came from the check: long `SKILL.md` lines now wrap in the diff, and Undo no longer stretches on phones.
+
+## Phase 4: read-only browser
+
+**Deployed to both engines on 28 October 2026** (with Phase 3), from an isolated release that excludes the deferred notification code and the parallel session's undeployed UI.
+
+- **The release:**
+  - The release tree passed **516/516** tests on its own, including 7 browser tests against real Chrome and a new regression for long profile paths, and 65 syntax-checked modules.
+  - One of the parallel session's mobile tests needed its four `sendMessage` stubs from the checkout.
+- **VPS (Debian 13):**
+  - `apt-get update` then `apt-get install --no-install-recommends chromium fonts-liberation`: Chromium 156.0.8078.47. `needrestart` restarted no services, and the Tupies service kept running.
+  - Under the service's exact hardening (`systemd-run` as `studio`), Chromium refused to start with `RestrictNamespaces=true`.
+  - With `user pid net` allowed it first aborted with "Socket path too long". It put its single-instance socket under the long data path; that is fixed in `lib/browser.mjs`.
+  - It then reported: Layer 1 Namespace sandbox, PID and network namespaces, Seccomp-BPF with TSYNC, "You are adequately sandboxed". A public HTTPS page loaded through Tupies's egress proxy (HTTP 200), with an outline and a screenshot.
+  - Two browsers at once peaked at 246 tasks and 405 MB in a test unit, hence `TasksMax=512`. The owner applied the drop-in (`RestrictNamespaces=user pid net`, `TasksMax=512`).
+  - The installer checked for active work twice and backed up the stopped data directory. It installed 549 source files, started once (PID 1711583) and preserved state bytes, vault, identity, sign-in configuration and counts. All 383 served files were verified, and the journal showed no errors.
+  - The deployed `lib/browser.mjs`, run under the live unit settings, passed the same sandbox and page check.
+- **Mac:** stopped PID 81036, backed up `data/` while stopped, and started once from the new release (PID 8416) with the same preservation checks. 553 source and 383 served files were verified. It relinked to the home server within a second.
+- **Both engines:** `app.js`, `style.css`, `bot-profile.js`, `activity-flow-model.js`, `guide-content.js`, `index.html`, `mobile.css` and `dashboard.js` are byte-identical to the release on both. Both show 4 bots, 3 connections, 43 messages and no active work.
+- **Not verified after deployment:** a real bot task using the browser or the new routine schedules on live data (no model calls were made), and the reloaded Apple apps.
+
+Checked on 28 October 2026 with Node **22.23.1**, Google Chrome on this Mac and temporary data only. The live engines, `data/` and the home server were not touched, and nothing was deployed.
+
+- **Suite:** **574/574 tests**, with no failures, skips or cancellations. `npm run check` passes for **70 modules**.
+- **New regressions (6, `test/browser.test.mjs`):**
+  - The egress proxy, against a fake resolver:
+    - a public name passes;
+    - it refuses a name with any private answer (DNS rebinding), cloud metadata, `127.0.0.1`, `::1`, `localhost`, `.local`, port 80 and port 8443;
+    - CONNECT to a private address gets 403, and plain HTTP is never proxied.
+  - `findBrowser` finds only installed or named paths.
+  - With real Chrome, a full task:
+    - the outline includes text rendered by JavaScript, and a link covered by a fixed banner is refused, naming the banner;
+    - "Show details" expands the page, and a reference from an older revision is refused while the current one follows the link;
+    - a screenshot is saved as a real PNG in the workspace, recorded as a reference on the tool message (no image bytes in state), and sent right after the tool results as `image/png`;
+    - the Chrome process and profile are gone at task end.
+  - Stop during browser work ends the Chrome process.
+  - Without the Browser group, or without a browser, no browser tools are offered; a call anyway gets the installation instruction.
+  - Outside local fixtures, `http://`, `https://localhost` and `https://10.0.0.1` are refused before a browser starts.
+- **Smoke checks:**
+  - Chrome started in about 0.9 s.
+  - Opening and closing a session left none of its 9 Chrome processes, both directly and through an engine task followed by `engine.close()`.
+  - An apparent leftover during the browser check turned out to be the checking shell itself, whose command line contained the profile folder name.
+- **Actual browser:** in-app browser against a disposable engine on port 4459, a scripted provider on 4458 and a local site on 4457, with `STUDIO_ALLOW_PRIVATE_HTTP=true` for the fixture.
+  - Roki, with Browser on, opened the site and its status read "Read page" with the URL in the activity view. It clicked "See pricing", took a screenshot, and answered "From **Pricing · Acme**: The team plan costs €24 per user per month, billed yearly."
+  - The screenshot file, opened from the workspace, is the 1280×900 render of that page.
+  - The fake model confirmed an image part arrived. Its first version mishandled the image follow-up message and replied "[object Object]"; that was a bug in the fixture script, fixed and rerun.
+  - `/api/state` reported Google Chrome. The profile listed Browser, and the bot editor's Advanced settings showed the Browser option with its description.
+  - The console errors were connection-refused polls and a 401 from the tab spanning engine restarts.
+- **Not verified:**
+  - real public websites (no network fixtures);
+  - Chromium on the Debian VPS under the hardened service, including the sandbox;
+  - pages that rely on iframes;
+  - a real vision model reading a screenshot;
+  - deployment.
+
+## Phase 3: reliable sends and better routines
+
+Checked on 27 October 2026 with Node **22.23.1** and temporary data only. The live engines, `data/` and the home server were not touched by this work, and Phase 3 was not deployed. A parallel session was editing the same checkout (push notifications, companion avatars, the mobile + vision rollout from an isolated release), and its tests are part of the totals.
+
+- **Suite:** **557/557 tests**, with no failures, skips or cancellations. `npm run check` passes for **68 modules**. One earlier `npm test` run hung while the parallel session's files were mid-edit; it completed in about 11 seconds on rerun, and every file also passes on its own with a per-test timeout.
+- **New regressions (17):**
+  - `test/routines.test.mjs` (9):
+    - schedule validation and descriptions;
+    - the Warsaw spring-forward and fall-back dates, a New York year end and Tokyo;
+    - routine validation, including old interval routines, slot reset, one-time routines in the past and invalid zones;
+    - history from synced messages and run records;
+    - a due clock routine running once and moving on;
+    - missed runs (one catch-up for several missed dates, and skip);
+    - a busy bot deferring without counting as missed, and a one-time routine finishing;
+    - Run now for clock and interval schedules;
+    - a bot creating a weekday routine in the owner's zone, with the approval summary and turn context.
+  - `test/submissions.test.mjs` (4):
+    - a duplicate returns the original task, including while it runs, and different content is refused;
+    - three simultaneous duplicates start one task;
+    - receipts survive a restart, expire after a week, and are not kept for a refused admission;
+    - the HTTP routes, including the receipt lookup and removal with the bot.
+  - `test/routines-ui.test.mjs` (4):
+    - an uncertain send checks the receipt and reuses the ID;
+    - a definite refusal is not retried, a re-sent draft keeps its ID, and a new draft gets a new one;
+    - the routine dialog shows only the chosen kind and sends the schedule with its zone;
+    - plain schedule labels, cards and the history dialog.
+- **Fixed during verification:**
+  - The approval summary did not show the owner's default time zone.
+  - The first version of `runRoutine` was based on a copy older than the parallel session's 22:51 change. It dropped "clear the previous error before admission"; their notification test caught it and it is restored.
+- **Actual browser:** in-app browser against a disposable engine on port 4459 with a scripted provider.
+  - The new routine dialog listed every IANA zone with Europe/Warsaw preselected. "On chosen days" showed weekday toggles (Mon–Fri by default).
+  - A routine with Friday turned off at 09:15 was saved as `{kind:'weekly',time:'09:15',days:['mon','tue','wed','thu']}`, `nextRunAt` 2026-10-28T08:15Z (Wednesday 09:15 in Warsaw), and the owner's zone was stored.
+  - Run now left `nextRunAt` unchanged. The history dialog showed the run as Done, 1s, with its reply.
+  - With `fetch` wrapped to drop the answer to the first message POST after the server accepted it (202), sending through the real composer produced exactly one user message: the browser made one POST and one receipt lookup. The composer cleared, no error toast appeared, and the reply arrived.
+  - No console errors.
+- **Not verified:**
+  - a real scheduled run at its wall-clock time on the home server;
+  - an actual daylight-saving transition (only the maths and fixtures);
+  - lost answers on a real mobile network;
+  - deployment.
+
+## Phase 2: image understanding
+
+Checked on 27 October 2026 with Node **22.23.1** and temporary data only. The live engines, `data/` and the home server were not touched, and nothing was deployed.
+
+- **Suite:** **477/477 tests**, with no failures, skips or cancellations. `npm run check` passes for **61 modules**.
+- **New regressions (11):**
+  - `test/images.test.mjs` (8):
+    - capability order (owner setting, catalog declaration, remembered refusal, known family, unknown) and refusal detection;
+    - the request shapes for Responses, Anthropic and chat completions, and the Image input setting;
+    - worker fitting: size and pixel limits, aspect ratio, EXIF orientation, PNG kept for screenshots, JPEG for photos, cache reuse, refusal of a non-image and of a file changed after attaching;
+    - a vision model gets image parts while history stores only references and no image bytes reach the state;
+    - a text-only model gets names and a note;
+    - only the newest five images, with notes for older and changed ones;
+    - a refused image is retried once without images and remembered;
+    - a second refusal fails the task and the owner's "on" is kept.
+  - `test/images-ui.test.mjs` (3): the composer warning, the Chat options line and the provider setting.
+- **Changed tests:**
+  - The inference catalog shape test now allows each model's `imageInput` and checks that a known family is reported as `known`.
+  - The image preview warning still states that no OCR is done.
+- **Actual browser:** in-app browser against a disposable engine on port 4459 with a scripted OpenAI-compatible provider on port 4458. The provider decoded each received image with sharp and reported its size and average colour.
+  - The pane cannot open the OS file picker, so a 2400×1600 orange PNG drawn on a canvas was set on the real `#chat-attachments` input with a `change` event. That is the app's own upload path.
+  - Sent to Roki (Image input on), it arrived as `image/png` 1313×875 (about 1.15 MP), 17 KB, average colour rgb(232, 119, 63), with the note that images were included.
+  - For Nova (Text only), the composer showed "Nova’s model can’t see images. It gets only the file name." and the model received the text-only note and no image.
+  - `/inference` and `/capabilities` reported the owner source. Changing Nova's provider to "Models here can see images" in the dialog saved `imageInput: 'on'` and flipped `imageVision` to true.
+  - The only console errors were connection-refused polls from the tab left open on an earlier stopped scratch engine.
+- **Not verified:**
+  - a real vision model's answers;
+  - the ChatGPT subscription and OpenRouter catalogs' actual modality fields (the known-family fallback covers the subscription);
+  - the installed Apple apps' file pickers;
+  - deployment.
+
+## Phase 1: questions, conversation search and run history
+
+Checked on 27 October 2026 with Node **22.23.1** and temporary data only. The live engine on port 4311, `data/` and the home server were not touched, and nothing was deployed.
+
+- **Suite:** **466/466 tests**, with no failures, skips or cancellations. `npm run check` passes for **61 modules**.
+- **New regressions (21):**
+  - `test/questions-history.test.mjs` (11):
+    - a chat task asks, waits longer than its runtime limit, refuses a stale request id, an older generation and an undisplayed option, then continues with the answer;
+    - Skip, and Stop while waiting;
+    - only direct chats are offered the tool;
+    - a restart while waiting is interrupted and recorded once;
+    - run history order, limit, usage and errors;
+    - search ranking, word forms, filters, paging and the Telegram scope;
+    - `session_read` neighbours and paging;
+    - a bot finds a constraint that only the stored transcript still holds and cites its message id;
+    - search needs the Memory tools.
+  - `test/questions-ui.test.mjs` (5): an escaped card, typed text surviving a refresh, the exact answer and Skip bodies, the **Needs your answer** status, and an answer record never mistaken for the task.
+  - `test/bot-profile.test.mjs` (2): the Recent tasks card, and the run history and answer routes (including removal with the bot).
+- **Changed tests:**
+  - The profile overview test now expects the `/runs` request.
+  - The "second context overflow" test now seeds earlier turns. The three new tool definitions (about 900 tokens) mean the system prompt and tools alone no longer fit the smallest learned window of 8K, so the engine now refuses before the retry instead of retrying. With earlier turns to shed, the test again checks exactly one retry.
+- **Actual browser:** in-app browser against a disposable engine on port 4459 with a scripted OpenAI-compatible provider on port 4458 (no real model or credentials).
+  - A three-question card (single choice, multiple choice, free text). Choices and typed text survived about 8 seconds of polling. The chat header read **Needs your answer**, and `/api/dashboard` listed the question under `needs`.
+  - Send answer recorded the exchange in the chat, and the task completed with the answers.
+  - "What budget limit did I give you for the launch?" made the model call `session_search`, which returned the seeded 12-day-old message that the model history's summary no longer held.
+  - At 375×812 the card fits without horizontal scroll, with 16px answer fields and the status in the bot switcher. Skip recorded "Skipped these questions" and the task continued.
+  - The profile's **Recent tasks** listed all three tasks with source, duration, tokens and question counts.
+  - No console errors.
+- **Deployment:** both engines on 27 October 2026 at 20:52 CET, after an idle check and a data backup on each.
+  - VPS: 10 changed files and 1 new file were staged with `SHA256SUMS`, syntax-checked with the server's Node, installed and checksum-verified. The service restarted as PID 1617418 with no journal warnings, and server code is HLVV VKPG.
+  - Mac: restarted as PID 49434 with bot counts and profiles preserved, and relinked.
+  - Six public files are byte-identical from both engines and the checkout, and both state files show the same counts.
+- **Not verified:**
+  - question and search behaviour with a real model;
+  - the installed Mac or iPhone app after Reload.
+
+## Roki: portrait + mascot — Mac only
+
+Checked on 27 October 2026 with Node **22.23.1**. After all generated assets were present, the complete shared checkout passed **439/439 tests**, with no failures, skips or cancellations. This includes concurrent context-window/session work in the shared checkout. `npm run check` passes for **59 modules**; `npm run build` packages both Roki families, rich assets, 18 guide pages and 399 dependency notices. The earlier context-session failures caused by missing portrait files during generation are resolved in this final run.
+
+- **Artwork and presentation:** six dedicated soft-lit, smooth matte graphite head portraits, exported at 32/64/128/256/512px WebP plus idle PNG icons (35 new images). This is a separate compact render with reduced grain and glow, rather than a crop of the original textured full-body art. Neutral glass framing comes from CSS. The full-body character remains intact for explicit single-bot welcome/profile-hero contexts. Room-welcome stacks and all ordinary UI use static portraits; task state can select a facial expression without adding motion or props.
+- **Regressions:** the portrait UI suite passes **18/18**, covering default portraits at every size, no shadow/blink/greeting overlays on portraits, nine task states mapping to six expressions while preserving the mounted image, explicit mascot placement, malicious inputs, unchanged saved metadata, actual image files/dimensions/alpha, and retained chat/room DOM. Existing API WebP/MIME/cache checks still pass in the full suite.
+- **Actual browser:** disposable engine on port4336 with isolated data and a scripted provider verified cards/roster, editor portrait, one welcome mascot with a portrait header/inspector, one profile mascot, and static focused portraits during a real `workspace_list` run. At 393×852, chat and bot rows fit without horizontal overflow and all visible images load. Browser-computed portrait animation is `none`. The frame is a real1px border, 19px radius on the64px card avatar, with the intended neutral gradient. A CSS specificity issue that hid this frame was fixed; a height-aware welcome layout keeps the104px mascot and starter controls inside a720px-high desktop viewport without thread overflow.
+- **Mac delivery:** no engine restart, account mutation, renaming, provider change or native binary update was needed for this static UI work. The existing engine at port4311 serves all **101 Roki images** (including the35 new portraits) and eight updated UI files with HTTP200, correct PNG/WebP MIME and exact checkout SHA256. Reload on **This Mac** picks up the new UI. The standalone `/roki-preview.html` now displays both treatments. No VPS connection or update was made.
+- **Evidence and limits:** `.runtime/roki-portrait-tests-final.log` (latest full suite), `roki-portrait-tests.log` (earlier433-test snapshot), `roki-portrait-build.log`, `roki-portrait-bots.png`, `roki-portrait-chat.png`, `roki-portrait-phone-chat.png`, `roki-portrait-phone-bots.png`. Browser checks verify the shared UI; native WKWebView, VoiceOver and measured frame rate were not repeated. The artistic fit remains subject to owner review.
+
+## Bot context releases A–C: deployment to both engines
+
+Deployed on 27 October 2026 at 20:15 CET.
+
+- **Before:** the tested tree passed 448/448 tests and 60-module syntax checks, rerun just before staging.
+- **Preflight:** both engines had zero active runs and room drives and no enabled routines or channels, and both data directories were backed up.
+- **VPS:**
+  - staged checksums and a syntax check with the server's Node passed;
+  - after installation, every installed file matched `SHA256SUMS`;
+  - the service restarted with no journal warnings and server code HLVV VKPG.
+- **Mac:** restarted with the existing helper, with bot counts and profiles preserved, and relinked to the server.
+- **Afterwards:**
+  - `app.js`, `guide-content.js` and `creature-avatars.js` are byte-identical from both engines;
+  - Roki WebP assets serve as `image/webp`;
+  - both engines show the same bot, connection and conversation counts;
+  - `npm run context:report` shows Atlas with 21/21 visible user turns.
+- **Not yet observed:** a real long chat reaching automatic summary compaction, and live prompt-cache hits.
+
+## Bot context, Release C: summary compaction and owner controls
+
+Checked on 27 October 2026 with Node 22.23.1. Deployed with releases A and B (see above).
+
+- **Complete suite:** 448/448 tests pass. `npm run check` checks 60 modules.
+- **New regressions:**
+  - `test/compaction.test.mjs`: the cut keeps the turn in progress and whole recent turns; transcript clipping and elision; prompt wrappers that cannot be closed; fallback, quotes and bounds.
+  - `test/engine.test.mjs`:
+    - automatic summary instead of dropped turns, including the stored summary, lane record, Tupies note and event;
+    - fallback on a failed summary;
+    - Summarize and New topic with an iterative `<previous_summary>`;
+    - a failed manual summary changes nothing, and no task or second compaction starts meanwhile;
+    - after a provider overflow, older turns are summarized before the retry.
+  - `test/studio.test.mjs`: the compact route with input validation, CSRF, 404 for an unknown bot and the inference `conversation` field.
+  - `test/speech-ui.test.mjs`: the Conversation section, request bodies, the note text and the bot's Context limit options.
+- **Actual browser:** a disposable engine on port 4399 with a temporary data directory and a scripted local OpenAI-compatible provider on port 4398 (40K window, no real model or credentials).
+  - Chat options showed the window note and "about 2K tokens; … from about 36K".
+  - **Summarize older messages** answered that the conversation is still short enough.
+  - **Start a new topic** summarized the chat and added the Tupies note.
+  - The run caught a real defect, which is now fixed and covered by the API test: the bot route did not list `compact`, so the first attempts returned 404. The remaining console entries were those two 404s from before the fix and an expected 401 after the engine restarted.
+- **Not verified:** summary quality from a real model, and automatic compaction during a real long task. The summary prompt is tested only with scripted answers.
+
+## Bot context, Release B: lanes and room watermarks
+
+Checked on 27 October 2026 with Node 22.23.1. Deployed with releases A and C.
+
+- **Complete suite:** 439/439 tests pass with no failures, skips or cancellations. The Roki asset failures noted for Release A are resolved. `npm run check` checks 59 modules.
+- **New regressions:**
+  - `test/engine.test.mjs`:
+    - a separate lane keeps its own history and leaves an `[Elsewhere: …]` record in the Bot Chat;
+    - each routine run starts fresh with `<previous_output>`;
+    - room members read only what is new since their own last turn;
+    - room deltas respect the 200-message, 32K-character and 8K-excerpt bounds and fall back to a watermark's timestamp.
+  - `test/channels.test.mjs`: the owner's DMs continue the Bot Chat, other chats and group members get their own lanes, and the owner must be an allowed user.
+  - `test/sync.test.mjs`: lane histories and `session:` records replicate, belong to their bot for deferral, and are removed with the bot.
+- **Real data (read-only):** this Mac's workspace has no Telegram channels or routines and one room with no messages. The Bot Chat histories stay under their bot ids, so nothing needs migrating.
+- **Actual browser:** a disposable engine on port 4399 with an empty temporary data directory. The Telegram dialog shows **Your own Telegram user ID** with its explanation, and the Ollama dialog shows **Context window (tokens)** under Local model endpoint. Neither form was saved, and there were no console errors.
+- **Not verified:**
+  - a two-engine live sync of lane records;
+  - a real Telegram conversation;
+  - the Chat options context note in a real browser (covered by the jsdom UI test).
+
+## Bot context, Release A: limits from the model window
+
+Checked on 27 October 2026 with Node 22.23.1. Deployed with releases B and C.
+
+- **Regressions, all passing:**
+  - `test/context-budget.test.mjs`: limits, catalog fields, overflow parsing, token estimates.
+  - `test/engine.test.mjs`:
+    - earlier tasks' outputs are cleared before any turn is dropped;
+    - the context prefix stays stable while a task continues;
+    - whole turns are dropped only when still over budget;
+    - a context overflow is retried once with the learned window, and a second overflow fails;
+    - the system prompt is fixed for a task, the plan and date travel in the turn context, and cached tokens are recorded.
+  - `test/providers.test.mjs`:
+    - catalog windows and the owner-set window;
+    - the turn context is sent last, with `prompt_cache_key` for Responses and Anthropic breakpoints that never cover the turn context.
+  - Updated: `test/memory-recall.test.mjs`, `test/task-tools.test.mjs`, `test/speech-ui.test.mjs`.
+- **Suites:** the context-related suites pass 144/144.
+  - The complete suite ran twice. The first run (430 tests) failed 3 tests; all three were fixed.
+  - The final run (433 tests) had 431 passing. The 2 failures are the Roki icon and source-asset checks in `test/creature-avatars-ui.test.mjs`. They come from concurrent Roki asset work: an earlier run in the same session found, for example, `public/assets/roki/roki-portrait-idle-32.png` missing while another session regenerated the assets.
+  - `npm run check` checks 58 modules.
+- **Real data (read-only, counts only):** `npm run context:report` and a direct run of the new compaction on the workspace state.
+  - Atlas keeps 21/21 user turns (previously 6/21).
+  - Nova and Scout keep all their turns.
+  - The ChatGPT-subscription model resolves to a 272K window with compaction from 244,800 tokens.
+- **Not verified:**
+  - real provider cache hits (`cached_tokens` from a live run);
+  - real context-error wording from each provider beyond the tested OpenAI/Anthropic forms;
+  - an actual-browser run of the new provider field and Chat options note.
+
+## Roki default character — Mac only
+
+Checked on 27 October 2026 using Node **22.23.1**. The complete suite passes **418 tests**, with no failures, skips or cancellations; `npm run check` checks **56 modules**, and `npm run build` generates Roki exports, rich-content bundles, 17 guide pages and dependency notices successfully. The new atlas preparation step preserves alpha and writes 66 image exports: nine poses at five sizes, five idle PNG icons, eight expressions and eight turn views. The character is a set of rendered poses with CSS motion, not a rigged 3D model.
+
+- **Regressions:** bounded local asset selection, every rendered `src`/`srcset` existing with the expected format/dimensions/alpha, PNG icon transparency at 32/64/128/256/512px, malicious profile fields, all nine poses and in-place state updates, exact new/edit defaults, legacy metadata preservation, fresh-store Roki versus unchanged saved bots, retained chat/room DOM, all 18 saved palettes still coloring activity, authenticated API persistence/reload and WebP MIME/ETag handling. Existing coordinator tests now derive the seed name. A dashboard fixture now clones one sample before changing only `working`, avoiding accidental millisecond timestamp changes while keeping its node-retention assertion. Managed-tool sanitization asserts absence of injected DOM/event handlers while allowing the legitimate mascot image.
+- **Actual browser:** a disposable engine on port 4336 with a scripted provider and no real credentials verified bot cards/roster, the new-bot dialog, chat greeting, live thinking, the laptop pose during a real `workspace_list` call, completed replies, and idle recovery. At 393×852, bot rows and chat fit without horizontal overflow; all visible mascot images loaded. The standalone review on the real Mac engine verified pose selection, pause (computed animation `none`), all eight expression/turn exports and all 49 review images loaded. Review caught and fixed idle hover hiding a small/tiny avatar's only image. Evidence: ignored `.runtime/roki-preview.png`, `.runtime/roki-working.png`, `.runtime/roki-phone.png`, `.runtime/roki-tests.log`, `.runtime/roki-build.log`.
+- **Local deployment:** all live/enabled work counts were zero before restart. Mac PID 86947 stopped cleanly; PID 93432 serves the existing configured workspace. Bot/provider counts and saved bot IDs/names/roles/instructions/appearance fields were verified unchanged. All 66 served images return HTTP 200, correct PNG/WebP MIME and exact checkout bytes. No native app binary change is required; Reload on **This Mac** loads the shared web UI.
+- **Scope:** the owner explicitly chose Mac only. Read-only VPS preflight found no unrelated source drift or active work, but automatic approval review rejected deployment/restart before execution because explicit remote-production authorization was missing; no remote upload, installation, backup or restart occurred. The owner then chose to leave the VPS unchanged. Physical iPhone and native WKWebView rendering, VoiceOver and measured frame rate were not repeated for Roki. Reduced motion is implemented in CSS; the explicit pause path was exercised in the browser.
+
+## Teammate hand-offs that looked stuck
+
+Checked on 27 October 2026 on Node 22.23.1. The owner's live task stopped at **Waiting for a teammate**. Its run record (read without printing content) showed Atlas handing a research question to Scout at 18:41:10; Scout worked for 2.5 minutes over 17 steps and failed at 18:43:42 because one long turn of web reads outgrew the working context (41 tool results, about 250000 characters) and compaction could only drop whole earlier turns. Atlas then resumed, but the wait had counted toward its own five-minute limit and it failed with **This task reached its runtime limit** at 18:45:36. Throughout the wait its chat showed nothing of Scout's progress.
+
+- **Fixes.** Compaction now shortens and then omits a long turn's oldest tool outputs (keeping a retained result's handle and every call/result pair) instead of failing. Waiting for a teammate no longer spends the asking run's runtime limit; the teammate has its own, and a 30-minute ceiling still bounds the whole conversation. The waiting run mirrors the teammate's status, step and current tool, and its chat shows them ("Nova: Read source · Step 2 · …", or that the teammate needs approval in its own chat).
+- **Regressions.** One long turn sheds its oldest outputs (moderate overflow keeps the newest results whole; severe overflow keeps the `tool_result_read` handle); a delegated conversation longer than one runtime limit completes and the waiting run carries the teammate's live progress, cleared afterwards; a teammate that exceeds its own limit fails without failing the bot that asked; the activity caption follows the mirrored progress and never attributes another bot's progress to the target. `npm run check` (54 modules) passes and the complete suite passes **416 tests**.
+- **Actual browser** (in-app browser, scratch engine on port 4333 with temporary data, a 20-second runtime limit and a scripted provider; the live engine and `data/` were not touched): Atlas asked Nova, the card read "Nova: Read source" with "Step 1" and then "Step 2", then "Nova's reply is available", and Atlas completed after about 23 seconds. No console errors.
+- **Deployed** to the live Mac engine (18:58) and the home server (19:02) after confirming neither had active work; both serve files matching this checkout and the Mac engine relinked to the server.
+- **Not covered:** a real provider task with a teammate after deployment; approval waits, which still count toward a task's own limit.
+
+## Adaptive activity flow in web and Apple web views
+
+Checked on 27 October 2026 on Node 22.23.1. The complete suite passes **413 tests**, with no failures, skips or cancellations; syntax checks cover **54 JavaScript modules** and `npm run build` succeeds. Tests and browser workflows use temporary stores and a scripted provider, without real provider credentials or operational transcripts.
+
+- **Recorded data.** Sixteen adapter regressions cover actual tool inputs and complete bounded JSON/CSV/document previews, truncated or malformed previews, tool failures, visible task plans, real delegation, task-specific graphs, stable signatures and bounded geometry. URL credentials/queries, secret-like fields and host absolute paths are excluded from presentation. Missing results and private reasoning are never invented.
+- **Renderer and integration.** Twelve DOM regressions cover canvas continuity and graph morphing, selection across polling/reparenting, hover/keyboard holds, escaped inspection text, bounded transparent phone layouts, reduced motion, offscreen/hidden views, native `studio:visible`, BFCache, disconnect cleanup, static-label collision avoidance and Stop isolation. Recorded fragments rotate after twelve seconds of visible animation while inspected/focused data stays held. Four app regressions verify run/drive-scoped admitted prompts, full room run events, actual escaped result data, stable canvas identity and exact Stop/approval identities. Earlier team/lifecycle regressions remain intact.
+- **Actual browser.** The real chat UI on a disposable engine on port 4328 used the real agent loop with deterministic provider replies and real tool events. A controlled HTTP fixture returned four observed fields; moving values opened their exact retained data, and Stop cancelled the task. A real `workspace_read` of the 12-row CSV exposed its actual row count, category, item and €2,400 cell, without calculating a total. Visible plan metadata produced its branches, and a real bounded `delegate_task` request and reply produced the teammate loop. At 390px, moving reply data could be tapped for inspection without horizontal overflow. Streamed text contracted the canvas to 96px with the same observed fields; Stop removed the flow and retained the partial reply. Warning/error logs were empty after loading the final assets.
+- **Native WebKit.** Disposable AppKit/WKWebView and UIKit/WKWebView probes loaded the same real UI and authenticated only against the scratch engine. Both macOS and an iPhone 17 Pro simulator rendered the nine-node/eight-edge research graph with readable moving task/result text, a transparent background, no border/shadow, nonblank canvas pixels, bounded fragments, visible Stop and zero JavaScript errors. The initial Mac test window was hidden, so the renderer correctly paused; foregrounding the disposable probe resolved the harness issue without changing the renderer. PNG/JSON evidence is retained locally under `.runtime/activity-native-probe/output/`.
+- **Deployment.** The Mac engine was brought up durably with its existing workspace after confirming no prior owner or active work. Seven coherent public assets, including the existing phone-layout dependency, were installed atomically on the VPS with static backups and rollback. Both engines served matching SHA-256 bytes with HTTP 200, `no-cache` and ETag; the VPS service process did not restart. Read-only inspection of the installed Mac app confirmed the new flow in an active chat. Later work was preserved; the final presentation polish uses only static asset replacement.
+- **Limits.** This check does not establish physical-iPhone rendering, VoiceOver behavior, paid-provider output quality or measured frame rate. No native binary changes are required for this feature: the installed macOS/iOS apps load their selected engine's shared web assets after Reload.
+
+## iPhone navigation: tab bar, bot switcher and app settings
+
+Checked on 27 October 2026 on Node 22.23.1 with temporary data only (a scratch engine on port 4390); the live engine on port 4311, `data/` and the home server were not touched. `npm run build` and `npm run check` (54 modules) pass, and the complete suite passes **412 tests**. That count also includes the activity-flow work that another agent was adding to the same checkout at the same time; this change adds four regressions in `test/navigation-ui.test.mjs` and updates two (the sidebar without Skills, Skills as a Settings tab).
+
+- **Regressions.** The four-tab bar and the Settings button in the navigation bar; Settings and bot details pushed over the tab they came from (Back target, highlighted tab); bot rows whose row opens the chat and whose ••• opens the details; the chat navigation bar (Back, bot switcher with live status, one ••• menu) with the desktop controls kept; the ••• menu's five actions and the switcher's order and checkmark; the app bridge (`chrome` true on the workspace, false on sign-in) and the Settings server row only inside the app.
+- **Actual browser** (in-app browser at 393×852 and at desktop width, six bots, one room, one routine, no provider credentials): tab bar, large titles with the inline title appearing on scroll, Settings tabs scrolling instead of squashing, the bot list, the bot and room switchers, the ••• menus, Memory and Teammates as bottom sheets, bot details with Back, and new screens starting at the top. At desktop width the sidebar (without Skills), chat header, side panel and composer were unchanged.
+- **iPhone simulator** (iOS 26.4, `iPhone 17`, a debug build paired with the scratch engine through `npm run pair`): the engine bar was gone once the page loaded and the page ran under the status bar with its own navigation bar and tab bar; Settings › the server row opened the app's Settings sheet with the server list (✓ and ⓘ), Sync ("Standalone engine") and Reload; the chat's navigation bar cleared the status bar and the composer the home indicator. The iOS and macOS `xcodebuild` builds succeed.
+- **Not verified:** the physical iPhone, an engine still running the old web UI (the engine bar should stay; this follows from the code path, it was not run), switching between two engines from the new Settings rows, the on-screen keyboard with the chat menus, and VoiceOver.
+
+## Bots that talk with each other, hidden bots and thinking waves
+
+Checked on 27 October 2026 on Node 22.23.1 with temporary data only; the live engine on port 4311 and `data/` were not touched. `npm run check` covers 53 modules and the complete suite passes **377 tests** (12 new: `test/team.test.mjs` and one API test in `test/studio.test.mjs`; one run-status assertion changed from "is working" to the new caption).
+
+- **Regressions.** `teammatesFor` in both modes; a bot with no collaborators selected sees every teammate in its prompt and really runs one it was never paired with, whose chat records `fromBotId`; selected mode lists only the chosen bot and refuses another; a bot without the collaboration group knows its team but has no `delegate_task`. API: `teamMode` and `hidden` defaults and validation, a hide-only PATCH accepted during a pending approval while a full edit is refused, the run left untouched. Browser rendering from the shipped `app.js`: sidebar/count/grid without hidden bots, the Hidden filter and its fallback, tiles navigating to the profile, the Teammates choice and checklist visibility, teammate messages labelled with the asking bot, each thinking phase (queued, thinking, a tool, talking with a named teammate with its colors, stopping), no window during approval or after completion, the room version with a room Stop. `public/thinking-waves.js` against a recording canvas: starts once per canvas, finite drawing values and in-range gradient stops for 200 frames, elapsed text, stops when removed; reduced motion draws one frame and redraws only on resize.
+- **Actual browser** (in-app browser, scratch engine on port 4399 with a scripted model that waits several seconds per step, calls `http_fetch`, then asks Nova through `delegate_task`): the Bots page hid the hidden bot and offered **Hidden 1**; clicking a tile's description opened the profile ("Talks with the whole team"); the Atlas chat showed the waves in its mint palette with the caption moving from thinking to talking with Nova (the right side blending into Nova's lavender) and back, with a live timer and Stop; Nova's chat showed Atlas's request with the Teammate tag; the settings dialog revealed the checklist for **Only selected teammates** (closed without saving); the phone layout (375 px) kept the window and Stop inside the card. The canvas measured exactly inside its rounded, clipped card. No script errors; the only console errors were connection refusals and a 401 from restarting the scratch engine.
+- **Deployed** the same day to the Mac engine and the VPS home server after confirming no active runs, room drives, routines or channels on either. Checks afterwards: both serve the new assets (the server's `app.js` is byte-identical to this build), the server code is unchanged, and the Mac engine reconnected to the server by itself.
+- **Not covered:** using the new features in the live workspace, the Apple app's web views, real providers deciding on their own to contact a teammate, and frame-rate measurement (smoothness was judged visually).
+
+## Dashboard, Settings navigation and bot profiles
+
+Checked on 27 October 2026 on Node 22.23.1 with temporary data only; the live engine on port 4311 and `data/` were not touched. `npm run check` covers 51 modules and the complete suite passes **362 tests** (22 new: `test/dashboard.test.mjs`, `test/bot-profile.test.mjs`, `test/navigation-ui.test.mjs`).
+
+- **Regressions.** Dashboard API: session required, ETag/304, list bounds, a real document-creating run appearing as a file and timeline entry, a real approval with its exact action, redaction including a secret that shortening would have split, files only from verified run outputs. Notes API: 401, unknown bot, read-only behaviour, links and backlinks, external edits, refused hidden/dotted/escaping/symlinked paths, redaction of a provider key inside a note, reads during a busy run while a memory change returns 409. Browser modules in a VM: skeleton then escaped content with no inline handlers, range control, stale and 304 replies, timer stopping off-page, every profile tab, a `<script>` in a note staying inert with the real renderer. Navigation: sidebar items and removed labels, the Settings alert dot, no breadcrumb, every Settings tab, Dashboard/profile mounting after each render, and an empty hash opening and loading the Dashboard (a bug the test found).
+- **Actual browser** (in-app browser, scratch engine on port 4399 with a scripted local model fixture): four bots produced a PDF, a DOCX, an XLSX, five linked notes and two facts through real tool calls; one run waited for a terminal approval, one stayed working and a routine ran. The Dashboard showed all of them, Preview opened the real PDF, and the page fit at 375 px without horizontal scroll (Needs you moves above the timeline on narrow screens). The profile's Overview, Brain map and reader with link/backlink navigation, Memory and Files tabs worked at 1440 px. Settings tabs and the phone menu were checked at 1440 and 375 px. No script errors.
+- **Liquid buttons** (same day, 365 tests; `test/liquid-ui.test.mjs` covers the drop position and restart, keyboard presses from the centre, ignored right clicks/disabled/unrelated controls, reduced motion and mouse-only highlight). In the in-app browser at 1024 px and 375 px: gradient primary, glass and accent pills, status pills with marks and the pulsing dot, dark segmented pills with legible counts, dialog footers, the round send button and chat file-card pills; the drop was captured mid-animation (slowed in the test tab only) on a gradient and a glass button. No horizontal scroll at 375 px.
+- **Not covered:** the `ask_user` question path (not wired into the engine), the live workspace, the Apple app's web views and paid providers. Animation smoothness was judged visually, not measured.
+
+## Security and performance review
+
+Checked on 27 October 2026 on Node 22.23.1 with temporary data only; the live engine on port 4311 and `data/` were not touched. Four read-only audits covered the HTTP/session layer, sync and pairing, the agent loop and tools, and outbound networking, documents and the browser. Each fixed finding has a regression test that fails on the previous source and passes now (checked by running the new tests against an unmodified copy).
+
+- **Fixed, high:** a heading or frontmatter pattern in long-term notes backtracked cubically (2,000 spaces blocked the engine for 1.4 s, 4,000 for 11 s) and ran on every task's recall. Notes now parse in linear time; 20,000 fuzzed headings give identical index terms and sections to the old parser, and a 100,000-space note parses in well under a second.
+- **Fixed, medium:** a revoked device came back when a newer edit from an engine that missed the revocation won the sync merge; concurrent internet password guesses could all pass the 50-per-hour cap before any was counted; unauthenticated limiter tables grew without bound and were swept on every request; Stop, task finish and shutdown waited forever on a descendant that escaped its process group with the output pipes (now settles about one second after exit).
+- **Fixed, low:** a first engine link to a `STUDIO_TLS=engine` hub accepted a publicly trusted certificate; logout with a device bearer left it valid; a note's file name could close the recall wrapper; credentials with quotes or backslashes escaped redaction in structured tool results; another engine's name was inserted unescaped into the status pill; NAT64, IPv4-compatible, 6to4 and site-local IPv6 forms bypassed provider address checks; truncated GCM tags were accepted when opening sealed credentials; document workers could still reach DNS promises/Resolver, UDP and HTTP/2; trailing-dot local names passed the web tool's name check; reply HTML kept `data-` action hooks; chart CSV missed formulas after leading whitespace; `npm run pair` trusted any socket at its path.
+- **Documented, not changed:** engine pairing lets whoever terminates TLS for the pairing request unwrap the sync key (the earlier claim that a TLS-terminating tunnel sees only ciphertext was wrong for pairing); device sign-in signatures can be replayed once on another linked engine; approved processes use the model-writable workspace as `HOME` and working directory; `http_fetch` can send model-chosen data to public URLs without approval; container publishing that hides client addresses defeats the internet sign-in policy. Follow-ups are in the roadmap.
+- **Performance, measured on synthetic state:** a mutation at 22 MB went from 41 ms to 18 ms (87 MB: 162 to 108 ms) by using the committed bytes as the rollback point; redacting a tool call went from 1.6 ms to 0.2 ms by memoizing unsealed credentials; streamed-text and work-log commits no longer trigger a full sync rescan (34 ms each at 22 MB); context compaction of a 27 MB history went from 7.1 s to 46 ms per model step with identical results on 3,000 random conversations.
+- **Actual browser,** on a scratch engine with a seeded 240-message transcript: the 6 MB rich-content bundle transferred as 1.44 MB with Brotli and `app.js` as 46 KB; unchanged chat polls answered `304` with about 300 bytes instead of 48 KB while the thread stayed intact; another engine's name containing HTML showed as text; no console errors.
+- **Tests:** the complete suite passes **340 tests** twice in a row, syntax checks cover 48 modules, and the rebuilt browser bundle and guide are included. One new sync test was timing-sensitive while written (changes are stamped when sync scans them); it now forces the scan and passed 12 consecutive runs.
+
+Not verified: the Apple app and the VPS on this build; a real provider run in the browser; memory use at very large state sizes.
+
+## Home server on a VPS, the Mac engine and a physical iPhone
+
+Checked on 27 October 2026 against the owner's VPS: Debian 13, Tupies as a hardened native systemd service with `STUDIO_TLS=engine` on port 443, no proxy or domain, next to unrelated software that was left untouched. Machine details are in the ignored `docs/local-workspace.md`.
+
+- **From the Mac over the internet:** pinned TLS 1.3 to `/api/engine` succeeded with trust `pinned`. A wrong pin was refused before anything was sent, TLS 1.2 was refused, and system trust without the pin rejected the certificate. `/api/auth` reported `passwordSignIn:false`, password setup and login from the public address answered 403, and port 80 was closed. IPv6 could not be checked from this network.
+- **Mac engine linked:** the link came from `studio-pair --engine` and is stored with `tls:"pinned"`. Nothing was running on the Mac first, and `data/` was backed up. All 71 local changes reached the server, which then held the same 4 bots, 3 providers (re-sealed with its own vault key), 4 conversations with 29 messages, 1 room, 2 skills and 9 workspace files. The server's record of the Mac engine came back to the Mac. No warnings appeared in the service log.
+- **Physical iPhone:** an iPhone 15 Pro on iOS 27.0 ran a debug build signed with the owner's team and installed with `devicectl`. A `studio-pair` link was opened in the app with `devicectl … --payload-url`; the app showed the same server code, pairing completed and Tupies opened. The server registered an `ios` device, which synced to the Mac, and the app stored the connection with `pinnedTLS`.
+- **Mac app:** a Release build on macOS 26.7 was signed with the owner's team (hardened runtime, not notarized) and installed in `/Applications`. On first launch it read the engine's `local-engine.json` and paired with the Mac engine as "This Mac" over loopback HTTP, without a code. A `studio-pair` link opened in the app with `open -a "/Applications/Tupies.app" '<link>'` showed the same server code, and the connection was stored as "Home server" with `pinnedTLS`. Each connection has its own key, so the server and the Mac engine each list two macOS devices, and both records synced both ways. The owner switched with ⌘1 and ⌘2 and saw each engine's interface. The app's `Info.plist` contains only `NSAllowsArbitraryLoads`, the same fix as the phone.
+- **Problems found on the phone, fixed and re-checked:**
+  - **App Transport Security.** `Config/Info.plist` listed `NSAllowsLocalNetworking` next to `NSAllowsArbitraryLoads`, and iOS then ignores the latter. ATS still applied to public addresses and rejected the engine's own certificate after the app had accepted its key. The log showed "system TLS Trust evaluation failed(-9802)"; the app showed "Can't reach". The earlier simulator test used `127.0.0.1`, which the local-network exception covers. The plist now sets only `NSAllowsArbitraryLoads`. After that, the app's own pinned request from the phone returned 200.
+  - **Certificate lifetime.** iOS 27's trust evaluation rejected the five-year certificate as "not standards compliant: Certificate exceeds maximum temporal validity period". The engine now issues a 46-day certificate (backdated one day) and renews it weekly over the same key with `setSecureContext`, so the pin and existing pairings never change. After deployment the phone's evaluation reported only the expected untrusted root, and the Mac engine relinked by itself after the service restart.
+  - **Diagnosis.** A temporary debug-only probe in the app printed the phone's raw errors; it has been removed.
+- **Tests:** the complete suite passes **322 tests** on Node 22.23.1. The one new regression checks that renewal replaces the served certificate without a restart and keeps the fingerprint, and the certificate test now requires a lifetime under 47 days. The Apple logic tests pass.
+
+Not verified: the iPhone on mobile data, IPv6, the Mac app starting the local engine itself (the engine was already running), and an actual weekly renewal on the VPS.
+
+## Distinct creature shapes and gradients
+
+The initial expansion snapshot passed the complete **312-test** workspace suite on Node **22.23.1**, with no failures, skips or cancellations. A repeat after concurrent sign-in/sync source edits reported 309 passing tests and three failures: the CSRF expired-session fixture expects one request while new policy recovery also fetches `/api/auth`; the bootstrap auth fixture omits the newly returned `passwordSignIn` field; and delegated ChatGPT renewal rejects an in-progress refresh before reusing its promise. The sign-in failures reproduce in their test files and the renewal failure reproduces in isolation; none invokes avatar code. Latest targeted avatar/model-picker/rich-content suites pass **31/31**, plus the new palette API test passes. Syntax checks cover **45 JavaScript modules**. Six additional regressions expand the avatar UI file to 15 tests and add one isolated authenticated API test. They verify all 18 palettes are accepted and preserved, unsupported colors cause no mutation, all 20 shapes are seed-reachable, every pair of silhouettes remains below 94% intersection-over-union at 30px, New creature changes both shape and color, team choices prefer unused appearances, and exact manual choices survive saving. Existing SVG-isolation, unsafe-input and polling-cache checks remain intact.
+
+All 20 designs were rendered and visually reviewed in `.runtime/creature-variations.png`. The actual in-app browser used a temporary six-bot workspace with no live data or provider credentials. It showed clearly different creatures in the grid and sidebar, all 18 gradient swatches and the 20-option shape selector. Choosing Dinosaur and Tangerine updated the preview; saving and reloading retained both exact values. The sidebar computed width is 36px, and browser warning/error logs were empty. `.runtime/creature-variations-editor.png` records the actual editor. Accessibility-tree observations were temporarily unavailable, so the browser check used screenshots and semantic DOM controls. Native mobile-device and OS reduced-motion checks were not repeated. The idle local engine was gracefully restarted after checking for active runs, room work, routines and channels; it returned ready with the existing workspace counts preserved, so expanded palette validation is loaded. Browser sessions require signing in again.
+
+## The engine's own certificate (no domain)
+
+The complete suite passes **321 tests** on Node **22.23.1** with no failures, skips or cancellations; syntax checks cover **48 JavaScript modules**. A second full run had one failure in the bundled TypeScript language-server test (a real `tsserver` under load); it passed three isolated reruns and nothing in that area changed.
+
+- `test/tls.test.mjs` (three regressions): the certificate is a valid self-signed X.509 v3 certificate over the identity key (subject, IPv4/IPv6/DNS alternative names, five-year validity at the time, now under 47 days as described above, new serial each time, same pin); an engine with `STUDIO_TLS=engine` serves TLS 1.3 with that key, refuses TLS 1.2 and plain HTTP, reports `tls:"identity"`, sets Secure cookies, accepts its https origin and trusts no proxy; a Mac engine links to such a home server through the pinned key (`tls:"pinned"`), syncs both ways, and when another engine takes over the address the Mac refuses it during the handshake: the impostor receives no request and nothing leaves the Mac. A link whose fingerprint does not match the certificate is refused before pairing.
+- Apple logic tests (`apps/apple/Tests/run-logic-tests.sh`): the Swift fingerprint of certificates generated by the engine matches the identity fingerprint; P-384 keys are never pinnable; the paired key is pinned, another engine's certificate and an unpinned self-signed certificate are refused; the trust report records pinning only. The iOS Simulator and macOS builds succeed.
+- iPhone simulator, against a scratch engine on `https://127.0.0.1:4402` with no live data: a link from `npm run pair` showed the same security code as the terminal, pairing completed, and the full web interface (styles, scripts, images and API calls) loaded over the pinned connection; the connection was stored with `pinnedTLS`. With an impostor engine on the same address the app showed "Security check failed: the server at Demo home server's address isn't the one you paired with, so nothing was sent." Restarting the real engine and choosing Try Again restored the interface and a green sync status.
+- Found while verifying: the ChatGPT renewal sync test failed intermittently because a request arriving while a renewal was already running saw the stored "in progress" mark and was refused instead of waiting. `lib/oauth.mjs` now awaits the running renewal first. A new regression in `test/providers.test.mjs` waits until the mark is stored before the second request, passes with the fix and fails on the previous order; the sync renewal test then passed 12 of 12 isolated runs.
+
+Not verified yet at this stage: a real VPS on a public IP, a physical iPhone, and macOS app pairing against an engine certificate (the shared trust code is covered by the logic tests and the iPhone run). The VPS and a physical iPhone were verified later; see the section above.
+
+## Internet sign-in and shell pairing
+
+The complete suite passes **317 tests** on Node **22.23.1** with no failures, skips or cancellations; syntax checks cover **46 JavaScript modules**. `test/access.test.mjs` adds five regressions; the server ones run a real engine with `STUDIO_PUBLIC_URL=https://studio.example.com` and send the Host and `X-Forwarded-For` headers a reverse proxy would:
+
+- Address handling: IPv4-mapped and port-suffixed addresses, private ranges (loopback, RFC 1918, Tailscale/CGNAT, ULA, link-local) against public ones, only the last forwarded hop used, forwarded headers ignored from untrusted connections, container gateways trusted only with `private`, an unusable forwarded value treated as the internet, and the public host name without a trusted proxy report treated as the internet.
+- Policy: `/api/auth` reports `passwordSignIn:false` on the public host; setup and login are refused there with a pointer to `npm run pair`; a password session opened locally is refused on the public host; a device paired over the public host signs in, uses the API and opens a web session there; the owner toggle (CSRF-checked for cookie sessions, audited, persisted in `access.json`) switches password sign-in from the internet on and off.
+- Limits: ten wrong passwords lock one client while another client and local sign-in still succeed; thirty forged device sign-ins lock only the attacker's address while the phone signs in from its own network; each device is limited to thirty sign-ins a minute; fifty internet password failures pause internet password sign-in but not private routes.
+- Shell pairing: the control socket is created with mode 0600, a second engine on the same data directory is refused, `scripts/pair.mjs` prints device and engine links with the public address and server code, the printed device link pairs a real device key, plain-HTTP override addresses are refused and the command reports a stopped engine clearly.
+- A data directory too deep for a Unix socket (about 104 bytes on macOS) uses a stable per-user 0700 directory under `/tmp`; a directory other accounts can read is refused. The first scratch run exposed this: the socket had been created under a silently truncated name.
+
+Two existing tests changed with the intended behavior: `/api/auth` now includes `passwordSignIn`, and after a 401 the web app re-reads `/api/auth` (a read only; the rejected mutation is still never replayed). One sync timing test failed once under full-suite load and passed on three isolated reruns and the next full run.
+
+Actual browser (in-app browser, scratch engine with `STUDIO_PUBLIC_URL=https://studio.example.com` behind a small local proxy that adds `X-Forwarded-For` and the public Host/Origin, no live data): the internet address showed the "Open it in the app" screen at desktop and phone width; the private address signed in with the scratch password; Devices & sync showed the Sign-in from the internet card, and the switch turned password sign-in from the internet on and off (confirmed through the proxied `/api/auth`) while the private session stayed signed in. `npm run pair` in a pseudo-terminal printed a 53-column QR code; rendering that output as a terminal paints it and decoding it with Apple's Vision framework returned exactly the printed link.
+
+Not verified yet: a real VPS behind Caddy or Tailscale Funnel, and scanning the terminal QR code with a physical iPhone.
+
+## Engines in sync, device pairing and the Apple app
+
+The complete suite passes **306 tests** on Node **22.23.1** with no failures, skips or cancellations; syntax checks cover **43 JavaScript modules** (the check now includes `lib/sync/`). `test/sync.test.mjs` adds seven regressions that start real engines on loopback with temporary data directories and a local model fixture:
+
+- Hybrid clock ordering, refusal of far-future stamps and document keys that cannot address passwords, runs or paths outside the replicated roots.
+- Pairing: engine identity/fingerprint, wrong-key proofs refused, single-use codes, engine-signed paired identity, no workspace key for apps, signed sessions with replay and clock-skew refusal, bearer access without CSRF, apps refused on sync routes, single-use web tickets that set a working browser session, revocation ending the active session, device links refused for engines and plain-HTTP links to other hosts refused.
+- Replication between a home server and a Mac engine in both directions: a Mac-made bot, provider (re-sealed with a different vault key and absent from sync metadata), memory fact, edited settings, a full chat started on each side in order, model history, notes created/edited/deleted, ignored dependency folders, and a device paired on the server signing in on the Mac until its revocation replicates. A real run on the server makes the Mac refuse the same bot with "working on Home server" and report it in `/api/state`.
+- Offline concurrent edits: the newer bot edit wins on both engines, the newer note wins and exactly one conflict copy holding the older content exists on both.
+- An established workspace (data that predates sync) wins over a freshly installed home server on first link, without duplicating seeded bots.
+- ChatGPT renewal against a local OAuth fixture: when the Mac engine and the home server both need a token at once, the issuer sees exactly one refresh (on the home server), the Mac receives the renewed bundle, and the old refresh token is never replayed.
+- Forged links pointing at another engine are refused before anything is shared; a linked engine cannot become a second hub; engine sessions cannot use the workspace API; unsealed sync payloads are refused; disconnecting keeps local data.
+
+The sync file ran three more consecutive times without failures after the final refactor. Shutdown previously waited for open sync long-polls (up to 25 s each) and for busy keep-alive connections without a limit. It now ends long-polls at once and caps connection draining at 2 s: a probe closed a linked Mac engine in about 10 ms and a home server in about 2 s, and the demo pair with a polling browser attached stopped in about 3 s.
+
+Actual browser (in-app browser, two scratch engines on ports 4401/4402, no live data): the Devices & sync page rendered for the linked Mac engine (home-server card, synced status, device list, security guidance) and the home server (linked engine online), the sidebar engine badge, and the pairing dialog with QR code, server code, countdown and the loopback reachability warning. The review led to hiding Remove on the engine's own record and keeping the bot roster visible on short windows.
+
+A read-only script mapped the owner's real `state.json` into 40 sync documents (4 bots, 3 providers, 2 skills, 1 room, settings, 4 histories, 25 messages) and back with zero mismatches, printing only counts. The live engine was not restarted or modified.
+
+Not verified: a real VPS over Tailscale or a public domain, an actual iPhone or Secure Enclave key, ChatGPT renewal against OpenAI itself (only the local OAuth fixture), and large workspaces near the 20,000-file limit. See `apps/apple/README.md` for the app's own build and simulator evidence.
+
+Apple app, checked independently after the app work: both `xcodebuild` builds (iOS Simulator and macOS, unsigned) succeed without compiler warnings, and `apps/apple/Tests/run-logic-tests.sh` passes, including signatures verified in both directions against `lib/sync/crypto.mjs`. On the iPhone 17 Pro simulator (iOS 26.4) with the two scratch engines: a `hermes-studio://` link opened the confirmation sheet with the decoded engine name and matching security code; Connect paired, signed in and loaded the workspace; a second engine paired; a bot created through the home server's API appeared in the Mac engine's view, and one created on the Mac engine appeared on the home server within about a second of switching, without reload; the switcher listed both engines online; revoking the iPhone on the home server turned its open web view into "This device was removed from Home server. Pair again." within one poll. The review found and fixed: web-view cookie sessions surviving device revocation, form-encoded spaces in pairing links, a sidebar that did not refresh after remote changes, hidden web views showing stale data after a switch, removal that did not unpair the device on the engine, and onboarding wording that did not match the web UI. QR scanning, a physical iPhone, the Mac app's interface and its Start Local Engine button were not exercised.
+
+# Verification — Tupies Engine 0.4 (historical)
+
+## Animated creature avatars
+
+The complete workspace suite passes **299 tests** on Node **22.23.1**, with no failures, skips or cancellations; syntax checks cover **35 JavaScript modules**. This tested snapshot also includes concurrent memory-recall changes. Ten tests in `test/creature-avatars-ui.test.mjs` cover stable legacy appearance and renaming, varied silhouettes, unique local SVG gradients, hostile profile strings, actual shuffle/palette/save events, unchanged legacy fields, new-bot preview persistence after ID assignment, run-state motion toggles, unchanged bot/room polling, and unique references when retained transcript nodes move.
+
+The actual in-app browser used a temporary isolated workspace with six fixture bots and no provider credentials. The bot grid and chat welcome displayed the new creatures. Settings randomized a creature, changed its palette, saved it, and retained the same silhouette/palette after a full reload. Browser-computed transforms changed over time with `creature-breathe`/`creature-blink` enabled; the paused bot's computed animation was `none`. Browser warning/error logs were empty. The ignored `.runtime/creature-avatar-editor.png` records the editor preview. A review caught changing SVG IDs invalidating unchanged polling caches, plus square stack shadows and squeezed narrow-screen swatches; the final implementation uses stable thread occurrence IDs, clears stack shadows, wraps fixed-size swatches and stacks the editor below 420px.
+
+Reduced-motion behavior is implemented in CSS and reviewed, but an OS reduced-motion toggle, a mobile device and every target browser were not exercised in this pass. No live workspace data, provider setup, chats or bot configuration were reset; the change is served as local browser assets without a server restart or state migration.
+
+## Two-level memory: recall, pinned facts and links
+
+The complete workspace suite passes **299 tests** on Node **22.23.1** with no failures, skips or cancellations; syntax checks cover **35 JavaScript modules**. This snapshot also contains another session's in-progress creature-avatar UI work and its tests. Five new regressions in `test/memory-recall.test.mjs` cover pinned-first core memory and its 40-fact/10000-character budget; pin retention on update, explicit unpinning, the 20-pin limit and argument validation; `brain_read` resolution of `[[links]]`, names and aliases; recall of strong, named, core-linked and follow-up matches while ignoring unrelated notes and filler requests; bounded excerpts that choose the relevant paragraph; the system prompt's pinned/recent sections, recalled-note wrapper, daily-note guidance and *Notes recalled* event; refusal of a note that tries to close the wrapper; no recall or guidance without the Memory group; and a task that still completes with *Notes unavailable* when the notes folder is broken. The studio API test covers PUT `pinned`. A real excerpt-budget overrun was found and fixed.
+
+An in-app browser run used a separate server on another port, with a temporary data directory and a generated test password, and no live account data. The Memory dialog showed pinned facts first with a badge. The pin button pinned a fact and moved it up. Editing a pinned fact pre-ticked *Pin this fact*, and unticking and saving unpinned it. A recorded recall event rendered as *Notes recalled* with its paths. The layout held at phone width, and there were no console errors. An actual model run with recalled notes was not exercised, because the fixture had no provider.
+
+## Long-term notes (two-level memory, first stage)
+
+The complete workspace suite passes **284 tests** on Node **22.23.1** with no failures, skips or cancellations; syntax checks cover **34 JavaScript modules**. Six new regressions in `test/brain.test.mjs` use temporary stores and cover Obsidian-format writes, alias/name/path link resolution, backlinks and overview/orphans/unresolved links; English and Ukrainian inflected search; tag and folder filters; stale-hash refusal and preservation of owner-added properties; section-aware appends and ten concurrent appends to one note; re-indexing after external edits and deletes; hidden-folder, non-Markdown, symlink and traversal refusal; per-bot isolation; Strict/Balanced approval; and credential redaction. Concurrent appends exposed a shared folder-creation race (`EEXIST`), fixed in `safePath` while still rejecting non-directories and symlinks. No browser check applies yet because notes have no UI.
+
+## OpenRouter voice input and output
+
+The final complete workspace suite passes **278 tests** on Node **22.23.1**, with no failures, skips or cancellations. Syntax checks cover **33 JavaScript modules**; the browser assets, 15 guide chapters and 398 dependency attributions build successfully. The speech additions include local HTTP security/protocol fixtures, controller lifecycle/recording fixtures and actual chat-options DOM tests. A repeated-denial fixture could re-submit a consumed approval while the persisted status caught up; its harness now waits for the exact live pending prompt. Application approval checks were not relaxed.
+
+Checks cover authenticated/CSRF-protected catalog, synthesis and transcription; explicit consent; exact model/voice and official destination validation; credential sealing/redaction; no audio/transcript persistence; bounded valid WAV input; MP3/WAV validation and Gemini PCM wrapping; redirect/HTML/size rejection; cancellation and released concurrency slots; draft-only dictation, manual edits, late permission/results, Send cleanup, preview caching, model-specific voices, unsaved preview isolation and binary CSRF recovery without paid provider retries.
+
+An actual in-app browser used a separate temporary workspace and simulated provider. ElevenLabs, Gemini and Fish preview buttons each played valid fixture audio. Returning to the unchanged ElevenLabs sample made no fourth upstream generation request. Fish's missing catalog voices resolved to verified public Ethan/Delia/Adrian presets. Saving retained the draft and selected ElevenLabs defaults; browser logs contained no warnings/errors. The screenshot is in ignored `.runtime/openrouter-voice-preview.png`. This verifies playback mechanics and UI, not the sound quality of neural provider voices.
+
+Read-only live public metadata confirmed the three OpenRouter model IDs, 21 ElevenLabs voices, 30 Gemini voices, and Fish's omitted voice list. Fish preset metadata was independently checked as public/trained through its public model API. No real account credentials, paid audio request or owner microphone recording was used. Actual microphone accuracy, provider entitlement, paid speech quality, mobile browser coverage and deployment/container audio behavior remain unverified. The operational workspace has no OpenRouter API-key connection yet; configure one in Model providers, then explicitly allow processing in Chat options to use paid speech. After confirming there were no active runs/room work or enabled routines/channels, the local server was gracefully restarted against its existing data. The localhost smoke check confirmed the configured workspace and blob-audio CSP. Existing sessions require sign-in again; no bots, connections, messages or workspaces were reset.
+
+## Background commands and language servers
+
+The complete workspace suite passes **276 tests** on Node **22.23.1**, with no failures, cancellations or skips; syntax checks cover **33 JavaScript modules**. This includes the concurrent speech changes present in the tested workspace. Production assets and all 15 guide chapters build successfully, and dependency notices now include the two pinned LSP runtime packages (398 package attributions). This native build was verified; the Docker image was not rebuilt for this expansion.
+
+Background tests execute real commands in temporary bot workspaces: concurrent start, output/status paging, nonzero exits, timeouts, byte limits, split UTF-8/credentials, owned stop/cancel, ordinary descendant cleanup, admission/close races, prefix-only saved coverage, history caps and abrupt host crashes. Restart recovery interrupts stored metadata without replaying commands or signaling stored PIDs. An independent executable repro confirmed that long credentials do not hide short READY messages and a newly rotated credential emitted byte by byte is absent from returned output. Redaction-version tests also cover credentials spanning a 12000-character page boundary and stale cursor resets.
+
+LSP tests use both malicious/delayed protocol fixtures and the actual bundled TypeScript server. Real queries cover definitions, type definitions, implementations, references, hover, document/workspace symbols, incoming/outgoing call hierarchy and diagnostics. Editing a file changes diagnostics; deleted open dependencies send didClose, stale hierarchy handles are rejected, and source-selected fake compiler/plugin fixtures remain unexecuted. Other cases verify private/symlink paths, forbidden server edits/commands, clipped ranges/text, absent/unknown capability/report metadata, request timeout/cancel, startup/close races, malformed frames, stderr handling and host-crash cleanup. Positions and locations are normalized; unversioned push reports remain explicitly unversioned.
+
+Engine/API regressions cover exact launch approval/denial, tool groups, real command plus bundled LSP in one run, no successful final status with a running command, failure metadata, task Stop, authentication/CSRF and stale/foreign handle identities. UI regressions cover bot/room cards, paging/Refresh/version conflicts (including version 0), output escaping, exact command Stop, late responses and approval-to-Ready header updates that preserve the draft.
+
+The actual in-app browser used an isolated temporary server and deterministic model responses, with real managed processes and the bundled language server. It observed one TypeScript diagnostic, a real definition location, then zero reported diagnostics after an exact edit. The output dialog displayed a running preview's actual READY message. Stop command terminated that process while the bot remained waiting for a different exact approval. A second background verification completed with exit code 0; all three plan steps completed and the language server drained. The final header showed Ready and Send was enabled. The ignored `.runtime/background-lsp-completed.png` records the completed command and stopped server. This was not a live model-quality or account-entitlement test, and no operational data or provider credentials were used in the fixtures.
+
+The independent review caught and repaired startup/Stop races, rotated credential paging, hidden short logs, omitted truncation flags, stale LSP buffers and a symlinked temporary-directory case. Earlier passing runs before these repairs are not the final release evidence. Rebuilding browser assets also resolved a temporarily stale speech bundle introduced by concurrent voice-source changes; the refreshed fixture loaded correctly.
+
+After the final 276-test run and build, the existing local server was confirmed idle (no active runs, active room work or enabled routines), then restarted with the existing configuration and preserved data. It responded normally with the existing workspace still configured. No live bot permissions were expanded; enable Workspace and Terminal on a selected bot to use the new approved launches. Existing browser sessions require sign-in after restart.
+
+## Coding tool-use expansion
+
+The full suite passes **213 tests** on Node **22.23.1**, with no failures, cancellations or skips. Syntax checking passes **29 JavaScript modules**. Local protocol fixtures require permission to bind loopback sockets; an initial restricted run failed with `listen EPERM` and is not counted as a passing result. Two new fixture assertions were corrected for macOS path canonicalization and nondeterministic concurrent edit arrival; the complete rerun passed.
+
+New coverage exercises recursive discovery and literal search with private paths, symlink and group enforcement; binary-inclusive byte budgets; long-line read continuation and full-file hashes; exact/ambiguous/stale edits and competing changes; strict approvals and mutation barriers; four-way read concurrency and ordered history; cancellation draining and protocol error metadata; task-plan validation, versions, persistence and incomplete completion; redaction, retention eviction and isolated paged outputs; and approved terminal subfolder/timeout behavior. An integrated engine regression performs actual discovery, reading, editing and verification with deterministic model responses.
+
+The actual in-app browser exercised a separate temporary server with a deterministic model fixture and no real provider credentials or operational data. The UI showed two of three steps done while a real `shell_run` waited for exact approval. Allow once executed a Node verification command, returned exit code 0 and `Verification passed`, then completed all three plan steps and restored Send. A screenshot is retained in the ignored `.runtime/tool-use-completed.png`. This verifies Tupies's tool/UI workflow, not Claude model quality, live provider entitlements or microphone accuracy. After verification, the existing local server was confirmed idle (no active runs, active room work or enabled routines), then restarted with its existing configuration/data to load the new engine. No account, bot, transcript or workspace reset was performed. Existing browser sessions require signing in again after the restart.
+
+The comparison used REA's native artifact metadata plus bounded shell string observations and current primary documentation. No decompiler was available, and no runtime parity claim is made. See `tool-use.md` for artifact digest, Evidence IDs, source links and unresolved capabilities. Earlier container and live-subscription evidence below remains scoped to the earlier tested build; the container image was not rebuilt for this expansion.
+
+## Project relocation and handoff
+
+On 26 October 2026 the working source and existing runtime tree were moved into the owner's Documents/Personal project folder. All 14 runtime files were byte-verified across the move; private directory/key/state permissions were preserved. Four bots, two provider records, chats and generated documents remained available. The previous working source/data directories no longer contain the active project. Exact machine paths are kept in the ignored local-workspace guide.
+
+Added AGENTS.md, CLAUDE.md, PROJECT_CONTEXT.md, development/roadmap documentation and a Node 22 version hint. Native npm start/dev now load an optional ignored .env. Started successfully from the new root with Node 22 and .env settings on port 4311; browser login and an existing PDF preview succeeded from the relocated data tree. The Node 22 relocation run completed with 199 passing tests, no failures, cancellations or skips; syntax checking passed 27 modules before concurrent tool-capability development continued. A separate active chat, “Add Claude Code tool capabilities,” is modifying this same project. This result records the tested snapshot, not untested later edits. Relocation verification exposed a cancellation-fixture timing race: the persisted model-start event could precede the mock provider installing its abort listener. The test now waits for the actual pending provider request before sending Stop. Earlier failed/stalled attempts are not counted as passing checks. The local guide documents selecting the verified Node 22 runtime.
+
+## Chat model, reasoning and voice checks
+
+Operated the actual local UI with the existing authorized ChatGPT/Codex connection. No new account authorization, private microphone recording or external voice API was used.
+
+| Workflow | Observed result |
+| --- | --- |
+| Current account capabilities | Chat options loaded models from the account catalog and exposed the model's advertised native reasoning levels. |
+| Model and reasoning selection | Changed Atlas to GPT-6 Luna / Low. A real task completed with the requested answer. Independently checked the stored run model/effort and that the shared workspace default remained GPT-6.1 Sol. |
+| Draft preservation | Typed a draft, changed model/reasoning, saved, and sent the unchanged draft. The composer and transcript remained intact. |
+| Model switching with history | Switched back to the inherited GPT-6.1 Sol model with Medium reasoning. A real follow-up completed using the existing conversation, including earlier document/tool history. |
+| Read aloud | Browser returned on-device macOS voices, including English and Ukrainian. Manual reading entered visible playback state. Stop removed the playback state. No remote voice was selected. Audibility and voice quality were not independently recorded or graded. |
+| Automatic reading | Enabled automatic reading and sent a new task. The completed reply entered playback automatically. Historical replies did not replay on enabling the setting. Restored automatic reading to off afterward. |
+| Dictation notice | Microphone control showed the first-use browser speech-processing notice and Start/Cancel controls. Cancel returned to chat without starting microphone capture. Actual microphone recognition accuracy was not tested with the user's ambient audio. |
+| Session recovery | Fixed a stale loadChat error after session expiry. Restarted the server while the final UI was open; polling returned to login without a new browser exception. Signed in again and verified saved defaults and voice preferences. |
+| Final preferences | Atlas again follows the shared model with provider-default reasoning. Automatic reading is off. Original bots, account, transcripts and document artifacts remain available. |
+
+## Automated checks
+
+All **192 tests pass** on Node 22, including 15 inference-control regressions, 17 speech/chat-options regressions and four session/stale-request regressions, plus the earlier provider, engine, security, documents and rich UI suite. Syntax checks pass for **27 JavaScript modules**.
+
+Inference tests exercise actual local HTTP protocol fixtures for model/effort payloads, current-catalog validation, credential/catalog races, authentication/CSRF, active-run snapshots, unknown capability defaults and encrypted reasoning-history compatibility. Speech tests use deterministic browser API stubs for draft-only dictation, late events, edits, cancellation, Send/navigation cleanup, local and explicitly permitted online voices, async voice loading, playback failures and room controls. They do not establish microphone hardware quality or speech-service availability in every browser.
+
+The 0.4 production Docker image also builds successfully. A separate smoke check runs with a read-only application filesystem, UID1000, dropped capabilities, no-new-privileges and no network. It verifies the same-origin microphone policy, bundled speech assets and authenticated model/reasoning settings against a deterministic catalog fixture. No live provider credentials or audio are used in that container check.
+
+## Voice deployment and privacy boundaries
+
+Browser speech support varies by platform and embedding. Dictation requires localhost or HTTPS, a supported speech-recognition service and microphone permission. Some browsers process audio through their vendor's service. Tupies has no microphone-audio upload route and does not treat a Codex subscription as an audio API credential. Read aloud prefers on-device voices; online voices require an explicit choice and notice. The same-origin microphone policy is enabled; camera and geolocation remain disabled.
+
+The model selector uses the connected provider's catalog. Reasoning is adjustable only where supported effort metadata and a supported transport are available. Unknown models/providers keep their own default behavior. These controls do not grant additional tool permissions.
+
+## Historical 0.3 record
+
+Checked on 26 October 2026. Current build: **0.3.0**. The earlier 0.2 browser pass is retained below as historical evidence, not as a claim that all external services were retested for 0.3.
+
+### Rich chat and documents: manual browser checks
+
+The local application was operated through its actual interface using the existing authorized ChatGPT/Codex account and `gpt-6.1-sol`. Source documents contained synthetic operations data, with no private user information. Generated files and the demonstration conversation remain in Atlas.
+
+| Workflow | Observed result |
+| --- | --- |
+| Attach four documents and send | Uploaded PDF, DOCX, PPTX and XLSX through the composer. The bot read all four and reconciled their figures. |
+| Rich answer | Real model output rendered a Markdown table, headings, bold text, two-series bar chart, four KPI cards, KaTeX growth formula and a Mermaid flowchart with visible labels. |
+| Chart downloads | Downloaded PNG, SVG and CSV through the browser. Verified PNG signature, SVG labels and all original CSV values. |
+| Create five documents | A real bot task produced PDF, DOCX, three-slide PPTX, XLSX and Markdown. Successful tools attached actual Preview/Download cards. All five downloads were exercised. |
+| PDF and DOCX preview | PDF pages rendered locally in the embedded canvas viewer without browser errors. DOCX preview showed headings, the data table and embedded chart. |
+| Spreadsheet calculations | Found and corrected an initial model mistake that supplied formulas as text. The final downloaded workbook contains 11 native formula cells. Independently verified cached totals 292/1085/300 and growth 33.3333%; the verification sheet was retained. Tool instructions now explain explicit formula objects and require rereading calculations. |
+| Markdown preservation | Found and fixed a serializer that discarded code fences. A new real bot export retained chart, infographic and Mermaid fences; its preview rendered all three plus the table and formula. |
+| PowerPoint chart read/preview | Regenerated the real three-slide presentation. A follow-up read recovered both chart series (84/96/112 and 90/100/110); the inline content preview includes the chart. |
+| Native Office layout | Opened exported DOCX, PPTX and XLSX in bundled headless LibreOffice for QA, then inspected page images. Fixed orphaned headings, missing heading/chart grouping and spreadsheet chart clipping. The product itself does not depend on LibreOffice or Codex tooling. |
+| Restart and persistence | Restarted the final standalone server; original four bots, OAuth connection, chosen default, conversation and generated files remained available. |
+
+### Current automated and container checks
+
+All **156 tests pass** on macOS with Node 22; no failures, skips or cancellations. Syntax checks pass for **26 JavaScript modules**. Coverage includes the existing agent/provider/security suite plus document workers, bounded archive parsing, malicious document rejection, format round trips, formulas, Markdown preservation, slide pagination, native PowerPoint chart caches, attachment authorization, artifact propagation, safe rich rendering, streaming visuals and actual Mermaid label preservation/cleanup.
+
+The production Docker image builds with pinned Node 22 and locked dependencies. A document smoke check runs all eight supported formats inside the image as UID 1000 with a read-only application filesystem, dropped capabilities, no-new-privileges, no network, 1 GB memory and temporary data directories. PDF, DOCX, PPTX, XLSX, MD, TXT, CSV and JSON each create and read successfully. Compose configuration parses successfully. No Hermes process, live account credentials or host Codex runtime is mounted into that check.
+
+The final package-registry audit reports **0 known vulnerabilities** in the locked dependency tree. This is an advisory database result, not a security certification.
+
+### Fixes discovered in the 0.3 pass
+
+- Incomplete streamed JSON blocks show a generating placeholder; diagram/math hydration waits for completed output.
+- Mermaid now emits SVG text labels, uses the available content width and removes temporary render/error DOM.
+- DOCX headings keep following content; PowerPoint pagination reserves room for the following table or chart.
+- XLSX print setup fits complete charts to page width; generated fractional cells use two decimals.
+- Literal strings beginning with `=` remain text and produce a warning; only explicit safe formula objects become executable spreadsheet formulas.
+- Markdown content preserves source formatting and code fences. PowerPoint reading extracts bounded cached native chart data where present; embedded workbooks are never opened.
+
+### Current boundaries
+
+Scanned PDFs and image attachments do not have OCR or model vision. Images have a local user preview. Office previews show extracted content and supported cached chart data; they do not reproduce every page layout or provide a full Office editor. Macros, legacy binary Office formats, embedded executable content and arbitrary HTML/JavaScript apps are unsupported. Cached spreadsheet/chart values can be stale in imported files.
+
+Document workers have deadlines, bounded queues, heap/input/output limits, restricted file access and no provider environment. Native libraries remain trusted dependencies; the worker is not a general-purpose operating-system sandbox. The earlier external-service and VPS limitations still apply.
+
+### Historical 0.2 manual and automated record
+
+Checked on 26 October 2026. This report separates actual browser workflows using the signed-in ChatGPT account from deterministic protocol tests and earlier container checks.
+
+#### Manual end-to-end checks
+
+The interface was operated manually in the Codex browser against the local Tupies server. Live agent tasks used the user's existing ChatGPT connection and selected `gpt-6.1-sol` default. These were actual Tupies model/tool runs, including real responses and approval decisions, rather than fixture-generated chat replies.
+
+| Workflow | Observed evidence | Result |
+| --- | --- | --- |
+| Workspace login and account persistence | Login succeeded; a server restart retained the existing OAuth connection and default model. | Passed |
+| Provider model selection | The live account catalog loaded with the saved gpt-6.1-sol choice selected; new bots used that default. | Passed |
+| Bot setup and search | Created and edited QA bots; new bots inherited the provider/default without model pins. Search filtered the roster from six bots to two matches and back. | Passed |
+| Basic chat and continuation | A QA bot returned `QA_READY_26`; the original Atlas bot answered in Ukrainian. A follow-up used preceding conversation context. | Passed |
+| Memory | Created and edited a memory through the UI; actual model runs used `memory_search` and `memory_set`. | Passed |
+| Workspace files and attachments | Created, edited and read a UTF-8 file in a nested directory. An uploaded attachment downloaded with identical bytes. | Passed |
+| Bot isolation | The separate QA Partner bot had no memory entries or files from the other QA bot. | Passed |
+| Imported skill | Imported `qa-e2e`, assigned it to a bot, and observed an actual `skills_read` call. | Passed |
+| Exact write approval | Under Strict review, denying a workspace write left no file; allowing the action created the verified file. | Passed |
+| REST and MCP integrations | Configured local loopback fixtures on port 4323. MCP discovery returned tools; approved model-requested calls returned `REST_E2E_VERIFIED` and `MCP_E2E_VERIFIED`. These were local test services, not connected third-party accounts. | Passed |
+| Integration denial | Denied a REST note write; the fixture reported zero notes saved. | Passed |
+| Web reading | An actual `http_fetch` request to `example.com` returned HTTP 200. | Passed |
+| Stop and recovery | Stopped an active streamed response; a subsequent chat task succeeded. | Passed |
+| Routines | UI **Run now** executed at 20:16 UTC; the due schedule dispatched automatically at 20:21 UTC. The test routine was then paused. | Passed |
+| Team turns and mentions | A sequential `@all` room received both bots' actual replies. An unknown mention was rejected. | Passed |
+| Autonomous collaboration | A room coordinator ran an actual child task and returned `DELEGATE_READY_26` using its result. | Passed |
+| Multiple browser tabs | After login in another tab, editing the room in the original tab recovered from the stale CSRF token and succeeded. | Passed |
+| Skill learning | Approved creation of `qa-learned-e2e`; the bot read the resulting skill and returned its verification marker. | Passed |
+| Messaging-channel validation | Missing allowlists and an invalid token were rejected. No real Telegram bot or message delivery was tested. | Passed for validation only |
+| Documentation | Opened the rendered help guide in the application. | Passed |
+| Final restart and transcript recheck | Reopened the final build with the existing account/default intact. A new room task returned RESTART_ROOM_READY_26 and showed only the actual task in the bot transcript. A stopped PERSIST_STOP_READY_26 reply remained labeled once after FINAL_AFTER_STOP_26 and a page reload. | Passed |
+
+The temporary QA bots, room, integrations, skills and paused routine were archived and removed after verification. The original Atlas, Nova, Scout and Echo bots, provider account and selected default were retained.
+
+#### Fixes found during this pass
+
+- The live provider could return an SSE body without the usual event-stream content type. The transport now recognizes the supported stream framing instead of parsing that body as a single JSON document.
+- Responses tool calls and reasoning items are assembled from stream events when the terminal response envelope contains an empty output array. This prevents a successful tool-request turn from becoming an empty reply.
+- An incomplete model turn cannot execute its proposed tools. It remains an incomplete task with the available text preserved.
+- A stale CSRF token after another tab signs in now has a specific rejection code. The client refreshes authentication and retries only that explicit rejection; the server rejects it before dispatching a mutation. Other 403 errors are not treated as retryable token errors.
+- A late provider-model request cannot reopen a closed or replaced dialog. A delayed close event from an older setup dialog also cannot clear the next validation or model-selection dialog.
+- Available partial output is retained and labeled when a task stops, fails or is interrupted by a restart. A new run does not silently erase that transcript entry.
+- Team rooms keep internal coordinator instructions out of the user-facing transcript and show the actual task and teammate results.
+
+#### Automated checks
+
+All **104 tests pass on macOS with Node 22**. Syntax checking passes for all **19 JavaScript modules**. The suite uses temporary data directories and local provider, OAuth, MCP, REST and Telegram protocol fixtures. It runs Tupies's independent engine.
+
+Coverage includes model/tool loops and continuation; SSE framing, event assembly, malformed or truncated responses and no automatic inference replay; workspace and memory isolation; exact approvals, cancellation and retained partial output; incomplete-turn refusal; context compaction; delegation and room budgets; skill learning and resource round trips; routine dispatch; provider/default inheritance; sealed credentials and credential redaction; OAuth state, nonce, signed identity and rotation; MCP sessions and fixed REST actions; Telegram allowlists and durable delivery handling; and session, CSRF, Origin, path and network boundaries.
+
+`npm test` runs these regressions. `npm run check` checks JavaScript syntax. `npm run docs:build` regenerates the browser guide. Automated fixture success does not by itself establish real account entitlement or external service permissions.
+
+#### Earlier container checks
+
+An earlier fixture-based smoke check built the pinned Node 22 image with Python 3, Bash and certificates. It used UID 1000, dropped capabilities, no-new-privileges, a read-only application filesystem, no external network and memory-backed data/temp directories. It checked HTTP access boundaries and an actual Tupies workspace write through a deterministic local model fixture. Compose configuration also parsed successfully.
+
+That earlier check used no Hermes process or live model-provider account. It is separate from this manual browser pass and does not establish that every change in the current build has been retested inside a container.
+
+#### Remaining boundaries
+
+This pass reused an already authorized ChatGPT account. Fresh ChatGPT consent and a real credential refresh were not repeated. Other providers' real credentials, paid third-party account actions, live Telegram messages, public VPS/TLS operation and dependencies for every imported skill were not tested.
+
+The REST/MCP fixtures verify the application's discovery, approval and call paths; they do not establish access to a user's Slack, GitHub, Brave or other service account. Messaging-channel validation does not establish real Telegram delivery.
+
+This is a bounded functional and source review, not an independent penetration audit or security certification. Approved scripts and terminal actions use the server account's operating-system permissions; the bot workspace is not an OS sandbox.
+
+Native desktop/mobile clients, screen streaming and Mac/iOS computer actions remain future work, as described in [architecture.md](architecture.md).

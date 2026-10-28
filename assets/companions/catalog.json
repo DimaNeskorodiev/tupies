@@ -1,0 +1,166 @@
+[
+  {
+    "id": "blue",
+    "label": "Blue",
+    "motion": "breathe",
+    "frames": false
+  },
+  {
+    "id": "coral",
+    "label": "Coral",
+    "motion": "sway",
+    "frames": false
+  },
+  {
+    "id": "jade",
+    "label": "Jade",
+    "motion": "float",
+    "frames": false
+  },
+  {
+    "id": "honey",
+    "label": "Honey",
+    "motion": "bounce",
+    "frames": false
+  },
+  {
+    "id": "cloud",
+    "label": "Cloud",
+    "motion": "breathe",
+    "frames": true,
+    "source": "expansion-a/cloud-source.png"
+  },
+  {
+    "id": "tangerine",
+    "label": "Tangerine",
+    "motion": "bounce",
+    "frames": true,
+    "source": "expansion-a/tangerine-source.png"
+  },
+  {
+    "id": "lagoon",
+    "label": "Lagoon",
+    "motion": "float",
+    "frames": true,
+    "source": "expansion-a/lagoon-source.png"
+  },
+  {
+    "id": "cherry",
+    "label": "Cherry",
+    "motion": "sway",
+    "frames": true,
+    "source": "expansion-a/cherry-source.png"
+  },
+  {
+    "id": "pistachio",
+    "label": "Pistachio",
+    "motion": "rock",
+    "frames": true,
+    "source": "expansion-a/pistachio-source.png"
+  },
+  {
+    "id": "periwinkle",
+    "label": "Periwinkle",
+    "motion": "float",
+    "frames": true,
+    "source": "expansion-a/periwinkle-source.png"
+  },
+  {
+    "id": "peach",
+    "label": "Peach",
+    "motion": "sway",
+    "frames": true,
+    "source": "expansion-a/peach-source.png"
+  },
+  {
+    "id": "lemon",
+    "label": "Lemon",
+    "motion": "bounce",
+    "frames": true,
+    "source": "expansion-a/lemon-source.png"
+  },
+  {
+    "id": "rose",
+    "label": "Rose",
+    "motion": "rock",
+    "frames": true,
+    "source": "expansion-a/rose-source.png"
+  },
+  {
+    "id": "teal",
+    "label": "Teal",
+    "motion": "breathe",
+    "frames": true,
+    "source": "expansion-a/teal-source.png"
+  },
+  {
+    "id": "azure",
+    "label": "Azure",
+    "motion": "float",
+    "frames": true,
+    "source": "expansion-b/azure-source.png"
+  },
+  {
+    "id": "scarlet",
+    "label": "Scarlet",
+    "motion": "bounce",
+    "frames": true,
+    "source": "expansion-b/scarlet-source.png"
+  },
+  {
+    "id": "butter",
+    "label": "Butter",
+    "motion": "rock",
+    "frames": true,
+    "source": "expansion-b/butter-source.png"
+  },
+  {
+    "id": "mint",
+    "label": "Mint",
+    "motion": "sway",
+    "frames": true,
+    "source": "expansion-b/mint-source.png"
+  },
+  {
+    "id": "cocoa",
+    "label": "Cocoa",
+    "motion": "breathe",
+    "frames": true,
+    "source": "expansion-b/cocoa-source.png"
+  },
+  {
+    "id": "blush",
+    "label": "Blush",
+    "motion": "rock",
+    "frames": true,
+    "source": "expansion-b/blush-source.png"
+  },
+  {
+    "id": "cobalt",
+    "label": "Cobalt",
+    "motion": "bounce",
+    "frames": true,
+    "source": "expansion-b/cobalt-source.png"
+  },
+  {
+    "id": "ice",
+    "label": "Ice",
+    "motion": "float",
+    "frames": true,
+    "source": "expansion-b/ice-source.png"
+  },
+  {
+    "id": "apricot",
+    "label": "Apricot",
+    "motion": "sway",
+    "frames": true,
+    "source": "expansion-b/apricot-source.png"
+  },
+  {
+    "id": "silver",
+    "label": "Silver",
+    "motion": "breathe",
+    "frames": true,
+    "source": "expansion-b/silver-source.png"
+  }
+]

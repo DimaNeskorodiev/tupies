@@ -1,0 +1,15 @@
+import { build } from 'esbuild';
+import { mkdir, cp, copyFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+const root=fileURLToPath(new URL('..',import.meta.url));
+await mkdir(new URL('../public/vendor/',import.meta.url),{recursive:true});
+await build({entryPoints:[root+'public/rich-content.mjs'],outfile:root+'public/vendor/rich-content.js',bundle:true,format:'iife',globalName:'StudioRich',platform:'browser',external:['/vendor/pdf.mjs'],target:['es2022'],minify:true,legalComments:'eof',define:{'process.env.NODE_ENV':'"production"'},logLevel:'warning'});
+await build({entryPoints:[root+'public/speech.mjs'],outfile:root+'public/vendor/speech.js',bundle:true,format:'iife',globalName:'StudioSpeech',platform:'browser',target:['es2022'],minify:true,legalComments:'eof',logLevel:'warning'});
+await copyFile(root+'node_modules/katex/dist/katex.min.css',root+'public/vendor/katex.min.css');
+await cp(root+'node_modules/katex/dist/fonts',root+'public/vendor/fonts',{recursive:true});
+await copyFile(root+'assets/licenses/KaTeX-FONTS-OFL.txt',root+'public/vendor/fonts/OFL.txt');
+await copyFile(root+'node_modules/pdfjs-dist/build/pdf.mjs',root+'public/vendor/pdf.mjs');
+await copyFile(root+'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',root+'public/vendor/pdf.worker.min.mjs');
+await copyFile(root+'node_modules/highlight.js/styles/github.min.css',root+'public/vendor/highlight.min.css');
+for(const dir of ['cmaps','standard_fonts','wasm'])await cp(root+'node_modules/pdfjs-dist/'+dir,root+'public/vendor/'+dir,{recursive:true});
+console.log('Local rich content, mathematics, diagrams, charts and PDF assets built.');

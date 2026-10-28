@@ -1,0 +1,17 @@
+node_modules/
+data/
+.runtime/
+backups/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+
+# Generated release output and duplicate prototype download bundles
+/output/
+/prototypes/**/*.zip
+
+# Machine-specific development context
+docs/local-workspace.md

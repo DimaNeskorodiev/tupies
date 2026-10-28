@@ -1,0 +1,81 @@
+{
+  "id": "periwinkle",
+  "source": "periwinkle-source.png",
+  "prompt": "periwinkle-prompt.txt",
+  "sha256": "6daee1b47848fdfc87d8dd5ddce2daa4ef09a1ea6edaa02ad6616c8aeda60b9e",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 884865,
+  "opaquePixels": 657293,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 167719,
+        "left": 66,
+        "top": 139,
+        "width": 520,
+        "height": 469
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 168058,
+        "left": 43,
+        "top": 139,
+        "width": 519,
+        "height": 468
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 163365,
+        "left": 76,
+        "top": 84,
+        "width": 503,
+        "height": 463
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 163382,
+        "left": 43,
+        "top": 86,
+        "width": 548,
+        "height": 461
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 43,
+    "top": 84,
+    "width": 548,
+    "height": 524
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}

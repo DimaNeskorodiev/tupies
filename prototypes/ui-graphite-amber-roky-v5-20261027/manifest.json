@@ -1,0 +1,101 @@
+{
+  "revision": 5,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "selected_base": "Graphite & Amber",
+  "scope": "Four nearby UI image studies with distinct per-bot Roki variants; eight full-body/portrait avatar studies. No application/runtime changes or production asset replacement.",
+  "images": [
+    {
+      "id": "00-roky-variants",
+      "name": "Roky avatar variants",
+      "summary": "Eight full-body and matching portrait studies",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-450f0647-b636-4968-905a-5f1ae2d99003.png",
+      "destination": "prototypes/ui-graphite-amber-roky-v5-20261027/00-roky-variants.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1579638
+    },
+    {
+      "id": "01-soft-graphite",
+      "name": "Soft Graphite",
+      "summary": "Closest to the selected design; graphite, pearl, slate and ember Rokys",
+      "avatars": {
+        "Atlas": "01 Basalt",
+        "Nova": "02 Pearl",
+        "Scout": "05 Slate",
+        "Echo": "03 Ember"
+      },
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-4d2c7502-7e95-44bf-91cf-4be33fec898d.png",
+      "destination": "prototypes/ui-graphite-amber-roky-v5-20261027/01-soft-graphite.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1595416
+    },
+    {
+      "id": "02-silver-copper",
+      "name": "Silver & Copper",
+      "summary": "Sharper white glass and mineral-metal finishes",
+      "avatars": {
+        "Atlas": "01 Basalt",
+        "Nova": "08 Titanium",
+        "Scout": "06 Copper",
+        "Echo": "05 Slate"
+      },
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-28636176-4f7d-47f2-b157-7b7d93bf961b.png",
+      "destination": "prototypes/ui-graphite-amber-roky-v5-20261027/02-silver-copper.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1560836
+    },
+    {
+      "id": "03-cool-minerals",
+      "name": "Cool Minerals",
+      "summary": "The same amber UI with cobalt, jade and pearl avatars",
+      "avatars": {
+        "Atlas": "01 Basalt",
+        "Nova": "02 Pearl",
+        "Scout": "04 Cobalt",
+        "Echo": "07 Jade"
+      },
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-ae0633f4-b00b-4794-a6f8-96f896d3e4f5.png",
+      "destination": "prototypes/ui-graphite-amber-roky-v5-20261027/03-cool-minerals.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1615929
+    },
+    {
+      "id": "04-ember-glass",
+      "name": "Ember Glass",
+      "summary": "A stronger amber edge with silver, orange, cobalt and copper Rokys",
+      "avatars": {
+        "Atlas": "08 Titanium",
+        "Nova": "03 Ember",
+        "Scout": "04 Cobalt",
+        "Echo": "06 Copper"
+      },
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-a965d8a7-7143-4bca-8608-5dd30183dfac.png",
+      "destination": "prototypes/ui-graphite-amber-roky-v5-20261027/04-ember-glass.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1605570
+    }
+  ],
+  "avatar_names": [
+    "Basalt",
+    "Pearl",
+    "Ember",
+    "Cobalt",
+    "Slate",
+    "Copper",
+    "Jade",
+    "Titanium"
+  ],
+  "references": [
+    "references/03-graphite-amber.png",
+    "references/roki-reference.png"
+  ],
+  "prompts": [
+    "prompts.json",
+    "ui-prompts.json"
+  ]
+}

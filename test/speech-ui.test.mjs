@@ -1,0 +1,88 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+import {JSDOM} from 'jsdom';
+import {createSpeechController,recognitionNotice,recognitionFallback,cloudNotice,previewText} from '../public/speech.mjs';
+const source=(await readFile(new URL('../public/app.js',import.meta.url),'utf8')).replace(/\nstart\(\);\s*$/,'\n');
+function harness(){
+  const dom=new JSDOM('<!doctype html><div id="app"></div><div id="dialog-root"></div><div id="toasts"></div>',{url:'http://studio.local/#/bot/bot_test',runScripts:'outside-only'}),win=dom.window,recognizers=[],spoken=[];
+  win.setInterval=()=>1;win.clearInterval=()=>{};Object.defineProperty(win,'isSecureContext',{value:true});
+  win.HTMLDialogElement.prototype.showModal=function(){this.open=true;};win.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new win.Event('close'));};
+  win.SpeechRecognition=class{constructor(){recognizers.push(this);}start(){}stop(){this.stopped=true;}abort(){this.aborted=true;}};
+  const voices=[{voiceURI:'local-en',name:'Local English',lang:'en-US',localService:true},{voiceURI:'online-en',name:'Online English',lang:'en-US',localService:false}];
+  win.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};win.speechSynthesis={getVoices:()=>voices,speak:utterance=>spoken.push(utterance),cancel(){},addEventListener(){},removeEventListener(){}};
+  const audio=[];win.Audio=class{constructor(src){this.src=src;audio.push(this);}async play(){}pause(){this.paused=true;}removeAttribute(){}load(){}};win.URL.createObjectURL=()=>`blob:fixture-${audio.length}`;win.URL.revokeObjectURL=()=>{};
+  const controller=createSpeechController(win,{voiceWaitMs:10});controller.setPreferences({engine:"browser"});win.StudioSpeech={controller,recognitionNotice,recognitionFallback,cloudNotice,previewText};win.requests=[];win.playedAudio=audio;
+  vm.runInContext(source+'\nconst fixtureFetchApi=api;',dom.getInternalVMContext());
+  vm.runInContext(`data={...initialState,bots:[{id:'bot_test',name:'Atlas',connectionId:'provider',model:'model-a',skills:[]}],connections:[{id:'provider',type:'openai',name:'Provider',status:'connected',defaultModel:'model-a'}],rooms:[{id:'room_test',name:'Team room',botIds:['bot_test']}]};auth={authenticated:true,csrf:'token'};activeBot='bot_test';document.querySelector('#app').innerHTML=renderChat('bot_test');installSpeech();chat={messages:[{id:'reply_1',role:'assistant',content:'A useful completed reply.'}],run:null};renderThread(botById('bot_test'));api=async(path,options={})=>{requests.push({path,...options});if(path.endsWith('/inference')){if(options.method==='PATCH')return {bot:{...botById('bot_test'),...options.body}};return {model:'model-a',reasoningEffort:'low',effectiveModel:'model-a',defaultModel:'model-a',models:[{id:'model-a',name:'Model A',reasoning:{supported:true,efforts:['low','high']}},{id:'model-b',name:'Model B',reasoning:{supported:true,efforts:['minimal','medium']}},{id:'model-c',name:'Model C',reasoning:{supported:false,efforts:[]}}],reasoning:{supported:true,efforts:['low','high']}};}if(path.endsWith('/messages')&&options.method!=='POST')return {messages:[],run:null};return {};};`,dom.getInternalVMContext());
+  return {dom,win,controller,recognizers,spoken,run:code=>vm.runInContext(code,dom.getInternalVMContext()),close(){controller.cleanup();dom.window.close();}};
+}
+const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
+test('chat options use the live catalog and save only the selected bot inference without replacing its draft',async()=>{
+  const h=harness(),doc=h.win.document,input=doc.querySelector('#message-input');input.value='Keep this draft';h.run("composerAttachments.set('bot_test',[{path:'brief.pdf',name:'brief.pdf'}]);refreshComposerAttachments('bot_test')");
+  await h.run("chatOptionsDialog('bot_test')");assert.match(h.win.requests[0].path,/bots\/bot_test\/inference$/);assert.equal(doc.querySelectorAll('#chat-model option').length,4);assert.match(doc.querySelector('.chat-inference-note').textContent,/next task/);assert.match(doc.querySelector('#chat-context-note').textContent,/assumes 128K tokens/);
+  doc.querySelector('#chat-model').value='model-b';doc.querySelector('#chat-model').dispatchEvent(new h.win.Event('change',{bubbles:true}));assert.deepEqual([...doc.querySelector('#chat-reasoning').options].map(option=>option.value),['','minimal','medium']);doc.querySelector('#chat-reasoning').value='medium';
+  doc.querySelector('#chat-options-form').dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();const patch=h.win.requests.find(request=>request.method==='PATCH');assert.equal(JSON.stringify(patch.body),JSON.stringify({model:'model-b',reasoningEffort:'medium'}));assert.equal(input.value,'Keep this draft');assert.equal(doc.querySelector('#message-input'),input);assert.equal(doc.querySelectorAll('.attachment-chip').length,1);assert.equal(doc.querySelector('#composer-model-summary'),null);assert.equal(h.run("botById('bot_test').model"),'model-b');assert.equal(h.run("data.connections[0].defaultModel"),'model-a');h.close();
+});
+test('chat options show how full the conversation is and send compaction requests for this bot only',async()=>{
+  const h=harness(),doc=h.win.document;await h.run("chatOptionsDialog('bot_test')");
+  const section=doc.querySelector('#chat-context-tools');assert.ok(section);assert.match(section.textContent,/This conversation is about 0 tokens\./);
+  assert.deepEqual([...section.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-topic',false]]);
+  section.querySelector('[data-action="new-topic"]').dispatchEvent(new h.win.MouseEvent('click',{bubbles:true}));await tick();await tick();
+  const request=h.win.requests.find(item=>item.path.endsWith('/compact'));
+  assert.equal(request.path,'/api/bots/bot_test/compact');assert.equal(request.method,'POST');assert.equal(JSON.stringify(request.body),JSON.stringify({topic:true}));
+  // The context note uses the limits the engine reports for the bot.
+  h.run("chatInferenceState={...chatInferenceState,context:{window:272000,source:'known',compactAt:244800},conversation:{tokens:91234,compactedAt:'2026-10-27T10:00:00Z'}}");
+  assert.match(h.run('conversationNoteText(chatInferenceState)'),/^This conversation is about 91K tokens; older messages are summarized automatically from about 245K\. Last summarized /);
+  h.run("botDialog('bot_test')");assert.deepEqual([...doc.querySelectorAll('#bot-context-limit option')].map(option=>option.value),['','128k','max']);
+  h.close();
+});
+test('unknown reasoning capabilities expose provider default only',async()=>{
+  const h=harness();await h.run("chatOptionsDialog('bot_test')");const select=h.win.document.querySelector('#chat-model');select.value='model-c';select.dispatchEvent(new h.win.Event('change',{bubbles:true}));assert.deepEqual([...h.win.document.querySelector('#chat-reasoning').options].map(option=>option.value),['']);h.close();
+});
+test('first dictation shows the browser processing notice and cancelled dictation restores only its original draft',async()=>{
+  const h=harness(),doc=h.win.document;doc.querySelector('#message-input').value='Existing text';doc.querySelector('[data-action=dictate]').click();assert.equal(h.recognizers.length,0);assert.match(doc.querySelector('dialog').textContent,/may send microphone audio/);doc.querySelector('[data-action=accept-dictation]').click();assert.equal(h.recognizers.length,1);h.recognizers[0].onresult({results:[[{transcript:'Spoken words'}]]});assert.equal(doc.querySelector('#message-input').value,'Existing text\nSpoken words');assert.equal(h.win.requests.length,0);assert.match(doc.querySelector('.composer-voice-status').textContent,/Listening/);doc.querySelector('[data-action=cancel-dictation]').click();assert.equal(doc.querySelector('#message-input').value,'Existing text');h.recognizers[0].onresult({results:[[{transcript:'Late words'}]]});assert.equal(doc.querySelector('#message-input').value,'Existing text');h.close();
+});
+test('manual typing and Send stop dictation before late events can overwrite or send extra text',async()=>{
+  const h=harness(),doc=h.win.document;h.controller.acceptRecognitionNotice();h.run("startDictation('message-input')");h.recognizers[0].onresult({results:[[{transcript:'Voice draft'}]]});doc.querySelector('#message-input').value+=' with typing';doc.querySelector('#message-input').dispatchEvent(new h.win.Event('input',{bubbles:true}));assert.equal(h.controller.state.listening,false);h.recognizers[0].onresult({results:[[{transcript:'Late replacement'}]]});assert.equal(doc.querySelector('#message-input').value,'Voice draft with typing');
+  h.run("startDictation('message-input')");doc.querySelector('#message-form').dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();assert.equal(h.controller.state.listening,false);h.recognizers[1].onresult({results:[[{transcript:'Late after Send'}]]});assert.equal(doc.querySelector('#message-input').value,'');const sent=h.win.requests.find(request=>request.method==='POST');assert.equal(sent.body.text,'Voice draft with typing');h.close();
+});
+test('online voice choices show processing notice and acknowledgement without enabling auto-read by default',async()=>{
+  const h=harness();await h.run("chatOptionsDialog('bot_test')");const doc=h.win.document;assert.equal(doc.querySelector('[name=autoRead]').checked,false);assert.match(doc.querySelector('#speech-voice').textContent,/On device/);assert.match(doc.querySelector('#speech-voice').textContent,/Online/);doc.querySelector('#speech-voice').value='online-en';doc.querySelector('#speech-voice').dispatchEvent(new h.win.Event('change',{bubbles:true}));assert.equal(doc.querySelector('#speech-remote-notice').hidden,false);assert.equal(doc.querySelector('[name=allowRemoteVoice]').required,true);assert.equal(h.spoken.length,0);h.close();
+});
+test('read-aloud controls work for final assistant replies and navigation cancels speech',async()=>{
+  const h=harness(),doc=h.win.document;doc.querySelector('[data-action=read-message]').click();await tick();assert.equal(h.spoken.length,1);assert.equal(h.controller.state.reading,true);assert.match(doc.querySelector('[data-action=read-message]').textContent,/Stop reading/);h.run("location.hash='#/bots'");await tick();assert.equal(h.controller.state.reading,false);assert.equal(h.controller.state.listening,false);h.close();
+});
+test('team room composers provide voice controls and retain distinct per-bot model settings',async()=>{
+  const h=harness();h.run("location.hash='#/room/room_test';document.querySelector('#app').innerHTML=renderRoom('room_test')");const doc=h.win.document;assert.ok(doc.querySelector('[data-target="room-message-input"]'));h.run('openMenu=(anchor,items)=>{requests.push({menu:items});};roomMenu({},\"room_test\")');assert.match(h.win.requests.pop().menu,/data-action="chat-options"/);await h.run('chatOptionsDialog()');assert.equal(doc.querySelector('#chat-model'),null);assert.ok(doc.querySelector('#speech-language'));assert.equal(h.win.requests.length,0);h.close();
+});
+
+function cloudFixture(h){
+  h.controller.setPreferences({engine:'openrouter'});
+  h.run(`data.connections.push({id:'router',name:'OpenRouter fixture',type:'openrouter',hasKey:true});const originalApi=api;api=async(path,options={})=>{if(path.startsWith('/api/speech/catalog')){requests.push({path,...options});return {connectionId:'router',speech:[{id:'elevenlabs/eleven-v4-turbo',name:'Eleven v4 Turbo',voices:['george','sarah']},{id:'google/gemini-3.8-flash-tts',name:'Gemini 3.8 Flash TTS',voices:['Kore','Puck']},{id:'fish-audio/drama-3',name:'Fish Drama 3',voices:['fish-ethan','fish-delia']}],transcription:[{id:'elevenlabs/scribe-v2',name:'ElevenLabs: Scribe v2'},{id:'openai/gpt-transcribe',name:'GPT Transcribe'}]};}if(path==='/api/speech/synthesize'){requests.push({path,...options});return new Blob(['audio'],{type:'audio/mpeg'});}return originalApi(path,options);};`);
+}
+test('AI comparison defaults to ElevenLabs, previews each selected voice, and saves preferences without changing the draft',async()=>{
+  const h=harness();cloudFixture(h);const doc=h.win.document;doc.querySelector('#message-input').value='Keep this draft';await h.run("chatOptionsDialog('bot_test')");await tick();
+  assert.equal(doc.querySelector('#speech-ai-model').value,'elevenlabs/eleven-v4-turbo');assert.equal(doc.querySelector('#speech-transcription').value,'elevenlabs/scribe-v2');assert.equal(doc.querySelectorAll('[data-action=preview-ai-voice]:enabled').length,3);assert.match(doc.querySelector('#speech-cloud-options').textContent,/billed to your OpenRouter account/);
+  doc.querySelector('button[data-model="elevenlabs/eleven-v4-turbo"]').click();await tick();assert.equal(h.win.requests.filter(item=>item.path==='/api/speech/synthesize').length,0);assert.match([...doc.querySelectorAll('.form-error')].map(item=>item.textContent).join(' '),/Allow OpenRouter/,doc.querySelector('#toasts').textContent);
+  doc.querySelector('[name=cloudSpeechConsent]').checked=true;doc.querySelector('button[data-model="elevenlabs/eleven-v4-turbo"]').click();await tick();assert.equal(h.win.playedAudio.length,1);assert.equal(h.win.requests.at(-1).body.voice,'george');assert.equal(doc.querySelector('.form-error').textContent,'');
+  doc.querySelector('button[data-model="google/gemini-3.8-flash-tts"]').click();await tick();assert.equal(doc.querySelector('#speech-ai-voice').value,'Kore');assert.equal(h.win.requests.at(-1).body.model,'google/gemini-3.8-flash-tts');assert.equal(h.controller.preferences.speechModel,'elevenlabs/eleven-v4-turbo');
+  doc.querySelector('#speech-ai-voice').value='Puck';doc.querySelector('#speech-ai-voice').dispatchEvent(new h.win.Event('change',{bubbles:true}));doc.querySelector('button[data-model="fish-audio/drama-3"]').click();await tick();assert.equal(h.win.requests.at(-1).body.voice,'fish-ethan');
+  doc.querySelector('button[data-model="google/gemini-3.8-flash-tts"]').click();await tick();assert.equal(doc.querySelector('#speech-ai-voice').value,'Puck');assert.equal(doc.querySelector('#message-input').value,'Keep this draft');
+  doc.querySelector('#chat-options-form').dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();assert.equal(h.controller.preferences.speechModel,'google/gemini-3.8-flash-tts');assert.equal(h.controller.preferences.modelVoices['google/gemini-3.8-flash-tts'],'Puck');assert.equal(h.controller.preferences.connectionId,'router');assert.equal(h.controller.state.reading,false);assert.equal(doc.querySelector('#message-input').value,'Keep this draft');h.close();
+});
+test('closing the comparison dialog cancels a pending preview and ignores late catalogs',async()=>{
+  const h=harness();cloudFixture(h);await h.run('chatOptionsDialog()');await tick();const doc=h.win.document;doc.querySelector('[name=cloudSpeechConsent]').checked=true;
+  let finish,signal;h.controller.setTransport({synthesize:(_body,value)=>{signal=value;return new Promise(resolve=>finish=resolve);}});doc.querySelector('[data-action=preview-ai-voice]').click();await tick();h.run('closeDialog()');assert.equal(signal.aborted,true);finish(new h.win.Blob(['audio'],{type:'audio/mpeg'}));await tick();assert.equal(h.win.playedAudio.length,0);assert.equal(h.controller.preferences.cloudConsent,false);h.close();
+});
+test('missing OpenRouter credentials have a visible setup path and make no paid requests',async()=>{
+  const h=harness();h.controller.setPreferences({engine:'openrouter'});await h.run('chatOptionsDialog()');assert.match(h.win.document.querySelector('#speech-cloud-options').textContent,/Add an OpenRouter API key/);assert.equal(h.win.document.querySelectorAll('[data-action=preview-ai-voice]:enabled').length,0);assert.equal(h.win.requests.length,0);h.close();
+});
+
+test('binary speech API responses retain the exact CSRF guard without replaying provider errors',async()=>{
+  const h=harness();let count=0;
+  h.win.fetch=async()=>{count++;if(count===1)return {ok:false,status:403,json:async()=>({code:'csrf_mismatch',error:'Expired token'})};if(count===2)return {ok:true,status:200,json:async()=>({authenticated:true,csrf:'fresh'})};return {ok:true,status:200,blob:async()=>new h.win.Blob(['audio'],{type:'audio/wav'})};};
+  const audio=await h.run("fixtureFetchApi('/api/speech/synthesize',{method:'POST',body:{text:'public sample'},responseType:'blob'})");assert.equal(audio.type,'audio/wav');assert.equal(count,3);
+  count=0;h.win.fetch=async()=>{count++;return {ok:false,status:502,json:async()=>({error:'Provider failed'})};};await assert.rejects(h.run("fixtureFetchApi('/api/speech/synthesize',{method:'POST',body:{text:'public sample'},responseType:'blob'})"),/Provider failed/);assert.equal(count,1);h.close();
+});

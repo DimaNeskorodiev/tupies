@@ -1,0 +1,48 @@
+{
+  "revision": 8,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "brief": "User explicitly removed the Roki requirement. Approved pearl/fluid UI retained; larger avatars with distinct silhouettes and saturated colors for distance recognition.",
+  "scope": "Three static desktop/phone avatar concept boards with identity strips; no production implementation.",
+  "palette": {
+    "Atlas": "cobalt blue",
+    "Nova": "coral red",
+    "Scout": "emerald green",
+    "Echo": "golden amber"
+  },
+  "size_intent": "Visible artwork approximately 25-30 percent larger with tighter framing; design target only, not a measured CSS implementation.",
+  "images": [
+    {
+      "id": "01-bold-companions",
+      "name": "Bold Companions",
+      "summary": "Saturated sculpted companions with four unmistakable silhouettes",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-d8e8e09e-648f-4242-b476-ab656cb1dc80.png",
+      "destination": "prototypes/ui-distinct-avatars-v8-20261027/01-bold-companions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1501693
+    },
+    {
+      "id": "02-folded-emblems",
+      "name": "Folded Emblems",
+      "summary": "Bold faceless emblems with strong silhouette and color recognition",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-6d1826d8-194e-43e1-98cf-dd14657d8cf1.png",
+      "destination": "prototypes/ui-distinct-avatars-v8-20261027/02-folded-emblems.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1507726
+    },
+    {
+      "id": "03-studio-modules",
+      "name": "Studio Modules",
+      "summary": "Friendly opaque devices with distinct shells and light faces",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-b2360470-5717-4032-84e1-57af44643c65.png",
+      "destination": "prototypes/ui-distinct-avatars-v8-20261027/03-studio-modules.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1560487
+    }
+  ],
+  "reference": "references/02-open-conversation.png",
+  "prompts": "prompts.json"
+}

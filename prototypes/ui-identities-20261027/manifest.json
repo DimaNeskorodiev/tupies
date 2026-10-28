@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "scope": "Five design concept boards; application code and runtime unchanged",
+  "images": [
+    {
+      "id": "01-linen",
+      "name": "Linen",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-8b0703bb-1690-49ae-af9e-ab034fd01574.png",
+      "destination": "prototypes/ui-identities-20261027/01-linen.png",
+      "width": 1537,
+      "height": 1023,
+      "bytes": 1611244
+    },
+    {
+      "id": "02-tide",
+      "name": "Tide",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-18cdad35-0089-480f-be3e-42cf504de3d1.png",
+      "destination": "prototypes/ui-identities-20261027/02-tide.png",
+      "width": 1537,
+      "height": 1023,
+      "bytes": 1592633
+    },
+    {
+      "id": "03-fold",
+      "name": "Fold",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-e4f0bf11-b4b3-42b1-a512-e813be91428b.png",
+      "destination": "prototypes/ui-identities-20261027/03-fold.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1480025
+    },
+    {
+      "id": "04-bloom",
+      "name": "Bloom",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-fc817030-2da6-4f68-8195-ebb35f4c5718.png",
+      "destination": "prototypes/ui-identities-20261027/04-bloom.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1495623
+    },
+    {
+      "id": "05-dusk",
+      "name": "Dusk",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-2abe5ab0-3b37-42ad-b637-4584750d62c1.png",
+      "destination": "prototypes/ui-identities-20261027/05-dusk.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1606156
+    }
+  ],
+  "references": [
+    "references/01-bots.png",
+    "references/02-profile.png",
+    "references/03-chat.png"
+  ],
+  "prompts": "prompts.json",
+  "inspiration": [
+    "https://openbot.run/",
+    "https://x.ai/news/designing-grok-bot"
+  ]
+}

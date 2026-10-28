@@ -1,0 +1,597 @@
+{
+  "title": "Twenty cushion companions",
+  "format": "portable offline gallery",
+  "identities": 20,
+  "animationFrameOrder": [
+    "idle",
+    "blink",
+    "idle",
+    "look",
+    "idle",
+    "wave",
+    "idle"
+  ],
+  "animationDurationMs": 10210,
+  "entries": [
+    {
+      "id": "cloud",
+      "label": "Cloud",
+      "motion": "breathe",
+      "animated": "assets/companion-cloud-animated.webp",
+      "still": "assets/companion-cloud-mascot-512.png",
+      "portrait": "assets/companion-cloud-portrait-512.png",
+      "source": "sources/cloud-source.png",
+      "prompt": "sources/cloud-prompt.txt",
+      "animationSha256": "a3e7f3befdaf62ac73005c2da2022c5a2a32154e93fbdea016d97dfe907582d0",
+      "stillSha256": "9e5c19e99a9fc2304a809d46388acc5ebc437c8c38d9ed55b5ded5bb407fd25e",
+      "portraitSha256": "8dad7f36ad21284fdb3ffba7b22bc1205cfa6522b4c0dfe31fdf7ae326c157f6",
+      "sourceSha256": "f9470487f3f0dd909628dda76bd26049739ab965017a467fe6669c04bf70fe87",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "tangerine",
+      "label": "Tangerine",
+      "motion": "bounce",
+      "animated": "assets/companion-tangerine-animated.webp",
+      "still": "assets/companion-tangerine-mascot-512.png",
+      "portrait": "assets/companion-tangerine-portrait-512.png",
+      "source": "sources/tangerine-source.png",
+      "prompt": "sources/tangerine-prompt.txt",
+      "animationSha256": "6c8fb2f7d9f0f24320bdcb9432f8ccb646085b607506f6a695e59e5805fba8e0",
+      "stillSha256": "88ca39f60686a4ac3ef30d71d3aa77aba58ee49d51f3f24a341476fe86088d0d",
+      "portraitSha256": "878f3a4b39ae33e234e8c52b40637c0adaf5a313cdf4651be0c9aed65fec52bd",
+      "sourceSha256": "94bd70bf428a4ba84d9105a1beb0a59a539120e627182660c0e33af5c28ce350",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "lagoon",
+      "label": "Lagoon",
+      "motion": "float",
+      "animated": "assets/companion-lagoon-animated.webp",
+      "still": "assets/companion-lagoon-mascot-512.png",
+      "portrait": "assets/companion-lagoon-portrait-512.png",
+      "source": "sources/lagoon-source.png",
+      "prompt": "sources/lagoon-prompt.txt",
+      "animationSha256": "79e2ce1ac868d0b6c12f5ab7ee78ea6827f9d956b973ea4b7e6811c568b6ef57",
+      "stillSha256": "5920b87a9a5e40ab0b53661586dd8fd7d4037e7f9f6ee8beb52440a708343c79",
+      "portraitSha256": "092861bdd000681b2ab2056bed3c54c36156a7571c83781e74b9eddc11b29dda",
+      "sourceSha256": "29929ad4899e90ebad3eb5958702d169d6ab0ad21687d388647eac5d3f9530c6",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "cherry",
+      "label": "Cherry",
+      "motion": "sway",
+      "animated": "assets/companion-cherry-animated.webp",
+      "still": "assets/companion-cherry-mascot-512.png",
+      "portrait": "assets/companion-cherry-portrait-512.png",
+      "source": "sources/cherry-source.png",
+      "prompt": "sources/cherry-prompt.txt",
+      "animationSha256": "dd98f66d3ebe4f98509f8d608ea65d88c1b20d0436b633ca113f6d07ead5b88b",
+      "stillSha256": "4d59defaf0a2c27487e8e040fd135f05d14e6f9e9675a400f0a3a81e90528b4b",
+      "portraitSha256": "aebdd13fc53fff721baf9a743842a466c1bcdf445253ec3c0ba90970bf614725",
+      "sourceSha256": "1e9da25fce40bfb6e766717065f63359bfbff5c15152483471a3539a499ddf7a",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "pistachio",
+      "label": "Pistachio",
+      "motion": "rock",
+      "animated": "assets/companion-pistachio-animated.webp",
+      "still": "assets/companion-pistachio-mascot-512.png",
+      "portrait": "assets/companion-pistachio-portrait-512.png",
+      "source": "sources/pistachio-source.png",
+      "prompt": "sources/pistachio-prompt.txt",
+      "animationSha256": "aed05188a241ec11fb4c35d425c2b9dfb193454491e18ad5aac3d4750813c097",
+      "stillSha256": "c00fb2f892c1071d592c53b621ef11ba7b723e921959b9581489d27473598cb7",
+      "portraitSha256": "a5722a752c4877eefe32b12b779570a4b62fae0c93dc14960251e60f6a3cfd87",
+      "sourceSha256": "269c01cb541ddc666b8bf83dbe472bbfa314c1db6bb956f5dc55fc0ac09bddc1",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "periwinkle",
+      "label": "Periwinkle",
+      "motion": "float",
+      "animated": "assets/companion-periwinkle-animated.webp",
+      "still": "assets/companion-periwinkle-mascot-512.png",
+      "portrait": "assets/companion-periwinkle-portrait-512.png",
+      "source": "sources/periwinkle-source.png",
+      "prompt": "sources/periwinkle-prompt.txt",
+      "animationSha256": "ee18eceaf8a631b3b7614b390b83b9879b00bf40938864abd684ca6e1d5db097",
+      "stillSha256": "9c04d5e6f08ce279827e6c919f048e600aa6295b13465afdc120b51818634142",
+      "portraitSha256": "9ddce559bcfdc630760038bac564362753ecef7d628f005b26ad5b139002126c",
+      "sourceSha256": "6daee1b47848fdfc87d8dd5ddce2daa4ef09a1ea6edaa02ad6616c8aeda60b9e",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "peach",
+      "label": "Peach",
+      "motion": "sway",
+      "animated": "assets/companion-peach-animated.webp",
+      "still": "assets/companion-peach-mascot-512.png",
+      "portrait": "assets/companion-peach-portrait-512.png",
+      "source": "sources/peach-source.png",
+      "prompt": "sources/peach-prompt.txt",
+      "animationSha256": "fde690f40479e4808c2af709773c7ca82a5c9e70084e7d14800e64e891b1925b",
+      "stillSha256": "8ef36deeaf9fc461182809df99a82ca6a4b1130aa87f7a2f51b9016ef8aa8fab",
+      "portraitSha256": "8bf4619c1690e64cd0a34b6c6c3d3e3689b374ded648f1fbfbe70a8100d4c5cb",
+      "sourceSha256": "ff2fbd1a49a8ab030213a2cc454bde3af307602a52d3a6067cd88656157153cf",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "lemon",
+      "label": "Lemon",
+      "motion": "bounce",
+      "animated": "assets/companion-lemon-animated.webp",
+      "still": "assets/companion-lemon-mascot-512.png",
+      "portrait": "assets/companion-lemon-portrait-512.png",
+      "source": "sources/lemon-source.png",
+      "prompt": "sources/lemon-prompt.txt",
+      "animationSha256": "1e84421a9660d1cb287b42e83c5c86c8ff09afcf051327238610d43236c623ad",
+      "stillSha256": "5bd39249939161b35cef3eb01e01c6a3e36132b1512ebf03c1c6f073bcb4a68e",
+      "portraitSha256": "d3a3ef1016c5ba5a16fed182ec516af4e66341df58fa1f598fe81ecb22cc6a66",
+      "sourceSha256": "c64020a01d198c13afb9bd5b874e55fbc43398b0ae7e0ab8d5e10b89a95216f7",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "rose",
+      "label": "Rose",
+      "motion": "rock",
+      "animated": "assets/companion-rose-animated.webp",
+      "still": "assets/companion-rose-mascot-512.png",
+      "portrait": "assets/companion-rose-portrait-512.png",
+      "source": "sources/rose-source.png",
+      "prompt": "sources/rose-prompt.txt",
+      "animationSha256": "aa0d26c4bc1994555ff80858059db975123fd3cdf29e348f54a12c919c69fd7a",
+      "stillSha256": "6284c601b3d12fa830d47e49ec4ad60ebdddcd568ec5f54a3a00685495f156b9",
+      "portraitSha256": "99d86b25b33d161e17b6ef9e8671c1ceef5263c2c53a17c6ef46c2a293272472",
+      "sourceSha256": "fefaf72168e62e38d195cf18fee226f7a86a21afd436f6ced615bbd3b5019edc",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "teal",
+      "label": "Teal",
+      "motion": "breathe",
+      "animated": "assets/companion-teal-animated.webp",
+      "still": "assets/companion-teal-mascot-512.png",
+      "portrait": "assets/companion-teal-portrait-512.png",
+      "source": "sources/teal-source.png",
+      "prompt": "sources/teal-prompt.txt",
+      "animationSha256": "1c04e0181aed6f73f4eb932cf73e8db787a592bf832218af9b9bf747b90099cf",
+      "stillSha256": "f3d907cba57ba1ae76ec4eea86c6c1d955e2b2c8008a5306e5688e65c65d8e6a",
+      "portraitSha256": "b11dfb1cfd250c7bb3f715888f08cb4e83f5018f1357bc1fcef462e93b44671b",
+      "sourceSha256": "07f90c2a1898e4acf4929606c7143cc744dc939227adf4c375c865bf4f4a686c",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "azure",
+      "label": "Azure",
+      "motion": "float",
+      "animated": "assets/companion-azure-animated.webp",
+      "still": "assets/companion-azure-mascot-512.png",
+      "portrait": "assets/companion-azure-portrait-512.png",
+      "source": "sources/azure-source.png",
+      "prompt": "sources/azure-prompt.txt",
+      "animationSha256": "53bf3663508b8cc7431def6f1584449053847efe25e3c2458bfeb7a51b1b31f7",
+      "stillSha256": "e35ec854e2e92ea6c0f465bccee89ffcdd918e85327a4c462d3eb86c6f718f7e",
+      "portraitSha256": "05da8fb791920b87f95835ec6c705b6ef61dce20433012fa0516738d8518e548",
+      "sourceSha256": "6846ccc2290ab6978b8879a53c8db9b2da2568a208405bfc6dd2cd1252c1adec",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "scarlet",
+      "label": "Scarlet",
+      "motion": "bounce",
+      "animated": "assets/companion-scarlet-animated.webp",
+      "still": "assets/companion-scarlet-mascot-512.png",
+      "portrait": "assets/companion-scarlet-portrait-512.png",
+      "source": "sources/scarlet-source.png",
+      "prompt": "sources/scarlet-prompt.txt",
+      "animationSha256": "98dbe72bbde6ddbfde46086c6a1f7a3e11981f1b6977fc195e27074d2c1efc36",
+      "stillSha256": "da98154a22ceed3df3f6f5ff63913a4d7002e5822a5e0320e5e48900fd333abc",
+      "portraitSha256": "35227a00420758586000c3c4a603ce977f8f8a14a3003b9369dbe99f2a92a528",
+      "sourceSha256": "98f700362fc8fbcb52564136a2aac21b02032fa6b8aaee8ee4a637fb86715019",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "butter",
+      "label": "Butter",
+      "motion": "rock",
+      "animated": "assets/companion-butter-animated.webp",
+      "still": "assets/companion-butter-mascot-512.png",
+      "portrait": "assets/companion-butter-portrait-512.png",
+      "source": "sources/butter-source.png",
+      "prompt": "sources/butter-prompt.txt",
+      "animationSha256": "985d33c13d38a7ba171198657edee3904d4362dad47725ef7b3b1340b028c9d8",
+      "stillSha256": "5792cb9ffc952fcb8f30d63ede42682fe950850438a0f2e03a81de549ef0c614",
+      "portraitSha256": "8b3235b6b08d722d4c812887edfba064380199a31d59cf5686726fb279b051ea",
+      "sourceSha256": "9f135bccac6dab09d2ced6465a4de67b8a74bd57c0ff0723fd046da490ef7b9e",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "mint",
+      "label": "Mint",
+      "motion": "sway",
+      "animated": "assets/companion-mint-animated.webp",
+      "still": "assets/companion-mint-mascot-512.png",
+      "portrait": "assets/companion-mint-portrait-512.png",
+      "source": "sources/mint-source.png",
+      "prompt": "sources/mint-prompt.txt",
+      "animationSha256": "0477e637ac2a8b139c8dd3ed58a0607985373b3f30f4132f856bf563dd8f2afb",
+      "stillSha256": "b8311aee36208ac0e90fb7de5662ec197fdf5881a5e651728ed2f5cb97401de0",
+      "portraitSha256": "2d1a0a8d995a1234041501950f000a0a83c74a7be9f1acdac28f64eddc548e80",
+      "sourceSha256": "0cdf535d647ac1b550250c312e954d7e5ca22098b0f2901aaa47b3a13285c621",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "cocoa",
+      "label": "Cocoa",
+      "motion": "breathe",
+      "animated": "assets/companion-cocoa-animated.webp",
+      "still": "assets/companion-cocoa-mascot-512.png",
+      "portrait": "assets/companion-cocoa-portrait-512.png",
+      "source": "sources/cocoa-source.png",
+      "prompt": "sources/cocoa-prompt.txt",
+      "animationSha256": "64ee258ba0ec5afa988705e74c64daa0f7392974ebd59590adeb1882f46338b9",
+      "stillSha256": "6dd161137bc906a6362aa557f41d0ee2c0e3a9bfd97063acf5d5494f36da8a3a",
+      "portraitSha256": "5d9b3b95fe1023a0c19dff39e967d4783eccc0a810b7baa6453a94e383fe6731",
+      "sourceSha256": "774b11da6a6e6e1d4bede10f2049f7c44b42d2d41dc77df79b57bd7c2ba53c11",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "blush",
+      "label": "Blush",
+      "motion": "rock",
+      "animated": "assets/companion-blush-animated.webp",
+      "still": "assets/companion-blush-mascot-512.png",
+      "portrait": "assets/companion-blush-portrait-512.png",
+      "source": "sources/blush-source.png",
+      "prompt": "sources/blush-prompt.txt",
+      "animationSha256": "472378d2e62e62e7f5d87c416bb429c0479f902c586be280c203f6d814be521d",
+      "stillSha256": "e163d7323004388816a3f33be1361b4d35fa3d7b00edfaa9770a57ee316fd55e",
+      "portraitSha256": "713f1ed59811431d32b7125bdb13668a54a9e1bf49b7233ba29d5a44f40c25b3",
+      "sourceSha256": "e836813cfd71c8772da144e3ac37546a13370d359f96eb51933a563953a27f33",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "cobalt",
+      "label": "Cobalt",
+      "motion": "bounce",
+      "animated": "assets/companion-cobalt-animated.webp",
+      "still": "assets/companion-cobalt-mascot-512.png",
+      "portrait": "assets/companion-cobalt-portrait-512.png",
+      "source": "sources/cobalt-source.png",
+      "prompt": "sources/cobalt-prompt.txt",
+      "animationSha256": "211b6c8c32840b43a08ba008c6df6646214522be4475a0473becc9ae96030034",
+      "stillSha256": "f7f5ae0b480b86b7b44020ca4b20dbbd38f5307457d720890492c1695b204be2",
+      "portraitSha256": "fcd01337d9a0f48f93764da0c2f3d01f62d28534e643af4577de7ea7ed8ae497",
+      "sourceSha256": "b886c5e750dc4e443c5907ba0295189f84847f903664bb54dfefb679c12d0eea",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "ice",
+      "label": "Ice",
+      "motion": "float",
+      "animated": "assets/companion-ice-animated.webp",
+      "still": "assets/companion-ice-mascot-512.png",
+      "portrait": "assets/companion-ice-portrait-512.png",
+      "source": "sources/ice-source.png",
+      "prompt": "sources/ice-prompt.txt",
+      "animationSha256": "07a4c0d20f16892ff6143bee356a73ebf8a3c35e75fcf0426e8cb791ad7f70a4",
+      "stillSha256": "d1edd644b1c28f4aeb59d2942ebe2ae13f6f420faf4e35307c1299f556337a63",
+      "portraitSha256": "2230732cff030b32029cd3937424fa93d666a9e56e4d54ed3ebf32978b23cc7c",
+      "sourceSha256": "2ce35d0dccc9865909e59098891d3dc03180667fdeced9c6b537a5dd456cb11c",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "apricot",
+      "label": "Apricot",
+      "motion": "sway",
+      "animated": "assets/companion-apricot-animated.webp",
+      "still": "assets/companion-apricot-mascot-512.png",
+      "portrait": "assets/companion-apricot-portrait-512.png",
+      "source": "sources/apricot-source.png",
+      "prompt": "sources/apricot-prompt.txt",
+      "animationSha256": "b6263fb40f4f4164177148b0d64e40a158c947a5623f5fd4de8a9af042c40912",
+      "stillSha256": "569469e4c8e889a17b2a34141143d08f6b3c7757a96f2e053cdd3aa2d4a4052a",
+      "portraitSha256": "6f99dd913c661a2f35dee978a1f1888af1c9fd023ca0bbb3f4cddb1f77d3661f",
+      "sourceSha256": "47168e62eb97250b8df82900912a79f96b419669206c190fbf470714a6f681a2",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    },
+    {
+      "id": "silver",
+      "label": "Silver",
+      "motion": "breathe",
+      "animated": "assets/companion-silver-animated.webp",
+      "still": "assets/companion-silver-mascot-512.png",
+      "portrait": "assets/companion-silver-portrait-512.png",
+      "source": "sources/silver-source.png",
+      "prompt": "sources/silver-prompt.txt",
+      "animationSha256": "23ee9b9758d1dc1db0d4110dff8eaf6e2e764a9a44835f5ad260596090074c4f",
+      "stillSha256": "67d3c34b736dfaddacc455621a78279d34adca91fdfba428fb435bb484f59269",
+      "portraitSha256": "f60bdc7ae43d73dbacce4e4af55cbd24d74b017be017bfa4919792719a3582bf",
+      "sourceSha256": "d8ea01c9bc251688f3359e420354245f48843189a5b291f444b20c2ac2cacf46",
+      "animation": {
+        "width": 256,
+        "height": 256,
+        "pages": 7,
+        "loop": 0,
+        "delay": [
+          3100,
+          160,
+          2300,
+          850,
+          1800,
+          1000,
+          1000
+        ]
+      }
+    }
+  ]
+}

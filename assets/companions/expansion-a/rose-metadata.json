@@ -1,0 +1,81 @@
+{
+  "id": "rose",
+  "source": "rose-source.png",
+  "prompt": "rose-prompt.txt",
+  "sha256": "fefaf72168e62e38d195cf18fee226f7a86a21afd436f6ced615bbd3b5019edc",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 885654,
+  "opaquePixels": 661183,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 168566,
+        "left": 60,
+        "top": 135,
+        "width": 552,
+        "height": 458
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 168518,
+        "left": 39,
+        "top": 135,
+        "width": 552,
+        "height": 458
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 165015,
+        "left": 69,
+        "top": 83,
+        "width": 551,
+        "height": 447
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 164382,
+        "left": 45,
+        "top": 82,
+        "width": 552,
+        "height": 448
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 39,
+    "top": 82,
+    "width": 581,
+    "height": 511
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}

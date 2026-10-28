@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+data
+.runtime
+backups
+node_modules
+coverage
+*.log
+.DS_Store
+
+# Machine-specific development notes
+docs/local-workspace.md
