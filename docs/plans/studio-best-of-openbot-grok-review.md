@@ -174,7 +174,7 @@ flowchart LR
 
 ### Phase 5 — Reviewed learning (M), after Phase 1
 
-**Status:** built and verified on 28 October 2026 (589 tests and a browser check on a scratch engine). Not deployed yet. `memory_set` stays direct when the owner asks; bots use `memory_propose` and `skills_propose` for inferred or unattended learning. Suggestions sync between engines. See `PROJECT_CONTEXT.md` and `docs/memory.md`.
+**Status:** built and verified on 28 October 2026 (589 tests and a browser check on a scratch engine). Shipped to both engines on 28 October 2026 at 12:00 UTC, from an isolated release that passed 530 tests. `memory_set` stays direct when the owner asks; bots use `memory_propose` and `skills_propose` for inferred or unattended learning. Suggestions sync between engines. See `PROJECT_CONTEXT.md` and `docs/memory.md`.
 
 - Bots propose changes to their own core memory and skills, including edits to existing skills, as a diff with source message IDs and a base revision. You review them in the bot profile (accept or reject). A stale proposal is refused, and every applied change has an undo record.
 - This connects to the roadmap's reflection routine and background memory review.
