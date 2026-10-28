@@ -1,0 +1,99 @@
+/* Phone motion and gestures, driven by public/mobile.js: navigation transitions and the interactive edge
+   Back, sheets, the tab-bar lens, scroll-edge bars, long-press context menus, press feedback and chat motion.
+   Transform and opacity only. The look of bars, bubbles, menus and sheets belongs to mobile.css/pearl.css,
+   which may restyle the hooks below (.tab-lens, .context-menu-*, .scroll-to-latest, data-scrolled,
+   --studio-scroll-progress, --studio-sheet-progress). Nothing here applies to the desktop layout. */
+:root{--motion-spring-nav:cubic-bezier(.22,1,.36,1);--motion-spring-sheet:cubic-bezier(.2,.9,.3,1);--motion-spring-bouncy:cubic-bezier(.34,1.36,.64,1)}
+@supports (transition-timing-function:linear(0, 1)){
+  /* Damped springs (critically damped for navigation, slightly bouncy for sheets and the lens). */
+  :root{
+    --motion-spring-nav:linear(0, 0.06, 0.188, 0.333, 0.469, 0.588, 0.686, 0.764, 0.824, 0.87, 0.905, 0.931, 0.95, 0.964, 0.974, 0.982, 0.987, 0.991, 0.993, 0.995, 1);
+    --motion-spring-sheet:linear(0, 0.033, 0.111, 0.213, 0.323, 0.432, 0.533, 0.623, 0.701, 0.767, 0.822, 0.866, 0.901, 0.929, 0.95, 0.966, 0.978, 0.987, 0.993, 0.997, 1, 1.001, 1.002, 1.003, 1.003, 1.003, 1.003, 1.002, 1);
+    --motion-spring-bouncy:linear(0, 0.026, 0.094, 0.187, 0.295, 0.408, 0.518, 0.622, 0.715, 0.796, 0.865, 0.921, 0.965, 0.999, 1.023, 1.039, 1.049, 1.053, 1.054, 1.052, 1.048, 1.042, 1.036, 1.03, 1.024, 1.019, 1.014, 1.01, 1.006, 1.003, 1.001, 1, 0.998, 0.998, 0.997, 0.997, 1);
+  }
+}
+.motion-inset-probe{position:fixed;top:0;left:0;width:0;height:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);visibility:hidden;pointer-events:none}
+.motion-copy-buffer{position:fixed;top:0;left:-9999px;opacity:0;pointer-events:none}
+
+@media(max-width:760px), (max-height:500px) and (pointer:coarse){
+  /* Native-feeling taps: no grey flash and no double-tap zoom delay on tappable things. */
+  :root[data-studio-motion] :is([data-nav],[data-action],[role=button],[role=menuitem],[role=switch],summary,.tab){-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+
+  /* Push, pop and tab transitions. The outgoing (or underlying) screen is an inert copy in a fixed layer;
+     the real screen moves above or below it. Layers exist only while a transition or gesture runs. */
+  .motion-layer{position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;contain:strict}
+  .motion-layer[data-over]{z-index:3}
+  .motion-frame,.motion-backdrop{position:absolute;inset:0;contain:paint}
+  .motion-scroller{position:absolute;inset:0;overflow:hidden}
+  .motion-scroller>.app-shell{pointer-events:none}
+  .motion-dim{position:absolute;inset:0;background:rgba(8,12,22,.14);opacity:0}
+  .motion-frame.is-leading,.motion-backdrop.is-leading{box-shadow:-12px 0 34px rgba(8,12,22,.12),-1px 0 0 rgba(8,12,22,.05)}
+  .motion-layer[data-hide-tabbar] .tabbar{visibility:hidden}
+  /* Copies carry data-motion-id instead of id; mirror the id-keyed layout rules from mobile.css. */
+  .motion-scroller .app-shell:is([data-view=bot],[data-view=room]) :is(.content,[data-motion-id=main-content]){height:100%;min-height:0}
+  .motion-scroller [data-motion-id=room-message-form] .composer-footer>span{display:none}
+
+  /* Tab bar: the selection is a lens that glides between tabs with a spring. */
+  .tabbar[data-lens] .tab{position:relative;z-index:1}
+  .tabbar[data-lens] .tab.active{background:transparent;box-shadow:none}
+  .tab-lens{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
+  .tab-lens>span{display:block;width:100%;height:100%;border-radius:28px;background:var(--ios-fill,var(--pearl-raised,#ececee));transform-origin:50% 50%}
+
+  /* Scroll-edge navigation bar: material once content is under it; the inline title follows the large one. */
+  .topbar[data-scrolled]::before{opacity:0;transition:opacity .22s ease-out}
+  .topbar[data-scrolled=true]::before{opacity:1}
+  .topbar[data-scrolled] .topbar-title{opacity:var(--studio-scroll-progress,0);transform:translateY(calc((1 - var(--studio-scroll-progress,0)) * 4px));transition:none}
+  #main-content h1[data-stretch]{transform-origin:0 50%;transform:scale(var(--studio-title-stretch,1))}
+  /* The chat header follows the same scroll-edge rule: clear at the top of the transcript, glass once it scrolls. */
+  body.pearl-studio .chat-header[data-scrolled]{transition:background-color .22s ease-out,border-color .22s ease-out}
+  body.pearl-studio .chat-header[data-scrolled=false]{background-color:transparent;border-bottom-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+
+  /* Sheets: a spring up from the bottom; the backdrop follows the drag. */
+  #dialog-root .modal[open]{animation-duration:.42s;animation-timing-function:var(--motion-spring-sheet)}
+  #dialog-root .modal[open]::backdrop{opacity:var(--studio-sheet-progress,1);animation:motion-fade-in .3s ease-out backwards}
+  #dialog-root .modal.is-dragging{will-change:transform}
+
+  /* Long-press context menus: the item lifts above a blurred, dimmed screen and its actions spring in. */
+  :root[data-studio-motion] :is(.chat-thread .chat-message:not(.thinking-message):not(.partial-message),.bot-row:not(.bot-row-new),.pearl-home-teammate){-webkit-touch-callout:none}
+  :root[data-studio-motion] :is(.bot-row:not(.bot-row-new),.pearl-home-teammate),.context-menu-layer,.context-menu-layer *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  :root[data-studio-motion] .chat-thread .chat-message:not(.thinking-message):not(.partial-message):not([data-selecting]){-webkit-user-select:none;user-select:none}
+  .chat-message[data-selecting]{-webkit-user-select:text;user-select:text}
+  /* Web links in messages keep the system link menu (preview, open, copy). */
+  :root[data-studio-motion] .chat-thread .chat-message a[href]:not([href^="#"]){-webkit-touch-callout:default}
+  :is(.chat-message,.bot-row,.pearl-home-teammate).is-holding{transform:scale(.97);transition:transform .4s ease-out}
+  .context-menu-source{visibility:hidden}
+  .context-menu-layer{position:fixed;inset:0;z-index:70;touch-action:none;cursor:pointer}
+  .context-menu-backdrop{position:absolute;inset:0;background:rgba(10,14,26,.16);-webkit-backdrop-filter:var(--ios-blur,blur(14px) saturate(1.3));backdrop-filter:var(--ios-blur,blur(14px) saturate(1.3))}
+  .context-menu-preview{position:fixed;overflow:hidden;pointer-events:none;transform-origin:50% 50%}
+  .context-menu-preview>*{margin:0!important}
+  .context-menu-preview>.chat-message{width:100%;max-width:none}
+  .context-menu-preview[data-kind=message]{filter:drop-shadow(0 12px 26px rgba(10,14,26,.16))}
+  .context-menu-preview[data-kind=bot]{border-radius:22px;box-shadow:0 18px 46px rgba(10,14,26,.2)}
+  .context-menu-preview[data-kind=bot]>.bot-list{height:100%}
+  .context-menu.popover-menu{position:fixed;min-width:220px;max-width:min(300px,calc(100vw - 24px));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;animation:none;cursor:default}
+
+  /* Press feedback for cards and rows that are a single tap target (liquid.js handles buttons). */
+  :root[data-studio-motion] :is(.pearl-resource-card,.skill-card,.provider-choice,.starter-prompt,.app-server-row,.room-member,.companion-choice,.pearl-team-dock button,.question-option,.permission-option,.team-mode-option){transition:transform .5s var(--motion-spring-bouncy),background-color .2s,box-shadow .2s,opacity .2s}
+  :root[data-studio-motion] :is(.pearl-resource-card,.skill-card,.provider-choice,.starter-prompt,.app-server-row,.room-member,.companion-choice,.pearl-team-dock button,.question-option,.permission-option,.team-mode-option).is-pressed{transform:scale(.97);transition-duration:.14s,.1s,.1s,.1s;transition-timing-function:ease-out}
+
+  /* Chat: a floating jump to the latest message, and a send button that wakes up when there is something to send. */
+  .chat-composer-wrap{position:relative}
+  .scroll-to-latest{position:absolute;z-index:3;left:50%;bottom:calc(100% + 6px);display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:50%;translate:-50% 0;color:var(--ios-label,#24272e);background:var(--ios-glass-thick,rgba(255,255,255,.9));border:.5px solid var(--ios-glass-border,rgba(255,255,255,.8));box-shadow:var(--ios-glass-shadow,0 6px 20px rgba(28,44,80,.14));-webkit-backdrop-filter:var(--ios-blur,blur(20px) saturate(1.8));backdrop-filter:var(--ios-blur,blur(20px) saturate(1.8));opacity:0;transform:scale(.6);pointer-events:none;transition:opacity .18s ease-out,transform .45s var(--motion-spring-bouncy)}
+  .scroll-to-latest[data-visible=true]{opacity:1;transform:none;pointer-events:auto}
+  .scroll-to-latest:active{transform:scale(.9);transition-duration:.1s}
+  .scroll-to-latest svg{width:20px;height:20px;stroke-width:2.2}
+  .chat-composer .send{transition:transform .45s var(--motion-spring-bouncy),opacity .2s,background-color .2s,box-shadow .2s,color .2s}
+  .chat-composer:has(textarea:placeholder-shown):not(:has(.attachment-chip)) .send:not(:disabled){transform:scale(.86);opacity:.55}
+}
+@keyframes motion-fade-in{from{opacity:0}}
+@media(prefers-reduced-transparency:reduce) and (max-width:760px), (prefers-reduced-transparency:reduce) and (max-height:500px) and (pointer:coarse){
+  .context-menu-backdrop{background:rgba(10,14,26,.4);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .scroll-to-latest{background:var(--ios-glass-solid,#f8f9fc);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
+@media(prefers-reduced-motion:reduce) and (max-width:760px), (prefers-reduced-motion:reduce) and (max-height:500px) and (pointer:coarse){
+  :is(.tab-lens,.tab-lens>span,.scroll-to-latest,.chat-composer .send,.topbar-title,.context-menu-preview),
+  :root[data-studio-motion] :is(.pearl-resource-card,.skill-card,.provider-choice,.starter-prompt,.app-server-row,.room-member,.companion-choice,.pearl-team-dock button,.question-option,.permission-option,.team-mode-option){transition:none!important}
+  .is-holding,.is-pressed,.scroll-to-latest,.chat-composer .send,.topbar[data-scrolled] .topbar-title,#main-content h1[data-stretch]{transform:none!important}
+  #dialog-root .modal[open]::backdrop{animation:none}
+}

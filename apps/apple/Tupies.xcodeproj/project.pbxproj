@@ -271,8 +271,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Tupies. MIT License.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Tupies connects to Tupies engines running on your own computers and local network.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tupies uses the microphone when you talk to your bots.";
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -319,8 +317,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Tupies. MIT License.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Tupies connects to Tupies engines running on your own computers and local network.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tupies uses the microphone when you talk to your bots.";
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

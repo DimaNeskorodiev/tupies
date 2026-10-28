@@ -625,18 +625,105 @@ body.pearl-studio:is([data-theme=dark], [data-appearance=dark]) {
     var(--pearl-base);
 }
 
-@media (prefers-color-scheme: dark) {
+/* Phones follow the system appearance: every phone surface has a dark treatment
+   (tokens here, components in mobile.css). Desktop stays pearl/light unless a host
+   sets an explicit dark attribute; an explicit light attribute always wins. */
+@media (prefers-color-scheme: dark) and (max-width: 760px), (prefers-color-scheme: dark) and (max-height: 500px) and (pointer: coarse) {
+  :root:not([data-theme=light]):not([data-appearance=light]):not(:has(> body:is([data-theme=light], [data-appearance=light]))) { color-scheme: dark; background: #0c1017; }
   html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) {
     color-scheme: dark;
-    --ink: #eef2fa; --muted: #b6c1d4; --line: rgba(180,201,231,.16);
-    --pearl-base: #181e29; --pearl-surface: rgba(38,47,63,.86); --pearl-solid: #252e3e;
-    --pearl-soft: rgba(39,49,67,.62); --pearl-raised: rgba(51,62,81,.96); --pearl-border: rgba(199,216,242,.14);
-    --pearl-blue: #9fc5ff; --pearl-blue-soft: rgba(65,101,151,.46); --pearl-amber: #ffd19e;
-    --pearl-amber-soft: rgba(205,132,58,.17); --pearl-focus: #ffc57f;
-    --pearl-shadow: 0 12px 36px rgba(0,0,0,.13), inset 0 1px 0 rgba(222,235,255,.055);
-    --accent-ink: #d0e0fa; --glass-top: #39465b; --glass-bottom: #293446;
-    background: radial-gradient(ellipse 62% 64% at 2% 10%, rgba(68,107,164,.25), transparent 78%), radial-gradient(ellipse 45% 60% at 98% 72%, rgba(175,111,56,.11), transparent 78%), var(--pearl-base);
+    --ink: #eef2fa; --muted: #aab5c9; --line: rgba(170,185,215,.16);
+    --pearl-base: #0c1017; --pearl-surface: rgba(29,35,48,.86); --pearl-solid: #1c2230;
+    --pearl-soft: rgba(36,43,59,.62); --pearl-raised: rgba(44,52,70,.96); --pearl-border: rgba(255,255,255,.08);
+    --pearl-blue: #8ab4ff; --pearl-blue-soft: rgba(64,104,168,.36); --pearl-amber: #ffb866;
+    --pearl-amber-soft: rgba(255,160,70,.16); --pearl-focus: #ffc57f;
+    --pearl-shadow: 0 10px 30px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.05);
+    --accent-ink: #cfe0ff; --glass-ink: #eef2fa; --glass-top: #2c3548; --glass-bottom: #202837;
+    --ios-tint: #8ab4ff; --ios-tint-fill: #2f6fd6; --ios-tint-pressed: #285fb8; --ios-tint-soft: rgba(110,160,255,.16); --ios-on-tint: #fff;
+    --ios-amber: #ffb866; --ios-amber-soft: rgba(255,160,70,.16); --ios-green: #4cd07a; --ios-green-soft: rgba(48,209,88,.16);
+    --ios-red: #ff8079; --ios-red-soft: rgba(255,90,80,.15); --ios-switch-on: #30c158; --ios-switch-off: rgba(140,155,190,.3);
+    --ios-label: #eef2fa; --ios-label-2: #aab5c9; --ios-label-3: #8f9bb1;
+    --ios-separator: rgba(170,185,215,.16); --ios-fill: rgba(140,155,190,.16); --ios-fill-2: rgba(140,155,190,.26);
+    --ios-bg: #0c1017; --ios-cell: rgba(29,35,48,.9); --ios-cell-solid: #1c2230; --ios-cell-pressed: rgba(46,54,72,.96); --ios-seg-active: #3a4357;
+    --ios-glass: rgba(30,36,50,.56); --ios-glass-thick: rgba(27,33,45,.84); --ios-glass-solid: #1f2533; --ios-sheet: rgba(20,25,35,.93);
+    --ios-glass-border: rgba(255,255,255,.09); --ios-glass-edge: inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(255,255,255,.03);
+    --ios-glass-shadow: 0 10px 30px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3); --ios-glass-shadow-sm: 0 3px 12px rgba(0,0,0,.35);
+    --ios-cell-shadow: none; --ios-bar-hairline: rgba(170,185,215,.14);
+    --ios-bubble-user: linear-gradient(180deg, #2b5598, #244a84); --ios-bubble-user-ink: #f1f6ff;
+    --ios-bubble: rgba(29,35,48,.9); --ios-bubble-border: rgba(255,255,255,.06);
+    --ios-code: rgba(8,11,17,.6); --ios-code-ink: #dfe7f5; --ios-scrim: rgba(0,0,0,.52);
+    --ios-skeleton: rgba(150,165,200,.12); --ios-skeleton-hi: rgba(255,255,255,.07);
+    --ios-portrait: linear-gradient(155deg, rgba(60,72,96,.7), rgba(30,37,52,.55)); --ios-portrait-border: rgba(255,255,255,.1);
+    --ios-label-2-hc: #d3dae6; --ios-label-3-hc: #c0c9d8; --ios-separator-hc: rgba(200,212,235,.45);
+    --ios-menu-shadow: 0 18px 50px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35); --ios-bubble-shadow: none;
+    --ios-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='18' fill='none' stroke='%23aab5c9' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7 6 3.5 9.5 7M2.5 11 6 14.5 9.5 11'/%3E%3C/svg%3E");
+    background: radial-gradient(ellipse 70% 52% at 0% 4%, rgba(52,92,160,.24), transparent 78%), radial-gradient(ellipse 55% 50% at 100% 78%, rgba(170,104,46,.11), transparent 78%), var(--pearl-base);
   }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .hljs { color: #d6deeb; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #ff8c84; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-title, .hljs-title.class_, .hljs-title.function_) { color: #d7b4ff; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-variable, .hljs-section) { color: #8cc4ff; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-string, .hljs-regexp, .hljs-meta .hljs-string) { color: #b2dcff; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-built_in, .hljs-symbol, .hljs-bullet) { color: #ffb070; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-code, .hljs-comment, .hljs-formula) { color: #95a1b5; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag) { color: #8ee59f; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-subst, .hljs-emphasis, .hljs-strong) { color: #d6deeb; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .hljs-addition { color: #8ee59f; background-color: rgba(46,160,67,.18); }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .hljs-deletion { color: #ffaba5; background-color: rgba(248,81,73,.18); }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .thinking-flow-fragment { color: var(--think-light, #c9d8ff); }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .thinking-flow-fragment:is(:hover, [aria-pressed=true]) { color: #fff; }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .thinking-flow-fragment::before { background: var(--think-light, #c9d8ff); }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .dashboard-page { --dash-row: rgba(255,255,255,.04); --dash-red: #ff8079; --dash-red-bg: rgba(255,90,80,.16); --dash-blue: #8ab4ff; --dash-blue-bg: rgba(110,160,255,.16); --dash-green: #4cd07a; --dash-green-bg: rgba(48,209,88,.15); --dash-teal: #5fd3c9; --dash-teal-bg: rgba(40,190,180,.15); --dash-orange: #ffa35c; --dash-orange-bg: rgba(255,150,70,.16); --dash-pink: #ff8fc8; --dash-pink-bg: rgba(240,110,180,.15); --dash-amber: #ffb866; --dash-amber-bg: rgba(255,170,70,.16); --dash-slate: #aab5c9; --dash-slate-bg: rgba(140,155,190,.16); }
+}
+
+/* Explicit dark attributes from a host shell get the same phone treatment. */
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
+  :root:is([data-theme=dark], [data-appearance=dark]), :root:has(> body:is([data-theme=dark], [data-appearance=dark])) { color-scheme: dark; background: #0c1017; }
+  :is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio,
+  body.pearl-studio:is([data-theme=dark], [data-appearance=dark]) {
+    color-scheme: dark;
+    --ink: #eef2fa; --muted: #aab5c9; --line: rgba(170,185,215,.16);
+    --pearl-base: #0c1017; --pearl-surface: rgba(29,35,48,.86); --pearl-solid: #1c2230;
+    --pearl-soft: rgba(36,43,59,.62); --pearl-raised: rgba(44,52,70,.96); --pearl-border: rgba(255,255,255,.08);
+    --pearl-blue: #8ab4ff; --pearl-blue-soft: rgba(64,104,168,.36); --pearl-amber: #ffb866;
+    --pearl-amber-soft: rgba(255,160,70,.16); --pearl-focus: #ffc57f;
+    --pearl-shadow: 0 10px 30px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.05);
+    --accent-ink: #cfe0ff; --glass-ink: #eef2fa; --glass-top: #2c3548; --glass-bottom: #202837;
+    --ios-tint: #8ab4ff; --ios-tint-fill: #2f6fd6; --ios-tint-pressed: #285fb8; --ios-tint-soft: rgba(110,160,255,.16); --ios-on-tint: #fff;
+    --ios-amber: #ffb866; --ios-amber-soft: rgba(255,160,70,.16); --ios-green: #4cd07a; --ios-green-soft: rgba(48,209,88,.16);
+    --ios-red: #ff8079; --ios-red-soft: rgba(255,90,80,.15); --ios-switch-on: #30c158; --ios-switch-off: rgba(140,155,190,.3);
+    --ios-label: #eef2fa; --ios-label-2: #aab5c9; --ios-label-3: #8f9bb1;
+    --ios-separator: rgba(170,185,215,.16); --ios-fill: rgba(140,155,190,.16); --ios-fill-2: rgba(140,155,190,.26);
+    --ios-bg: #0c1017; --ios-cell: rgba(29,35,48,.9); --ios-cell-solid: #1c2230; --ios-cell-pressed: rgba(46,54,72,.96); --ios-seg-active: #3a4357;
+    --ios-glass: rgba(30,36,50,.56); --ios-glass-thick: rgba(27,33,45,.84); --ios-glass-solid: #1f2533; --ios-sheet: rgba(20,25,35,.93);
+    --ios-glass-border: rgba(255,255,255,.09); --ios-glass-edge: inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(255,255,255,.03);
+    --ios-glass-shadow: 0 10px 30px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3); --ios-glass-shadow-sm: 0 3px 12px rgba(0,0,0,.35);
+    --ios-cell-shadow: none; --ios-bar-hairline: rgba(170,185,215,.14);
+    --ios-bubble-user: linear-gradient(180deg, #2b5598, #244a84); --ios-bubble-user-ink: #f1f6ff;
+    --ios-bubble: rgba(29,35,48,.9); --ios-bubble-border: rgba(255,255,255,.06);
+    --ios-code: rgba(8,11,17,.6); --ios-code-ink: #dfe7f5; --ios-scrim: rgba(0,0,0,.52);
+    --ios-skeleton: rgba(150,165,200,.12); --ios-skeleton-hi: rgba(255,255,255,.07);
+    --ios-portrait: linear-gradient(155deg, rgba(60,72,96,.7), rgba(30,37,52,.55)); --ios-portrait-border: rgba(255,255,255,.1);
+    --ios-label-2-hc: #d3dae6; --ios-label-3-hc: #c0c9d8; --ios-separator-hc: rgba(200,212,235,.45);
+    --ios-menu-shadow: 0 18px 50px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35); --ios-bubble-shadow: none;
+    --ios-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='18' fill='none' stroke='%23aab5c9' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7 6 3.5 9.5 7M2.5 11 6 14.5 9.5 11'/%3E%3C/svg%3E");
+    background: radial-gradient(ellipse 70% 52% at 0% 4%, rgba(52,92,160,.24), transparent 78%), radial-gradient(ellipse 55% 50% at 100% 78%, rgba(170,104,46,.11), transparent 78%), var(--pearl-base);
+  }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .hljs { color: #d6deeb; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #ff8c84; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-title, .hljs-title.class_, .hljs-title.function_) { color: #d7b4ff; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-variable, .hljs-section) { color: #8cc4ff; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-string, .hljs-regexp, .hljs-meta .hljs-string) { color: #b2dcff; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-built_in, .hljs-symbol, .hljs-bullet) { color: #ffb070; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-code, .hljs-comment, .hljs-formula) { color: #95a1b5; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag) { color: #8ee59f; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-subst, .hljs-emphasis, .hljs-strong) { color: #d6deeb; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .hljs-addition { color: #8ee59f; background-color: rgba(46,160,67,.18); }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .hljs-deletion { color: #ffaba5; background-color: rgba(248,81,73,.18); }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .thinking-flow-fragment { color: var(--think-light, #c9d8ff); }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .thinking-flow-fragment:is(:hover, [aria-pressed=true]) { color: #fff; }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .thinking-flow-fragment::before { background: var(--think-light, #c9d8ff); }
+  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .dashboard-page { --dash-row: rgba(255,255,255,.04); --dash-red: #ff8079; --dash-red-bg: rgba(255,90,80,.16); --dash-blue: #8ab4ff; --dash-blue-bg: rgba(110,160,255,.16); --dash-green: #4cd07a; --dash-green-bg: rgba(48,209,88,.15); --dash-teal: #5fd3c9; --dash-teal-bg: rgba(40,190,180,.15); --dash-orange: #ffa35c; --dash-orange-bg: rgba(255,150,70,.16); --dash-pink: #ff8fc8; --dash-pink-bg: rgba(240,110,180,.15); --dash-amber: #ffb866; --dash-amber-bg: rgba(255,170,70,.16); --dash-slate: #aab5c9; --dash-slate-bg: rgba(140,155,190,.16); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -22,7 +22,7 @@ final class NotificationCoordinator: NSObject, ObservableObject, UNUserNotificat
     @Published private(set) var routines: Bool
     @Published private(set) var connectionID: UUID?
     @Published private(set) var authorization: UNAuthorizationStatus = .notDetermined
-    @Published private(set) var status = "Choose Enable Notifications to receive bot replies and routine results."
+    @Published private(set) var status = "Turn on Notifications to get bot replies and routine results."
     @Published private(set) var busy = false
 
     private weak var store: ConnectionStore?

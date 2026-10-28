@@ -242,12 +242,14 @@ test('keyboard viewport changes resize the composer while browser zoom keeps its
   try {
     const field=h.render();Object.defineProperty(field,'scrollHeight',{get:()=>400});h.mobile.sizeComposer(field);
     const fullHeight=parseFloat(field.style.height);
-    h.viewport.height=340;h.viewport.offsetTop=24;h.viewport.dispatchEvent(new h.window.Event('resize'));h.flushFrames();
+    // Only a focused field raises the keyboard.
+    field.focus();h.viewport.height=340;h.viewport.offsetTop=24;h.viewport.dispatchEvent(new h.window.Event('resize'));h.flushFrames();
     assert.equal(h.window.document.documentElement.dataset.keyboard,'open');
     assert.equal(h.window.document.documentElement.style.getPropertyValue('--studio-viewport-height'),'340px');
     assert.equal(h.window.document.documentElement.style.getPropertyValue('--studio-viewport-top'),'24px');
     assert.ok(parseFloat(field.style.height)<fullHeight);assert.equal(field.style.overflowY,'auto');
-    h.viewport.scale=2;h.viewport.height=190;h.viewport.dispatchEvent(new h.window.Event('resize'));h.flushFrames();
+    // Pinch zoom both scales and narrows the visual viewport.
+    h.viewport.scale=2;h.viewport.width=196;h.viewport.height=190;h.viewport.dispatchEvent(new h.window.Event('resize'));h.flushFrames();
     assert.equal(h.window.document.documentElement.style.getPropertyValue('--studio-viewport-height'),'340px');
     h.viewport.scale=1;h.viewport.height=852;h.viewport.offsetTop=0;h.viewport.dispatchEvent(new h.window.Event('resize'));h.flushFrames();
     assert.equal(h.window.document.documentElement.dataset.keyboard,'closed');assert.equal(parseFloat(field.style.height),fullHeight);
