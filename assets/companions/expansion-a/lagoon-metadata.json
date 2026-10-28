@@ -1,0 +1,81 @@
+{
+  "id": "lagoon",
+  "source": "lagoon-source.png",
+  "prompt": "lagoon-prompt.txt",
+  "sha256": "29929ad4899e90ebad3eb5958702d169d6ab0ad21687d388647eac5d3f9530c6",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 863788,
+  "opaquePixels": 659906,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 163896,
+        "left": 72,
+        "top": 154,
+        "width": 541,
+        "height": 441
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 162647,
+        "left": 38,
+        "top": 155,
+        "width": 541,
+        "height": 440
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 172385,
+        "left": 65,
+        "top": 79,
+        "width": 556,
+        "height": 455
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 166462,
+        "left": 38,
+        "top": 96,
+        "width": 554,
+        "height": 442
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 38,
+    "top": 79,
+    "width": 583,
+    "height": 516
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}

@@ -1,0 +1,1051 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "../cushion-family-source.png",
+  "frameLayout": "2x2",
+  "sourceFilesPreserved": true,
+  "characters": [
+    {
+      "id": "azure",
+      "name": "Azure",
+      "description": "Bright sky-blue #37A4F4, a soft BARREL cushion: softly cylindrical body, broad curved sides, gently domed top and bottom, just slightly taller than wide. Distinct from the original square Blue Atlas. Tiny matching blue arms and feet. Large readable black oval eyes.",
+      "sourceFile": "azure-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 821375,
+      "partialAlphaPixels": 748529,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 180112,
+          "alpha32Bounds": {
+            "left": 65,
+            "top": 129,
+            "right": 588,
+            "bottom": 607
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 179778,
+          "alpha32Bounds": {
+            "left": 53,
+            "top": 129,
+            "right": 577,
+            "bottom": 608
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 174926,
+          "alpha32Bounds": {
+            "left": 68,
+            "top": 88,
+            "right": 588,
+            "bottom": 560
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 178936,
+          "alpha32Bounds": {
+            "left": 23,
+            "top": 93,
+            "right": 580,
+            "bottom": 561
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-7e5aec6b-41d4-4948-be5f-69b81f8f0068.png",
+      "sha256": "6846ccc2290ab6978b8879a53c8db9b2da2568a208405bfc6dd2cd1252c1adec",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Bright sky-blue #37A4F4, a soft BARREL cushion: softly cylindrical body, broad curved sides, gently domed top and bottom, just slightly taller than wide. Distinct from the original square Blue Atlas. Tiny matching blue arms and feet. Large readable black oval eyes."
+    },
+    {
+      "id": "scarlet",
+      "name": "Scarlet",
+      "description": "Vivid friendly RED-ORANGE #F34D37, a DOME cushion: a broad low rounded dome with a smoothly arched crown, slightly flared soft base, width about 1.2×height. Tiny matching red-orange arms and feet; readable black oval eyes. No pointed top.",
+      "sourceFile": "scarlet-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 862643,
+      "partialAlphaPixels": 707372,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 171001,
+          "alpha32Bounds": {
+            "left": 39,
+            "top": 144,
+            "right": 611,
+            "bottom": 559
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 171204,
+          "alpha32Bounds": {
+            "left": 16,
+            "top": 144,
+            "right": 588,
+            "bottom": 559
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 172758,
+          "alpha32Bounds": {
+            "left": 42,
+            "top": 105,
+            "right": 617,
+            "bottom": 526
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 171619,
+          "alpha32Bounds": {
+            "left": 17,
+            "top": 113,
+            "right": 599,
+            "bottom": 527
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-c716e553-ce9d-429b-8a66-1ecb082693f5.png",
+      "sha256": "98f700362fc8fbcb52564136a2aac21b02032fa6b8aaee8ee4a637fb86715019",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Vivid friendly RED-ORANGE #F34D37, a DOME cushion: a broad low rounded dome with a smoothly arched crown, slightly flared soft base, width about 1.2×height. Tiny matching red-orange arms and feet; readable black oval eyes. No pointed top."
+    },
+    {
+      "id": "butter",
+      "name": "Butter",
+      "description": "Soft bright BUTTER-YELLOW #F6DD77, a tall gently DOUBLE-LOBED pillow: two softly joined upright pillow lobes with a shallow top valley, rounded lower corners, modest waist, overall nearly square and slightly taller than the reference Honey. Make its lobes vertically elongated and narrow enough to distinguish it from the original wide low Honey. Tiny matching yellow arms/feet, clear black eyes.",
+      "sourceFile": "butter-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 773195,
+      "partialAlphaPixels": 797322,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 190843,
+          "alpha32Bounds": {
+            "left": 75,
+            "top": 109,
+            "right": 606,
+            "bottom": 593
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 188248,
+          "alpha32Bounds": {
+            "left": 38,
+            "top": 110,
+            "right": 565,
+            "bottom": 593
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 185790,
+          "alpha32Bounds": {
+            "left": 72,
+            "top": 49,
+            "right": 603,
+            "bottom": 541
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 189685,
+          "alpha32Bounds": {
+            "left": 33,
+            "top": 65,
+            "right": 586,
+            "bottom": 541
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-86afc17f-797f-40ee-8d75-3d4d8e12a46e.png",
+      "sha256": "9f135bccac6dab09d2ced6465a4de67b8a74bd57c0ff0723fd046da490ef7b9e",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Soft bright BUTTER-YELLOW #F6DD77, a tall gently DOUBLE-LOBED pillow: two softly joined upright pillow lobes with a shallow top valley, rounded lower corners, modest waist, overall nearly square and slightly taller than the reference Honey. Make its lobes vertically elongated and narrow enough to distinguish it from the original wide low Honey. Tiny matching yellow arms/feet, clear black eyes."
+    },
+    {
+      "id": "mint",
+      "name": "Mint",
+      "description": "Fresh mint-green #67D6B3, abstract tapered PEAR-DROP cushion: smoothly rounded narrow top, broader rounded lower body and gently flattened soft base; no leaf or stem or plant cue. Height about 1.1×width. Tiny mint arms and feet, familiar black oval eyes.",
+      "sourceFile": "mint-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 875414,
+      "partialAlphaPixels": 695086,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 168344,
+          "alpha32Bounds": {
+            "left": 65,
+            "top": 83,
+            "right": 582,
+            "bottom": 593
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 167925,
+          "alpha32Bounds": {
+            "left": 48,
+            "top": 84,
+            "right": 564,
+            "bottom": 593
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 168100,
+          "alpha32Bounds": {
+            "left": 64,
+            "top": 56,
+            "right": 576,
+            "bottom": 564
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 165730,
+          "alpha32Bounds": {
+            "left": 49,
+            "top": 59,
+            "right": 565,
+            "bottom": 564
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-5fc2b1cc-cb5f-437f-adb0-dbe39dec968f.png",
+      "sha256": "0cdf535d647ac1b550250c312e954d7e5ca22098b0f2901aaa47b3a13285c621",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Fresh mint-green #67D6B3, abstract tapered PEAR-DROP cushion: smoothly rounded narrow top, broader rounded lower body and gently flattened soft base; no leaf or stem or plant cue. Height about 1.1×width. Tiny mint arms and feet, familiar black oval eyes."
+    },
+    {
+      "id": "cocoa",
+      "name": "Cocoa",
+      "description": "Medium warm COCOA-BROWN #A97652, wide rounded LOAF cushion: broad horizontal body, rounded rectangular loaf silhouette with a shallow curved top and broad flat-soft bottom. Width 1.4×height. Keep the material medium-lit warm brown, NOT dark chocolate, so the two glossy black eyes remain very easy to read; tiny matching brown arms/feet.",
+      "sourceFile": "cocoa-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 804601,
+      "partialAlphaPixels": 765780,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 185099,
+          "alpha32Bounds": {
+            "left": 23,
+            "top": 161,
+            "right": 618,
+            "bottom": 573
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 184514,
+          "alpha32Bounds": {
+            "left": 23,
+            "top": 161,
+            "right": 617,
+            "bottom": 573
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 187979,
+          "alpha32Bounds": {
+            "left": 21,
+            "top": 113,
+            "right": 622,
+            "bottom": 547
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 183576,
+          "alpha32Bounds": {
+            "left": 7,
+            "top": 140,
+            "right": 620,
+            "bottom": 547
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-dc822d43-b632-4a8a-8678-53fae3023e13.png",
+      "sha256": "774b11da6a6e6e1d4bede10f2049f7c44b42d2d41dc77df79b57bd7c2ba53c11",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Medium warm COCOA-BROWN #A97652, wide rounded LOAF cushion: broad horizontal body, rounded rectangular loaf silhouette with a shallow curved top and broad flat-soft bottom. Width 1.4×height. Keep the material medium-lit warm brown, NOT dark chocolate, so the two glossy black eyes remain very easy to read; tiny matching brown arms/feet."
+    },
+    {
+      "id": "blush",
+      "name": "Blush",
+      "description": "Warm vivid BLUSH-PINK #F99AA3, an HOURGLASS-SQUIRCLE cushion: rounded square body with a slight inward curve/waist at each side, full softly rounded top and bottom, no hard pinching. Height about 1.05×width. Tiny pink arms and feet and familiar readable black oval eyes. No heart shape.",
+      "sourceFile": "blush-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 812678,
+      "partialAlphaPixels": 757188,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 185308,
+          "alpha32Bounds": {
+            "left": 65,
+            "top": 109,
+            "right": 600,
+            "bottom": 582
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 183028,
+          "alpha32Bounds": {
+            "left": 31,
+            "top": 108,
+            "right": 563,
+            "bottom": 581
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 180975,
+          "alpha32Bounds": {
+            "left": 58,
+            "top": 51,
+            "right": 601,
+            "bottom": 525
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 183219,
+          "alpha32Bounds": {
+            "left": 36,
+            "top": 59,
+            "right": 581,
+            "bottom": 526
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-25b371c0-e26e-4973-b608-a4a2b18e88b2.png",
+      "sha256": "e836813cfd71c8772da144e3ac37546a13370d359f96eb51933a563953a27f33",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Warm vivid BLUSH-PINK #F99AA3, an HOURGLASS-SQUIRCLE cushion: rounded square body with a slight inward curve/waist at each side, full softly rounded top and bottom, no hard pinching. Height about 1.05×width. Tiny pink arms and feet and familiar readable black oval eyes. No heart shape."
+    },
+    {
+      "id": "cobalt",
+      "name": "Cobalt",
+      "description": "Saturated ELECTRIC COBALT BLUE #285FF0, an ANGLED cushion: rounded quadrilateral pillow whose soft upper edge slopes gently upward from viewer left to right, softly beveled asymmetric side corners, broad stable rounded base. Not the original regular blue rounded square. Tiny blue arms and feet. Material bright enough for black eyes to remain visible.",
+      "sourceFile": "cobalt-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 1157131,
+      "partialAlphaPixels": 413801,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 96560,
+          "alpha32Bounds": {
+            "left": 129,
+            "top": 176,
+            "right": 532,
+            "bottom": 506
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 96892,
+          "alpha32Bounds": {
+            "left": 104,
+            "top": 176,
+            "right": 509,
+            "bottom": 506
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 101417,
+          "alpha32Bounds": {
+            "left": 122,
+            "top": 126,
+            "right": 538,
+            "bottom": 469
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 99158,
+          "alpha32Bounds": {
+            "left": 104,
+            "top": 130,
+            "right": 515,
+            "bottom": 469
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-5ef7ae89-5b03-415c-adb4-219c6681482d.png",
+      "sha256": "b886c5e750dc4e443c5907ba0295189f84847f903664bb54dfefb679c12d0eea",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Saturated ELECTRIC COBALT BLUE #285FF0, an ANGLED cushion: rounded quadrilateral pillow whose soft upper edge slopes gently upward from viewer left to right, softly beveled asymmetric side corners, broad stable rounded base. Not the original regular blue rounded square. Tiny blue arms and feet. Material bright enough for black eyes to remain visible.",
+      "refinementPrompt": "Edit this transparent sprite sheet for the SAME blue angled upholstered cushion character. Keep the exact character design, electric cobalt blue material, eyes, four poses, lighting and texture. Fix ONLY the layout and scale.\nThe four cells must be an exact even 2×2 grid on a square transparent PNG. Shrink EACH full character render to about 74% of its current size and center each one in its own equal quadrant. Leave at least 15% of each quadrant completely empty on all four sides. The full character INCLUDING its hands must fit well inside its cell. Keep wide truly transparent vertical and horizontal gutters; NO character or stray colored fragment may cross a quadrant boundary.\nTop-left idle with open eyes; top-right blink with fully closed curved eyes and exactly the idle body pose; bottom-left curious lean; bottom-right one raised arm gentle wave. Each pose must share the same orthographic object scale, front-facing camera and consistent feet baseline inside its cell.\nPreserve real transparent alpha with all space outside the four silhouettes alpha=0, no checkerboard painted in. No ground shadows, floor, labels, text, watermark or other additions. The only change is making each render substantially smaller and safely spaced in its quadrant."
+    },
+    {
+      "id": "ice",
+      "name": "Ice",
+      "description": "ICY PALE BLUE #C9E7F4, upright softly ROUNDED OCTAGON cushion: eight broad pillow edges with every corner heavily rounded, taller than wide, friendly plush silhouette. No facets, armor or hard crystal. Tiny pale blue arms and feet and black oval eyes with clear contrast.",
+      "sourceFile": "ice-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 754075,
+      "partialAlphaPixels": 816383,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 192159,
+          "alpha32Bounds": {
+            "left": 65,
+            "top": 102,
+            "right": 611,
+            "bottom": 596
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 191372,
+          "alpha32Bounds": {
+            "left": 29,
+            "top": 102,
+            "right": 575,
+            "bottom": 596
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 197349,
+          "alpha32Bounds": {
+            "left": 52,
+            "top": 49,
+            "right": 613,
+            "bottom": 548
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 193568,
+          "alpha32Bounds": {
+            "left": 15,
+            "top": 58,
+            "right": 587,
+            "bottom": 548
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-69f8a72a-a3e5-461f-a1e6-a117df5e968d.png",
+      "sha256": "2ce35d0dccc9865909e59098891d3dc03180667fdeced9c6b537a5dd456cb11c",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: ICY PALE BLUE #C9E7F4, upright softly ROUNDED OCTAGON cushion: eight broad pillow edges with every corner heavily rounded, taller than wide, friendly plush silhouette. No facets, armor or hard crystal. Tiny pale blue arms and feet and black oval eyes with clear contrast."
+    },
+    {
+      "id": "apricot",
+      "name": "Apricot",
+      "description": "Lively ORANGE-PEACH #FFA56B, soft rounded PENTAGON cushion with a broad rounded base, softly sloping upper shoulders and a low rounded central top. Width about 1.1×height. No hard corners or roof/house details. Tiny matching peach arms and feet, familiar two glossy black oval eyes.",
+      "sourceFile": "apricot-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 889572,
+      "partialAlphaPixels": 680878,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 162551,
+          "alpha32Bounds": {
+            "left": 73,
+            "top": 139,
+            "right": 606,
+            "bottom": 577
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 162687,
+          "alpha32Bounds": {
+            "left": 30,
+            "top": 139,
+            "right": 563,
+            "bottom": 577
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 161621,
+          "alpha32Bounds": {
+            "left": 80,
+            "top": 68,
+            "right": 612,
+            "bottom": 510
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 160923,
+          "alpha32Bounds": {
+            "left": 23,
+            "top": 74,
+            "right": 567,
+            "bottom": 513
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-c2322b87-d8a6-4992-991f-1045a0bac1b8.png",
+      "sha256": "47168e62eb97250b8df82900912a79f96b419669206c190fbf470714a6f681a2",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Lively ORANGE-PEACH #FFA56B, soft rounded PENTAGON cushion with a broad rounded base, softly sloping upper shoulders and a low rounded central top. Width about 1.1×height. No hard corners or roof/house details. Tiny matching peach arms and feet, familiar two glossy black oval eyes.\nSTRICT SPACING: each character INCLUDING both arms occupies no more than 72% of its quadrant width and 72% of its quadrant height. Leave at least 14% empty transparent margin on EVERY side of EVERY cell. Prioritize wide clean gutters over rendering the characters large."
+    },
+    {
+      "id": "silver",
+      "name": "Silver",
+      "description": "Cool LIGHT SILVER-GRAY #CDD6DF, tapered rounded-square cushion: broad gently bowed rounded top, softly tapering sides toward a narrower round-cornered base, nearly square overall. Upholstered microfiber not metal, no reflective chrome. Tiny cool-gray arms and feet, very readable black oval eyes.",
+      "sourceFile": "silver-source.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 844093,
+      "partialAlphaPixels": 726073,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 165618,
+          "alpha32Bounds": {
+            "left": 68,
+            "top": 146,
+            "right": 606,
+            "bottom": 569
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 164742,
+          "alpha32Bounds": {
+            "left": 21,
+            "top": 146,
+            "right": 558,
+            "bottom": 569
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 164051,
+          "alpha32Bounds": {
+            "left": 71,
+            "top": 91,
+            "right": 596,
+            "bottom": 524
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 163376,
+          "alpha32Bounds": {
+            "left": 21,
+            "top": 107,
+            "right": 576,
+            "bottom": 525
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "generatedArtifact": "exec-ba33aba8-b69d-4c6d-9394-a981337c1be1.png",
+      "sha256": "d8ea01c9bc251688f3359e420354245f48843189a5b291f444b20c2ac2cacf46",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Cool LIGHT SILVER-GRAY #CDD6DF, tapered rounded-square cushion: broad gently bowed rounded top, softly tapering sides toward a narrower round-cornered base, nearly square overall. Upholstered microfiber not metal, no reflective chrome. Tiny cool-gray arms and feet, very readable black oval eyes.\nSTRICT SPACING: each character INCLUDING both arms occupies no more than 72% of its quadrant width and 72% of its quadrant height. Leave at least 14% empty transparent margin on EVERY side of EVERY cell. Prioritize wide clean gutters over rendering the characters large."
+    }
+  ],
+  "alignmentNote": "Raw generated poses retain the grid but have small baseline/centering differences. Per-frame alpha32 bounds are supplied for packaging normalization; original files are unchanged.",
+  "initialSources": [
+    {
+      "id": "cobalt",
+      "name": "Cobalt",
+      "description": "Saturated ELECTRIC COBALT BLUE #285FF0, an ANGLED cushion: rounded quadrilateral pillow whose soft upper edge slopes gently upward from viewer left to right, softly beveled asymmetric side corners, broad stable rounded base. Not the original regular blue rounded square. Tiny blue arms and feet. Material bright enough for black eyes to remain visible.",
+      "sourceFile": "cobalt-source-initial.png",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "transparentPixels": 713639,
+      "partialAlphaPixels": 856547,
+      "frames": [
+        {
+          "name": "idle",
+          "quadrant": "top-left",
+          "eyes": "open",
+          "notes": "neutral frontal full body, arms down",
+          "cell": {
+            "left": 0,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 202829,
+          "alpha32Bounds": {
+            "left": 46,
+            "top": 122,
+            "right": 626,
+            "bottom": 601
+          }
+        },
+        {
+          "name": "blink",
+          "quadrant": "top-right",
+          "eyes": "fully closed",
+          "notes": "same body position and pose as idle; short closed eyelid curves",
+          "cell": {
+            "left": 627,
+            "top": 0,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 201519,
+          "alpha32Bounds": {
+            "left": 0,
+            "top": 122,
+            "right": 622,
+            "bottom": 601
+          }
+        },
+        {
+          "name": "curious",
+          "quadrant": "bottom-left",
+          "eyes": "open",
+          "notes": "slight 6–8 degree frontal body lean",
+          "cell": {
+            "left": 0,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 203129,
+          "alpha32Bounds": {
+            "left": 56,
+            "top": 60,
+            "right": 626,
+            "bottom": 552
+          }
+        },
+        {
+          "name": "wave",
+          "quadrant": "bottom-right",
+          "eyes": "open",
+          "notes": "one small raised arm; feet baseline retained",
+          "cell": {
+            "left": 627,
+            "top": 627,
+            "width": 627,
+            "height": 627
+          },
+          "alpha32Pixels": 198044,
+          "alpha32Bounds": {
+            "left": 0,
+            "top": 75,
+            "right": 625,
+            "bottom": 550
+          }
+        }
+      ],
+      "visualInspection": "All four full-body poses inspected; closed blink and wave present; no text, props or floor.",
+      "reason": "Initial crowded layout; preserved unchanged. Use cobalt-source.png instead.",
+      "generatedArtifact": "exec-143d7eb8-b4f1-4019-ba4f-243567a6674e.png",
+      "sha256": "4ac95008fca51d54e649b176c39153252ae8b55070933891e5bf196d83c18862",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for one original Hermes Studio cushion companion.\nInput image 1 is a MATERIAL AND CHARACTER-FAMILY REFERENCE ONLY: match its dense short upholstered microfiber surface, softly stuffed construction, tiny mitten-like arms and stubby feet, and familiar two glossy black oval eyes. Create ONE NEW distinct character defined below, not a recoloring of one of the reference's four bodies.\nOUTPUT: one square PNG on a GENUINELY TRANSPARENT ALPHA background. Exactly FOUR separate full-body renders of THE SAME ONE CHARACTER, in a clean evenly spaced 2×2 animation grid. All four renders have identical body design, color, face position and scale. Each character is centered within its quadrant, with generous transparent margins and a wide empty transparent horizontal/vertical gutter. Keep the entire body, both arms and both feet inside its own quadrant. No overlap between quadrants. Orthographic frontal camera and consistent feet baseline and object height within each cell. Simple diffuse premium 3D studio light from upper left, subtle shading on the character itself, no floor or cast shadow.\nFRAME POSITIONS, ABSOLUTELY REQUIRED:\nTOP LEFT: idle, facing forward, BOTH eyes fully OPEN glossy black vertical ovals, arms gently down at sides, relaxed neutral friendly presence.\nTOP RIGHT: BLINK of that exact top-left pose. Identical body pose, shape, feet and arm positions and location. BOTH eyes fully CLOSED, represented by two short soft charcoal curved eyelid lines. No open eye ovals in this quadrant.\nBOTTOM LEFT: curious, slight 6–8 degree head/body lean while still facing front, both eyes fully open, tiny arms resting. Same size and feet baseline.\nBOTTOM RIGHT: gentle friendly ONE-ARM WAVE, the character's right arm (viewer left) lifted slightly outward and up; other arm remains resting, both eyes open. Same body and face proportions, same size and feet baseline.\nIMPORTANT: four poses of the SAME colored character, never four different colored characters. Body is a SINGLE soft upholstered cushion with no separate human head or torso. Only two black oval eyes, NO mouth, nose, eyebrows, ears, hair, horns, animal anatomy, plant parts, fingers, props, clothing or shoes. Friendly, tactile, simple, premium. Microfiber is dense short upholstery, not shaggy fur, knitted yarn, felt seams or plastic. No text, labels, numbers, arrows, watermark, border, floor, stage, pedestal, backdrop, checkerboard painted into image, ground shadows, or color swatches. Every background pixel outside the character cutouts must have alpha=0.\nCHARACTER DESIGN FOR EVERY ONE OF THE FOUR QUADRANTS: Saturated ELECTRIC COBALT BLUE #285FF0, an ANGLED cushion: rounded quadrilateral pillow whose soft upper edge slopes gently upward from viewer left to right, softly beveled asymmetric side corners, broad stable rounded base. Not the original regular blue rounded square. Tiny blue arms and feet. Material bright enough for black eyes to remain visible."
+    }
+  ],
+  "freshCharacterGenerations": 10,
+  "builtInRefinementCalls": 1,
+  "promptFile": "prompts.json",
+  "inspectionNotes": "Each final image has real alpha, four occupied cells and visually verified idle/open, blink/closed, curious and wave. Small generated edge speckles and per-pose baseline offsets may remain in the unchanged originals; use per-frame bounds and the existing packaging pipeline."
+}

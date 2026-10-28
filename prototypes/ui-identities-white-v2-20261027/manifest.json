@@ -1,0 +1,60 @@
+{
+  "revision": 2,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "brief": "Pure white backgrounds with vibrant color, Apple-like clarity; no beige or purple backgrounds",
+  "scope": "Five visual proposals based on real UI screenshots; no application or runtime changes",
+  "images": [
+    {
+      "id": "01-spectrum",
+      "name": "Spectrum",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-e584a8c2-0178-4bb7-a3ff-b25409491bb7.png",
+      "destination": "prototypes/ui-identities-white-v2-20261027/01-spectrum.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1640987
+    },
+    {
+      "id": "02-signal",
+      "name": "Signal",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-02160a18-ad24-45cb-b3a7-44fd1ea78b07.png",
+      "destination": "prototypes/ui-identities-white-v2-20261027/02-signal.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1299787
+    },
+    {
+      "id": "03-ribbon",
+      "name": "Ribbon",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-24791679-0629-4efc-b1f7-f372b5ccd15b.png",
+      "destination": "prototypes/ui-identities-white-v2-20261027/03-ribbon.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1328794
+    },
+    {
+      "id": "04-current",
+      "name": "Current",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-2ee13f3c-a882-40ec-966d-2b08bdb3fed0.png",
+      "destination": "prototypes/ui-identities-white-v2-20261027/04-current.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1338408
+    },
+    {
+      "id": "05-glyph",
+      "name": "Glyph",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-00f89510-3088-40cd-9d56-7771d64672d7.png",
+      "destination": "prototypes/ui-identities-white-v2-20261027/05-glyph.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1300768
+    }
+  ],
+  "references": [
+    "references/01-bots.png",
+    "references/02-profile.png",
+    "references/03-chat.png"
+  ],
+  "prompts": "prompts.json"
+}

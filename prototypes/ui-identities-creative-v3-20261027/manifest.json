@@ -1,0 +1,115 @@
+{
+  "revision": 3,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "brief": "Ten creative avatar, layout, typography and gradient directions. Prior white-only constraint superseded by explicit request for gradients; beige and purple backgrounds excluded.",
+  "scope": "Visual image studies based on real Bots/Chat/Profile screenshots. No design selected or implemented.",
+  "images": [
+    {
+      "id": "01-courier-club",
+      "name": "Courier Club",
+      "summary": "Racing italic type, citrus gradients, articulated messenger sculptures",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-b801e86d-7f85-4de0-aab4-5af5bf318a7c.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/01-courier-club.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1823946
+    },
+    {
+      "id": "02-ink-current",
+      "name": "Ink Current",
+      "summary": "Calligraphic creatures, expressive brush type, cyan and red",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-8b77ae5e-3f89-4f54-89cb-bfccdf750160.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/02-ink-current.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1911912
+    },
+    {
+      "id": "03-aerial",
+      "name": "Aerial",
+      "summary": "Architectural light typography, sky gradients, miniature kite companions",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-a8d1ff24-fe89-46ee-a7c7-6347d5a4e54e.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/03-aerial.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1696961
+    },
+    {
+      "id": "04-mechanical-garden",
+      "name": "Mechanical Garden",
+      "summary": "Sculptural serif, emerald and tomato light, botanical automata",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-8660d8b9-a3e1-4714-b8bc-941058dd65b0.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/04-mechanical-garden.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1665131
+    },
+    {
+      "id": "05-afterimage",
+      "name": "Afterimage",
+      "summary": "Bitmap display type, electric blue and coral, paper-cut performers",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-c7c600e0-158a-44c1-bad1-78ccf2cd4842.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/05-afterimage.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1991120
+    },
+    {
+      "id": "06-sunwire",
+      "name": "Sunwire",
+      "summary": "Condensed type, cobalt\u2013cyan\u2013yellow gradients, metallic courier birds",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-34292ca0-9684-4399-a630-c83bbe1de2a1.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/06-sunwire.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1794120
+    },
+    {
+      "id": "07-coral-assembly",
+      "name": "Coral Assembly",
+      "summary": "Chunky editorial serif, tomato gradients, marine hybrid characters",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-6af9c79b-2ede-4b15-ba02-056c5ffdad25.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/07-coral-assembly.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2066246
+    },
+    {
+      "id": "08-letterlife",
+      "name": "Letterlife",
+      "summary": "Stretch typography, blue\u2013emerald gradients, living initials",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-7bd0969a-d272-4d11-b819-afd1540eb8af.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/08-letterlife.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1609250
+    },
+    {
+      "id": "09-foilcraft",
+      "name": "Foilcraft",
+      "summary": "High-contrast serif, red\u2013cyan foil gradients, folded metal animals",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-b0a7f8bd-163f-4410-be03-726c527bea65.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/09-foilcraft.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2035351
+    },
+    {
+      "id": "10-electric-folio",
+      "name": "Electric Folio",
+      "summary": "Expressive drawn personalities, brush accents, sky\u2013mint gradients",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-86b1733c-9ddc-4494-971e-f248214094a4.png",
+      "destination": "prototypes/ui-identities-creative-v3-20261027/10-electric-folio.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1901474
+    }
+  ],
+  "references": [
+    "references/01-bots.png",
+    "references/02-profile.png",
+    "references/03-chat.png"
+  ],
+  "prompts": "prompts.json"
+}

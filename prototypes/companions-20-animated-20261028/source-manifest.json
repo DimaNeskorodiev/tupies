@@ -1,0 +1,152 @@
+{
+  "generatedBy": "built-in image_gen",
+  "originalsPreserved": true,
+  "frames": [
+    "idle",
+    "blink",
+    "curious",
+    "wave"
+  ],
+  "entries": [
+    {
+      "id": "cloud",
+      "label": "Cloud",
+      "source": "sources/cloud-source.png",
+      "prompt": "sources/cloud-prompt.txt",
+      "sourceSha256": "f9470487f3f0dd909628dda76bd26049739ab965017a467fe6669c04bf70fe87"
+    },
+    {
+      "id": "tangerine",
+      "label": "Tangerine",
+      "source": "sources/tangerine-source.png",
+      "prompt": "sources/tangerine-prompt.txt",
+      "sourceSha256": "94bd70bf428a4ba84d9105a1beb0a59a539120e627182660c0e33af5c28ce350"
+    },
+    {
+      "id": "lagoon",
+      "label": "Lagoon",
+      "source": "sources/lagoon-source.png",
+      "prompt": "sources/lagoon-prompt.txt",
+      "sourceSha256": "29929ad4899e90ebad3eb5958702d169d6ab0ad21687d388647eac5d3f9530c6"
+    },
+    {
+      "id": "cherry",
+      "label": "Cherry",
+      "source": "sources/cherry-source.png",
+      "prompt": "sources/cherry-prompt.txt",
+      "sourceSha256": "1e9da25fce40bfb6e766717065f63359bfbff5c15152483471a3539a499ddf7a"
+    },
+    {
+      "id": "pistachio",
+      "label": "Pistachio",
+      "source": "sources/pistachio-source.png",
+      "prompt": "sources/pistachio-prompt.txt",
+      "sourceSha256": "269c01cb541ddc666b8bf83dbe472bbfa314c1db6bb956f5dc55fc0ac09bddc1"
+    },
+    {
+      "id": "periwinkle",
+      "label": "Periwinkle",
+      "source": "sources/periwinkle-source.png",
+      "prompt": "sources/periwinkle-prompt.txt",
+      "sourceSha256": "6daee1b47848fdfc87d8dd5ddce2daa4ef09a1ea6edaa02ad6616c8aeda60b9e"
+    },
+    {
+      "id": "peach",
+      "label": "Peach",
+      "source": "sources/peach-source.png",
+      "prompt": "sources/peach-prompt.txt",
+      "sourceSha256": "ff2fbd1a49a8ab030213a2cc454bde3af307602a52d3a6067cd88656157153cf"
+    },
+    {
+      "id": "lemon",
+      "label": "Lemon",
+      "source": "sources/lemon-source.png",
+      "prompt": "sources/lemon-prompt.txt",
+      "sourceSha256": "c64020a01d198c13afb9bd5b874e55fbc43398b0ae7e0ab8d5e10b89a95216f7"
+    },
+    {
+      "id": "rose",
+      "label": "Rose",
+      "source": "sources/rose-source.png",
+      "prompt": "sources/rose-prompt.txt",
+      "sourceSha256": "fefaf72168e62e38d195cf18fee226f7a86a21afd436f6ced615bbd3b5019edc"
+    },
+    {
+      "id": "teal",
+      "label": "Teal",
+      "source": "sources/teal-source.png",
+      "prompt": "sources/teal-prompt.txt",
+      "sourceSha256": "07f90c2a1898e4acf4929606c7143cc744dc939227adf4c375c865bf4f4a686c"
+    },
+    {
+      "id": "azure",
+      "label": "Azure",
+      "source": "sources/azure-source.png",
+      "prompt": "sources/azure-prompt.txt",
+      "sourceSha256": "6846ccc2290ab6978b8879a53c8db9b2da2568a208405bfc6dd2cd1252c1adec"
+    },
+    {
+      "id": "scarlet",
+      "label": "Scarlet",
+      "source": "sources/scarlet-source.png",
+      "prompt": "sources/scarlet-prompt.txt",
+      "sourceSha256": "98f700362fc8fbcb52564136a2aac21b02032fa6b8aaee8ee4a637fb86715019"
+    },
+    {
+      "id": "butter",
+      "label": "Butter",
+      "source": "sources/butter-source.png",
+      "prompt": "sources/butter-prompt.txt",
+      "sourceSha256": "9f135bccac6dab09d2ced6465a4de67b8a74bd57c0ff0723fd046da490ef7b9e"
+    },
+    {
+      "id": "mint",
+      "label": "Mint",
+      "source": "sources/mint-source.png",
+      "prompt": "sources/mint-prompt.txt",
+      "sourceSha256": "0cdf535d647ac1b550250c312e954d7e5ca22098b0f2901aaa47b3a13285c621"
+    },
+    {
+      "id": "cocoa",
+      "label": "Cocoa",
+      "source": "sources/cocoa-source.png",
+      "prompt": "sources/cocoa-prompt.txt",
+      "sourceSha256": "774b11da6a6e6e1d4bede10f2049f7c44b42d2d41dc77df79b57bd7c2ba53c11"
+    },
+    {
+      "id": "blush",
+      "label": "Blush",
+      "source": "sources/blush-source.png",
+      "prompt": "sources/blush-prompt.txt",
+      "sourceSha256": "e836813cfd71c8772da144e3ac37546a13370d359f96eb51933a563953a27f33"
+    },
+    {
+      "id": "cobalt",
+      "label": "Cobalt",
+      "source": "sources/cobalt-source.png",
+      "prompt": "sources/cobalt-prompt.txt",
+      "sourceSha256": "b886c5e750dc4e443c5907ba0295189f84847f903664bb54dfefb679c12d0eea"
+    },
+    {
+      "id": "ice",
+      "label": "Ice",
+      "source": "sources/ice-source.png",
+      "prompt": "sources/ice-prompt.txt",
+      "sourceSha256": "2ce35d0dccc9865909e59098891d3dc03180667fdeced9c6b537a5dd456cb11c"
+    },
+    {
+      "id": "apricot",
+      "label": "Apricot",
+      "source": "sources/apricot-source.png",
+      "prompt": "sources/apricot-prompt.txt",
+      "sourceSha256": "47168e62eb97250b8df82900912a79f96b419669206c190fbf470714a6f681a2"
+    },
+    {
+      "id": "silver",
+      "label": "Silver",
+      "source": "sources/silver-source.png",
+      "prompt": "sources/silver-prompt.txt",
+      "sourceSha256": "d8ea01c9bc251688f3359e420354245f48843189a5b291f444b20c2ac2cacf46"
+    }
+  ]
+}

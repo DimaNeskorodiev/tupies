@@ -1,0 +1,126 @@
+/* Liquid glass controls. Everyday buttons are soft glass pills; primary actions carry the blue-violet accent.
+   public/liquid.js sets --drop-x/--drop-y/--drop-size on press and --mx/--my while hovering; without it the
+   buttons still look and press the same, just without the drop and the moving highlight. */
+:root{
+  --accent-from:#2f6bff;--accent-mid:#5b5cf6;--accent-to:#9b4dfb;--accent-ink:#3b35d4;
+  --glass-ink:#262d45;--glass-top:#fdfdff;--glass-bottom:#eff1f6;
+  --spring:cubic-bezier(.3,1.8,.5,1);
+}
+
+/* Shared shape and motion */
+.primary-button,.secondary-button,.accent-button,.danger-button,.icon-button,.open-chat,.segment,.settings-tab,.composer-footer .send{
+  position:relative;isolation:isolate;overflow:hidden;
+  transition:transform .5s var(--spring),box-shadow .25s,background-color .2s,color .2s,border-color .2s,background-position .6s ease;
+}
+.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat{
+  display:inline-flex;gap:8px;align-items:center;justify-content:center;white-space:nowrap;
+  border-radius:999px;padding:10px 18px;font-size:12px;font-weight:560;letter-spacing:-.1px;text-decoration:none;
+}
+.primary-button svg,.secondary-button svg,.accent-button svg,.danger-button svg{width:15px;height:15px}
+/* A trailing icon (usually an arrow) leans the way the button goes. */
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat)>svg:last-child:not(:first-child){transition:transform .45s var(--spring)}
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat):hover:not(:disabled)>svg:last-child:not(:first-child){transform:translateX(3px)}
+
+/* The pointer highlight that slides across the glass */
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat,.composer-footer .send)::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(90px circle at var(--mx,50%) var(--my,-30%),var(--sheen,rgba(255,255,255,.75)),transparent 70%);
+}
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat,.composer-footer .send):hover:not(:disabled)::before{opacity:1}
+
+/* The drop: a soft blob that spreads from the press point, wobbling as it goes */
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.icon-button,.open-chat,.segment,.settings-tab,.composer-footer .send,.artifact-actions button,.artifact-actions a)::after{
+  content:"";position:absolute;z-index:-1;pointer-events:none;opacity:0;
+  left:var(--drop-x,50%);top:var(--drop-y,50%);width:var(--drop-size,90px);height:var(--drop-size,90px);
+  margin:calc(var(--drop-size,90px)/-2) 0 0 calc(var(--drop-size,90px)/-2);
+  border-radius:42% 58% 63% 37%/41% 44% 56% 59%;transform:scale(0);
+  background:radial-gradient(circle at 38% 32%,var(--drop-core,rgba(118,104,255,.30)),var(--drop-edge,rgba(118,104,255,.14)) 55%,transparent 72%);
+}
+.is-dropping::after{animation:liquid-drop .75s cubic-bezier(.2,.75,.25,1)}
+@keyframes liquid-drop{
+  0%{transform:scale(0) rotate(0);opacity:1;border-radius:42% 58% 63% 37%/41% 44% 56% 59%}
+  45%{opacity:.85;border-radius:58% 42% 37% 63%/56% 59% 41% 44%}
+  100%{transform:scale(2.4) rotate(55deg);opacity:0;border-radius:50%}
+}
+
+/* Pressing squeezes the button like a drop; letting go springs it back. */
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat):hover:not(:disabled){transform:translateY(-1px)}
+:is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat,.composer-footer .send):active:not(:disabled){transform:translateY(0) scale(1.035,.92);transition-duration:.12s,.12s,.2s,.2s,.2s,.6s;transition-timing-function:ease-out}
+:is(.icon-button,.segment,.settings-tab):active:not(:disabled){transform:scale(.94);transition-duration:.1s}
+
+/* Glass pill: the everyday button */
+.secondary-button,.open-chat{
+  color:var(--glass-ink);background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));border:1px solid rgba(255,255,255,.95);
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 2px rgba(118,126,160,.14),0 1px 1px rgba(30,38,70,.04),0 4px 10px -3px rgba(30,38,70,.11),0 12px 22px -12px rgba(30,38,70,.2);
+}
+.secondary-button:hover:not(:disabled),.open-chat:hover{background:linear-gradient(180deg,#fff,#f5f6fa);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 2px rgba(118,126,160,.12),0 1px 1px rgba(30,38,70,.04),0 6px 14px -4px rgba(30,38,70,.14),0 16px 28px -14px rgba(30,38,70,.24)}
+.open-chat{padding:7px 13px;font-size:11px}
+.artifact-actions :is(button,a){position:relative;isolation:isolate;overflow:hidden;border-radius:999px;color:var(--glass-ink);font-weight:540;background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 2px rgba(118,126,160,.14),0 4px 10px -4px rgba(30,38,70,.16);transition:transform .5s var(--spring),box-shadow .25s}
+.artifact-actions :is(button,a):hover{color:var(--glass-ink);background:linear-gradient(180deg,#fff,#f5f6fa);transform:translateY(-1px)}
+.artifact-actions :is(button,a):active{transform:scale(1.035,.92);transition-duration:.12s}
+.open-chat svg{width:13px;height:13px}
+
+/* Accent: the gradient for the one thing to do next */
+.primary-button{
+  color:#fff;border:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(100deg,var(--accent-from) 0%,var(--accent-mid) 48%,var(--accent-to) 100%);background-size:160% 100%;background-position:0 0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -3px 8px rgba(42,8,140,.22),0 2px 5px rgba(55,70,220,.22),0 12px 24px -10px rgba(98,78,255,.6);
+  --sheen:rgba(255,255,255,.38);--drop-core:rgba(255,255,255,.55);--drop-edge:rgba(255,255,255,.22);
+}
+.primary-button:hover:not(:disabled){background-position:100% 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -3px 8px rgba(42,8,140,.2),0 3px 7px rgba(55,70,220,.25),0 16px 32px -10px rgba(110,80,255,.7)}
+
+/* Soft accent: replies and gentle calls to act */
+.accent-button{
+  color:var(--accent-ink);border:1px solid rgba(255,255,255,.95);background:linear-gradient(180deg,#f6f5ff,#e6e5ff);
+  box-shadow:inset 0 1px 0 #fff,inset 0 -2px 4px rgba(98,86,255,.13),0 2px 4px rgba(88,76,255,.08),0 10px 22px -10px rgba(88,76,255,.45);
+}
+.accent-button:hover:not(:disabled){background:linear-gradient(180deg,#f9f8ff,#ebeaff);box-shadow:inset 0 1px 0 #fff,inset 0 -2px 4px rgba(98,86,255,.12),0 3px 6px rgba(88,76,255,.1),0 14px 28px -10px rgba(88,76,255,.5)}
+
+.danger-button{
+  color:#b23a33;border:1px solid rgba(255,255,255,.9);background:linear-gradient(180deg,#fff6f5,#fbe4e2);
+  box-shadow:inset 0 1px 0 #fff,inset 0 -2px 4px rgba(214,80,70,.1),0 8px 18px -10px rgba(214,80,70,.4);
+  --drop-core:rgba(229,83,75,.25);--drop-edge:rgba(229,83,75,.1);
+}
+.danger-button:hover:not(:disabled){background:linear-gradient(180deg,#fff8f7,#fde9e7)}
+
+/* Icon buttons turn into small glass circles on hover */
+.icon-button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:transparent;border:1px solid transparent;color:#8a92a4}
+.icon-button:hover:not(:disabled){color:var(--glass-ink);background:linear-gradient(180deg,#fff,#f2f3f8);border-color:rgba(255,255,255,.95);box-shadow:inset 0 -1px 2px rgba(118,126,160,.12),0 4px 10px -4px rgba(30,38,70,.16)}
+.icon-button svg{width:18px;height:18px}
+
+/* Chat send: the accent as a round drop */
+.composer-footer .send{border-radius:50%;width:32px;height:32px;color:#fff;background:linear-gradient(135deg,var(--accent-from),var(--accent-to));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 14px -6px rgba(98,78,255,.65);--sheen:rgba(255,255,255,.35);--drop-core:rgba(255,255,255,.55);--drop-edge:rgba(255,255,255,.2)}
+.composer-footer .send:disabled{background:#c5c9d6;box-shadow:none}
+
+/* Segmented controls: a glass track with a dark pill for the current choice */
+.segmented{display:flex;gap:3px;padding:4px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(236,238,245,.62));border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 2px rgba(40,50,80,.07),0 1px 0 rgba(255,255,255,.8)}
+.segment{background:none;font-size:11.5px;padding:7px 15px;color:#5f677b;border:1px solid transparent;border-radius:999px;font-weight:520}
+.segment:hover:not(.active){color:var(--glass-ink);background:rgba(255,255,255,.6)}
+.segment.active{color:#fff;background:linear-gradient(180deg,#363c4f,#1c2030);border-color:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 2px 3px rgba(20,24,40,.25),0 8px 16px -8px rgba(20,24,40,.6);--drop-core:rgba(255,255,255,.35);--drop-edge:rgba(255,255,255,.12)}
+.segment>span{margin-left:6px;font-weight:600;opacity:.7}
+.segment.active>span{opacity:1}
+/* Counts inside a selected dark pill (Bots filter, profile tabs) stay legible. */
+.segmented .segment.active>span{color:#fff;background:rgba(255,255,255,.18);opacity:1}
+.segment.active svg{color:#fff}
+
+/* Status pills: tinted glass with a mark that says the state at a glance */
+.status-pill,.dash-badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px 4px 8px;font-size:10.5px;font-weight:560;line-height:1.2;white-space:nowrap;
+  color:#646c82;background:linear-gradient(180deg,#f7f8fb,#eceef4);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(30,38,70,.18)}
+.status-pill .dot,.dash-badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.status-pill.ready,.dash-tone-ok{color:#1d7041;background:linear-gradient(180deg,#effaf3,#ddf3e5);box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(34,165,90,.35)}
+.status-pill.working,.dash-tone-active,.dash-tone-question{color:#4b44e0;background:linear-gradient(180deg,#f4f3ff,#e7e6ff);box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(98,86,255,.4)}
+.status-pill.error,.dash-tone-error{color:#b23a33;background:linear-gradient(180deg,#fff4f3,#fbe1df);box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(229,83,75,.35)}
+.status-pill.attention,.dash-tone-warn{color:#a24f0c;background:linear-gradient(180deg,#fff7ee,#ffe9d2);box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(240,140,27,.4)}
+.status-pill.ready .dot{background:#22a55a}
+.status-pill.working .dot,.dash-tone-active .dot{background:#6c63ff;animation:liquid-pulse 1.8s ease-out infinite}
+.status-pill.attention .dot{background:#f08c1b;animation:none}
+.dash-badge-mark{width:15px;height:15px;border-radius:50%;display:grid;place-items:center;flex:none;color:#fff;background:currentColor;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.dash-badge-mark svg{width:10px;height:10px;stroke:#fff;stroke-width:3}
+.dash-tone-ok .dash-badge-mark{background:#22a55a}.dash-tone-warn .dash-badge-mark{background:#f08c1b}.dash-tone-error .dash-badge-mark{background:#e5534b}.dash-tone-question .dash-badge-mark{background:#6c63ff}
+@keyframes liquid-pulse{0%{box-shadow:0 0 0 0 rgba(108,99,255,.55)}70%{box-shadow:0 0 0 6px rgba(108,99,255,0)}100%{box-shadow:0 0 0 0 rgba(108,99,255,0)}}
+
+@media(prefers-reduced-motion:reduce){
+  .is-dropping::after{animation:none}
+  :is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat,.icon-button,.segment,.settings-tab,.composer-footer .send):is(:hover,:active){transform:none}
+}
+@media(max-width:760px){.primary-button,.secondary-button,.accent-button,.danger-button{padding:10px 15px}}

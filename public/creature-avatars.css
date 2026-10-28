@@ -1,0 +1,47 @@
+/* Registered local cushion frames animate in every UI size without layout shifts. */
+.avatar.creature-avatar.companion-avatar{--companion-lift:1.5px;--companion-idle:1;--companion-look:0;--companion-wave:0;--companion-force-blink:0;position:relative;display:inline-block;flex:none;width:76px;height:76px;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;isolation:isolate;vertical-align:middle}
+.avatar.companion-avatar.small{--companion-lift:.8px;width:52px;height:52px}
+.avatar.companion-avatar.tiny{--companion-lift:.55px;width:40px;height:40px}
+.avatar.companion-avatar.large{--companion-lift:2px;width:92px;height:92px}
+.avatar-stack .avatar.companion-avatar{box-shadow:none}
+.companion-body{display:block;position:absolute;inset:0;transform-origin:50% 88%;animation:companion-breathe var(--companion-cycle,6.8s) ease-in-out infinite;animation-delay:var(--companion-phase,0s)}
+.companion-avatar img{display:block;position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:contain;user-select:none;-webkit-user-drag:none;pointer-events:none;filter:none}
+.avatar.creature-avatar.companion-portrait{border:1px solid #ffffffd9;border-radius:28%;background:linear-gradient(155deg,#ffffffb8,#edf5ff50);box-shadow:inset 0 1px 1px #ffffffd9,0 2px 8px #263f6809;overflow:hidden}
+.companion-frame{opacity:0;transition:opacity .09s linear}
+.companion-frame-idle{opacity:1}
+.companion-avatar[data-companion-frames=true] .companion-frame-idle{opacity:var(--companion-idle);animation:companion-eyes-open var(--companion-blink-cycle,8s) linear infinite;animation-delay:var(--companion-blink-phase,0s)}
+.companion-avatar[data-companion-frames=true] .companion-frame-blink{opacity:var(--companion-force-blink);animation:companion-eyes-blink var(--companion-blink-cycle,8s) linear infinite;animation-delay:var(--companion-blink-phase,0s)}
+.companion-frame-look{opacity:var(--companion-look)}
+.companion-frame-wave{opacity:var(--companion-wave)}
+.companion-avatar[data-companion-motion=sway] .companion-body{animation-name:companion-sway}
+.companion-avatar[data-companion-motion=float] .companion-body{animation-name:companion-float}
+.companion-avatar[data-companion-motion=bounce] .companion-body{animation-name:companion-bounce}
+.companion-avatar[data-companion-motion=rock] .companion-body{animation-name:companion-rock}
+.companion-avatar[data-companion-frames=true]:is([data-companion-state=look],[data-companion-state=thinking]){--companion-idle:0;--companion-look:1}
+.companion-avatar[data-companion-frames=true]:is([data-companion-state=greeting],[data-companion-state=success]){--companion-idle:0;--companion-wave:1}
+.companion-avatar[data-companion-frames=true][data-companion-state=blink]{--companion-idle:0;--companion-force-blink:1}
+.companion-avatar[data-companion-state=working] .companion-body{animation-duration:4.8s}
+.companion-avatar[data-companion-state=thinking] .companion-body{animation-name:companion-rock}
+.companion-avatar[data-companion-state=floating] .companion-body{animation-name:companion-float}
+.companion-avatar:is([data-companion-state=success],[data-companion-state=greeting]) .companion-body{animation:companion-greet 1.6s ease-in-out 2}
+.chat-welcome .avatar.companion-mascot.large{width:144px;height:144px}
+.bp-hero .avatar.companion-mascot.large{width:132px;height:132px}
+.companion-avatar:focus-within,:is(button,a,[tabindex]):focus-visible .companion-avatar{--companion-idle:0;--companion-look:0;--companion-wave:1;--companion-force-blink:0}
+@media(hover:hover){.companion-avatar:hover,:is(button,a,.bot-card,.roster-row):hover .companion-avatar{--companion-idle:0;--companion-look:0;--companion-wave:1;--companion-force-blink:0}.companion-avatar:hover .companion-body,:is(button,a,.bot-card,.roster-row):hover .companion-body{animation-name:companion-greet;animation-duration:1.6s;animation-iteration-count:2}}
+/* Suspended artwork keeps its position; resuming does not restart every cycle. */
+.companion-avatar.companion-offscreen *,.companion-tab-hidden .companion-avatar *{animation-play-state:paused!important}
+/* Pause and reduced motion always show calm open eyes, including posed states. */
+.companion-avatar.is-paused *{animation:none!important;transition:none!important;transform:none!important}
+.companion-avatar.is-paused .companion-frame{opacity:0!important}
+.companion-avatar.is-paused .companion-frame-idle{opacity:1!important}
+@keyframes companion-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(calc(-1 * var(--companion-lift)))}}
+@keyframes companion-sway{0%,100%{transform:rotate(calc(-1 * var(--companion-lean,.8deg)))}50%{transform:rotate(var(--companion-lean,.8deg)) translateY(calc(-.5 * var(--companion-lift)))}}
+@keyframes companion-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(calc(-1.4 * var(--companion-lift))) rotate(var(--companion-lean,.8deg))}}
+@keyframes companion-bounce{0%,70%,100%{transform:translateY(0)}35%{transform:translateY(calc(-1 * var(--companion-lift)))}}
+@keyframes companion-rock{0%,100%{transform:rotate(0)}35%,65%{transform:rotate(var(--companion-lean,.8deg)) translateY(calc(-.4 * var(--companion-lift)))}}
+@keyframes companion-greet{0%,100%{transform:rotate(0)}30%{transform:rotate(calc(-2 * var(--companion-lean,.8deg)))}65%{transform:rotate(calc(2 * var(--companion-lean,.8deg))) translateY(calc(-1 * var(--companion-lift)))}}
+@keyframes companion-eyes-open{0%,94.9%,97.6%,100%{opacity:var(--companion-idle)}95.7%,96.8%{opacity:0}}
+@keyframes companion-eyes-blink{0%,94.9%,97.6%,100%{opacity:var(--companion-force-blink)}95.7%,96.8%{opacity:calc(var(--companion-idle) + var(--companion-force-blink))}}
+@media(max-height:800px){.chat-welcome .avatar.companion-mascot.large{width:116px;height:116px}}
+@media(prefers-reduced-motion:reduce){.companion-avatar *{animation:none!important;transition:none!important;transform:none!important}.companion-avatar .companion-frame{opacity:0!important}.companion-avatar .companion-frame-idle{opacity:1!important}}
+@media(prefers-reduced-transparency:reduce){.avatar.creature-avatar.companion-portrait{background:#f3f7fb;border-color:#dce6ed;box-shadow:none}}

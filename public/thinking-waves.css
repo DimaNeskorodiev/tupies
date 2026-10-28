@@ -1,0 +1,41 @@
+/* The event flow belongs to the conversation surface, without a panel behind it. */
+.thinking-message{align-items:flex-start}
+.thinking-message .message-content{flex:1;min-width:0;max-width:650px}
+.thinking-card{position:relative;min-height:222px;padding:188px 0 0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;isolation:isolate}
+.thinking-card::after{display:none}
+.thinking-canvas{position:absolute;inset:0 0 auto;width:100%;height:188px;display:block;z-index:0;background:transparent;pointer-events:none}
+.thinking-flow-layer{position:absolute;inset:0 0 auto;height:188px;z-index:1;pointer-events:none;touch-action:pan-y}
+.thinking-flow-fragment{position:absolute;top:0;left:0;display:block;max-width:min(165px,46%);padding:5px 7px;border:0;border-radius:0;background:none;box-shadow:none;color:var(--think-deep,#725f96);font-size:11px;line-height:1.5;font-weight:500;text-align:center;overflow-wrap:anywhere;white-space:normal;text-shadow:0 0 5px #f0f3f9,0 0 9px #f0f3f9;pointer-events:auto;will-change:transform,opacity;transition:none;max-height:66px;overflow:hidden}
+.thinking-flow-fragment::before{content:'';display:inline-block;width:3px;height:3px;margin-right:5px;vertical-align:2px;border-radius:50%;background:var(--think-mid,#9970ed)}
+.thinking-flow-fragment:hover,.thinking-flow-fragment[aria-pressed=true]{color:var(--think-deep,#5931ad)}
+.thinking-flow-fragment:focus-visible{outline:2px solid var(--think-mid,#9970ed);outline-offset:2px;border-radius:4px}
+.thinking-flow-fragment[hidden]{display:none}
+.thinking-caption{position:relative;z-index:2;display:flex;align-items:center;gap:9px;padding:3px 2px 0;font-size:11px;line-height:1.55;color:#5d7189;letter-spacing:0}
+.thinking-phase{display:flex;align-items:center;gap:7px;min-width:0;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-shadow:none}
+.thinking-spark{height:4px;width:4px;flex:none;border-radius:50%;background:var(--think-mid,#9970ed);box-shadow:none;animation:none}
+.thinking-dots{display:none}
+.thinking-elapsed{flex:none;font-size:9px;color:#8b98aa;font-variant-numeric:tabular-nums}
+.thinking-context{position:relative;z-index:2;color:#8795a8;font-size:10px;line-height:1.75;margin:3px 2px 0;overflow-wrap:anywhere}
+.thinking-context:empty{display:none}
+.thinking-stop{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;border:1px solid #778ba62b;background:transparent;color:#76869b;border-radius:999px;padding:4px 10px;font:inherit;font-size:10px;cursor:pointer;transition:background .2s,border-color .2s}
+.thinking-stop:hover:not(:disabled){background:#ffffff7a;border-color:#778ba653;color:#566b84}
+.thinking-stop:focus-visible{outline:2px solid var(--think-mid,#9970ed);outline-offset:3px}
+.thinking-stop:disabled{opacity:.5;cursor:default}
+.thinking-stop svg{width:9px;height:9px;fill:currentColor;stroke:none}
+.thinking-flow-inspection{position:relative;z-index:2;padding:9px 2px 0;margin:9px 0 0;border:0;border-top:1px solid #6d82a01c;background:transparent;color:#72849a;font-size:10px;line-height:1.8;overflow-wrap:anywhere}
+.thinking-flow-inspection[hidden]{display:none}
+.thinking-flow-inspection-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.thinking-flow-inspection-head strong{font-size:10px;font-weight:550;color:#5d7189;overflow-wrap:anywhere;min-width:0}
+.thinking-flow-inspection p{margin:4px 0 0}
+.thinking-flow-inspection pre{margin:5px 0 0;font:10px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow:auto;color:#7a8ca2}
+.thinking-flow-close{flex:none;border:0;background:none;border-radius:4px;padding:3px 5px;color:#8795a8;font-size:9px}
+.thinking-flow-close:focus-visible{outline:2px solid var(--think-mid,#9970ed);outline-offset:2px}
+.thinking-message.is-compact{margin-top:-10px}
+.thinking-message.is-compact>.avatar{visibility:hidden}
+.thinking-message.is-compact .thinking-card{min-height:126px;padding-top:96px}
+.thinking-message.is-compact .thinking-canvas,.thinking-message.is-compact .thinking-flow-layer{height:96px}
+.thinking-message.is-compact .thinking-context{display:none}
+.thinking-message.is-compact .thinking-flow-fragment{font-size:10px;max-width:min(150px,48%);max-height:49px}
+@media(max-width:640px){.thinking-card{padding-top:184px;min-height:218px}.thinking-canvas,.thinking-flow-layer{height:184px}.thinking-flow-fragment{max-width:48%;font-size:11px;padding:5px}.thinking-elapsed{display:none}.thinking-caption{gap:7px}.thinking-stop{padding:5px 9px}.thinking-context{font-size:10px}}
+@media(pointer:coarse){.thinking-flow-fragment{min-height:34px}.thinking-stop{min-height:32px}.thinking-flow-close{min-height:32px}}
+@media(prefers-reduced-motion:reduce){.thinking-flow-fragment{will-change:auto}.thinking-spark{animation:none}}

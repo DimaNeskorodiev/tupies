@@ -1,0 +1,56 @@
+{
+  "revision": 4,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "brief": "Canonical Roki, restrained evolution of current Hermes UI. Four options, each with Bots and Echo chat views.",
+  "scope": "Image concepts only; no application or runtime changes.",
+  "images": [
+    {
+      "id": "01-clear-white",
+      "name": "Clear White",
+      "summary": "Neutral white, orange actions, light glass borders",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-47cff2fd-1698-4739-92b9-f911aa0857ed.png",
+      "destination": "prototypes/ui-roky-close-v4-20261027/01-clear-white.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1324281
+    },
+    {
+      "id": "02-ice-glass",
+      "name": "Ice Glass",
+      "summary": "Cool cyan light, clearer glass, electric-blue controls",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-7f2d351a-ab64-42e0-a229-7becaa5498ab.png",
+      "destination": "prototypes/ui-roky-close-v4-20261027/02-ice-glass.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1505581
+    },
+    {
+      "id": "03-graphite-amber",
+      "name": "Graphite & Amber",
+      "summary": "White surfaces, graphite controls, restrained amber light",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-2c1854c5-d773-465b-810c-c9687c5864cd.png",
+      "destination": "prototypes/ui-roky-close-v4-20261027/03-graphite-amber.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1470503
+    },
+    {
+      "id": "04-sky-flow",
+      "name": "Sky Flow",
+      "summary": "Restrained blue\u2013cyan gradient, floating white panels, softened portraits",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-a60688a6-8e1e-4d91-9d8b-c9972c16550b.png",
+      "destination": "prototypes/ui-roky-close-v4-20261027/04-sky-flow.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 1536174
+    }
+  ],
+  "references": [
+    "references/01-bots.png",
+    "references/03-chat.png",
+    "references/roki-portrait-idle-512.png",
+    "references/roki-idle-512.png"
+  ],
+  "prompts": "prompts.json"
+}

@@ -1,0 +1,905 @@
+<title>Fluid Thinking</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600&family=Nunito:wght@800&display=swap">
+<style>
+/* Layout: one Studio chat as the stage with a glass control rail beside it, then a gallery of every style at real chat size. */
+:root{
+  --bg:#e7e8f0; --glow-a:rgba(160,143,214,.30); --glow-b:rgba(120,196,190,.22);
+  --surface:rgba(255,255,255,.58); --surface-strong:rgba(255,255,255,.86); --edge:rgba(255,255,255,.92);
+  --ink:#28303c; --muted:#677083; --faint:#9399a7; --line:rgba(84,96,121,.12);
+  --chip:rgba(255,255,255,.5); --chip-on:#252a35; --chip-on-ink:#f6f7fb; --focus:#6a5cd6; --new:#5d4fc9; --new-bg:rgba(106,92,214,.1);
+  --working:#8a79c2; --bubble:rgba(255,255,255,.84); --shadow:0 22px 60px -26px rgba(36,42,70,.32);
+  --font-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+  /* The bot's own palette, set from the chosen color. */
+  --c0:#a4f5d5; --c1:#21c6a1; --c2:#087a77; --c3:#c4ffe7;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111319; --glow-a:rgba(120,98,214,.22); --glow-b:rgba(40,150,140,.15);
+  --surface:rgba(30,33,44,.66); --surface-strong:rgba(38,42,55,.9); --edge:rgba(255,255,255,.07);
+  --ink:#e8eaf1; --muted:#9ca3b3; --faint:#717888; --line:rgba(255,255,255,.08);
+  --chip:rgba(255,255,255,.05); --chip-on:#e8eaf1; --chip-on-ink:#151821; --focus:#b3a8ff; --new:#c3b8ff; --new-bg:rgba(179,168,255,.12);
+  --working:#b2a4e6; --bubble:rgba(255,255,255,.07); --shadow:0 22px 60px -26px rgba(0,0,0,.65); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111319; --glow-a:rgba(120,98,214,.22); --glow-b:rgba(40,150,140,.15);
+  --surface:rgba(30,33,44,.66); --surface-strong:rgba(38,42,55,.9); --edge:rgba(255,255,255,.07);
+  --ink:#e8eaf1; --muted:#9ca3b3; --faint:#717888; --line:rgba(255,255,255,.08);
+  --chip:rgba(255,255,255,.05); --chip-on:#e8eaf1; --chip-on-ink:#151821; --focus:#b3a8ff; --new:#c3b8ff; --new-bg:rgba(179,168,255,.12);
+  --working:#b2a4e6; --bubble:rgba(255,255,255,.07); --shadow:0 22px 60px -26px rgba(0,0,0,.65); color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);
+  background-image:radial-gradient(60% 50% at 10% 0%,var(--glow-a),transparent 70%),radial-gradient(45% 45% at 96% 26%,var(--glow-b),transparent 70%);background-attachment:fixed}
+.page{max-width:1180px;margin:0 auto;padding-block:30px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:26px}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+h1{font-family:var(--font-display);font-size:clamp(28px,4vw,40px);font-weight:650;letter-spacing:-.022em;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--font-display);font-size:20px;font-weight:650;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.lede{max-width:64ch;color:var(--muted);font-size:15px;line-height:1.6;margin:10px 0 0}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:920px){.layout{grid-template-columns:minmax(0,1fr)}}
+.glass{background:var(--surface);border:1px solid var(--edge);box-shadow:var(--shadow);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px)}
+
+.chat{border-radius:22px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.chat-head{display:flex;align-items:center;gap:11px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.chat-head strong{display:block;font-size:14px;font-weight:600}
+.chat-head small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+.pill{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--working);background:var(--chip);border:1px solid var(--edge);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--working);animation:pulse 1.6s ease-in-out infinite}
+.thread{padding:26px clamp(16px,4vw,34px) 26px;display:grid;gap:20px;align-content:start}
+.msg{display:flex;gap:11px;min-width:0}
+.msg.user{justify-content:flex-end}
+.bubble{background:var(--bubble);border:1px solid var(--edge);border-radius:14px 4px 14px 14px;padding:12px 16px;font-size:14px;line-height:1.55;max-width:min(440px,100%);margin:0}
+.who{font-size:11px;color:var(--faint);display:block;margin-bottom:2px}
+.who .doing{color:var(--muted)}
+.msg.user .who{text-align:right;margin-bottom:6px}
+.bot-body{flex:1;min-width:0}
+.earlier{font-size:14px;line-height:1.6;color:var(--muted);margin:4px 0 0;max-width:60ch}
+
+.avatar{width:30px;height:30px;flex:none;border-radius:12px 12px 14px 14px;position:relative;
+  background:radial-gradient(circle at 30% 24%,var(--c3),transparent 46%),linear-gradient(145deg,var(--c0),var(--c1) 46%,var(--c2));
+  box-shadow:0 6px 14px -6px var(--c2);animation:breathe 3.2s ease-in-out infinite}
+.avatar i{position:absolute;top:11px;width:4.5px;height:7.5px;border-radius:50%;background:#fff}
+.avatar i:first-child{left:9px}.avatar i:last-child{right:9px}
+.avatar.small{width:34px;height:34px;animation:none}.avatar.small i{top:13px}.avatar.small i:first-child{left:10px}.avatar.small i:last-child{right:10px}
+.avatar.mini{width:22px;height:22px;border-radius:8px 8px 9px 9px;animation:none}.avatar.mini i{top:8px;width:3px;height:5px}.avatar.mini i:first-child{left:6px}.avatar.mini i:last-child{right:6px}
+
+/* The thinking line: one row at chat size. The canvas bleeds above and below so drips take no layout space. */
+.thinking-row{display:flex;align-items:center;gap:12px;min-width:0}
+.think{position:relative;height:34px;flex:0 1 380px;min-width:0}
+.thinking-row.is-large{flex-wrap:wrap}
+.thinking-row.is-large .think{flex:1 0 100%;height:240px}
+.think canvas{position:absolute;left:0;width:100%;display:block;pointer-events:none}
+.roll{position:absolute;inset:0;pointer-events:none;white-space:nowrap}
+.roll-word{position:absolute;left:3px;top:50%;transform:translateY(-50%);letter-spacing:.03em}
+.roll.is-center .roll-word{left:50%;transform:translate(-50%,-50%)}
+.roll-char{display:inline-block;transform-origin:50% 100%;animation:shimmer 2.4s ease-in-out infinite}
+.roll.is-paused .roll-char{animation-play-state:paused}
+.elapsed{font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);flex:none}
+.stop{flex:none;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:11.5px;color:var(--ink);background:var(--surface-strong);border:1px solid var(--edge);border-radius:999px;padding:4px 11px 4px 9px;cursor:pointer}
+.stop::before{content:"";width:7px;height:7px;border-radius:2px;background:currentColor}
+.stop[aria-pressed="true"]::before{width:0;height:0;border-radius:0;background:none;border-left:7px solid currentColor;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+.composer{margin:0 18px 18px;border:1px solid var(--edge);background:var(--surface-strong);border-radius:16px;padding:15px 16px;color:var(--faint);font-size:13px}
+
+.rail{border-radius:20px;padding:18px;display:grid;gap:18px;min-width:0}
+.group{display:grid;gap:8px;min-width:0}
+.label{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:12px;background:var(--chip);border:1px solid var(--edge)}
+.seg button{flex:1 1 auto;border:0;background:transparent;color:var(--ink);font:inherit;font-size:12px;padding:7px 10px;border-radius:9px;cursor:pointer;white-space:nowrap;transition:background .2s,color .2s}
+.seg button:hover{background:var(--surface-strong)}
+.seg button[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
+.select{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--surface-strong);border:1px solid var(--edge);border-radius:11px;padding:9px 10px}
+.hint{font-size:12px;line-height:1.5;color:var(--muted);margin:0}
+.swatches{display:flex;gap:9px;flex-wrap:wrap}
+.swatch{width:28px;height:28px;border-radius:50%;border:2px solid var(--edge);cursor:pointer;background:var(--sw);padding:0}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+.range{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.range input{flex:1;min-width:0;accent-color:var(--c1)}
+.range output{font-variant-numeric:tabular-nums;width:3.2em;text-align:right}
+.footnote{font-size:12px;color:var(--muted);line-height:1.55;border-top:1px solid var(--line);padding-top:14px;margin:0}
+
+.gallery{display:grid;gap:14px}
+.gallery-head{display:grid;gap:6px}
+.gallery-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.55;max-width:70ch}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{display:grid;gap:4px;text-align:left;font:inherit;color:inherit;padding:14px 16px 16px;border-radius:18px;cursor:pointer;min-width:0;transition:transform .2s,box-shadow .2s,border-color .2s}
+.card:hover{transform:translateY(-2px)}
+.card[aria-pressed="true"]{border-color:var(--focus);box-shadow:0 0 0 1px var(--focus),var(--shadow)}
+.card-head{display:flex;align-items:center;gap:8px}
+.card-head strong{font-size:14px;font-weight:600}
+.family{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.fresh{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--new);background:var(--new-bg);border-radius:999px;padding:2px 8px}
+.card-stage{display:flex;align-items:center;gap:9px;padding-block:20px;min-width:0}
+.card-stage .think{flex:1 1 auto}
+.card-text{font-size:12px;line-height:1.5;color:var(--muted)}
+
+.seg button:focus-visible,.swatch:focus-visible,.stop:focus-visible,.range input:focus-visible,.card:focus-visible,.select:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.defs{position:absolute;width:0;height:0}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes shimmer{0%,100%{opacity:.72}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.pill i,.avatar,.roll-char{animation:none}.card:hover{transform:none}}
+</style>
+
+<div class="page">
+  <header>
+    <p class="eyebrow">Hermes Studio · prototype</p>
+    <h1>Fluid thinking</h1>
+    <p class="lede">A prototype of what a bot shows while it works. Its thoughts appear as liquid words, each one leaking into the next, and at real size it is a single quiet line in the conversation. The thoughts are samples; in Studio they would come from the task, its plan, the tools in use and teammates’ replies.</p>
+  </header>
+
+  <div class="layout">
+    <section class="chat glass" id="chat" aria-label="Chat preview">
+      <div class="chat-head">
+        <span class="avatar small" aria-hidden="true"><i></i><i></i></span>
+        <div><strong>Atlas</strong><small>Chief of staff</small></div>
+        <span class="pill"><i></i>Working</span>
+      </div>
+      <div class="thread">
+        <div class="msg">
+          <span class="avatar" aria-hidden="true"><i></i><i></i></span>
+          <div class="bot-body"><span class="who">Atlas</span><p class="earlier">Morning. Last week’s launch notes are in my files if you need them.</p></div>
+        </div>
+        <div class="msg user"><div><span class="who">You</span><p class="bubble">Plan our launch week and check the budget with Nova.</p></div></div>
+        <div class="msg">
+          <span class="avatar" aria-hidden="true"><i></i><i></i></span>
+          <div class="bot-body">
+            <span class="who">Atlas <span class="doing" id="doing">· thinking</span></span>
+            <div class="thinking-row" id="thinking-row">
+              <div class="think" id="focus-think"></div>
+              <span class="elapsed" id="elapsed">0s</span>
+              <button class="stop" id="stop" type="button" aria-pressed="false">Stop</button>
+            </div>
+            <span class="sr-only" id="thought-live" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
+      <div class="composer" aria-hidden="true">Message Atlas…</div>
+    </section>
+
+    <aside class="rail glass" aria-label="Prototype controls">
+      <div class="group">
+        <label class="label" for="style-select">Style</label>
+        <select class="select" id="style-select"></select>
+        <p class="hint" id="style-hint"></p>
+      </div>
+      <div class="group">
+        <p class="label" id="phase-label">Atlas is</p>
+        <div class="seg" role="group" aria-labelledby="phase-label" data-group="phase">
+          <button type="button" id="phase-thinking" data-value="thinking" aria-pressed="true">Thinking</button>
+          <button type="button" id="phase-web" data-value="web" aria-pressed="false">Reading the web</button>
+          <button type="button" id="phase-talk" data-value="talk" aria-pressed="false">Talking with Nova</button>
+          <button type="button" id="phase-writing" data-value="writing" aria-pressed="false">Writing</button>
+        </div>
+      </div>
+      <div class="group">
+        <p class="label" id="color-label">Atlas’s color</p>
+        <div class="swatches" role="group" aria-labelledby="color-label" id="swatches"></div>
+      </div>
+      <div class="group">
+        <p class="label" id="font-label">Typeface</p>
+        <div class="seg" role="group" aria-labelledby="font-label" data-group="font">
+          <button type="button" id="font-rounded" data-value="rounded" aria-pressed="true">Rounded</button>
+          <button type="button" id="font-studio" data-value="studio" aria-pressed="false">Studio</button>
+          <button type="button" id="font-serif" data-value="serif" aria-pressed="false">Serif</button>
+        </div>
+      </div>
+      <div class="group">
+        <p class="label" id="size-label">Size in the chat above</p>
+        <div class="seg" role="group" aria-labelledby="size-label" data-group="size">
+          <button type="button" id="size-chat" data-value="chat" aria-pressed="true">Real size</button>
+          <button type="button" id="size-large" data-value="large" aria-pressed="false">Magnified</button>
+        </div>
+      </div>
+      <div class="group">
+        <label class="label" for="speed">Speed</label>
+        <div class="range"><input id="speed" type="range" min="0.5" max="1.6" step="0.1" value="1"><output id="speed-out" for="speed">1.0×</output></div>
+      </div>
+      <p class="footnote">Real size is one 34&nbsp;px line, about a quarter of the earlier block. When Atlas talks with a teammate, that teammate’s thoughts arrive in their own color.</p>
+    </aside>
+  </div>
+
+  <section class="gallery" aria-labelledby="gallery-title">
+    <div class="gallery-head">
+      <h2 id="gallery-title">Every style at real size</h2>
+      <p>All nine run side by side at the size they would have in a chat, on the same thoughts. Choose one to try it in the conversation above.</p>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+</div>
+
+<svg class="defs" aria-hidden="true" focusable="false">
+  <filter id="goo-chat" x="-5%" y="-10%" width="110%" height="120%" color-interpolation-filters="sRGB">
+    <feGaussianBlur id="goo-chat-blur" in="SourceGraphic" stdDeviation="1.5"/>
+    <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7.5"/>
+  </filter>
+  <filter id="goo-large" x="-5%" y="-10%" width="110%" height="120%" color-interpolation-filters="sRGB">
+    <feGaussianBlur id="goo-large-blur" in="SourceGraphic" stdDeviation="5"/>
+    <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -8"/>
+  </filter>
+</svg>
+
+<script>
+(() => {
+  // Studio creature palettes: light, mid, deep, pale.
+  const PALETTES = {
+    mint: {name: 'Seafoam', c: ['#a4f5d5', '#21c6a1', '#087a77', '#c4ffe7']},
+    lavender: {name: 'Lavender', c: ['#d9baff', '#9970ed', '#5931ad', '#efdcff']},
+    peach: {name: 'Peach', c: ['#ffd5ac', '#ff9b65', '#d75b36', '#fff0ce']},
+    blue: {name: 'Cobalt', c: ['#75caff', '#3189f7', '#1748ba', '#c2eaff']},
+    rose: {name: 'Rose', c: ['#ffaaca', '#ef4b98', '#a31f68', '#ffdfed']},
+  };
+  // A leading ~ marks a thought that comes from the teammate.
+  const PHASES = {
+    thinking: {doing: 'thinking', thoughts: ['the launch plan', 'what matters first', 'three paths', 'budget limits', 'the risks', 'ask Nova?']},
+    web: {doing: 'reading the web', thoughts: ['opening sources', 'pricing pages', 'two conflicts', 'newest numbers', 'noting facts']},
+    talk: {doing: 'talking with Nova', thoughts: ['asking Nova', '~her draft', '~costs look right', 'merging ideas', 'one plan']},
+    writing: {doing: 'writing', thoughts: ['an outline', 'the budget table', 'next steps', 'final pass']},
+  };
+  const STYLES = [
+    {id: 'leak', name: 'Leak', family: 'Liquid', fresh: false, text: 'Each thought liquefies and streams, letter by letter, into the next.'},
+    {id: 'melt', name: 'Melt', family: 'Liquid', fresh: false, text: 'The thought melts into a pool under the line, and the next one rises out of it.'},
+    {id: 'lava', name: 'Lava', family: 'Liquid', fresh: true, text: 'Blobs of the old thought lift off like a lava lamp and settle into the next.'},
+    {id: 'fill', name: 'Fill', family: 'Liquid', fresh: true, text: 'Letters fill with liquid like glass, then drain while the next thought fills.'},
+    {id: 'ink', name: 'Ink', family: 'Flow', fresh: true, text: 'The thought spreads like ink in water and gathers again as the next one.'},
+    {id: 'wash', name: 'Wash', family: 'Flow', fresh: true, text: 'A wave washes along the line and leaves the next thought behind.'},
+    {id: 'tide', name: 'Tide', family: 'Flow', fresh: true, text: 'Thoughts float on a waterline with a rippling reflection. Each sinks as the next surfaces.'},
+    {id: 'stream', name: 'Stream', family: 'Flow', fresh: false, text: 'Short thoughts drift along a current, each tied to the next by a thread.'},
+    {id: 'roll', name: 'Roll', family: 'Type', fresh: true, text: 'Crisp letters roll away under a soft blur while the next thought rolls in. The calmest one.'},
+  ];
+  const FONTS = {
+    rounded: {face: px => `800 ${px}px Nunito, ui-rounded, "SF Pro Rounded", system-ui, sans-serif`, load: '800 40px Nunito'},
+    studio: {face: px => `700 ${px}px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif`, load: null},
+    serif: {face: px => `italic 600 ${px}px Fraunces, Georgia, serif`, load: 'italic 600 40px Fraunces'},
+  };
+  const settings = {style: 'leak', phase: 'thinking', color: 'mint', font: 'rounded', size: 'chat', speed: 1, paused: false};
+
+  const $ = selector => document.querySelector(selector);
+  const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+  const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+  const rgba = (hex, alpha) => { const [r, g, b] = rgb(hex); return `rgba(${r},${g},${b},${clamp(alpha, 0, 1).toFixed(3)})`; };
+  const reduced = () => reducedQuery.matches;
+  const isDark = () => { const theme = document.documentElement.dataset.theme; return theme === 'dark' || (theme !== 'light' && darkQuery.matches); };
+  const peerKey = () => settings.color === 'lavender' ? 'peach' : 'lavender';
+  // Ink that reads on the page: mid to deep on light glass, pale to light on dark.
+  const inks = key => { const c = PALETTES[key].c; return isDark() ? {a: c[3], b: c[0], line: c[0]} : {a: c[1], b: c[2], line: c[1]}; };
+  const inkFor = thought => inks(thought.peer ? peerKey() : settings.color);
+  const font = px => FONTS[settings.font].face(Math.round(px * 10) / 10);
+  const thoughtAt = index => {
+    const list = PHASES[settings.phase].thoughts, raw = list[((index % list.length) + list.length) % list.length];
+    return {text: raw.replace(/^~/, ''), peer: raw.startsWith('~')};
+  };
+  const measurer = document.createElement('canvas').getContext('2d');
+  const sampler = document.createElement('canvas'), sctx = sampler.getContext('2d', {willReadFrequently: true});
+
+  function drawText(context, layout, mode = 'fill') {
+    context.font = layout.font; context.textAlign = 'left'; context.textBaseline = 'alphabetic';
+    for(const char of layout.chars)mode === 'stroke' ? context.strokeText(char.ch, char.x, layout.baseline) : context.fillText(char.ch, char.x, layout.baseline);
+  }
+
+  /* One thinking line: a canvas (plus a text layer for Roll) that runs one style. */
+  const thinkers = new Set();
+  class Thinker {
+    constructor(box, {large = false, focus = false} = {}) {
+      this.box = box; this.large = large; this.focus = focus; this.index = 0; this.visible = true; this.ready = false;
+      this.layouts = new Map(); this.images = new Map();
+      this.canvas = document.createElement('canvas'); this.canvas.setAttribute('aria-hidden', 'true');
+      this.ctx = this.canvas.getContext('2d');
+      this.layer = document.createElement('canvas'); this.lctx = this.layer.getContext('2d');
+      this.roll = document.createElement('span'); this.roll.className = 'roll'; this.roll.setAttribute('aria-hidden', 'true');
+      box.append(this.canvas, this.roll);
+      thinkers.add(this);
+      let queued = false;
+      this.resizer = new ResizeObserver(() => { if(queued)return; queued = true; requestAnimationFrame(() => { queued = false; this.measure(); }); });
+      this.resizer.observe(box);
+      this.watcher = new IntersectionObserver(([entry]) => { this.visible = entry.isIntersecting; }, {rootMargin: '60px'});
+      this.watcher.observe(box);
+    }
+    destroy() { thinkers.delete(this); this.resizer.disconnect(); this.watcher.disconnect(); this.canvas.remove(); this.roll.remove(); }
+    thought(offset = 0) { return thoughtAt(this.index + offset); }
+    advance() { this.index++; if(this.focus)$('#thought-live').textContent = this.thought().text; }
+    setStyle(id) {
+      this.styleId = id; this.impl = STYLE_BUILDERS[id](this);
+      this.canvas.hidden = id === 'roll'; this.roll.hidden = id !== 'roll'; this.roll.textContent = '';
+      this.canvas.style.filter = this.impl.goo ? `url(#goo-${this.large ? 'large' : 'chat'})` : 'none';
+      this.reset();
+    }
+    measure() {
+      this.W = Math.max(1, this.box.offsetWidth); this.boxH = Math.max(1, this.box.offsetHeight);
+      this.bleed = this.large ? 0 : Math.round(this.boxH * .6); this.H = this.boxH + this.bleed * 2;
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.canvas.style.top = `${-this.bleed}px`; this.canvas.style.height = `${this.H}px`;
+      this.canvas.width = Math.round(this.W * this.dpr); this.canvas.height = Math.round(this.H * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      this.fs = this.large ? Math.min(this.boxH * .4, 110) : this.boxH * .5; this.cy = this.H / 2; this.align = this.large ? 'center' : 'left';
+      this.roll.style.font = font(this.fs); this.roll.classList.toggle('is-center', this.large);
+      this.layouts.clear(); this.images.clear(); this.ready = true;
+      this.reset();
+    }
+    reset() { if(!this.ready || !this.impl)return; this.impl.reset(); this.impl.draw(); }
+    tick(dt) { this.impl.update(dt); this.impl.draw(); }
+    // A cleared scratch layer the size of this line, for clipping liquid into letters.
+    useLayer() {
+      const width = Math.ceil(this.W * this.dpr), height = Math.ceil(this.H * this.dpr);
+      if(this.layer.width !== width || this.layer.height !== height) { this.layer.width = width; this.layer.height = height; }
+      const context = this.lctx;
+      context.setTransform(1, 0, 0, 1, 0, 0); context.globalCompositeOperation = 'source-over'; context.globalAlpha = 1;
+      context.clearRect(0, 0, width, height); context.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      return context;
+    }
+    // Letters are set one by one with tracking so liquid keeps the gaps; long thoughts shrink to fit.
+    layout(text) {
+      const key = `${settings.font}|${text}`;
+      if(this.layouts.has(key))return this.layouts.get(key);
+      const set = px => {
+        measurer.font = font(px);
+        const tracking = px * (this.large ? .06 : .1), chars = [];
+        let x = 0;
+        for(let i = 0; i < text.length; i++) {
+          const advance = measurer.measureText(text.slice(0, i + 1)).width - measurer.measureText(text.slice(0, i)).width;
+          chars.push({ch: text[i], x, w: advance}); x += advance + tracking;
+        }
+        return {chars, width: x - tracking, px};
+      };
+      let fit = set(this.fs);
+      const room = this.align === 'left' ? this.W - 8 : this.W * .9;
+      if(fit.width > room)fit = set(this.fs * room / fit.width);
+      measurer.font = font(fit.px);
+      const metrics = measurer.measureText(text), left = this.align === 'left' ? 3 : (this.W - fit.width) / 2;
+      const baseline = this.cy + fit.px * .34;
+      const result = {chars: fit.chars.map(char => ({...char, x: char.x + left})), px: fit.px, font: font(fit.px), left, right: left + fit.width, baseline,
+        top: baseline - metrics.actualBoundingBoxAscent, bottom: baseline + metrics.actualBoundingBoxDescent};
+      this.layouts.set(key, result);
+      return result;
+    }
+    // The thought as an image: 'fill' in its palette, 'mask' in black, 'outline' as faint glass.
+    image(thought, kind = 'fill') {
+      const key = `${kind}|${thought.text}|${thought.peer}|${settings.color}|${settings.font}|${isDark()}`;
+      if(this.images.has(key))return this.images.get(key);
+      if(this.images.size > 40)this.images.clear();
+      const canvas = document.createElement('canvas'), context = canvas.getContext('2d'), layout = this.layout(thought.text), ink = inkFor(thought);
+      canvas.width = Math.ceil(this.W * this.dpr); canvas.height = Math.ceil(this.H * this.dpr);
+      context.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      if(kind === 'mask') { context.fillStyle = '#000'; drawText(context, layout); }
+      else if(kind === 'outline') {
+        context.fillStyle = rgba(ink.a, .08); drawText(context, layout);
+        context.lineJoin = 'round'; context.lineWidth = Math.max(.9, layout.px * .045); context.strokeStyle = rgba(ink.a, .5); drawText(context, layout, 'stroke');
+      } else {
+        const gradient = context.createLinearGradient(layout.left, 0, layout.right, 0);
+        gradient.addColorStop(0, ink.a); gradient.addColorStop(1, ink.b);
+        context.fillStyle = gradient; drawText(context, layout);
+      }
+      this.images.set(key, canvas);
+      return canvas;
+    }
+    // Text as particles, sampled at device resolution; edge and top mark the bottom and top of strokes.
+    sample(text, stepDevice) {
+      const layout = this.layout(text), width = Math.ceil(this.W * this.dpr), height = Math.ceil(this.H * this.dpr);
+      sampler.width = width; sampler.height = height;
+      sctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); sctx.fillStyle = '#000'; drawText(sctx, layout);
+      const data = sctx.getImageData(0, 0, width, height).data, points = [], keys = new Set(), half = stepDevice >> 1;
+      for(let y = half; y < height; y += stepDevice)for(let x = half; x < width; x += stepDevice) {
+        if(data[(y * width + x) * 4 + 3] > 110) { points.push({dx: x, dy: y}); keys.add(x * 100000 + y); }
+      }
+      return points.map(point => ({x: point.dx / this.dpr, y: point.dy / this.dpr,
+        edge: !keys.has(point.dx * 100000 + point.dy + stepDevice), top: !keys.has(point.dx * 100000 + point.dy - stepDevice)}));
+    }
+    setGooBlur(step) { document.getElementById(`goo-${this.large ? 'large' : 'chat'}-blur`).setAttribute('stdDeviation', step.toFixed(2)); }
+  }
+
+  /* Liquid particles: Leak, Melt and Lava melt together through the goo filter; Ink stays soft and dotted. */
+  function particles(th, kind) {
+    const s = {goo: kind !== 'ink', ps: [], mode: 'hold', t: 0, end: 0, clock: 0, extras: [], extraIn: .5, step: 1, stepDevice: 2};
+    const rest = (point, owner, phase = Math.random() * 6.283) => ({x: point.x, y: point.y, tx: point.x, ty: point.y, edge: point.edge, top: point.top, ph: phase, m: owner, m0: owner, m1: owner, keep: true, moving: false, u: 0});
+    s.reset = () => {
+      // Small text needs finer, thinner blobs and a tighter blur, or the letters swell shut.
+      s.stepDevice = Math.max(2, Math.round(th.fs / (th.large ? 19 : 16) * th.dpr)); s.step = s.stepDevice / th.dpr;
+      s.mode = 'hold'; s.t = 0; s.extras = [];
+      const thought = th.thought();
+      s.ps = th.sample(thought.text, s.stepDevice).map(point => rest(point, thought.peer ? 1 : 0));
+      if(s.goo)th.setGooBlur(s.step * (th.large ? 1 : .85));
+    };
+    s.begin = () => {
+      th.advance();
+      const thought = th.thought(), targets = th.sample(thought.text, s.stepDevice), order = (a, b) => a.x - b.x || a.y - b.y;
+      const from = [...s.ps].sort(order), to = [...targets].sort(order), n = from.length, m = to.length;
+      if(!n || !m) { s.ps = targets.map(point => rest(point, thought.peer ? 1 : 0)); s.t = 0; return; }
+      const count = Math.max(n, m), claimed = new Uint8Array(m), owner = thought.peer ? 1 : 0, fs = th.fs, H = th.H, next = [];
+      const T = {leak: 2.2, melt: 2.6, lava: 2.7, ink: 2.4}[kind], minX = from[0].x, span = Math.max(1, from[n - 1].x - minX), clusters = new Map();
+      let end = 0;
+      for(let k = 0; k < count; k++) {
+        const a = from[Math.floor(k * n / count)], index = Math.floor(k * m / count), b = to[index], f = k / count;
+        const p = {x: a.x, y: a.y, sx: a.x, sy: a.y, tx: b.x, ty: b.y, edge: b.edge, top: b.top, ph: a.ph, keep: !claimed[index], m: a.m, m0: a.m, m1: owner, moving: false, u: 0};
+        claimed[index] = 1;
+        if(kind === 'leak') {
+          // Letters let go in reading order and sag on the way, so liquid strings run from word to word.
+          p.delay = f * .7 * T + Math.random() * .06 * T; p.dur = T * (.22 + Math.random() * .08);
+          p.cx = (a.x + b.x) / 2 + (Math.random() - .5) * fs * 1.2;
+          p.cy = Math.min((a.y + b.y) / 2 + fs * (.35 + Math.random() * .55), (H * .97 * 4 - a.y - b.y) / 2);
+          end = Math.max(end, p.delay + p.dur);
+        } else if(kind === 'melt') {
+          // Fall into a pool just under the line, drift, then rise into the next word left to right.
+          p.fall = Math.random() * .22 * T; p.vx = (Math.random() - .5) * fs * 1.4;
+          p.pool = Math.min(H - s.step * 1.5, th.cy + fs * .62) - Math.random() * fs * .14;
+          p.rise = .46 * T + f * .34 * T + Math.random() * .04 * T; p.dur = .2 * T + Math.random() * .05 * T;
+          end = Math.max(end, p.rise + p.dur);
+        } else if(kind === 'lava') {
+          // Neighbouring particles move as one blob: they lift above the line and settle into the next word.
+          const key = Math.floor((a.x - minX) / (fs * .5));
+          if(!clusters.has(key))clusters.set(key, {delay: clamp((a.x - minX) / span, 0, 1) * .55 * T + hash(key + th.index * 13) * .12 * T, dur: T * (.3 + hash(key * 3.7) * .12), lift: fs * (.55 + hash(key * 5.3) * .8), dx: (hash(key * 9.1) - .5) * fs});
+          const blob = clusters.get(key);
+          p.delay = blob.delay + Math.random() * .03 * T; p.dur = blob.dur;
+          p.cx = (a.x + b.x) / 2 + blob.dx; p.cy = Math.max(3, Math.min(a.y, b.y) - blob.lift);
+          end = Math.max(end, p.delay + p.dur);
+        } else {
+          // Ink billows out along a swirl and gathers again.
+          p.delay = f * .45 * T + Math.random() * .05 * T; p.dur = T * (.42 + Math.random() * .1);
+          p.angle = Math.sin(a.x * .09) * 2.3 + Math.cos(a.y * .13) * 1.7 + Math.random() * .8; p.spread = fs * (.45 + Math.random() * .85);
+          end = Math.max(end, p.delay + p.dur);
+        }
+        next.push(p);
+      }
+      s.ps = next; s.mode = 'move'; s.t = 0; s.end = end; s.extras = [];
+    };
+    const poolAt = (p, time) => { const fall = Math.max(0, time - p.fall), g = th.fs * 30; return [clamp(p.sx + p.vx * fall, s.step, th.W - s.step), Math.min(p.sy + .5 * g * fall * fall, p.pool)]; };
+    s.update = dt => {
+      s.clock += dt; s.t += dt;
+      if(reduced()) { if(s.t > 3) { th.advance(); s.reset(); } return; }
+      if(s.mode === 'hold') {
+        // A slow ripple runs through the whole word so its surface moves together.
+        const amp = s.step * (s.goo ? .4 : .3), c = s.clock, k = 2.6 / th.fs;
+        for(const p of s.ps) {
+          p.x = p.tx + Math.sin(c * 1.5 + p.tx * k * 1.7 + p.ty * k * .8) * amp;
+          p.y = p.ty + Math.cos(c * 1.2 + p.tx * k * 1.1 - p.ty * k * 1.5) * amp * .8;
+        }
+        if(kind !== 'ink') {
+          // Drips hang from the bottom of strokes; in Lava, bubbles rise from the top.
+          s.extraIn -= dt;
+          if(s.extraIn <= 0 && s.extras.length < 3) {
+            const pool = s.ps.filter(p => kind === 'lava' ? p.top : p.edge);
+            if(pool.length)s.extras.push({p: pool[Math.floor(Math.random() * pool.length)], t: 0, len: th.fs * (.25 + Math.random() * .35) * (kind === 'lava' ? -1 : 1), dur: 1.3 + Math.random() * .5});
+            s.extraIn = .5 + Math.random() * .8;
+          }
+          for(const extra of s.extras)extra.t += dt;
+          s.extras = s.extras.filter(extra => extra.t < extra.dur);
+        }
+        if(s.t > 1.8)s.begin();
+        return;
+      }
+      for(const p of s.ps) {
+        if(kind === 'melt') {
+          if(s.t < p.rise) { [p.x, p.y] = poolAt(p, s.t); p.moving = s.t > p.fall; }
+          else {
+            const u = ease(clamp((s.t - p.rise) / p.dur, 0, 1)), [px, py] = poolAt(p, p.rise);
+            p.x = (1 - u) * (1 - u) * px + 2 * (1 - u) * u * p.tx + u * u * p.tx;
+            p.y = (1 - u) * (1 - u) * py + 2 * (1 - u) * u * py + u * u * p.ty;
+            p.m = p.m0 + (p.m1 - p.m0) * u; p.moving = u < 1;
+          }
+          continue;
+        }
+        const raw = (s.t - p.delay) / p.dur;
+        if(raw <= 0) {
+          // A tremble just before letting go.
+          const shake = s.step * (.3 + .5 * smooth(-.25, 0, raw * p.dur));
+          p.x = p.sx + Math.sin(s.clock * 9 + p.ph) * shake; p.y = p.sy + Math.cos(s.clock * 7 + p.ph) * shake;
+          p.moving = false; p.u = 0;
+          continue;
+        }
+        const u = ease(clamp(raw, 0, 1));
+        p.u = clamp(raw, 0, 1); p.moving = raw < 1; p.m = p.m0 + (p.m1 - p.m0) * u;
+        if(kind === 'ink') {
+          const swirl = Math.sin(Math.PI * p.u), angle = p.angle + p.u * 3;
+          p.x = p.sx + (p.tx - p.sx) * u + Math.cos(angle) * p.spread * swirl;
+          p.y = p.sy + (p.ty - p.sy) * u + Math.sin(angle) * p.spread * swirl * .6;
+        } else {
+          p.x = (1 - u) * (1 - u) * p.sx + 2 * (1 - u) * u * p.cx + u * u * p.tx;
+          p.y = (1 - u) * (1 - u) * p.sy + 2 * (1 - u) * u * p.cy + u * u * p.ty;
+        }
+      }
+      if(s.t > s.end + .05) {
+        s.ps = s.ps.filter(p => p.keep).map(p => rest({x: p.tx, y: p.ty, edge: p.edge, top: p.top}, p.m1, p.ph));
+        s.mode = 'hold'; s.t = 0; s.extraIn = .3;
+      }
+    };
+    s.draw = () => {
+      const ctx = th.ctx, bot = inks(settings.color), peer = inks(peerKey());
+      ctx.clearRect(0, 0, th.W, th.H);
+      let minX = Infinity, maxX = -Infinity;
+      for(const p of s.ps) { if(p.x < minX)minX = p.x; if(p.x > maxX)maxX = p.x; }
+      if(!Number.isFinite(minX)) { minX = 0; maxX = th.W; }
+      const fillFor = m => {
+        const gradient = ctx.createLinearGradient(minX, 0, Math.max(minX + 1, maxX), 0);
+        gradient.addColorStop(0, mix(bot.a, peer.a, m)); gradient.addColorStop(1, mix(bot.b, peer.b, m));
+        return gradient;
+      };
+      const dot = (path, x, y, radius) => { path.moveTo(x + radius, y); path.arc(x, y, radius, 0, Math.PI * 2); };
+      if(s.goo) {
+        const r = s.step * (th.large ? .95 : .8), buckets = Array.from({length: 5}, () => new Path2D());
+        for(const p of s.ps)dot(buckets[Math.round(p.m * 4)], p.x, p.y, p.moving ? r * (kind === 'lava' ? 1.05 : .8) : r);
+        for(const extra of s.extras) {
+          const u = extra.t / extra.dur, out = u < .45 ? easeOut(u / .45) : 1 - ease((u - .45) / .55), length = out * extra.len, path = buckets[Math.round(extra.p.m * 4)];
+          dot(path, extra.p.x, extra.p.y + length, r * 1.15); dot(path, extra.p.x, extra.p.y + length * .55, r * .7); dot(path, extra.p.x, extra.p.y + length * .25, r * .8);
+        }
+        buckets.forEach((path, index) => { ctx.fillStyle = fillFor(index / 4); ctx.fill(path); });
+        return;
+      }
+      // Ink: drops grouped by color and by how far each has spread.
+      const r = s.step * .72, groups = new Map();
+      for(const p of s.ps) {
+        const swirl = p.moving ? Math.sin(Math.PI * p.u) : 0, key = `${Math.round(p.m * 2)}|${Math.round(swirl * 4)}`;
+        if(!groups.has(key))groups.set(key, new Path2D());
+        dot(groups.get(key), p.x, p.y, r * (1 + 1.5 * swirl));
+      }
+      for(const [key, path] of groups) {
+        const [m, swirl] = key.split('|').map(Number);
+        ctx.globalAlpha = .93 - .16 * swirl; ctx.fillStyle = fillFor(m / 2); ctx.fill(path);
+      }
+      ctx.globalAlpha = 1;
+    };
+    return s;
+  }
+
+  /* Fill: letters are glass that fills with liquid, then drains while the next thought fills. */
+  function fill(th) {
+    const s = {goo: false, cur: null, prev: null, t: 0, mode: 'fill', clock: 0};
+    s.reset = () => { s.cur = {...th.thought(), level: reduced() ? 1 : 0, ghost: 1}; s.prev = null; s.t = 0; s.mode = 'fill'; };
+    s.update = dt => {
+      s.clock += dt; s.t += dt;
+      if(reduced()) { if(s.t > 3) { th.advance(); s.reset(); } return; }
+      if(s.mode === 'fill') { s.cur.level = ease(clamp(s.t / 1.1, 0, 1)); if(s.t > 1.1) { s.mode = 'hold'; s.t = 0; } }
+      else if(s.mode === 'hold') { if(s.t > 1.7) { s.prev = {...s.cur}; th.advance(); s.cur = {...th.thought(), level: 0, ghost: 0}; s.mode = 'swap'; s.t = 0; } }
+      else {
+        s.prev.level = 1 - ease(clamp(s.t / .9, 0, 1)); s.prev.ghost = 1 - smooth(.35, .95, s.t);
+        s.cur.ghost = smooth(.1, .6, s.t); s.cur.level = ease(clamp((s.t - .5) / 1.1, 0, 1));
+        if(s.t > 1.6) { s.prev = null; s.mode = 'hold'; s.t = 0; }
+      }
+    };
+    const liquid = word => {
+      const layout = th.layout(word.text), ink = inkFor(word), context = th.useLayer(), fs = layout.px, foam = '#ffffff';
+      context.drawImage(th.image(word, 'mask'), 0, 0, th.W, th.H);
+      context.globalCompositeOperation = 'source-in';
+      const top = layout.top - 1, bottom = layout.bottom + 1, surface = bottom - (bottom - top) * word.level, k = 6.283 / (fs * 1.6);
+      const calm = word.level > .02 && word.level < .98 ? 1 : .35;
+      const wave = x => surface + Math.sin(x * k + s.clock * 5) * fs * .06 * calm + Math.sin(x * k * .53 - s.clock * 3) * fs * .035 * calm;
+      const gradient = context.createLinearGradient(layout.left, 0, layout.right, 0);
+      gradient.addColorStop(0, ink.a); gradient.addColorStop(1, ink.b);
+      context.fillStyle = gradient; context.beginPath(); context.moveTo(0, th.H);
+      for(let x = 0; x <= th.W + 3; x += 3)context.lineTo(x, wave(x));
+      context.lineTo(th.W, th.H); context.closePath(); context.fill();
+      context.globalCompositeOperation = 'source-atop';
+      context.strokeStyle = rgba(foam, .55); context.lineWidth = Math.max(1, fs * .05); context.beginPath();
+      for(let x = 0; x <= th.W + 3; x += 3)x ? context.lineTo(x, wave(x)) : context.moveTo(x, wave(x));
+      context.stroke();
+      context.fillStyle = rgba(foam, .6);
+      for(let i = 0; i < 9; i++) {
+        const bx = layout.left + hash(i * 7.1 + word.text.length) * (layout.right - layout.left), height = bottom - top + fs * .2;
+        const by = bottom - ((s.clock * fs * (.5 + hash(i)) + hash(i * 3.3) * height) % height);
+        if(by > wave(bx) + fs * .05) { context.beginPath(); context.arc(bx, by, Math.max(.6, fs * .045), 0, Math.PI * 2); context.fill(); }
+      }
+      th.ctx.drawImage(th.layer, 0, 0, th.W, th.H);
+    };
+    s.draw = () => {
+      th.ctx.clearRect(0, 0, th.W, th.H);
+      for(const word of [s.prev, s.cur]) {
+        if(!word)continue;
+        if(word.ghost > 0) { th.ctx.globalAlpha = word.ghost; th.ctx.drawImage(th.image(word, 'outline'), 0, 0, th.W, th.H); th.ctx.globalAlpha = 1; }
+        if(word.level > 0)liquid(word);
+      }
+    };
+    return s;
+  }
+
+  /* Wash: a wavy front with foam sweeps along the line, the next thought behind it. */
+  function wash(th) {
+    const s = {goo: false, cur: null, prev: null, t: 0, mode: 'hold', clock: 0};
+    s.reset = () => { s.cur = th.thought(); s.prev = null; s.t = 0; s.mode = 'hold'; };
+    s.update = dt => {
+      s.clock += dt; s.t += dt;
+      if(reduced()) { if(s.t > 3) { th.advance(); s.reset(); } return; }
+      if(s.mode === 'hold' && s.t > 2) { s.prev = s.cur; th.advance(); s.cur = th.thought(); s.mode = 'wash'; s.t = 0; }
+      else if(s.mode === 'wash' && s.t > 1.25) { s.prev = null; s.mode = 'hold'; s.t = 0; }
+    };
+    s.draw = () => {
+      const ctx = th.ctx, fs = th.fs, ink = inkFor(s.cur);
+      ctx.clearRect(0, 0, th.W, th.H);
+      if(s.mode !== 'wash' || reduced()) {
+        // At rest a soft shine passes over the thought.
+        const context = th.useLayer(), layout = th.layout(s.cur.text), shine = layout.left - fs * 2 + (((s.clock * .42) % 1.7) / 1.4) * (layout.right - layout.left + fs * 4);
+        context.drawImage(th.image(s.cur), 0, 0, th.W, th.H);
+        if(!reduced()) {
+          context.globalCompositeOperation = 'source-atop';
+          const band = context.createLinearGradient(shine - fs * 1.2, 0, shine + fs * 1.2, 0);
+          band.addColorStop(0, 'rgba(255,255,255,0)'); band.addColorStop(.5, isDark() ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.6)'); band.addColorStop(1, 'rgba(255,255,255,0)');
+          context.fillStyle = band; context.fillRect(0, 0, th.W, th.H);
+        }
+        ctx.drawImage(th.layer, 0, 0, th.W, th.H);
+        return;
+      }
+      const a = th.layout(s.prev.text), b = th.layout(s.cur.text), from = Math.min(a.left, b.left) - fs, to = Math.max(a.right, b.right) + fs * 1.2;
+      const front = from + (to - from) * ease(clamp(s.t / 1.25, 0, 1)), k = 6.283 / (fs * 2.2);
+      const edge = y => front + Math.sin(y * k + s.clock * 7) * fs * .2 + Math.sin(y * k * .47 - s.clock * 4) * fs * .12;
+      const region = side => { ctx.beginPath(); ctx.moveTo(side, 0); for(let y = 0; y <= th.H; y += 2)ctx.lineTo(edge(y), y); ctx.lineTo(side, th.H); ctx.closePath(); };
+      ctx.save(); region(-10); ctx.clip(); ctx.drawImage(th.image(s.cur), 0, 0, th.W, th.H); ctx.restore();
+      ctx.save(); region(th.W + 10); ctx.clip(); ctx.drawImage(th.image(s.prev), 0, 0, th.W, th.H); ctx.restore();
+      const top = Math.min(a.top, b.top) - fs * .35, bottom = Math.max(a.bottom, b.bottom) + fs * .35;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, top, th.W, bottom - top); ctx.clip();
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = rgba(ink.a, .22); ctx.lineWidth = fs * .45; ctx.beginPath();
+      for(let y = top; y <= bottom; y += 2)y === top ? ctx.moveTo(edge(y) - fs * .1, y) : ctx.lineTo(edge(y) - fs * .1, y);
+      ctx.stroke();
+      ctx.strokeStyle = rgba(isDark() ? '#ffffff' : ink.b, .55); ctx.lineWidth = Math.max(1, fs * .06); ctx.beginPath();
+      for(let y = top; y <= bottom; y += 2)y === top ? ctx.moveTo(edge(y), y) : ctx.lineTo(edge(y), y);
+      ctx.stroke();
+      ctx.fillStyle = rgba(ink.a, .55);
+      for(let i = 0; i < 12; i++) {
+        const y = top + hash(i * 4.7) * (bottom - top), x = edge(y) - fs * (.15 + hash(i * 2.9 + Math.floor(s.clock * 3)) * .8);
+        ctx.beginPath(); ctx.arc(x, y, Math.max(.6, fs * (.03 + hash(i) * .05)), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    };
+    return s;
+  }
+
+  /* Tide: thoughts float on a waterline with a rippling reflection; one sinks, the next surfaces. */
+  function tide(th) {
+    const s = {goo: false, cur: null, prev: null, t: 0, mode: 'hold', clock: 0};
+    s.reset = () => { s.cur = {...th.thought(), dy: 0}; s.prev = null; s.t = 0; s.mode = 'hold'; };
+    s.update = dt => {
+      s.clock += dt; s.t += dt;
+      if(reduced()) { if(s.t > 3) { th.advance(); s.reset(); } return; }
+      if(s.mode === 'hold') {
+        s.cur.dy = Math.sin(s.clock * 1.7) * th.fs * .035;
+        if(s.t > 2) { s.prev = {...s.cur}; th.advance(); s.cur = {...th.thought(), dy: th.fs * 1.15}; s.mode = 'tide'; s.t = 0; }
+      } else {
+        s.prev.dy = ease(clamp(s.t / .95, 0, 1)) * th.fs * 1.15;
+        // The next thought starts to surface while the last one is still sinking, so the line is never empty.
+        s.cur.dy = (1 - ease(clamp((s.t - .22) / 1.05, 0, 1))) * th.fs * 1.15;
+        if(s.t > 1.32) { s.prev = null; s.mode = 'hold'; s.t = 0; }
+      }
+    };
+    s.draw = () => {
+      const ctx = th.ctx, fs = th.fs, water = th.cy + fs * .46, ink = inks(settings.color), depth = Math.min(th.H - water, fs * 1.1);
+      ctx.clearRect(0, 0, th.W, th.H);
+      for(const word of [s.prev, s.cur]) {
+        if(!word)continue;
+        const image = th.image(word), slice = Math.max(1, fs * .07);
+        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, th.W, water); ctx.clip();
+        ctx.drawImage(image, 0, word.dy, th.W, th.H); ctx.restore();
+        // The reflection is drawn in thin rows, each shifted by the ripple.
+        for(let y = water; y < water + depth; y += slice) {
+          const source = 2 * water - y - word.dy;
+          if(source < 0 || source >= th.H)continue;
+          const deep = (y - water) / depth;
+          ctx.globalAlpha = .32 * (1 - deep);
+          const shift = reduced() ? 0 : Math.sin(y * (6 / fs) + s.clock * 3.2) * fs * .08 * (.35 + deep);
+          ctx.drawImage(image, 0, source * th.dpr, image.width, slice * th.dpr, shift, y, th.W, slice);
+        }
+        ctx.globalAlpha = 1;
+      }
+      const layout = th.layout(s.cur.text), center = (layout.left + layout.right) / 2, reach = Math.max(layout.right - layout.left, fs * 4);
+      const line = ctx.createLinearGradient(center - reach * .8, 0, center + reach * .8, 0);
+      line.addColorStop(0, rgba(ink.line, 0)); line.addColorStop(.5, rgba(ink.line, .45)); line.addColorStop(1, rgba(ink.line, 0));
+      ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, water + .5); ctx.lineTo(th.W, water + .5); ctx.stroke();
+      if(s.mode === 'tide') {
+        for(let i = 0; i < 3; i++) {
+          const u = clamp(s.t / 1.3 - i * .15, 0, 1);
+          if(u <= 0 || u >= 1)continue;
+          ctx.strokeStyle = rgba(ink.line, .45 * (1 - u)); ctx.beginPath();
+          ctx.ellipse(center + (i - 1) * fs * 1.6, water + 1, fs * (.4 + u * 2.6), fs * (.08 + u * .22), 0, 0, Math.PI * 2); ctx.stroke();
+        }
+      }
+    };
+    return s;
+  }
+
+  /* Stream: short thoughts ride a current from right to left (so they read in order), tied by threads. */
+  function stream(th) {
+    const s = {goo: false, items: [], clock: 0, seq: 0, spawnIn: 0, lastLine: -1};
+    const lines = () => th.large ? 5 : 1, size = () => th.large ? th.fs * .27 : th.fs * .88, speed = () => th.W / (th.large ? 11 : 7.5);
+    const lineY = (line, x, offset = 0) => {
+      const count = lines(), base = count === 1 ? th.cy : th.H * (.2 + .6 * line / (count - 1)), amp = th.large ? th.H * .045 : th.fs * .16, u = x / th.W;
+      return base + offset + amp * Math.sin(u * 4.6 + s.clock * .55 + line * 1.1) + amp * .6 * Math.sin(u * 8.3 - s.clock * .8 + line * 2.3) + (offset ? Math.sin(u * 3 + s.clock * .4 + offset) * amp * .3 : 0);
+    };
+    const spawn = () => {
+      const px = size(), busy = new Set(s.items.filter(item => item.x + item.width * 1.3 > th.W - px * 3).map(item => item.line));
+      const choices = [...Array(lines()).keys()].filter(line => (lines() === 1 || line !== s.lastLine) && !busy.has(line));
+      if(!choices.length)return false;
+      th.advance();
+      const thought = th.thought(), line = choices[Math.floor(Math.random() * choices.length)];
+      measurer.font = font(px);
+      const advances = [...thought.text].map((_, i) => measurer.measureText(thought.text.slice(0, i + 1)).width - measurer.measureText(thought.text.slice(0, i)).width);
+      s.lastLine = line;
+      s.items.push({...thought, line, x: th.W + 6, width: advances.reduce((sum, value) => sum + value, 0), advances, px, seq: s.seq++, prev: s.items[s.items.length - 1] || null});
+      return true;
+    };
+    const advance = dt => {
+      s.clock += dt;
+      for(const item of s.items)item.x -= speed() * dt;
+      s.items = s.items.filter(item => item.x + item.width * 1.3 > -20);
+      s.spawnIn -= dt;
+      if(s.spawnIn <= 0)s.spawnIn = spawn() ? 1.45 + Math.random() * .5 : .25;
+    };
+    // Run the current for a while so the first frame is already full.
+    s.reset = () => { s.items = []; s.clock = 0; s.seq = 0; s.spawnIn = 0; s.lastLine = -1; th.index--; for(let i = 0; i < 300; i++)advance(1 / 30); };
+    s.update = dt => { if(!reduced())advance(dt); };
+    s.draw = () => {
+      const ctx = th.ctx, bot = inks(settings.color), step = Math.max(4, th.W / 120), ghosts = th.large ? [-9, -4.5, 4.5, 9] : [-th.fs * .3, th.fs * .3];
+      ctx.clearRect(0, 0, th.W, th.H); ctx.lineWidth = 1;
+      for(let line = 0; line < lines(); line++)for(const offset of [0, ...ghosts]) {
+        ctx.strokeStyle = rgba(bot.line, offset ? .07 : .2); ctx.beginPath();
+        for(let x = 0; x <= th.W + step; x += step) { const y = lineY(line, x, offset); x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        ctx.stroke();
+      }
+      const newest = s.seq - 1, layouts = new Map(), W = th.W;
+      for(const item of s.items) {
+        const center = item.x + item.width / 2, scale = .88 + .26 * Math.exp(-((center / W - .5) ** 2) / .07), age = newest - item.seq, ink = inkFor(item);
+        const color = age <= 0 ? ink.b : age === 1 ? mix(ink.a, ink.b, .75) : mix(ink.a, ink.b, .45), strength = age <= 0 ? 1 : age === 1 ? .92 : .78;
+        let cursor = center - item.width * scale / 2;
+        const letters = item.advances.map((advance, index) => {
+          const width = advance * scale, x = cursor + width / 2; cursor += width;
+          const melt = clamp((W * .3 - x) / (W * .28), 0, 1);
+          const y = lineY(item.line, x) + melt * melt * (th.large ? th.H * .2 : th.fs * .9) * (.35 + hash(item.seq * 31 + index) * .9);
+          const angle = Math.atan2(lineY(item.line, x + 1) - lineY(item.line, x - 1), 2);
+          return {ch: item.text[index], x, y, angle, melt, alpha: strength * smooth(-W * .02, W * .12, x) * (1 - smooth(W * .9, W, x)) * (1 - melt * .65)};
+        });
+        layouts.set(item, {letters, color, scale});
+      }
+      for(const item of s.items) {
+        const here = layouts.get(item), before = item.prev && layouts.get(item.prev);
+        if(!before || !here.letters.length || !before.letters.length)continue;
+        const from = before.letters[before.letters.length - 1], to = here.letters[0], alpha = Math.min(from.alpha, to.alpha) * .55;
+        if(alpha < .02)continue;
+        const x1 = from.x + item.px * .4, y1 = from.y, x2 = to.x - item.px * .45, y2 = to.y, same = item.line === item.prev.line;
+        const bend = Math.max(item.px * 1.5, Math.abs(x2 - x1) * .45), lift = same ? item.px * .9 : 0;
+        const c1x = x1 + bend * (same ? .4 : 1), c1y = y1 - lift, c2x = x2 - bend * (same ? .4 : 1), c2y = y2 - lift;
+        const thread = ctx.createLinearGradient(x1, y1, x2, y2);
+        thread.addColorStop(0, rgba(before.color, alpha)); thread.addColorStop(1, rgba(here.color, alpha));
+        ctx.strokeStyle = thread; ctx.lineWidth = th.large ? 1.4 : 1;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y2); ctx.stroke();
+        const u = (s.clock * .5 + item.seq * .37) % 1, v = 1 - u;
+        ctx.fillStyle = rgba(here.color, alpha * 1.6); ctx.beginPath();
+        ctx.arc(v * v * v * x1 + 3 * v * v * u * c1x + 3 * v * u * u * c2x + u * u * u * x2, v * v * v * y1 + 3 * v * v * u * c1y + 3 * v * u * u * c2y + u * u * u * y2, th.large ? 2.6 : 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for(const item of s.items) {
+        const {letters, color, scale} = layouts.get(item);
+        ctx.font = font(item.px * scale);
+        for(const letter of letters) {
+          if(letter.alpha < .01 || letter.ch === ' ')continue;
+          ctx.save(); ctx.translate(letter.x, letter.y); ctx.rotate(letter.angle); ctx.scale(1 - letter.melt * .25, 1 + letter.melt * .9);
+          ctx.fillStyle = rgba(color, letter.alpha); ctx.fillText(letter.ch, 0, 0); ctx.restore();
+        }
+      }
+    };
+    return s;
+  }
+
+  /* Roll: real text. Letters roll up and away under a blur while the next thought rolls in. */
+  function roll(th) {
+    const s = {goo: false, t: 0, el: null};
+    const word = thought => {
+      const element = document.createElement('span'), ink = inkFor(thought), chars = [...thought.text];
+      element.className = 'roll-word';
+      chars.forEach((ch, i) => {
+        const char = document.createElement('span');
+        char.className = 'roll-char'; char.textContent = ch === ' ' ? ' ' : ch;
+        char.style.color = mix(ink.a, ink.b, chars.length > 1 ? i / (chars.length - 1) : 0);
+        char.style.animationDelay = `${i * .08}s`;
+        element.append(char);
+      });
+      return element;
+    };
+    s.reset = () => { th.roll.textContent = ''; s.el = word(th.thought()); th.roll.append(s.el); s.t = 0; };
+    s.update = dt => {
+      s.t += dt;
+      if(s.t < (reduced() ? 3 : 2.4))return;
+      const old = s.el; th.advance(); s.el = word(th.thought()); th.roll.append(s.el); s.t = 0;
+      if(reduced()) { old.remove(); return; }
+      const duration = 520 / settings.speed, stagger = 26 / settings.speed;
+      [...old.children].forEach((char, i) => char.animate([
+        {transform: 'translateY(0) scaleY(1)', filter: 'blur(0px)', opacity: 1},
+        {transform: 'translateY(-.55em) scaleY(1.4)', filter: 'blur(4px)', opacity: 0},
+      ], {duration, delay: i * stagger, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards'}));
+      [...s.el.children].forEach((char, i) => char.animate([
+        {transform: 'translateY(.55em) scaleY(1.4)', filter: 'blur(4px)', opacity: 0},
+        {transform: 'translateY(0) scaleY(1)', filter: 'blur(0px)', opacity: 1},
+      ], {duration: duration * 1.15, delay: 120 / settings.speed + i * stagger, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards'}));
+      setTimeout(() => old.remove(), duration + old.children.length * stagger + 60);
+    };
+    s.draw = () => {};
+    return s;
+  }
+
+  const STYLE_BUILDERS = {leak: th => particles(th, 'leak'), melt: th => particles(th, 'melt'), lava: th => particles(th, 'lava'), ink: th => particles(th, 'ink'), fill, wash, tide, stream, roll};
+
+  /* Page wiring */
+  let focus = null, frameId = 0, last = 0, elapsed = 0, shown = -1;
+  const styleById = id => STYLES.find(style => style.id === id);
+  function makeFocus() {
+    focus?.destroy();
+    const large = settings.size === 'large';
+    $('#thinking-row').classList.toggle('is-large', large);
+    focus = new Thinker($('#focus-think'), {large, focus: true});
+    focus.setStyle(settings.style);
+  }
+  function selectStyle(id) {
+    settings.style = id;
+    $('#style-select').value = id; $('#style-hint').textContent = styleById(id).text;
+    document.querySelectorAll('.card').forEach(card => card.setAttribute('aria-pressed', String(card.dataset.style === id)));
+    focus.index = 0; focus.setStyle(id);
+  }
+  function resetAll() {
+    for(const th of thinkers) { th.layouts.clear(); th.images.clear(); th.index = 0; if(th.fs)th.roll.style.font = font(th.fs); th.reset(); }
+    elapsed = 0; shown = -1;
+  }
+  function frame(now) {
+    frameId = requestAnimationFrame(frame);
+    const real = Math.min(.05, (now - last) / 1000); last = now;
+    for(const th of thinkers)if(th.ready && th.visible && th.impl)th.tick(real * settings.speed);
+    elapsed += real;
+    const seconds = Math.floor(elapsed);
+    if(seconds !== shown) { shown = seconds; $('#elapsed').textContent = seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`; }
+  }
+  function setPaused(paused) {
+    settings.paused = paused;
+    const stop = $('#stop');
+    stop.setAttribute('aria-pressed', String(paused)); stop.textContent = paused ? 'Resume' : 'Stop';
+    $('#doing').textContent = paused ? '· stopped' : `· ${PHASES[settings.phase].doing}`;
+    for(const th of thinkers) { th.roll.classList.toggle('is-paused', paused); th.roll.getAnimations({subtree: true}).forEach(animation => paused ? animation.pause() : animation.play()); }
+    cancelAnimationFrame(frameId);
+    if(!paused) { last = performance.now(); frameId = requestAnimationFrame(frame); }
+  }
+  function applyColor() {
+    const c = PALETTES[settings.color].c, root = document.documentElement.style;
+    c.forEach((value, index) => root.setProperty(`--c${index}`, value));
+    document.querySelectorAll('.swatch').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.value === settings.color)));
+  }
+  async function loadFont() { const face = FONTS[settings.font].load; if(face && document.fonts?.load)try { await document.fonts.load(face); } catch {} }
+
+  $('#style-select').innerHTML = STYLES.map(style => `<option value="${style.id}">${style.name}${style.fresh ? ' (new)' : ''}</option>`).join('');
+  $('#swatches').innerHTML = Object.entries(PALETTES).map(([key, palette]) => `<button type="button" class="swatch" id="color-${key}" data-value="${key}" aria-pressed="false" aria-label="${palette.name}" title="${palette.name}" style="--sw:linear-gradient(140deg,${palette.c[0]},${palette.c[1]} 50%,${palette.c[2]})"></button>`).join('');
+  $('#cards').innerHTML = STYLES.map(style => `<button type="button" class="card glass" id="card-${style.id}" data-style="${style.id}" aria-pressed="false">
+      <span class="card-head"><strong>${style.name}</strong><span class="family">${style.family}</span>${style.fresh ? '<span class="fresh">New</span>' : ''}</span>
+      <span class="card-stage"><span class="avatar mini" aria-hidden="true"><i></i><i></i></span><span class="think" data-card-think="${style.id}"></span></span>
+      <span class="card-text">${style.text}</span></button>`).join('');
+
+  document.addEventListener('click', async event => {
+    const card = event.target.closest('.card');
+    if(card) { selectStyle(card.dataset.style); $('#chat').scrollIntoView({behavior: reduced() ? 'auto' : 'smooth', block: 'nearest'}); return; }
+    const swatch = event.target.closest('.swatch');
+    if(swatch) { settings.color = swatch.dataset.value; applyColor(); resetAll(); return; }
+    if(event.target.closest('#stop')) { setPaused(!settings.paused); return; }
+    const button = event.target.closest('.seg button');
+    if(!button)return;
+    const group = button.parentElement.dataset.group, value = button.dataset.value;
+    button.parentElement.querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    settings[group] = value;
+    if(group === 'phase') { $('#doing').textContent = settings.paused ? '· stopped' : `· ${PHASES[value].doing}`; resetAll(); }
+    if(group === 'font') { await loadFont(); resetAll(); }
+    if(group === 'size')makeFocus();
+  });
+  $('#style-select').addEventListener('change', event => selectStyle(event.target.value));
+  $('#speed').addEventListener('input', event => { settings.speed = Number(event.target.value); $('#speed-out').textContent = `${settings.speed.toFixed(1)}×`; });
+  const refresh = () => { for(const th of thinkers) { th.images.clear(); th.reset(); } };
+  darkQuery.addEventListener?.('change', refresh);
+  reducedQuery.addEventListener?.('change', refresh);
+  new MutationObserver(refresh).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+
+  applyColor();
+  loadFont().finally(() => {
+    makeFocus();
+    document.querySelectorAll('[data-card-think]').forEach(box => new Thinker(box).setStyle(box.dataset.cardThink));
+    selectStyle(settings.style);
+    last = performance.now(); frameId = requestAnimationFrame(frame);
+  });
+})();
+</script>

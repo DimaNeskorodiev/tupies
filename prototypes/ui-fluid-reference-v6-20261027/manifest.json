@@ -1,0 +1,81 @@
+{
+  "revision": 6,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "inspiration": {
+    "author": "Gleb Kuznetsov",
+    "post": "https://x.com/glebich/status/2085585475016819136",
+    "caption": "Gen UI thinking..",
+    "capture_method": "Cropped browser screenshots of public video; no video download.",
+    "frames": [
+      {
+        "path": "references/glebich-5s.jpg",
+        "seconds": 5
+      },
+      {
+        "path": "references/glebich-9s.jpg",
+        "seconds": 9.03
+      },
+      {
+        "path": "references/glebich-15s.jpg",
+        "seconds": 15.11
+      },
+      {
+        "path": "references/glebich-25s.jpg",
+        "seconds": 25
+      },
+      {
+        "path": "references/glebich-40s.jpg",
+        "seconds": 40.2
+      }
+    ]
+  },
+  "scope": "Four static desktop/phone image concepts with illustrative draft content. No app/runtime changes and no motion implementation.",
+  "images": [
+    {
+      "id": "01-pearl-home",
+      "name": "Pearl Home",
+      "summary": "Pearlescent home, one dominant context card and pill composer",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-8001e55b-5128-459b-9247-81ac1b65a919.png",
+      "destination": "prototypes/ui-fluid-reference-v6-20261027/01-pearl-home.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1608538
+    },
+    {
+      "id": "02-open-conversation",
+      "name": "Open Conversation",
+      "summary": "Airy chat with floating context and a subtle activity cloud",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-4273cd38-3974-4d9a-a48d-e2da619c0761.png",
+      "destination": "prototypes/ui-fluid-reference-v6-20261027/02-open-conversation.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 1646560
+    },
+    {
+      "id": "03-connected-work",
+      "name": "Connected Work",
+      "summary": "Fine connected context cards with distinct Roky contributors",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-960e86fd-8f41-4047-b4fe-82228b79775c.png",
+      "destination": "prototypes/ui-fluid-reference-v6-20261027/03-connected-work.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1653365
+    },
+    {
+      "id": "04-focused-output",
+      "name": "Focused Output",
+      "summary": "Document preview takes focus, chat becomes a glass dock",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-1d080112-b95c-4c25-8204-e2a0293b1621.png",
+      "destination": "prototypes/ui-fluid-reference-v6-20261027/04-focused-output.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1647417
+    }
+  ],
+  "product_references": [
+    "references/03-graphite-amber.png",
+    "references/00-roky-variants.png"
+  ],
+  "prompts": "prompts.json"
+}

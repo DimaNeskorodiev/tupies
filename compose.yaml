@@ -1,0 +1,46 @@
+services:
+  studio:
+    build: .
+    image: tupies:local
+    init: true
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      STUDIO_HOST: 0.0.0.0
+      STUDIO_PORT: "4310"
+      STUDIO_DATA_DIR: /data
+      STUDIO_PUBLIC_URL: ${STUDIO_PUBLIC_URL:-}
+      # engine: serve HTTPS directly with this engine's own key (apps trust it through the pairing QR code; no domain needed).
+      STUDIO_TLS: ${STUDIO_TLS:-}
+      # Connections reach the container through Docker's private network, so trust the proxy address it reports.
+      STUDIO_TRUSTED_PROXY: ${STUDIO_TRUSTED_PROXY:-private}
+      STUDIO_ENGINE_NAME: ${STUDIO_ENGINE_NAME:-}
+      STUDIO_SECURE_COOKIE: ${STUDIO_SECURE_COOKIE:-false}
+      STUDIO_ALLOW_PRIVATE_HTTP: ${STUDIO_ALLOW_PRIVATE_HTTP:-false}
+      STUDIO_DEPLOYMENT_MODE: ${STUDIO_DEPLOYMENT_MODE:-local}
+      STUDIO_OPENAI_CLIENT_ID: ${STUDIO_OPENAI_CLIENT_ID:-}
+    ports:
+      # Loopback only by default. With STUDIO_TLS=engine on a server, publish to the internet, e.g. STUDIO_PUBLISH=443.
+      - "${STUDIO_PUBLISH:-127.0.0.1:4310}:4310"
+    volumes:
+      - studio-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 1.0
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "3"
+
+volumes:
+  studio-data:
+    name: hermes-studio-data

@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-27",
+  "kind": "Actual unaltered browser screenshots of the implemented local UI",
+  "fixture": "Disposable Studio engine; scheduler disabled; fictional users/tasks and local fake provider; no operational data",
+  "verification": {
+    "tests": 557,
+    "passed": 557,
+    "syntaxModules": 68,
+    "build": "passed"
+  },
+  "screenshots": [
+    {
+      "file": "01-desktop-chat.jpg",
+      "sha256": "21a62b5c4b3f984eeda1ec2c7f21c81497e403b663be9f6beb33dd4c57907a18"
+    },
+    {
+      "file": "02-mobile-chat.jpg",
+      "sha256": "15461ee963bc82c9d479af4853e00702fa9649a951cf12764693f4446fa4c5d1"
+    },
+    {
+      "file": "03-mobile-options.jpg",
+      "sha256": "aeb0b9e9462f924161feb175fb780b77409ab3460a15cd5a4cb6579f95fda68c"
+    },
+    {
+      "file": "04-mobile-settings.jpg",
+      "sha256": "a22be6e3914a49bafccfb9662d564ae7f71bb54d44b96b824086f95d585ba71c"
+    },
+    {
+      "file": "05-mobile-welcome.jpg",
+      "sha256": "291f1231f125c01da85fede772011cc70d69d8445ed668e43816558f750f8d8f"
+    },
+    {
+      "file": "06-mobile-dashboard.jpg",
+      "sha256": "e0917b12d48335c7496d1dad05fc18ebccfc955c89f09b29f0a7212b6da05d6a"
+    },
+    {
+      "file": "07-desktop-profile.jpg",
+      "sha256": "933aca51b34140d71e421cfc83d99ca17ad2d91114385cd8b8cb6dd18da7b195"
+    },
+    {
+      "file": "08-desktop-bots.jpg",
+      "sha256": "3f0f6f6766866b1c9ab50ec31dfad7a9d8ff5c598d3d6b38cde6d482add8e73f"
+    }
+  ]
+}

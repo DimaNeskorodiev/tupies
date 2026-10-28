@@ -1,0 +1,103 @@
+{
+  "provenance": "Illustrative local dataset; calculations verified from CSV",
+  "currency": "EUR",
+  "csvFile": "adaptive-budget.csv",
+  "csvContent": "category,item,cost_EUR\nVenue,Hall hire,2400\nVenue,Furniture rental,600\nVenue,Event insurance,300\nCatering,Food,1800\nCatering,Drinks,720\nCatering,Service,480\nProduction,Lighting,950\nProduction,Sound,850\nProduction,Stage setup,700\nPromotion,Design,450\nPromotion,Social ads,600\nPromotion,Print,150\n",
+  "categories": [
+    {
+      "name": "Venue",
+      "total": 3300,
+      "share": 0.33
+    },
+    {
+      "name": "Catering",
+      "total": 3000,
+      "share": 0.3
+    },
+    {
+      "name": "Production",
+      "total": 2500,
+      "share": 0.25
+    },
+    {
+      "name": "Promotion",
+      "total": 1200,
+      "share": 0.12
+    }
+  ],
+  "rows": [
+    {
+      "category": "Venue",
+      "item": "Hall hire",
+      "cost_EUR": 2400
+    },
+    {
+      "category": "Venue",
+      "item": "Furniture rental",
+      "cost_EUR": 600
+    },
+    {
+      "category": "Venue",
+      "item": "Event insurance",
+      "cost_EUR": 300
+    },
+    {
+      "category": "Catering",
+      "item": "Food",
+      "cost_EUR": 1800
+    },
+    {
+      "category": "Catering",
+      "item": "Drinks",
+      "cost_EUR": 720
+    },
+    {
+      "category": "Catering",
+      "item": "Service",
+      "cost_EUR": 480
+    },
+    {
+      "category": "Production",
+      "item": "Lighting",
+      "cost_EUR": 950
+    },
+    {
+      "category": "Production",
+      "item": "Sound",
+      "cost_EUR": 850
+    },
+    {
+      "category": "Production",
+      "item": "Stage setup",
+      "cost_EUR": 700
+    },
+    {
+      "category": "Promotion",
+      "item": "Design",
+      "cost_EUR": 450
+    },
+    {
+      "category": "Promotion",
+      "item": "Social ads",
+      "cost_EUR": 600
+    },
+    {
+      "category": "Promotion",
+      "item": "Print",
+      "cost_EUR": 150
+    }
+  ],
+  "total": 10000,
+  "largestCategory": {
+    "name": "Venue",
+    "total": 3300,
+    "share": 0.33
+  },
+  "concentration": {
+    "largestCategoryShare": 0.33,
+    "topTwoCategoryShare": 0.63,
+    "herfindahlIndex": 0.2758
+  },
+  "sha256": "2ebd3c6e3cca3a48dd3ff4f41db9ddb77332566c940ad66ef9d9db2c2bae310b",
+  "byteLength": 295
+}

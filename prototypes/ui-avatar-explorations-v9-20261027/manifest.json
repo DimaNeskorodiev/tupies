@@ -1,0 +1,51 @@
+{
+  "revision": 9,
+  "date": "2026-10-27",
+  "mode": "built-in image_gen",
+  "brief": "Four further non-Roki avatar languages, beyond simple geometric creatures, folded ribbons and robot modules; approved UI and larger clear avatars retained.",
+  "scope": "Static desktop/phone avatar concept boards only; no app/runtime or production asset change.",
+  "images": [
+    {
+      "id": "01-sculpted-visages",
+      "name": "Sculpted Visages",
+      "summary": "Abstract sculpted faces with noses, cheeks and distinctive expressions",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-b3bc450b-5996-4d78-af20-4e7d951e902d.png",
+      "destination": "prototypes/ui-avatar-explorations-v9-20261027/01-sculpted-visages.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1624949
+    },
+    {
+      "id": "02-character-type",
+      "name": "Character Type",
+      "summary": "Large custom A, N, S and E glyphs as expressive identities",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-44338996-952f-4e06-921f-076efcf4b127.png",
+      "destination": "prototypes/ui-avatar-explorations-v9-20261027/02-character-type.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1594858
+    },
+    {
+      "id": "03-layered-medallions",
+      "name": "Layered Medallions",
+      "summary": "Tactile stacked relief emblems with strong outer contours",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-8667f5a0-7faa-4c46-a756-21a120c0ea35.png",
+      "destination": "prototypes/ui-avatar-explorations-v9-20261027/03-layered-medallions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1638498
+    },
+    {
+      "id": "04-bold-mosaic",
+      "name": "Bold Mosaic",
+      "summary": "Flat cut-paper identities assembled from a few oversized colored pieces",
+      "source": "generated_images/01a17edd-7601-7d10-a90c-dd18a992e449/exec-25a85dad-a90b-4f40-be39-c510f434b3ec.png",
+      "destination": "prototypes/ui-avatar-explorations-v9-20261027/04-bold-mosaic.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1562366
+    }
+  ],
+  "reference": "references/02-folded-emblems.png",
+  "prompts": "prompts.json"
+}

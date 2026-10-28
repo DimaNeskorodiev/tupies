@@ -1,0 +1,81 @@
+{
+  "id": "peach",
+  "source": "peach-source.png",
+  "prompt": "peach-prompt.txt",
+  "sha256": "ff2fbd1a49a8ab030213a2cc454bde3af307602a52d3a6067cd88656157153cf",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "transparentPixels": 883894,
+  "opaquePixels": 650946,
+  "layout": "2x2, row-major: idle, blink, curious, wave",
+  "frames": {
+    "idle": {
+      "cell": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 165300,
+        "left": 70,
+        "top": 109,
+        "width": 537,
+        "height": 490
+      }
+    },
+    "blink": {
+      "cell": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 163500,
+        "left": 31,
+        "top": 110,
+        "width": 534,
+        "height": 489
+      }
+    },
+    "curious": {
+      "cell": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 164945,
+        "left": 81,
+        "top": 69,
+        "width": 539,
+        "height": 473
+      }
+    },
+    "wave": {
+      "cell": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "mainComponentBounds": {
+        "count": 162661,
+        "left": 39,
+        "top": 70,
+        "width": 544,
+        "height": 476
+      }
+    }
+  },
+  "sharedRelativeCrop": {
+    "left": 31,
+    "top": 69,
+    "width": 589,
+    "height": 530
+  },
+  "inspection": "Visually inspected original generated sheet: all four complete full-body poses; upright open oval eyes in idle; eyes fully closed relaxed blink; slight curious lean; one-arm wave. No text, labels, props, floor or baked background. Minor outside-silhouette alpha flecks are preserved in original. Main-component bounds use alpha>128; packaging may isolate the connected character without color-keying."
+}
