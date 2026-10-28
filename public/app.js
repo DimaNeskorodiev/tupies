@@ -278,7 +278,8 @@ function renderApp(){
   const current=route(),tab=tabFor(current.view);if(tab&&!['bot','room'].includes(current.view))lastTab=tab;
   const label=({dashboard:'Dashboard',bots:current.id?botById(current.id)?.name||'Bots':'Bots',bot:botById(current.id)?.name||'Bots',rooms:'Team rooms',room:data.rooms.find(r=>r.id===current.id)?.name||'Team room',routines:'Routines'})[current.view]||(settingsViews.has(current.view)?'Settings':'Dashboard');
   // Phones: an iOS-style navigation bar (back, title, Settings) on top and the four main sections as a tab bar.
-  const back=current.view==='bots'&&current.id?'/bots':settingsViews.has(current.view)?`/${lastTab||'dashboard'}`:'';
+  // Settings goes back to the tab it was opened from; a Settings section goes back to Settings.
+  const back=current.view==='bots'&&current.id?'/bots':current.view==='settings'?`/${lastTab||'dashboard'}`:settingsViews.has(current.view)?'/settings':'';
   const topbar=`<header class="topbar">${back?`<button class="topbar-back" data-nav="${back}" aria-label="Back">${icon('back')}</button>`:''}<span class="topbar-title">${esc(label)}</span>${settingsViews.has(current.view)?'':`<button class="topbar-settings" data-nav="/settings" aria-label="Settings">${icon('gear')}${syncAlert()}</button>`}</header>`;
   const activeTab=tab||lastTab||'dashboard',tabbar=`<nav class="tabbar" aria-label="Sections">${mainTabs.map(([id,name,symbol])=>`<button class="tab ${activeTab===id?'active':''}" data-nav="/${id}" ${activeTab===id?'aria-current="page"':''}>${icon(symbol)}<span>${name}</span></button>`).join('')}</nav>`;
   $('#app').innerHTML=`<div class="app-shell" data-view="${esc(current.view)}">${sidebarMarkup(current)}<div class="content">${topbar}<main id="main-content">${renderPage(current)}</main></div>${tabbar}</div>`;
@@ -808,7 +809,7 @@ async function pairingDialog(kind,url){
   tick();pairingTimer=setInterval(tick,1000);
 }
 function connectHubDialog(){
-  openDialog('Connect to a home server',`<p class="modal-subtitle">On your home server, open <strong>Settings → Devices & sync → Link another engine</strong>, then paste the link here. This engine keeps working offline and catches up when it reconnects.</p><form id="connect-hub-form"><div class="field"><label for="hub-link">Engine link</label><textarea id="hub-link" name="link" rows="3" placeholder="hermes-studio://pair?v=1&…" required></textarea><small>Where both engines changed the same item, the most recent edit wins. Files edited on both keep a conflict copy.</small></div>${modalFooter('Connect')}</form>`);
+  openDialog('Connect to a home server',`<p class="modal-subtitle">On your home server, open <strong>Settings → Devices & sync → Link another engine</strong>, then paste the link here. This engine keeps working offline and catches up when it reconnects.</p><form id="connect-hub-form"><div class="field"><label for="hub-link">Engine link</label><textarea id="hub-link" name="link" rows="3" placeholder="Paste the engine link from your home server" required></textarea><small>Where both engines changed the same item, the most recent edit wins. Files edited on both keep a conflict copy.</small></div>${modalFooter('Connect')}</form>`);
 }
 function renameEngineDialog(){
   const name=syncView?.status?.node?.name||'';

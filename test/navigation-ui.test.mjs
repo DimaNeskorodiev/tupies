@@ -82,9 +82,13 @@ test('phones get a four-tab bar and a navigation bar with Settings in the top-ri
   assert.match(header,/class="topbar-settings" data-nav="\/settings" aria-label="Settings"/);
   assert.ok(!header.includes('topbar-back'));
   // Settings is pushed over the tab it was opened from: Back returns there and that tab stays highlighted.
-  h.setHash('#/skills');h.run('renderApp()');
+  h.setHash('#/settings');h.run('renderApp()');
   assert.match(h.app.innerHTML,/class="topbar-back" data-nav="\/routines"/);
   assert.ok(!h.app.innerHTML.includes('topbar-settings'));
+  assert.match(h.app.innerHTML,/class="tab active" data-nav="\/routines"/);
+  // A Settings section is pushed over Settings, so its Back returns to Settings; the tab stays highlighted.
+  h.setHash('#/skills');h.run('renderApp()');
+  assert.match(h.app.innerHTML,/class="topbar-back" data-nav="\/settings"/);
   assert.match(h.app.innerHTML,/class="tab active" data-nav="\/routines"/);
   // A bot's details go back to Bots.
   h.setHash('#/bots/bot_nova');h.run('renderApp()');

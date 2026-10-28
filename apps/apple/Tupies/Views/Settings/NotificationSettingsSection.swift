@@ -14,7 +14,12 @@ struct NotificationSettingsSection: View {
                     else { notifications.disable() }
                 }
             )) {
-                Label("Notifications", systemImage: "bell.badge")
+                Label {
+                    Text("Notifications")
+                } icon: {
+                    Image(systemName: notifications.enabled ? "bell.badge.fill" : "bell")
+                        .contentTransition(.symbolEffect(.replace))
+                }
             }
             .disabled(notifications.busy || store.connections.isEmpty)
 
@@ -42,8 +47,9 @@ struct NotificationSettingsSection: View {
         } header: {
             Text("Notifications")
         } footer: {
-            Text("Receive finished routine results and new bot replies, even while Tupies is closed. Choose one home server to avoid duplicate alerts. Apple receives a generic alert and identifiers; message content stays on your engine.")
+            Text("Bot replies and routine results, even while Tupies is closed. Pick one delivery server to avoid duplicates. Apple only sees a generic alert; message content stays on your server.")
         }
+        .animation(.snappy, value: notifications.enabled)
         .task { await notifications.refresh() }
     }
 }

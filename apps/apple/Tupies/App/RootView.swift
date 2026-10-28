@@ -13,18 +13,22 @@ struct RootView: View {
         Group {
             if store.connections.isEmpty {
                 OnboardingView()
-                    .transition(.opacity)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.97)))
             } else {
                 MainView()
                     .transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.connections.isEmpty)
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.45), value: store.connections.isEmpty)
+        .onChange(of: store.connections.isEmpty) { _, isEmpty in
+            // Removing the last server from Settings returns to onboarding; don't bring the old sheet back after pairing.
+            if isEmpty { store.showSettings = false }
+        }
         .overlay(alignment: .bottom) {
             if let toast = store.toast {
                 ToastView(toast: toast)
                     .padding(.bottom, 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                     .id(toast.id)
             }
         }
@@ -47,6 +51,7 @@ struct RootView: View {
             if phase == .active {
                 store.resume()
                 #if os(iOS)
+                StudioHaptics.prepare()
                 Task { await NotificationCoordinator.shared.refresh() }
                 #endif
             }
@@ -61,9 +66,6 @@ struct RootView: View {
         .task {
             await store.monitor()
         }
-        #if os(iOS)
-        .tint(Brand.ink)
-        #endif
         #if os(macOS)
         .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
         #endif
@@ -79,7 +81,6 @@ struct RootView: View {
         PairingFlowView(start: request.start)
             .environmentObject(store)
             .presentationDragIndicator(.visible)
-            .presentationCornerRadius(28)
         #endif
     }
 }
