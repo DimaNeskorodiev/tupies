@@ -44,7 +44,9 @@ Implemented after the owner's review of the raw mobile experience. Native **0.5.
 
 ## Phase 5: reviewed learning (28 October 2026)
 
-Built in the checkout at the owner's request ("proceed with the next stage"). **Not deployed.** Both engines still run the Phase 3+4 release.
+Built at the owner's request ("proceed with the next stage") and **deployed to both engines on 28 October 2026**, at 12:00 UTC (VPS) and 12:01 UTC (Mac).
+
+- **Release:** `.runtime/phase5-deploy-20261028/release/`, built by `prepare.py` from the deployed Phase 3+4 release plus only Phase 5, and passing 530/530 tests on its own. The deferred notification code, the parallel session's undeployed UI and its product rename (to "Tupies", started in the checkout at 12:54 CET during this build) stayed out. Phase 5 text was taken from a source snapshot and refused if it carried the rename. Deployment details and rollback are in `docs/local-workspace.md`.
 
 - **What bots can do:** `memory_propose` suggests adding, updating, pinning or removing core facts (up to 10 changes as one suggestion). `skills_propose` suggests a new skill or an improvement to an assigned skill, as exact `oldText`/`newText` edits or a complete new `SKILL.md`; `skills_read` now returns the sha256 it needs. Neither changes anything or needs approval. `memory_set` stays direct when the owner asks a bot to remember something; the prompt tells bots to suggest instead when they infer a fact, tidy memory, or work in a routine, team room or someone else's chat.
 - **Review:** a new **Learning** tab in the bot profile shows each suggestion with the bot's reason, the change (facts as new / now → becomes / removed; skills as a line diff), the cited messages and, for a skill, which other bots use it. Accept, Decline, and Undo with a confirmation. The Dashboard's **Needs you** lists bots with suggestions (`Review`), the profile overview shows a short note, and the activity log records each suggestion and decision.

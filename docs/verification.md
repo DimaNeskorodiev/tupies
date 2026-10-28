@@ -70,6 +70,14 @@ Checked on 27 October 2026 using Node **22.23.1** and a disposable local workspa
 
 ## Phase 5: reviewed learning
 
+**Deployed to both engines on 28 October 2026**, at 12:00 UTC (VPS) and 12:01 UTC (Mac), from an isolated release that excludes the deferred notification code, the parallel session's undeployed UI and its product rename in progress.
+
+- **The release** passed **530/530** tests on its own (the deployed 516 plus the 14 Phase 5 tests) and 66 syntax-checked modules. Only 28 files differ from the Phase 3+4 release, all of them Phase 5 code, tests, docs and the rebuilt guide.
+- **VPS:** both preflight and installer found no active runs, room work, enabled routines or channels. The installer backed up the stopped data directory, installed 551 sources, started once (PID 1711583 → 1734815) and verified 383 served files. State bytes, vault, identity, sign-in configuration and counts (4 bots, 3 connections, 1 room) were preserved. The browser service settings (`RestrictNamespaces=user pid net`, `TasksMax=512`) are unchanged.
+- **Mac:** the first attempt stopped before changing anything, because its lock check compared with the checkout's `package-lock.json`, which the rename had just changed (only the package name). The check now compares with the lock of the release the engine runs, which is identical. The engine went from PID 8416 to 51468 after a stopped backup, with 555 sources and 383 served files verified and the same preservation checks.
+- **Both engines:** `app.js`, `bot-profile.js`, `bot-profile.css`, `dashboard.js`, `guide-content.js`, `lib/learning.mjs` and `server.mjs` are byte-identical to the release, `lib/notifications.mjs` is absent, and `GET /api/bots/{id}/proposals` answers (401 without a session). The Mac relinked to the home server within half a minute; it shows 4 bots, 3 connections and 43 messages, as before.
+- **Not verified after deployment:** a real model writing suggestions, a scheduled daily review, and the reloaded Apple apps.
+
 Checked on 28 October 2026 with Node **22.23.1** and temporary data only. The live engines, `data/` and the home server were not touched, and nothing was deployed.
 
 - **Suite:** **589/589 tests**, with no failures, skips or cancellations. `npm run check` passes for **71 modules**.
