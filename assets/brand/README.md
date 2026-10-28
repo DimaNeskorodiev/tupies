@@ -9,7 +9,7 @@ Run `npm run brand:build` to regenerate:
 - Full-resolution Graphite (default), Pearl and Sky icon backgrounds and `brand-preview.png` for comparison. These variants share the same character and pose.
 - The opaque iOS app icon, inset rounded macOS app icons, and `TupiesAvatar.imageset` for native onboarding/connection/pairing screens.
 
-The build derives its paths from this checkout. `TUPIES_BUILD_WEB_ONLY=1` skips native output for engine/container builds. Ship the generated web and Apple assets together with the source master. Installing rebuilt Apple apps and deploying web assets are separate from generating them; this source update does not restart operational engines or replace installed apps.
+The build derives its paths from this checkout. `TUPIES_BUILD_WEB_ONLY=1` skips native output for engine/container builds. Ship the generated web and Apple assets together with the source master. Installing rebuilt Apple apps and deploying web assets are separate from generating them; the builder does not restart operational engines or replace installed apps.
 
 ## Generation prompt
 
