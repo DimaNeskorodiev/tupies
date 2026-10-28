@@ -3,6 +3,8 @@ import SwiftUI
 /// First-run welcome: "Connect to your Tupies".
 struct OnboardingView: View {
     @EnvironmentObject private var store: ConnectionStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
 
     var body: some View {
         ZStack {
@@ -15,12 +17,14 @@ struct OnboardingView: View {
 
                         header
                             .padding(.bottom, 36)
+                            .modifier(Entrance(appeared: appeared, delay: 0))
 
                         ConnectChoices(
                             onScan: { store.beginPairing(.scan) },
                             onPaste: { store.beginPairing(.paste) },
                             onThisMac: connectThisMac
                         )
+                        .modifier(Entrance(appeared: appeared, delay: 0.08))
 
                         #if os(macOS)
                         if let error = store.thisMacError {
@@ -32,18 +36,21 @@ struct OnboardingView: View {
                         }
                         #endif
 
-                        Text("In Tupies, open Devices & sync and choose Pair a phone or Mac — it shows a QR code and a pairing link.")
+                        Text("In Tupies, open Devices & sync and choose Pair a phone or Mac. It shows a QR code and a pairing link.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 20)
+                            .modifier(Entrance(appeared: appeared, delay: 0.14))
 
                         Spacer(minLength: 32)
 
-                        Label("Your data stays on your engines. Device keys never leave this device.", systemImage: "lock.shield")
+                        Label("Your data stays on your engines. Device keys never leave this \(DeviceInfo.kindLabel).", systemImage: "lock.shield")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                             .padding(.bottom, 12)
                     }
                     .padding(.horizontal, 24)
@@ -53,22 +60,22 @@ struct OnboardingView: View {
                 .scrollBounceBehavior(.basedOnSize)
             }
         }
+        .onAppear {
+            withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .smooth(duration: 0.6)) { appeared = true }
+        }
     }
 
     private var header: some View {
         VStack(spacing: 14) {
-            BrandMark(size: 76)
-                .padding(.bottom, 6)
-            Text("Tupies")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Brand.purple)
-                .textCase(.uppercase)
-                .tracking(1.2)
+            BrandMark(size: 80)
+                .scaleEffect(appeared || reduceMotion ? 1 : 0.86)
+                .padding(.bottom, 8)
             Text("Connect to your Tupies")
-                .font(.system(.largeTitle, design: .default).weight(.bold))
+                .font(.largeTitle.weight(.bold))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Tupies runs on your own Mac or server. Pair this \(DeviceInfo.kindLabel) once and it stays signed in securely.")
+                .accessibilityAddTraits(.isHeader)
+            Text("Your bots run on your own Mac or server. Pair this \(DeviceInfo.kindLabel) once and it stays signed in.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -91,5 +98,19 @@ struct OnboardingView: View {
             }
         }
         #endif
+    }
+}
+
+/// Content rises gently into place the first time the screen appears (a plain fade with Reduce Motion).
+private struct Entrance: ViewModifier {
+    let appeared: Bool
+    let delay: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared || reduceMotion ? 0 : 18)
+            .animation(reduceMotion ? .easeOut(duration: 0.2) : .smooth(duration: 0.6).delay(delay), value: appeared)
     }
 }

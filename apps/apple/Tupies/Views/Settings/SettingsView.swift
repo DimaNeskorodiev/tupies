@@ -18,7 +18,7 @@ struct SettingsView: View {
             Form {
                 Section {
                     if store.connections.isEmpty {
-                        Text("No engines yet.")
+                        Text("No servers yet.")
                             .foregroundStyle(.secondary)
                     }
                     ForEach(store.connections) { connection in
@@ -26,8 +26,7 @@ struct SettingsView: View {
                         // As in Wi-Fi settings: tap a row to switch to it, ⓘ for its details.
                         HStack(spacing: 10) {
                             Button {
-                                store.activate(connection.id)
-                                dismiss()
+                                switchTo(connection.id)
                             } label: {
                                 HStack {
                                     ConnectionRow(connection: connection)
@@ -36,17 +35,21 @@ struct SettingsView: View {
                                         Image(systemName: "checkmark")
                                             .font(.body.weight(.semibold))
                                             .foregroundStyle(Brand.purple)
+                                            .transition(.scale(scale: 0.5).combined(with: .opacity))
+                                            .accessibilityHidden(true)
                                     }
                                 }
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(connection.id == store.activeID ? .isSelected : [])
+                            .accessibilityHint(connection.id == store.activeID ? "" : "Switches to this server")
                             Button {
                                 detailID = connection.id
                             } label: {
                                 Image(systemName: "info.circle")
                                     .font(.title3)
+                                    .foregroundStyle(Brand.purple)
                                     .frame(minWidth: 44, minHeight: 44)
                                     .contentShape(Rectangle())
                             }
@@ -67,9 +70,9 @@ struct SettingsView: View {
                         Label("Add Connection", systemImage: "plus.circle.fill")
                     }
                 } header: {
-                    Text("Connections")
+                    Text("Servers")
                 } footer: {
-                    Text("Each engine has its own device key. Removing a connection deletes that key from this device.")
+                    Text("Each server has its own device key. Removing a connection deletes that key from this \(DeviceInfo.kindLabel).")
                 }
 
                 #if os(iOS)
@@ -88,8 +91,7 @@ struct SettingsView: View {
                                 Label {
                                     Text("Sync")
                                 } icon: {
-                                    Image(systemName: health.symbol)
-                                        .foregroundStyle(health.color)
+                                    SyncHealthSymbol(health: health)
                                 }
                             }
                         }
@@ -102,7 +104,7 @@ struct SettingsView: View {
                     } header: {
                         Text(active.name)
                     } footer: {
-                        Text("You can also pull down on any page to reload it.")
+                        Text("You can also pull down on a page to reload it.")
                     }
                 }
                 #endif
@@ -113,10 +115,12 @@ struct SettingsView: View {
 
                 Section {
                     TextField("Device name", text: $store.deviceName)
+                        .submitLabel(.done)
+                        .accessibilityLabel("Device name")
                 } header: {
                     Text("This Device")
                 } footer: {
-                    Text("Shown on an engine’s device list when you pair.")
+                    Text("Shown in a server’s device list when you pair.")
                 }
 
                 #if os(macOS)
@@ -172,9 +176,8 @@ struct SettingsView: View {
             .scrollDismissesKeyboard(.interactively)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .fontWeight(.semibold)
+                ToolbarItem(placement: .topBarTrailing) {
+                    SheetCloseButton { dismiss() }
                 }
             }
             .navigationDestination(item: $detailID) { id in
@@ -195,6 +198,21 @@ struct SettingsView: View {
         #endif
     }
 
+    #if os(iOS)
+    /// Moves the checkmark first, then closes, so the switch is visible.
+    private func switchTo(_ id: UUID) {
+        guard id != store.activeID else {
+            dismiss()
+            return
+        }
+        withAnimation(.snappy(duration: 0.25)) { store.activate(id) }
+        Task {
+            try? await Task.sleep(nanoseconds: 320_000_000)
+            dismiss()
+        }
+    }
+    #endif
+
     private func addConnection() {
         #if os(macOS)
         openWindow(id: "main")
@@ -211,38 +229,54 @@ struct SettingsView: View {
 
 struct ConnectionRow: View {
     @EnvironmentObject private var store: ConnectionStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let connection: Connection
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: connection.kind == .local ? "desktopcomputer" : "server.rack")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
-                .background(Brand.slate.gradient, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(connection.name)
-                        .fontWeight(.medium)
-                    if connection.id == store.activeID {
-                        Text("Active")
-                            .font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Brand.purple.opacity(0.15), in: Capsule())
-                            .foregroundStyle(Brand.purple)
-                    }
-                }
-                HStack(spacing: 5) {
-                    StatusDot(color: store.statusColor(for: connection), size: 6)
-                    Text("\(store.statusLabel(for: connection)) · \(connection.hostLabel)")
-                        .lineLimit(1)
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // At accessibility sizes the words need the width more than the icon does.
+            if !dynamicTypeSize.isAccessibilitySize {
+                icon
             }
+            details
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
+    }
+
+    private var icon: some View {
+        Image(systemName: connection.kind == .local ? "desktopcomputer" : "server.rack")
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(.white)
+            .frame(width: 34, height: 34)
+            .background(LinearGradient(colors: [Brand.slateTop, Brand.slateBottom], startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .accessibilityHidden(true)
+    }
+
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Text(connection.name)
+                    .fontWeight(.medium)
+                #if os(macOS)
+                if connection.id == store.activeID {
+                    Text("Active")
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Brand.purple.opacity(0.15), in: Capsule())
+                        .foregroundStyle(Brand.purple)
+                }
+                #endif
+            }
+            HStack(spacing: 5) {
+                StatusDot(color: store.statusColor(for: connection), size: 6, pulsing: store.reachabilityState(for: connection.id) == .unknown)
+                Text("\(store.statusLabel(for: connection)) · \(connection.hostLabel)")
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
+                    .truncationMode(.middle)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
     }
 }

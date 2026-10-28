@@ -124,12 +124,31 @@ struct MacConnectionSwitcher: View {
 /// iOS: a compact glass capsule at the top that opens the engine menu.
 struct PhoneTopBar: View {
     @EnvironmentObject private var store: ConnectionStore
+    /// Fills the bar's area when it sits above a page (older engines); clear above the native states.
+    var background: Color = .clear
 
     var body: some View {
+        bar
+            .frame(maxWidth: .infinity)
+            .padding(.top, 2)
+            .padding(.bottom, 6)
+            .background(background.ignoresSafeArea(edges: .top))
+    }
+
+    @ViewBuilder
+    private var bar: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 8) { controls }
+        } else {
+            controls
+        }
+    }
+
+    private var controls: some View {
         HStack(spacing: 8) {
             if let active = store.activeConnection {
                 Menu {
-                    Section("Engines") {
+                    Section("Servers") {
                         ForEach(store.connections) { connection in
                             Button {
                                 store.activate(connection.id)
@@ -150,7 +169,7 @@ struct PhoneTopBar: View {
                     }
                 } label: {
                     HStack(spacing: 7) {
-                        StatusDot(color: store.statusColor(for: active))
+                        StatusDot(color: store.statusColor(for: active), pulsing: store.reachabilityState(for: active.id) == .unknown)
                         Text(active.name)
                             .font(.subheadline.weight(.semibold))
                             .lineLimit(1)
@@ -161,20 +180,18 @@ struct PhoneTopBar: View {
                     }
                     .padding(.horizontal, 14)
                     .frame(minHeight: 44)
+                    .contentShape(Capsule())
                     .glassSurface(Capsule(), interactive: true)
                 }
-                .accessibilityLabel("Engine: \(active.name), \(store.statusLabel(for: active))")
-                .accessibilityHint("Switch engine, add a connection or open settings")
+                .accessibilityLabel("Server: \(active.name), \(store.statusLabel(for: active))")
+                .accessibilityHint("Switch server, add a connection or open settings")
 
                 SyncIndicatorButton(connection: active)
                     .frame(width: 44, height: 44)
+                    .contentShape(Circle())
                     .glassSurface(Circle(), interactive: true)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 2)
-        .padding(.bottom, 6)
-        .background(Brand.canvas.ignoresSafeArea(edges: .top))
     }
 }
 #endif

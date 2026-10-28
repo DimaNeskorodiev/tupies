@@ -2,6 +2,24 @@
 
 Last updated: 28 October 2026. Current application version: 0.5.0.
 
+## iPhone polish, name check and full Tupies release (28 October 2026)
+
+The owner asked to make sure the Tupies name is used everywhere and to polish the mobile app to Apple standards: native gestures, animation, effects and UI. The owner then approved deploying **everything in the checkout** to both engines at 14:22 UTC: the rename, the pearl redesign, the 24 companions, this polish and the push-notification engine code, which stays inactive until an APNs key is configured. The owner also approved installing the apps. The iPhone 15 Pro now runs **Tupies 0.5.0 (3)** without the push entitlement, and `/Applications/Tupies.app` (build 3) replaces `Hermes Studio.app`. Release, backups and rollback are in `docs/local-workspace.md`.
+
+- **Name:** user-visible pairing text in the Apple app, the web UI and engine errors no longer shows the `hermes-studio://` scheme. The MCP and LSP clients identify as `Tupies` 0.5.0. Compatibility identifiers are unchanged (see `docs/development.md`).
+- **Native shell (`apps/apple/`):** iOS 26 Liquid Glass with iOS 17 fallbacks; light/dark following the system; a launch background matching the page (`LaunchBackground`: `#f5f8fc`/`#0c1017`), so launch, connect and reveal have no white frame; a crossfade into the web view on the page's first `chrome` message; `ContentUnavailableView` states with retry; a glass pull-to-refresh that skips focused fields and open dialogs; polished onboarding, pairing, scanner and Settings; and Dynamic Type layouts. The bridge accepts eight haptic styles: selection, light, medium, rigid, soft, success, warning and error. The phone accent is blue (`#2860c2`, dark `#8ab4ff`) in native and web; desktop keeps graphite and amber.
+- **Web phone visual system (`public/mobile.css`, `public/pearl.css`):** an iOS text-style ramp scaled by Dynamic Type; 16pt margins and 44pt targets; inset grouped lists with tinted symbols; glass bars, tab bar, composer, sheets and menus; iMessage-style chat; skeleton loading and empty states; and a complete phone dark mode (`color-scheme: light dark`; desktop stays light). There are also Reduce Transparency and Increase Contrast variants.
+- **Web phone motion (`public/mobile.js`, new `public/mobile-motion.css`):**
+  - UIKit-style push/pop with a parallax underlay, and an interactive edge-swipe Back that commits only through the screen's own Back control.
+  - Sheets with spring physics: dragged by grabber, header or body, with rubber banding. A sheet with typed input never dismisses by gesture.
+  - A gliding tab-bar lens with re-tap to top, and large titles collapsing into the bar.
+  - Long-press context menus on messages and bot rows, which reuse existing actions only.
+  - Chat entrance motion, a jump-to-latest button, and a Send that keeps the keyboard up.
+  - Keyboard detection that works in WKWebView, plus recovery from WebKit's stale viewport scale after the keyboard closes.
+  - Back from a Settings section returns to Settings.
+- **Process:** three parallel agents (native, motion and visual) in the shared checkout, then an independent review; all 12 review findings were fixed. Evidence is in `docs/verification.md`.
+- **Next:** check haptic feel, the real keyboard, VoiceOver and 120Hz motion on the physical iPhone. Push stays inactive until the Apple Developer setup the owner deferred is done.
+
 ## Tupies name and repository preparation (28 October 2026)
 
 The owner renamed the product from Hermes Studio to **Tupies** and requested a new private GitHub repository. Package metadata, current product copy, document authorship, web marks, Apple app display/product names and the Xcode project/scheme use Tupies. The native sources are in `apps/apple/Tupies/`; open `apps/apple/Tupies.xcodeproj` with scheme `Tupies`. `assets/brand/tupies-mark.svg` and `npm run brand:build` reproduce the web mark and native icons.
@@ -22,7 +40,7 @@ Each bot should be useful without complex setup: a clear role, inherited default
 
 ## Native iPhone notifications (27 October 2026)
 
-Implemented in source at the owner's request for routine and bot-message alerts. **Not deployed or installed.** The owner chose to finish Apple Developer/Xcode sign-in later. The currently installed iPhone app remains native build 2; notification source is prepared as build 3.
+Implemented at the owner's request for routine and bot-message alerts. **The engine code is deployed on both engines (28 October 2026, full Tupies release) but inactive:** no APNs key is configured. The owner chose to finish Apple Developer/Xcode sign-in later. The installed iPhone app is build 3, signed without the `aps-environment` entitlement, so enabling notifications reports that Apple registration is unavailable.
 
 - **Engine:** `lib/notifications.mjs` observes committed owner-chat replies, final team-room replies, routine outcomes and admission failures. Private delegation, other people's Telegram lanes and partial streams do not notify. Linked replicas leave delivery to the home server. `lib/apns.mjs` uses Apple's fixed HTTP/2 endpoints and operator-managed P-256 authentication; there is no relay or CLI dependency.
 - **Permissions/privacy:** GET/PUT/DELETE `/api/device/notifications` is restricted to the current paired iOS app's bearer. Tokens are sealed in the engine-local `notifications.json`; tokens, cursors and outbox never enter sync/public state. Apple gets generic alert text and opaque IDs, with no message text, names, prompts or files. A notification tap can only open a validated conversation on an already paired engine.

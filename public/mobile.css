@@ -375,5 +375,544 @@
   :is(.tab,.topbar-back,.topbar-settings,.chat-back,.chat-more,.chat-switcher):active{transform:none!important}
 }
 @media(prefers-reduced-transparency:reduce) and (max-width:760px), (prefers-reduced-transparency:reduce) and (max-height:500px) and (pointer:coarse){
-  .tabbar,.topbar:before,.chat-header,.popover-menu,.glass-card,.chat-switcher,.modal-footer{background:#f9f9fb;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .tabbar,.topbar:before,.chat-header,.popover-menu,.glass-card,.chat-switcher,.modal-footer{-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 26 visual system for phones (≤760px, or a short touch screen).
+   Text styles follow the iOS type ramp and scale with Dynamic Type through
+   --studio-text-scale. Colors and Liquid Glass materials are tokens; their dark
+   twins live in pearl.css. The `body.pearl-studio` prefix outranks pearl.css's
+   phone rules, which load later. Presentation only: no control, label, route or
+   behavior is added or removed, and the desktop layout is untouched.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{color-scheme:light}
+@media(max-width:760px), (max-height:500px) and (pointer:coarse){
+  :root{background:#f3f6fb}
+  body.pearl-studio{
+    --ios-s:var(--studio-text-scale,1);
+    --ios-font:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",sans-serif;
+    --ios-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+    /* iOS text styles: weight size/leading family, with SF tracking alongside. */
+    --ios-large-title:700 calc(34px * var(--ios-s))/calc(41px * var(--ios-s)) var(--ios-font);
+    --ios-title1:400 calc(28px * var(--ios-s))/calc(34px * var(--ios-s)) var(--ios-font);
+    --ios-title2:400 calc(22px * var(--ios-s))/calc(28px * var(--ios-s)) var(--ios-font);
+    --ios-title3:400 calc(20px * var(--ios-s))/calc(25px * var(--ios-s)) var(--ios-font);
+    --ios-headline:600 calc(17px * var(--ios-s))/calc(22px * var(--ios-s)) var(--ios-font);
+    --ios-body:400 calc(17px * var(--ios-s))/calc(22px * var(--ios-s)) var(--ios-font);
+    --ios-reading:400 calc(17px * var(--ios-s))/calc(24px * var(--ios-s)) var(--ios-font);
+    --ios-callout:400 calc(16px * var(--ios-s))/calc(21px * var(--ios-s)) var(--ios-font);
+    --ios-subheadline:400 calc(15px * var(--ios-s))/calc(20px * var(--ios-s)) var(--ios-font);
+    --ios-footnote:400 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font);
+    --ios-caption1:400 calc(12px * var(--ios-s))/calc(16px * var(--ios-s)) var(--ios-font);
+    --ios-caption2:400 calc(11px * var(--ios-s))/calc(13px * var(--ios-s)) var(--ios-font);
+    --ios-track-large-title:.4px;--ios-track-title1:.38px;--ios-track-title2:-.26px;--ios-track-title3:-.45px;--ios-track-body:-.43px;
+    --ios-track-callout:-.31px;--ios-track-subheadline:-.23px;--ios-track-footnote:-.08px;--ios-track-caption1:0px;--ios-track-caption2:.06px;
+    /* Layout: 16pt margins, 8pt rhythm, iOS 26 corner radii. */
+    --ios-gutter:max(16px,env(safe-area-inset-left));--ios-gutter-end:max(16px,env(safe-area-inset-right));
+    --ios-radius-group:24px;--ios-radius-field:12px;
+    --ios-blur:blur(24px) saturate(185%);--ios-blur-strong:blur(32px) saturate(190%);
+    /* Light scheme: calm blue tint, amber details, pearl surfaces (dark twin in pearl.css). */
+    --ios-tint:#2860c2;--ios-tint-fill:#2860c2;--ios-tint-pressed:#1f4f9f;--ios-tint-soft:rgba(40,96,194,.11);--ios-on-tint:#fff;
+    --ios-amber:#ad5309;--ios-amber-soft:rgba(255,166,77,.18);--ios-green:#1a7f37;--ios-green-soft:rgba(52,199,89,.14);
+    --ios-red:#c42b27;--ios-red-soft:rgba(255,69,58,.1);--ios-switch-on:#34c759;--ios-switch-off:rgba(120,128,150,.22);
+    --ios-label:#172138;--ios-label-2:#566179;--ios-label-3:#66708a;--ios-label-2-hc:#343e55;--ios-label-3-hc:#404a61;
+    --ios-separator:rgba(60,70,100,.16);--ios-separator-hc:rgba(40,50,80,.45);--ios-fill:rgba(118,128,152,.12);--ios-fill-2:rgba(118,128,152,.2);
+    --ios-bg:#f3f6fb;--ios-cell:rgba(255,255,255,.86);--ios-cell-solid:#fff;--ios-cell-pressed:rgba(226,232,243,.95);--ios-seg-active:#fff;
+    --ios-glass:rgba(255,255,255,.58);--ios-glass-thick:rgba(249,251,254,.8);--ios-glass-solid:#f8f9fc;--ios-sheet:rgba(243,246,251,.94);
+    --ios-glass-border:rgba(255,255,255,.72);--ios-glass-edge:inset 0 1px 0 rgba(255,255,255,.92),inset 0 -1px 0 rgba(255,255,255,.28);
+    --ios-glass-shadow:0 8px 28px rgba(28,44,80,.12),0 1px 2px rgba(28,44,80,.06);--ios-glass-shadow-sm:0 2px 10px rgba(28,44,80,.1);
+    --ios-menu-shadow:0 18px 50px rgba(20,30,60,.2),0 2px 8px rgba(20,30,60,.08);
+    --ios-cell-shadow:0 1px 2px rgba(28,44,80,.04),0 6px 20px rgba(28,44,80,.04);--ios-bar-hairline:rgba(60,70,100,.14);
+    --ios-bubble-user:linear-gradient(180deg,#dce9ff,#d0e1fd);--ios-bubble-user-ink:#10203f;
+    --ios-bubble:rgba(255,255,255,.84);--ios-bubble-border:rgba(255,255,255,.95);--ios-bubble-shadow:0 1px 2px rgba(28,44,80,.05),0 4px 16px rgba(28,44,80,.04);
+    --ios-code:rgba(240,243,249,.96);--ios-code-ink:#1d2742;--ios-scrim:rgba(14,20,34,.3);
+    --ios-skeleton:rgba(120,135,165,.13);--ios-skeleton-hi:rgba(255,255,255,.75);
+    --ios-portrait:linear-gradient(155deg,#ffffffb8,#edf5ff50);--ios-portrait-border:#ffffffd9;
+    --ios-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='18' fill='none' stroke='%23566179' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7 6 3.5 9.5 7M2.5 11 6 14.5 9.5 11'/%3E%3C/svg%3E");
+    --ios-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.2 8.4 6.6 11.6 12.8 4.6'/%3E%3C/svg%3E");
+    --ios-alert:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23000' d='M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 9.6a.95.95 0 1 0 0 1.9.95.95 0 0 0 0-1.9ZM8 4a.9.9 0 0 0-.9.95l.2 4.1a.7.7 0 0 0 1.4 0l.2-4.1A.9.9 0 0 0 8 4Z'/%3E%3C/svg%3E");
+    --ios-chevron-down:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+    --ios-updown:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 18' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7 6 3.5 9.5 7M2.5 11 6 14.5 9.5 11'/%3E%3C/svg%3E");
+    font:var(--ios-body);letter-spacing:var(--ios-track-body);color:var(--ios-label);
+  }
+  body.pearl-studio ::selection{background:var(--ios-tint-soft)}
+
+  /* Navigation bar: transparent at the top; Liquid Glass with a hairline once content
+     scrolls under it. Only the material lives here: when the bar shows, and the inline
+     title's fade, follow .scrolled or mobile-motion.css's data-scrolled/--studio-scroll-progress. */
+  body.pearl-studio .topbar{min-height:52px;gap:8px;padding:calc(env(safe-area-inset-top) + 4px) var(--ios-gutter-end) 4px var(--ios-gutter);background:none}
+  body.pearl-studio .topbar::before{background:var(--ios-glass-thick);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur);box-shadow:0 .5px 0 var(--ios-bar-hairline)}
+  body.pearl-studio .topbar-title{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio :is(.topbar-back,.topbar-settings,.chat-header .chat-back,.chat-header .chat-more,.page-heading .primary-button){width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:.5px solid var(--ios-glass-border);border-radius:50%;color:var(--ios-label);background:var(--ios-glass);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow-sm);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio :is(.topbar-back,.topbar-settings,.chat-back,.chat-more) svg{width:20px;height:20px}
+  body.pearl-studio :is(.topbar-back,.chat-back) svg{stroke-width:2.2}
+  body.pearl-studio .topbar-settings .nav-alert{box-shadow:0 0 0 2px var(--ios-cell-solid)}
+
+  /* Large titles and page rhythm */
+  body.pearl-studio .page{padding:8px var(--ios-gutter-end) calc(104px + env(safe-area-inset-bottom)) var(--ios-gutter)}
+  body.pearl-studio .page-heading{align-items:flex-start;gap:12px;margin-bottom:24px}
+  body.pearl-studio :is(.page h1,.pearl-home-hero h1){font:var(--ios-large-title);letter-spacing:var(--ios-track-large-title);color:var(--ios-label);max-width:none}
+  body.pearl-studio .page-description{margin-top:4px;max-width:36em;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .page-heading .primary-button{margin:0;font-size:0;gap:0;color:var(--ios-tint)}
+  body.pearl-studio .page-heading .primary-button svg{width:20px;height:20px;stroke-width:2.3}
+  body.pearl-studio .page :is(h2,.section-title){letter-spacing:var(--ios-track-title3)}
+  body.pearl-studio :is(.eyebrow,.subtle-label){font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+
+  /* Tab bar: a floating Liquid Glass capsule; the selected tab is tinted. */
+  body.pearl-studio .tabbar{left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));bottom:max(8px,calc(env(safe-area-inset-bottom) - 12px));height:auto;min-height:64px;padding:4px;border:.5px solid var(--ios-glass-border);border-radius:32px;background:var(--ios-glass);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio .tab{min-height:56px;gap:3px;padding:4px 2px;border-radius:28px;color:var(--ios-label);font:500 calc(10px * min(var(--ios-s), 1.15))/calc(12px * min(var(--ios-s), 1.15)) var(--ios-font);letter-spacing:.1px;box-shadow:none}
+  body.pearl-studio .tab svg{width:24px;height:24px;stroke-width:1.75;color:inherit}
+  body.pearl-studio .tab.active{color:var(--ios-tint);background:var(--ios-fill);box-shadow:none}
+  body.pearl-studio .tab.active svg{color:var(--ios-tint);stroke-width:2}
+
+  /* Cards become iOS cells: near-opaque, no per-card blur. */
+  body.pearl-studio .glass-card{border:0;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow);-webkit-backdrop-filter:none;backdrop-filter:none}
+
+  /* Inset grouped lists: Bots */
+  body.pearl-studio .bot-list{border:0;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow)}
+  body.pearl-studio .bot-row-main{min-height:72px;gap:12px;padding:12px 4px 12px 16px}
+  body.pearl-studio :is(.bot-row-main,.bot-row-more):active{background:var(--ios-cell-pressed)}
+  body.pearl-studio .bot-row .avatar{width:48px;height:48px}
+  body.pearl-studio .bot-row+.bot-row::before{left:76px;height:.5px;background:var(--ios-separator)}
+  body.pearl-studio .bot-row-text{row-gap:2px}
+  body.pearl-studio .bot-row-text strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .bot-row-text small{font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .bot-row-status{max-width:none;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status,.choice-status) .dot{background:var(--ios-label-3)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status).ready{color:var(--ios-green)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status,.choice-status).ready .dot{background:var(--ios-green)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status):is(.working,.attention){color:var(--ios-amber)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status,.choice-status):is(.working,.attention) .dot{background:var(--ios-amber)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status).error{color:var(--ios-red)}
+  body.pearl-studio :is(.bot-row-status,.chat-switcher-status,.choice-status).error .dot{background:var(--ios-red)}
+  body.pearl-studio .bot-row-more{width:44px;min-width:44px;height:44px;margin-right:8px;border-radius:50%;color:var(--ios-label-3)}
+  body.pearl-studio .bot-row-new .add-circle{width:48px;height:48px;border:0;border-radius:14px;background:var(--ios-tint-soft);color:var(--ios-tint)}
+  body.pearl-studio .bot-row-new .add-circle svg{width:22px;height:22px;stroke-width:2.2}
+  body.pearl-studio .bot-row-new strong{color:var(--ios-tint)}
+  body.pearl-studio .bot-row-new .bot-row-main{min-height:72px}
+  body.pearl-studio .avatar.creature-avatar.companion-portrait{border-color:var(--ios-portrait-border);background:var(--ios-portrait)}
+
+  /* Settings: inset grouped rows with SF-style glyphs in tinted rounded squares. */
+  body.pearl-studio [data-nav="/connections"]{--row-ink:#3f7ff0;--row-bg:rgba(63,127,240,.15)}
+  body.pearl-studio [data-nav="/sync"]{--row-ink:#22a35a;--row-bg:rgba(34,163,90,.15)}
+  body.pearl-studio [data-nav="/help"]{--row-ink:#e0820c;--row-bg:rgba(240,140,20,.16)}
+  body.pearl-studio [data-nav="/skills"]{--row-ink:#8a63ee;--row-bg:rgba(138,99,238,.15)}
+  body.pearl-studio [data-nav="/integrations"]{--row-ink:#119db3;--row-bg:rgba(17,157,179,.15)}
+  body.pearl-studio [data-nav="/channels"]{--row-ink:#5c68e0;--row-bg:rgba(92,104,224,.15)}
+  body.pearl-studio [data-nav="/activity"]{--row-ink:#7d879b;--row-bg:rgba(125,135,155,.16)}
+  body.pearl-studio .pearl-settings-grid{display:block;margin:0 0 32px;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow);overflow:hidden}
+  body.pearl-studio .pearl-settings-grid>.pearl-resource-card,body.pearl-studio .app-server-row{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) 14px;align-items:center;gap:0 14px;width:100%;min-height:60px;margin:0;padding:10px 16px;border:0;border-radius:0;background:none;box-shadow:none;color:var(--ios-label);text-align:left;-webkit-backdrop-filter:none;backdrop-filter:none}
+  body.pearl-studio .pearl-settings-grid>.pearl-resource-card+.pearl-resource-card::before{content:'';position:absolute;top:0;left:60px;right:0;height:.5px;background:var(--ios-separator)}
+  body.pearl-studio :is(.pearl-settings-grid>.pearl-resource-card,.app-server-row):active{background:var(--ios-cell-pressed)}
+  body.pearl-studio .pearl-settings-grid>.pearl-resource-card>svg:first-child{width:30px;height:30px;padding:6px;border-radius:8px;color:var(--row-ink,var(--ios-tint));background:var(--row-bg,var(--ios-tint-soft));stroke-width:1.9}
+  body.pearl-studio :is(.pearl-resource-card,.app-server-row) strong{font:var(--ios-body);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio :is(.pearl-resource-card,.app-server-row) small{margin-top:1px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio :is(.pearl-settings-grid>.pearl-resource-card,.app-server-row)>svg:last-of-type{width:14px;height:14px;color:var(--ios-label-3);stroke-width:2.6}
+  body.pearl-studio .pearl-resource-card .nav-alert{position:absolute;top:12px;left:40px;margin:0;box-shadow:0 0 0 2px var(--ios-cell-solid)}
+  body.pearl-studio .app-server-row{margin:0 0 24px;min-height:64px;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow)}
+  body.pearl-studio .app-server-row .setup-icon{display:grid;place-items:center;width:30px;height:30px;margin:0;border:0;border-radius:8px;background:rgba(125,135,155,.16);color:#7d879b;box-shadow:none}
+  body.pearl-studio .app-server-row .setup-icon svg{width:18px;height:18px}
+  body.pearl-studio .settings-overview>.pearl-advanced{margin:0 0 32px;border:0;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow);overflow:hidden}
+  body.pearl-studio .settings-overview>.pearl-advanced>summary{min-height:52px;padding:12px 16px;font:var(--ios-body);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .settings-overview>.pearl-advanced>summary::after{color:var(--ios-label-3)}
+  body.pearl-studio .settings-overview>.pearl-advanced[open]>summary{box-shadow:inset 0 -.5px 0 var(--ios-separator)}
+  body.pearl-studio .settings-overview>.pearl-advanced>.pearl-settings-grid{margin:0;border-radius:0;background:none;box-shadow:none}
+  body.pearl-studio .settings-overview>.text-button[data-action=logout]{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;padding:12px 16px;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow);color:var(--ios-red);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .settings-overview>.text-button[data-action=logout]>svg{display:none}
+  body.pearl-studio .settings-overview>.text-button[data-action=logout]:active{background:var(--ios-cell-pressed)}
+  /* A section's own page: "All settings" and a title menu of sibling sections. */
+  body.pearl-studio .settings-page .settings-back{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin:-12px 0 8px -6px;padding:0 6px;color:var(--ios-tint);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .settings-page .settings-back svg{width:20px;height:20px;stroke-width:2.2}
+  body.pearl-studio .settings-section-picker{margin:0 0 24px;border:0;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow);overflow:hidden}
+  body.pearl-studio .settings-section-picker>summary{min-height:52px;padding:12px 16px;font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .settings-section-picker>summary::after{content:'';width:12px;height:18px;padding:0;margin-left:auto;background:var(--ios-label-3);-webkit-mask:var(--ios-updown) center/contain no-repeat;mask:var(--ios-updown) center/contain no-repeat;transform:none}
+  body.pearl-studio .settings-section-picker[open]>summary{box-shadow:inset 0 -.5px 0 var(--ios-separator)}
+  body.pearl-studio .settings-section-picker .settings-tabs{display:block;margin:0;padding:0;overflow:visible;scroll-snap-type:none}
+  body.pearl-studio .settings-section-picker .settings-tab{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:0 14px;width:100%;min-height:52px;margin:0;padding:10px 16px;border:0;border-radius:0;background:none;box-shadow:none;color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body);text-align:left}
+  body.pearl-studio .settings-section-picker .settings-tab+.settings-tab::before{content:'';position:absolute;top:0;left:60px;right:0;height:.5px;background:var(--ios-separator)}
+  body.pearl-studio .settings-section-picker .settings-tab>svg{width:30px;height:30px;padding:6px;border-radius:8px;color:var(--row-ink,var(--ios-tint));background:var(--row-bg,var(--ios-tint-soft));stroke-width:1.9}
+  body.pearl-studio .settings-section-picker .settings-tab.active::after{content:'';grid-column:3;width:16px;height:16px;background:var(--ios-tint);-webkit-mask:var(--ios-check) center/contain no-repeat;mask:var(--ios-check) center/contain no-repeat}
+  body.pearl-studio .settings-section-picker .settings-tab:active{background:var(--ios-cell-pressed)}
+  body.pearl-studio .settings-section-picker .settings-tab .nav-alert{position:absolute;top:12px;left:40px;margin:0}
+  body.pearl-studio .settings-intro{gap:16px;margin-bottom:24px}
+  body.pearl-studio .settings-intro p{padding:0 4px;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+
+  /* Buttons: one prominent tinted capsule; secondary actions sit on a gray fill. */
+  body.pearl-studio :is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat){min-height:44px;padding:10px 20px;border:0;border-radius:999px;box-shadow:none;font:var(--ios-headline);letter-spacing:var(--ios-track-body);gap:8px}
+  body.pearl-studio .primary-button,body.pearl-studio .primary-button:hover:not(:disabled){color:var(--ios-on-tint);background:var(--ios-tint-fill)}
+  body.pearl-studio .primary-button:active:not(:disabled){background:var(--ios-tint-pressed)}
+  body.pearl-studio :is(.secondary-button,.open-chat),body.pearl-studio :is(.secondary-button,.open-chat):hover:not(:disabled){color:var(--ios-tint);background:var(--ios-fill)}
+  body.pearl-studio :is(.secondary-button,.open-chat,.accent-button,.danger-button){padding:10px 16px;font:600 calc(15px * var(--ios-s))/calc(20px * var(--ios-s)) var(--ios-font);letter-spacing:var(--ios-track-subheadline)}
+  body.pearl-studio .modal-footer>:is(.secondary-button,.danger-button){font:var(--ios-headline);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio :is(.secondary-button,.open-chat,.accent-button,.danger-button):active:not(:disabled){background:var(--ios-fill-2)}
+  body.pearl-studio .accent-button,body.pearl-studio .accent-button:hover:not(:disabled){color:var(--ios-amber);background:var(--ios-amber-soft)}
+  body.pearl-studio .danger-button,body.pearl-studio .danger-button:hover:not(:disabled){color:var(--ios-red);background:var(--ios-red-soft)}
+  body.pearl-studio :is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat):disabled{opacity:1;color:var(--ios-label-3);background:var(--ios-fill)}
+  body.pearl-studio .text-button{min-height:44px;color:var(--ios-tint);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .text-button:hover{color:var(--ios-tint)}
+  body.pearl-studio .icon-button{color:var(--ios-label-2)}
+  body.pearl-studio .icon-button:hover:not(:disabled){color:var(--ios-label);background:var(--ios-fill);border-color:transparent;box-shadow:none}
+
+  /* Segmented controls: a capsule track with a raised selection. */
+  body.pearl-studio .segmented{gap:0;padding:2px;border:0;border-radius:999px;background:var(--ios-fill);box-shadow:none}
+  body.pearl-studio .segment{min-height:40px;padding:6px 16px;border:0;border-radius:999px;background:none;color:var(--ios-label);font:500 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font);letter-spacing:var(--ios-track-footnote);box-shadow:none}
+  body.pearl-studio .segment.active{background:var(--ios-seg-active);color:var(--ios-label);font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.1),0 .5px 1px rgba(0,0,0,.08)}
+  body.pearl-studio .segment.active svg{color:currentColor}
+  body.pearl-studio .segment>span{display:inline-block;min-width:calc(18px * var(--ios-s));margin-left:6px;padding:0 6px;border-radius:999px;color:var(--ios-label-2);background:var(--ios-fill);text-align:center;font-variant-numeric:tabular-nums}
+  body.pearl-studio .segment.active>span{color:var(--ios-label);background:var(--ios-fill)}
+
+  /* Status pills */
+  body.pearl-studio .status-pill{padding:4px 10px;border:0;border-radius:999px;color:var(--ios-label-2);background:var(--ios-fill);font:500 calc(12px * var(--ios-s))/calc(16px * var(--ios-s)) var(--ios-font)}
+  body.pearl-studio .status-pill.ready{color:var(--ios-green);background:var(--ios-green-soft)}
+  body.pearl-studio .status-pill:is(.working,.attention){color:var(--ios-amber);background:var(--ios-amber-soft)}
+  body.pearl-studio .status-pill.error{color:var(--ios-red);background:var(--ios-red-soft)}
+
+  /* Forms: grouped fields, footnote headers and footers, iOS switches, menu pickers. */
+  body.pearl-studio .field{gap:6px;margin:24px 0 0}
+  body.pearl-studio :is(.field>label,.field>.field-label,.field>legend,.field-label){padding:0 16px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .field>small{padding:0 16px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio :is(.field :is(input:where(:not([type=checkbox],[type=radio],[type=range],[type=color],[type=file])),textarea,select),.question-text,.speech-preview textarea,.bp-search,.bp-select){min-height:46px;padding:12px 16px;border:0;border-radius:var(--ios-radius-field);background-color:var(--ios-cell-solid);box-shadow:none;color:var(--ios-label);font:var(--ios-body);font-size:max(16px,calc(17px * var(--ios-s)));letter-spacing:var(--ios-track-body)}
+  body.pearl-studio :is(.field :is(input,textarea),.question-text)::placeholder{color:var(--ios-label-3);opacity:1}
+  body.pearl-studio :is(.field :is(input,textarea,select),.question-text):focus,body.pearl-studio :is(.field :is(input,textarea,select),.question-text):focus-visible{outline:none;box-shadow:inset 0 0 0 1px var(--ios-tint),0 0 0 3px var(--ios-tint-soft)}
+  body.pearl-studio .field select,body.pearl-studio .bp-select{-webkit-appearance:none;appearance:none;padding-right:40px;background-image:var(--ios-select-chevron);background-repeat:no-repeat;background-position:right 16px center;background-size:12px 18px}
+  body.pearl-studio .field-row{gap:0 12px}
+  body.pearl-studio .modal :is(.field :is(input,textarea,select),.question-text),body.pearl-studio :is(.checkbox-field,.skill-checklist,.permission-option,.team-mode-option,.default-model-option){box-shadow:none}
+  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;width:51px;height:31px;min-height:0;margin:0;padding:0;border:0;border-radius:31px;background:radial-gradient(circle at 15.5px 15.5px,#fff 0 12.5px,rgba(0,0,0,.07) 13px,transparent 14.5px) 0 0/51px 31px no-repeat;background-color:var(--ios-switch-off);cursor:pointer;transition:background-position .25s var(--spring),background-color .2s}
+  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]:checked{background-color:var(--ios-switch-on);background-position:20px 0}
+  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]:disabled{opacity:.45}
+  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]:focus-visible{outline:3px solid var(--pearl-focus);outline-offset:2px}
+  body.pearl-studio .checkbox-field{display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:12px;min-height:52px;margin:24px 0 0;padding:8px 16px;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .checkbox-field small{display:block;margin-top:2px;font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .skill-checklist{display:block;padding:0;border:0;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);overflow:hidden}
+  body.pearl-studio .skill-checklist label{position:relative;display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin:0;padding:8px 16px;border:0;border-radius:0;background:none;color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .skill-checklist label+label::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--ios-separator)}
+  body.pearl-studio .skill-checklist>:not(label){display:block;padding:12px 16px;font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio :is(.permission-option,.team-mode-option,.default-model-option){min-height:56px;padding:12px 16px;border:0;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);color:var(--ios-label)}
+  body.pearl-studio :is(.permission-option,.team-mode-option,.default-model-option) strong{font:var(--ios-body);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio :is(.permission-option,.team-mode-option,.default-model-option) small{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio :is(.permission-option,.team-mode-option)>input[type=radio]{-webkit-appearance:none;appearance:none;flex:none;width:22px;height:22px;min-height:0;margin:1px 0 0;padding:0;border:1.5px solid var(--ios-label-3);border-radius:50%;background:none}
+  body.pearl-studio :is(.permission-option,.team-mode-option)>input[type=radio]:checked{border-color:var(--ios-tint-fill);background:var(--ios-tint-fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.6 8.3 6.7 11.2 12.4 4.9'/%3E%3C/svg%3E") center/13px no-repeat}
+  body.pearl-studio :is(.permission-option,.team-mode-option,.default-model-option):has(>input[type=radio]:checked){box-shadow:inset 0 0 0 1.5px var(--ios-tint)}
+  /* Tool toggles: one grouped list of switch rows. */
+  body.pearl-studio .permissions-grid{display:block;margin-top:8px;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);overflow:hidden}
+  body.pearl-studio .permission-option:has(>input[type=checkbox]){position:relative;display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:12px;border-radius:0;background:none}
+  body.pearl-studio .permission-option:has(>input[type=checkbox])+.permission-option::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--ios-separator)}
+  body.pearl-studio .bot-capabilities .subtle-label{margin:8px 16px 0}
+  /* Disclosures in sheets read as rows with a trailing chevron. */
+  body.pearl-studio .modal :is(.bot-capabilities,.advanced-fields){margin:24px 0 0;padding:0;border:0;border-radius:0;background:none}
+  body.pearl-studio .modal :is(.bot-capabilities,.advanced-fields)>summary{display:flex;align-items:center;min-height:48px;padding:12px 16px;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body);list-style:none}
+  body.pearl-studio .modal :is(.bot-capabilities,.advanced-fields)>summary::-webkit-details-marker{display:none}
+  body.pearl-studio .modal :is(.bot-capabilities,.advanced-fields)>summary::after{content:'';flex:none;width:12px;height:12px;margin-left:auto;background:var(--ios-label-3);-webkit-mask:var(--ios-chevron-down) center/contain no-repeat;mask:var(--ios-chevron-down) center/contain no-repeat;transition:transform .2s var(--spring)}
+  body.pearl-studio .modal :is(.bot-capabilities,.advanced-fields)[open]>summary::after{transform:rotate(180deg)}
+  body.pearl-studio .form-error:not(:empty){display:flex;align-items:flex-start;gap:8px;margin:16px 0 0;padding:10px 14px;border-radius:12px;background:var(--ios-red-soft);color:var(--ios-red);font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote)}
+  body.pearl-studio .form-error:not(:empty)::before{content:'';flex:none;width:16px;height:16px;margin-top:1px;background:currentColor;-webkit-mask:var(--ios-alert) center/contain no-repeat;mask:var(--ios-alert) center/contain no-repeat}
+
+  /* Sheets: Liquid Glass, centered Headline title, a glass close button. */
+  body.pearl-studio #dialog-root .modal{border:0;border-radius:34px 34px 0 0;color:var(--ios-label);background:var(--ios-sheet);box-shadow:inset 0 1px 0 var(--ios-glass-border),0 -10px 40px rgba(14,20,34,.16);-webkit-backdrop-filter:var(--ios-blur-strong);backdrop-filter:var(--ios-blur-strong)}
+  body.pearl-studio #dialog-root .modal::backdrop{background:rgba(8,12,20,.34);-webkit-backdrop-filter:none;backdrop-filter:none}
+  body.pearl-studio .sheet-grabber span{width:36px;height:5px;border-radius:3px;background:var(--ios-fill-2)}
+  body.pearl-studio .modal-head{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px;padding:22px 12px 8px;border:0}
+  body.pearl-studio .modal-head h2{grid-column:2;margin:0;text-align:center;font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label);overflow-wrap:anywhere}
+  body.pearl-studio .modal-head .icon-button{grid-column:3;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:.5px solid var(--ios-glass-border);border-radius:50%;background:var(--ios-glass);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow-sm);color:var(--ios-label)}
+  body.pearl-studio .modal-head .icon-button svg{width:16px;height:16px;stroke-width:2.6}
+  body.pearl-studio #dialog-root .modal-body{padding:0 var(--ios-gutter-end) max(24px,env(safe-area-inset-bottom)) var(--ios-gutter)}
+  body.pearl-studio .modal-subtitle{margin:4px 4px 8px;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .modal-footer{gap:12px;margin-top:32px;padding:12px 0 max(16px,env(safe-area-inset-bottom));border-top:.5px solid var(--ios-separator);background:var(--ios-sheet);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio .modal-footer>:is(.primary-button,.secondary-button,.danger-button,a){flex:1 1 0;min-height:50px}
+  body.pearl-studio .modal-footer:has(>:nth-child(3)){flex-wrap:wrap}
+  body.pearl-studio .modal-footer:has(>:nth-child(3))>*{flex:1 1 calc(50% - 6px)}
+  body.pearl-studio .modal-footer:has(>:nth-child(3))>.primary-button{flex-basis:100%}
+  body.pearl-studio .document-preview-meta{gap:12px;margin:8px 0 16px;padding-bottom:16px;border-bottom:.5px solid var(--ios-separator)}
+  body.pearl-studio .document-preview-meta .artifact-format{display:grid;place-items:center;width:40px;height:48px;border:0;border-radius:6px 14px 6px 6px;background:var(--ios-tint-soft);color:var(--ios-tint);font:700 calc(10px * var(--ios-s))/1 var(--ios-font)}
+  body.pearl-studio .document-preview-meta strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .document-preview-meta small{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .preview-paper{padding:20px 16px;border-radius:18px}
+  body.pearl-studio #dialog-root .document-modal .modal-body{background:none}
+  body.pearl-studio .modal .pearl-advanced{margin:24px 0 0;padding:0;border:0;border-radius:0;background:none}
+  body.pearl-studio .modal .pearl-advanced>summary{min-height:48px;padding:12px 16px;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .modal .pearl-advanced>summary::after,body.pearl-studio .modal .pearl-advanced>summary>svg{color:var(--ios-label-3)}
+  body.pearl-studio .bot-appearance{margin:24px 0 0;padding:20px 16px;border:0;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid)}
+  body.pearl-studio .bot-avatar-name{font:var(--ios-title3);font-weight:600;letter-spacing:var(--ios-track-title3);color:var(--ios-label)}
+  body.pearl-studio .bot-avatar-badge{border:0;background:var(--ios-fill);color:var(--ios-label-2);font:500 calc(11px * var(--ios-s))/1.3 var(--ios-font)}
+  body.pearl-studio .bot-avatar-hint{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .companion-library>summary{min-height:44px;border:0;border-radius:999px;background:var(--ios-fill);color:var(--ios-label);font:var(--ios-subheadline)}
+  body.pearl-studio .companion-library>summary span{color:var(--ios-label-2)}
+  body.pearl-studio .companion-choice{border:0;background:var(--ios-fill);color:var(--ios-label-2)}
+  body.pearl-studio .companion-choice:hover{background:var(--ios-fill-2);color:var(--ios-label)}
+  body.pearl-studio .companion-choice[aria-pressed=true]{background:var(--ios-tint-soft);color:var(--ios-label);box-shadow:inset 0 0 0 2px var(--ios-tint)}
+
+  /* Menus: Liquid Glass with Body rows and trailing glyphs. */
+  body.pearl-studio .popover-menu{min-width:250px;padding:6px;border:.5px solid var(--ios-glass-border);border-radius:24px;background:var(--ios-glass-thick);box-shadow:var(--ios-glass-edge),var(--ios-menu-shadow);-webkit-backdrop-filter:var(--ios-blur-strong);backdrop-filter:var(--ios-blur-strong)}
+  body.pearl-studio .menu-item{min-height:44px;gap:12px;padding:11px 14px;border-radius:16px;color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .menu-item:is(:hover,:active,:focus-visible){background:var(--ios-fill)}
+  body.pearl-studio .menu-item>svg{width:20px;height:20px;color:var(--ios-label);stroke-width:1.8}
+  body.pearl-studio .menu-item small{margin-top:1px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .popover-menu hr{height:.5px;margin:6px 14px;background:var(--ios-separator)}
+  body.pearl-studio .bot-choice{padding:8px 14px 8px 8px}
+  body.pearl-studio .bot-choice.current{background:var(--ios-fill)}
+  body.pearl-studio .bot-choice>svg{color:var(--ios-tint);stroke-width:2.4}
+
+  /* Chat navigation bar */
+  body.pearl-studio .chat-header{gap:8px;padding:calc(env(safe-area-inset-top) + 4px) var(--ios-gutter-end) 8px var(--ios-gutter);border-bottom:.5px solid var(--ios-bar-hairline);background:var(--ios-glass-thick);box-shadow:none;-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio .chat-switcher{min-height:48px;gap:8px;padding:2px 12px 2px 4px;border:0;border-radius:999px;background:none;box-shadow:none;color:var(--ios-label)}
+  body.pearl-studio .chat-switcher:active{background:var(--ios-fill)}
+  body.pearl-studio .chat-switcher .avatar{width:38px;height:38px;margin:0}
+  body.pearl-studio .chat-switcher-text strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .chat-switcher-text strong svg{width:13px;height:13px;color:var(--ios-label-3);stroke-width:2.8}
+  body.pearl-studio .chat-switcher-text small{margin-top:1px;font:var(--ios-caption1);color:var(--ios-label-2)}
+
+  /* Conversation: name and time above iMessage-style bubbles; assistant replies use a
+     neutral glass bubble with the full measure, the owner's messages are tinted. */
+  body.pearl-studio .chat-thread{padding:16px var(--ios-gutter-end) 8px var(--ios-gutter);overflow-x:hidden}
+  body.pearl-studio .chat-message{gap:8px;max-width:none;margin:0 0 20px;font:var(--ios-reading);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .chat-message:not(.user):not(.thinking-message){position:relative;display:block}
+  body.pearl-studio .chat-message:not(.user):not(.thinking-message)>:is(.avatar,.user-message-avatar){position:absolute;top:0;left:0;width:26px;height:26px;margin:0}
+  body.pearl-studio .chat-message:not(.user):not(.thinking-message)>.message-content{min-width:0;max-width:100%;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+  body.pearl-studio .chat-message .message-label{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:26px;margin:0 0 4px;font:var(--ios-footnote);font-weight:600;letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .chat-message:not(.user):not(.thinking-message) .message-label{padding-left:34px}
+  body.pearl-studio .message-label time{font:var(--ios-caption1);color:var(--ios-label-3);opacity:1}
+  body.pearl-studio .message-label :is(.streaming-label,.teammate-label){display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;background:var(--ios-fill);color:var(--ios-label-2);font:500 calc(11px * var(--ios-s))/calc(16px * var(--ios-s)) var(--ios-font)}
+  body.pearl-studio .message-label .teammate-label svg{width:12px;height:12px}
+  body.pearl-studio .chat-message:not(.user) .message-text{min-width:0;max-width:100%;padding:12px 16px;border:.5px solid var(--ios-bubble-border);border-radius:20px;background:var(--ios-bubble);box-shadow:var(--ios-bubble-shadow);color:var(--ios-label);font:var(--ios-reading);letter-spacing:var(--ios-track-body);overflow-wrap:break-word}
+  body.pearl-studio .chat-message .message-text:empty{display:none}
+  body.pearl-studio .chat-message.user{display:flex;flex-direction:row-reverse;max-width:none;margin-left:0}
+  body.pearl-studio .chat-message.user>.user-message-avatar{display:none}
+  body.pearl-studio .chat-message.user>.message-content{display:flex;flex-direction:column;align-items:flex-end;min-width:0;max-width:min(84%,560px)}
+  body.pearl-studio .chat-message.user .message-label{justify-content:flex-end;min-height:0;margin:0 6px 4px;font-weight:400;color:var(--ios-label-3)}
+  body.pearl-studio .chat-message.user .message-text{max-width:100%;padding:10px 16px;border:0;border-radius:20px;background:var(--ios-bubble-user);color:var(--ios-bubble-user-ink);font:var(--ios-reading);letter-spacing:var(--ios-track-body);overflow-wrap:break-word}
+  body.pearl-studio .chat-message.user .message-text :is(a,strong,code,h1,h2,h3){color:inherit}
+  body.pearl-studio .chat-message.user+.chat-message.user{margin-top:-12px}
+  body.pearl-studio .chat-message .message-attachments{margin-top:8px;gap:8px}
+  body.pearl-studio .message-voice-actions{margin:2px 0 -6px}
+  body.pearl-studio .message-voice-actions button{min-height:44px;gap:6px;padding:0 6px;color:var(--ios-label-2);font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote)}
+  body.pearl-studio .message-voice-actions button[aria-pressed=true]{color:var(--ios-tint)}
+  /* Rich replies stay inside the bubble: wide code, tables and diagrams scroll sideways. */
+  body.pearl-studio .message-text :is(p,ul,ol){margin-block:.55em}
+  body.pearl-studio .message-text>:first-child{margin-top:0}
+  body.pearl-studio .message-text>:last-child{margin-bottom:0}
+  body.pearl-studio .message-text :is(h1,h2,h3,h4){margin:.9em 0 .35em;color:var(--ios-label)}
+  body.pearl-studio .message-text h1{font:var(--ios-title2);font-weight:700;letter-spacing:var(--ios-track-title2)}
+  body.pearl-studio .message-text h2{font:var(--ios-title3);font-weight:600;letter-spacing:var(--ios-track-title3)}
+  body.pearl-studio .message-text :is(h3,h4){font:var(--ios-headline);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .message-text :is(img,svg,video,canvas,iframe,figure,.rich-visual,.rich-widget,.rich-infographic,.rich-code,.rich-table-wrap,table,pre){max-width:100%}
+  body.pearl-studio .message-text a{color:var(--ios-tint)}
+  body.pearl-studio .message-text :not(pre)>code{padding:.1em .35em;border-radius:6px;background:var(--ios-fill);color:inherit;font:500 .86em/1 var(--ios-mono)}
+  body.pearl-studio .message-text blockquote{margin:.6em 0;padding:2px 0 2px 12px;border:0;border-left:3px solid var(--ios-separator);border-radius:0;background:none;color:var(--ios-label-2)}
+  body.pearl-studio .message-text hr{border:0;border-top:.5px solid var(--ios-separator)}
+  body.pearl-studio .rich-code{margin:12px 0;border:.5px solid var(--ios-separator);border-radius:14px;background:var(--ios-code);box-shadow:none}
+  body.pearl-studio .rich-code-head{gap:8px;padding:2px 2px 2px 12px;border-bottom:.5px solid var(--ios-separator);background:var(--ios-fill);color:var(--ios-label-2);font:500 calc(12px * var(--ios-s))/1.3 var(--ios-mono)}
+  body.pearl-studio :is(.rich-code-head,.rich-visual-head) button{min-height:40px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--ios-tint);font:600 calc(13px * var(--ios-s))/1 var(--ios-font)}
+  body.pearl-studio .rich-code pre{padding:12px 14px;color:var(--ios-code-ink);font:400 calc(13px * var(--ios-s))/1.55 var(--ios-mono);overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  body.pearl-studio .rich-code .hljs{background:none;color:inherit}
+  body.pearl-studio :is(.rich-prose table,.rich-table-wrap){overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  body.pearl-studio :is(.rich-prose table,.rich-table-wrap table){border-radius:12px;background:var(--ios-code)}
+  body.pearl-studio :is(.rich-prose,.rich-table-wrap) :is(th,td){padding:8px 12px;border-color:var(--ios-separator);color:var(--ios-label);font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote)}
+  body.pearl-studio :is(.rich-prose,.rich-table-wrap) th{background:var(--ios-fill);font-weight:600;white-space:nowrap}
+  body.pearl-studio :is(.rich-prose,.rich-table-wrap) td{min-width:min(56vw,7.5em);overflow-wrap:normal;word-break:normal}
+  body.pearl-studio :is(.rich-widget,.rich-infographic,.preview-paper,.preview-slide){border-color:var(--ios-separator);background:var(--ios-cell);color:var(--ios-label);box-shadow:none}
+  /* Files: native-looking document cards with a footer of actions. */
+  body.pearl-studio .artifact-card{grid-template-columns:40px minmax(0,1fr);gap:4px 12px;max-width:100%;padding:12px 12px 0;border:.5px solid var(--ios-bubble-border);border-radius:18px;background:var(--ios-bubble);box-shadow:var(--ios-bubble-shadow);overflow:hidden}
+  body.pearl-studio .artifact-card>.artifact-format{display:grid;place-items:center;width:40px;height:48px;padding:0;border:0;border-radius:6px 14px 6px 6px;background:var(--ios-tint-soft);color:var(--ios-tint);font:700 calc(10px * var(--ios-s))/1 var(--ios-font);letter-spacing:.4px}
+  body.pearl-studio .artifact-card strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .artifact-card small{margin-top:2px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .artifact-card>.artifact-actions{grid-column:1/-1;display:flex;flex-wrap:nowrap;gap:0;margin:8px -12px 0;padding:0;border-top:.5px solid var(--ios-separator)}
+  body.pearl-studio .artifact-card>.artifact-actions :is(a,button){flex:1 1 0;min-width:0;min-height:44px;padding:0 8px;border:0;border-radius:0;background:none;box-shadow:none;color:var(--ios-tint);font:600 calc(15px * var(--ios-s))/1.2 var(--ios-font);letter-spacing:var(--ios-track-subheadline)}
+  body.pearl-studio .artifact-card>.artifact-actions :is(a,button)+:is(a,button){border-left:.5px solid var(--ios-separator)}
+  body.pearl-studio .artifact-card>.artifact-actions :is(a,button):active{background:var(--ios-fill)}
+  /* The work log, run notices, approvals and questions */
+  body.pearl-studio .run-timeline{margin:8px 0 16px;border:.5px solid var(--ios-separator);border-radius:16px;background:var(--ios-cell);color:var(--ios-label-2);font:var(--ios-footnote);box-shadow:none}
+  body.pearl-studio .run-timeline summary{min-height:44px;padding:10px 14px;color:var(--ios-label-2);font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font)}
+  body.pearl-studio .run-timeline summary span{font:var(--ios-caption1);color:var(--ios-label-3)}
+  body.pearl-studio .timeline-event{border-top:.5px solid var(--ios-separator)}
+  body.pearl-studio .timeline-event strong{font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font);color:var(--ios-label)}
+  body.pearl-studio .timeline-event p{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .timeline-event time{font:var(--ios-caption2);color:var(--ios-label-3)}
+  body.pearl-studio .run-status{gap:10px;margin:12px 0;padding:12px 14px;border:0;border-radius:14px;background:var(--ios-fill);color:var(--ios-label-2);font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote)}
+  body.pearl-studio .run-status.run-error{background:var(--ios-red-soft);color:var(--ios-red)}
+  body.pearl-studio .run-status>svg{width:18px;height:18px;flex:none}
+  body.pearl-studio :is(.approval-card,.question-card){padding:16px;border:.5px solid var(--ios-separator);border-radius:22px;background:var(--ios-cell);box-shadow:var(--ios-cell-shadow);color:var(--ios-label)}
+  body.pearl-studio :is(.approval-card,.question-card) h3{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .approval-card h3 svg{color:var(--ios-amber)}
+  body.pearl-studio :is(.approval-card p,.question-prompt){font:var(--ios-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio :is(.question-option,.question-choice){border:0;border-radius:var(--ios-radius-field);background:var(--ios-fill);color:var(--ios-label)}
+  body.pearl-studio :is(.question-option,.question-choice):has(input:checked){box-shadow:inset 0 0 0 1.5px var(--ios-tint)}
+  body.pearl-studio :is(.question-option,.question-choice) strong{font:var(--ios-body);color:var(--ios-label)}
+  body.pearl-studio :is(.question-option,.question-choice) small{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .question-header{font:var(--ios-footnote);font-weight:600;color:var(--ios-label-2)}
+  /* The thinking window keeps its transparent flow; text follows the type ramp. */
+  body.pearl-studio .thinking-message{display:flex;gap:8px;margin-bottom:20px}
+  body.pearl-studio .thinking-message>.avatar{width:28px;height:28px;margin-top:0}
+  body.pearl-studio .thinking-caption{gap:8px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .thinking-elapsed{font:var(--ios-caption1);font-variant-numeric:tabular-nums;color:var(--ios-label-3)}
+  body.pearl-studio .thinking-context{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .thinking-flow-fragment{font:500 calc(11px * var(--ios-s))/1.4 var(--ios-font)}
+  body.pearl-studio .thinking-flow-inspection{border-top-color:var(--ios-separator);color:var(--ios-label-2);font:var(--ios-footnote)}
+  body.pearl-studio .thinking-stop{min-height:44px;gap:6px;padding:0 14px;border:0;border-radius:999px;background:var(--ios-fill);color:var(--ios-label);font:600 calc(13px * var(--ios-s))/1 var(--ios-font)}
+  body.pearl-studio .thinking-stop:hover:not(:disabled){background:var(--ios-fill-2);color:var(--ios-label)}
+  body.pearl-studio .thinking-stop svg{width:10px;height:10px}
+  /* Welcome and starter prompts */
+  body.pearl-studio .chat-welcome h2{margin-top:16px;font:var(--ios-title2);font-weight:700;letter-spacing:var(--ios-track-title2);color:var(--ios-label)}
+  body.pearl-studio .chat-welcome p{max-width:32em;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .starter-prompts{gap:8px;margin-top:24px}
+  body.pearl-studio .starter-prompt{min-height:56px;gap:12px;padding:12px 16px;border:.5px solid var(--ios-bubble-border);border-radius:18px;background:var(--ios-bubble);box-shadow:var(--ios-bubble-shadow);color:var(--ios-label);font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);text-align:left}
+  body.pearl-studio .starter-prompt svg{width:20px;height:20px;color:var(--ios-tint)}
+  body.pearl-studio .chat-thread:empty::before,body.pearl-studio .chat-thread:empty::after{content:'';display:block;border-radius:20px;background:linear-gradient(90deg,var(--ios-skeleton) 20%,var(--ios-skeleton-hi) 50%,var(--ios-skeleton) 80%) 0 0/220% 100%;animation:dash-shimmer 1.5s ease-in-out infinite}
+  body.pearl-studio .chat-thread:empty::before{width:62%;height:44px;margin:8px 0 24px auto}
+  body.pearl-studio .chat-thread:empty::after{width:88%;height:132px;margin-top:30px}
+
+  /* Composer: a Liquid Glass pill — attach, the field, dictation and Send. */
+  body.pearl-studio .chat-composer-wrap{padding:8px var(--ios-gutter-end) max(8px,env(safe-area-inset-bottom)) var(--ios-gutter);background:transparent}
+  body.pearl-studio .chat-composer{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"extra extra extra extra" "voice voice voice voice" "attach field mic send" "model model model model";align-items:end;gap:0 2px;max-width:none;min-height:52px;padding:4px;border:.5px solid var(--ios-glass-border);border-radius:26px;background:var(--ios-glass);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio .chat-composer:focus-within{border-color:var(--ios-glass-border);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow)}
+  body.pearl-studio .chat-composer .composer-footer{display:contents}
+  body.pearl-studio .chat-composer .composer-spacer{display:none}
+  body.pearl-studio .chat-composer>.composer-attachments{grid-area:extra;padding:8px 8px 4px}
+  body.pearl-studio .chat-composer>:is(.composer-voice-status,.composer-image-warning){grid-area:voice;margin:4px 4px 6px}
+  body.pearl-studio .chat-composer textarea{grid-area:field;align-self:center;height:auto;min-height:44px;max-height:180px;padding:11px 8px 11px 4px;border:0;background:none;color:var(--ios-label);font:var(--ios-body);font-size:max(16px,calc(17px * var(--ios-s)));letter-spacing:var(--ios-track-body);line-height:calc(22px * var(--ios-s))}
+  body.pearl-studio .chat-composer textarea::placeholder{color:var(--ios-label-3);opacity:1}
+  body.pearl-studio .chat-composer textarea:placeholder-shown{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.pearl-studio .chat-composer:not(:has([data-action=attach-files])) textarea{padding-left:14px}
+  body.pearl-studio .chat-composer [data-action=attach-files]{grid-area:attach}
+  body.pearl-studio .chat-composer [data-action=dictate]{grid-area:mic}
+  body.pearl-studio .chat-composer .composer-model-button{grid-area:model;justify-self:start;min-height:44px;margin:0 8px 2px;color:var(--ios-tint);font:var(--ios-footnote);font-weight:600}
+  body.pearl-studio .chat-composer .composer-footer .icon-button{width:44px;height:44px;min-width:44px;padding:0;border:0;border-radius:50%;background:none;box-shadow:none;color:var(--ios-label-2)}
+  body.pearl-studio .chat-composer .composer-footer .icon-button svg{width:22px;height:22px;stroke-width:1.9}
+  body.pearl-studio .chat-composer .composer-footer .icon-button:active{background:var(--ios-fill)}
+  body.pearl-studio .chat-composer .composer-footer .icon-button[aria-pressed=true]{color:var(--ios-red)}
+  body.pearl-studio .chat-composer .composer-footer .send,body.pearl-studio .chat-composer .composer-footer .send:hover:not(:disabled){grid-area:send;width:44px;height:44px;min-width:44px;margin:0;padding:4px;border:0;border-radius:50%;background:var(--ios-tint-fill) content-box;color:var(--ios-on-tint);box-shadow:none}
+  body.pearl-studio .chat-composer .composer-footer .send:active:not(:disabled){background:var(--ios-tint-pressed) content-box}
+  body.pearl-studio .chat-composer .composer-footer .send svg{width:18px;height:18px;stroke-width:2.6}
+  body.pearl-studio .chat-composer:has(textarea:placeholder-shown):not(:has(.attachment-chip)) .composer-footer .send,body.pearl-studio .chat-composer .composer-footer .send:disabled{opacity:1;background:var(--ios-fill-2) content-box;color:var(--ios-label-3)}
+  body.pearl-studio .attachment-chip{padding:2px 2px 2px 12px;border:0;border-radius:14px;background:var(--ios-fill);color:var(--ios-label);font:var(--ios-footnote)}
+  body.pearl-studio .composer-voice-status{padding:10px 12px;border:0;border-radius:16px;background:var(--ios-fill);color:var(--ios-label-2);font:var(--ios-footnote)}
+
+  /* Rooms, routines and other content cards */
+  body.pearl-studio :is(.room-card h2,.setup-card h3,.connection-info h3,.routine-info h3,.skill-card h3){font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio :is(.setup-card p,.routine-info p,.connection-info p,.skill-card p,.help-panel p){font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .info-banner{margin:24px 0 0;padding:0 16px;gap:8px;border:0;border-radius:0;background:none;box-shadow:none;color:var(--ios-label-2);font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);-webkit-backdrop-filter:none;backdrop-filter:none}
+  body.pearl-studio .info-banner>svg{width:16px;height:16px;margin-top:1px;color:var(--ios-label-3)}
+  /* Secondary surfaces whose base colors are hard-coded for the light desktop look */
+  body.pearl-studio :is(.setup-icon,.skill-card .skill-icon,.activity-symbol,.provider-letter,.step-number){border:0;background:var(--ios-fill);color:var(--ios-label-2);box-shadow:none}
+  body.pearl-studio .tag{padding:3px 8px;border:0;border-radius:6px;background:var(--ios-fill);color:var(--ios-label-2);font:500 calc(11px * var(--ios-s))/calc(14px * var(--ios-s)) var(--ios-font)}
+  body.pearl-studio :is(.setup-card,.skill-card,.integration-template,.provider-choice),body.pearl-studio :is(.skill-card,.integration-template,.provider-choice):hover{background:var(--ios-cell);color:var(--ios-label);transform:none}
+  body.pearl-studio :is(.skill-card p,.integration-template p,.provider-choice small,.routine-info small,.room-card>p,.room-member small,.activity-row p,.help-step p,.sync-card p,.device-list li span:not(.tag):not(.setup-icon),.sync-engine-list li span,.bots-hidden-note,.skill-card footer,.pairing-code,.sync-help ul){color:var(--ios-label-2)}
+  body.pearl-studio :is(.activity-row h3,.help-step h3,.room-member,.room-member strong,.integration-template,.memory-card strong,.workspace-file,.device-list li strong,.sync-card h3,.provider-choice,.pairing-code strong){color:var(--ios-label)}
+  body.pearl-studio :is(.activity-row time,.workspace-file small,.memory-card small,.filterbar .hint){color:var(--ios-label-3)}
+  body.pearl-studio :is(.sync-engine-list li,.device-list li){border:0;background:var(--ios-fill)}
+  body.pearl-studio :is(.memory-card,.memory-card.pinned,.workspace-file,.workspace-file:hover,.room-member-picker .room-member){border:0;background:var(--ios-cell-solid);box-shadow:none}
+  body.pearl-studio :is(.help-step code,.sync-help code,.pairing code,.auth-steps code){border:0;background:var(--ios-fill);color:var(--ios-label)}
+  body.pearl-studio .sync-warning{border:0;background:var(--ios-amber-soft);color:var(--ios-amber)!important}
+  body.pearl-studio .sync-error,body.pearl-studio .connection-error{border:0;background:var(--ios-red-soft);color:var(--ios-red)!important}
+  body.pearl-studio .connection-error{background:none}
+  body.pearl-studio .sync-elsewhere{border:0;background:var(--ios-tint-soft);color:var(--ios-tint);font:var(--ios-footnote)}
+  body.pearl-studio .sync-card .text-button.inline{min-height:32px;color:var(--ios-tint);font:600 calc(13px * var(--ios-s))/1.2 var(--ios-font)}
+  body.pearl-studio .sync-card .status-pill,body.pearl-studio .status-pill{box-shadow:none}
+  body.pearl-studio .pairing-qr{border-color:var(--ios-separator)}
+  body.pearl-studio .default-model-option:has(input:checked){background:var(--ios-cell-solid)}
+  body.pearl-studio :is(.skill-card footer,.room-card-footer){border-top-color:var(--ios-separator)}
+  body.pearl-studio :is(.activity-row,.help-step){border-bottom-color:var(--ios-separator)}
+  body.pearl-studio .room-member-picker input{accent-color:var(--ios-tint-fill)}
+  body.pearl-studio :is(.activity-row h3,.room-member strong,.workspace-file strong,.memory-card strong){font:var(--ios-subheadline);font-weight:600;letter-spacing:var(--ios-track-subheadline)}
+  body.pearl-studio :is(.activity-row p,.skill-card footer,.integration-template p,.memory-card p,.room-member small,.workspace-file small,.memory-card small,.routine-info small){font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote)}
+  body.pearl-studio .activity-row time{font:var(--ios-caption1)}
+  body.pearl-studio .memory-pin-button[aria-pressed=true]{color:var(--ios-amber);background:var(--ios-amber-soft)}
+  body.pearl-studio .help-step h3{font:var(--ios-headline);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .step-number{font:600 calc(13px * var(--ios-s))/1 var(--ios-font)}
+  body.pearl-studio .integration-template strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .eyebrow{text-transform:none;font-weight:600}
+  /* Bot profile: sentence-case section headers, tokenized chips, tags and notices. */
+  body.pearl-studio .bot-profile .bp-hero h1{font:var(--ios-title1);font-weight:700;letter-spacing:var(--ios-track-title1);color:var(--ios-label)}
+  body.pearl-studio .bp-panel h3{margin:24px 4px 8px;text-transform:none;font:var(--ios-footnote);font-weight:600;letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .bp-panel :is(.section-empty,.empty-state,.bp-empty) h3{margin:0;font:var(--ios-title3);font-weight:600;letter-spacing:var(--ios-track-title3);color:var(--ios-label)}
+  body.pearl-studio .bp-panel code{background:var(--ios-fill);color:var(--ios-label);font:500 .86em/1.4 var(--ios-mono)}
+  body.pearl-studio :is(.bp-chip,.bp-person),body.pearl-studio :is(.bp-chip,.bp-person):hover{border:0;background:var(--ios-fill);color:var(--ios-label)}
+  body.pearl-studio .bp-chip.active{background:var(--ios-tint-fill);color:var(--ios-on-tint)}
+  body.pearl-studio .bp-chip small,body.pearl-studio .bp-chip.active small{color:inherit;opacity:.75}
+  body.pearl-studio .bp-notice{border:0;background:var(--ios-fill);color:var(--ios-label-2)}
+  body.pearl-studio .bp-notice>svg{color:var(--ios-tint)}
+  body.pearl-studio :is(.bp-type,.bp-change-tag){text-transform:none;letter-spacing:0;background:var(--ios-tint-soft);color:var(--ios-tint)}
+  body.pearl-studio .bp-task-status{background:var(--ios-fill);color:var(--ios-label-2)}
+  body.pearl-studio .bp-task-status.ok{background:var(--ios-green-soft);color:var(--ios-green)}
+  body.pearl-studio .bp-task-status.fail{background:var(--ios-red-soft);color:var(--ios-red)}
+  body.pearl-studio .bp-fact-head strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio :is(.bp-fact,.bp-note-row,.bp-file,.bp-person,.bp-mini){border-color:transparent}
+  body.pearl-studio .bp-notice p{flex:1 1 calc(100% - 32px)}
+  body.pearl-studio .bp-task-title{color:var(--ios-label)}
+  body.pearl-studio .bp-settings-disclosure{margin-top:8px;padding:0 16px;border:0;border-radius:var(--ios-radius-group);background:var(--ios-cell);box-shadow:var(--ios-cell-shadow)}
+  body.pearl-studio .bp-settings-disclosure>summary{min-height:60px}
+  body.pearl-studio .bp-settings-disclosure>summary strong{font:var(--ios-body);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
+  body.pearl-studio .bp-settings-disclosure>summary small{font:var(--ios-footnote);color:var(--ios-label-2)}
+  /* Dashboard: tokenized palette, rows on a fill, and a timeline that fits larger text. */
+  body.pearl-studio .dashboard-page{--dash-ink:var(--ios-label);--dash-muted:var(--ios-label-2);--dash-faint:var(--ios-label-3);--dash-line:var(--ios-separator);--dash-violet:var(--ios-amber);--dash-violet-bg:var(--ios-amber-soft)}
+  body.pearl-studio .dash-card{padding:20px 16px;border-radius:var(--ios-radius-group)}
+  body.pearl-studio .dash-card-title h2{font:var(--ios-title3);font-weight:600;letter-spacing:var(--ios-track-title3);color:var(--ios-label)}
+  body.pearl-studio .dash-card-title p{font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .dash-head-link{min-height:44px;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline)}
+  body.pearl-studio .dash-team .pearl-home-actions{display:block;gap:0;margin:8px -16px -12px}
+  body.pearl-studio .dash-team .pearl-home-teammate{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 14px;align-items:center;gap:0 12px;width:100%;min-height:64px;padding:10px 16px;border:0;border-radius:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  body.pearl-studio .dash-team .pearl-home-teammate+.pearl-home-teammate::before{content:'';position:absolute;top:0;left:72px;right:0;height:.5px;background:var(--ios-separator)}
+  body.pearl-studio .dash-team .pearl-home-teammate:active{background:var(--ios-cell-pressed)}
+  body.pearl-studio .dash-team .pearl-home-teammate .avatar{grid-column:1;grid-row:1;width:44px;height:44px}
+  body.pearl-studio .dash-team .pearl-home-teammate>:is(span,div):not(.avatar){grid-column:2;grid-row:1;min-width:0}
+  body.pearl-studio .dash-team .pearl-home-teammate>svg:last-child{grid-column:3;grid-row:1;width:14px;height:14px;margin:0;color:var(--ios-label-3)}
+  body.pearl-studio .dash-team .pearl-home-teammate strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body)}
+  body.pearl-studio .dash-team .pearl-home-teammate small{margin-top:1px;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline)}
+  body.pearl-studio :is(.dash-card-icon,.dash-tile,.dash-mark){border:0;box-shadow:none}
+  body.pearl-studio :is(.dash-file,.dash-row,.dash-inline-file){border:0;background:var(--ios-fill)}
+  body.pearl-studio .dash-mark-you{background:var(--ios-fill);color:var(--ios-label-2)}
+  body.pearl-studio .dash-empty{border:0;background:var(--ios-fill)}
+  body.pearl-studio .dash-status{border:0}
+  body.pearl-studio .dash-event{grid-template-columns:calc(60px * var(--ios-s)) 12px 30px minmax(0,1fr)}
+  body.pearl-studio .dash-events::before{left:calc(60px * var(--ios-s) + 15.5px);background:var(--ios-separator)}
+  body.pearl-studio .dash-event-time{font:var(--ios-caption1);font-variant-numeric:tabular-nums;color:var(--ios-label-3)}
+  body.pearl-studio .dash-event-dot{background:var(--ios-cell-solid)}
+  body.pearl-studio :is(.dash-event-text,.dash-file-body strong,.dash-row-title,.dash-row-top strong,.dash-inline-file strong,.dash-empty strong){font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label)}
+  body.pearl-studio :is(.dash-event-text,.dash-file-body,.dash-row-top) strong{font-weight:600}
+  body.pearl-studio :is(.dash-event-detail,.dash-file-meta,.dash-row-context,.dash-row-meta,.dash-row-detail,.dash-empty p,.dash-inline-file small,.dash-progress){font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+
+  /* Empty and loading states: a symbol, one line and a primary action; calm shimmer. */
+  body.pearl-studio :is(.section-empty,.empty-state){gap:8px;padding:40px 24px;color:var(--ios-label-2)}
+  body.pearl-studio :is(.section-empty,.empty-state)>svg{width:48px;height:48px;margin-bottom:4px;color:var(--ios-label-3);stroke-width:1.4}
+  body.pearl-studio :is(.section-empty,.empty-state) h3{font:var(--ios-title3);font-weight:600;letter-spacing:var(--ios-track-title3);color:var(--ios-label)}
+  body.pearl-studio :is(.section-empty,.empty-state) p{max-width:300px;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio :is(.section-empty,.empty-state)>:is(.secondary-button,.primary-button){margin-top:12px;color:var(--ios-on-tint);background:var(--ios-tint-fill)}
+  body.pearl-studio .loading-dot{background:var(--ios-tint);opacity:.7}
+  body.pearl-studio :is(.dash-skeleton span,.rich-loading){border-radius:16px;background:linear-gradient(90deg,var(--ios-skeleton) 20%,var(--ios-skeleton-hi) 50%,var(--ios-skeleton) 80%) 0 0/220% 100%;animation:dash-shimmer 1.5s ease-in-out infinite}
+  body.pearl-studio .rich-loading{display:block;min-height:44px;padding:12px 16px;color:var(--ios-label-2);font:var(--ios-footnote)}
+
+  /* Toasts */
+  body.pearl-studio .toast{padding:12px 18px;border:.5px solid var(--ios-glass-border);border-radius:22px;background:var(--ios-glass-thick);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow);color:var(--ios-label);font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio .toast.error{color:var(--ios-red)}
+
+  /* Sign-in */
+  body.pearl-studio .auth-screen{min-height:100dvh;padding:calc(env(safe-area-inset-top) + 32px) var(--ios-gutter-end) calc(env(safe-area-inset-bottom) + 24px) var(--ios-gutter)}
+  body.pearl-studio .auth-layout{gap:32px;width:100%;max-width:440px}
+  body.pearl-studio .auth-intro .brand-mark.large{width:72px;height:72px;border-radius:17px;font-size:40px;box-shadow:0 8px 24px rgba(228,140,49,.22),inset 0 1px 0 rgba(255,255,255,.6)}
+  body.pearl-studio .auth-intro h1{margin:20px 0 8px;font:var(--ios-large-title);letter-spacing:var(--ios-track-large-title);color:var(--ios-label)}
+  body.pearl-studio .auth-intro p{max-width:none;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .auth-intro .bottom-note{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .auth-card{padding:24px 20px 20px;border:.5px solid var(--ios-glass-border);border-radius:28px;background:var(--ios-glass-thick);box-shadow:var(--ios-glass-edge),var(--ios-glass-shadow);-webkit-backdrop-filter:var(--ios-blur);backdrop-filter:var(--ios-blur)}
+  body.pearl-studio .auth-card h2{font:var(--ios-title2);font-weight:700;letter-spacing:var(--ios-track-title2);color:var(--ios-label)}
+  body.pearl-studio .auth-card>p{margin:6px 0 4px;font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .auth-card .field :is(input,textarea){background-color:var(--ios-fill)}
+  body.pearl-studio .auth-card .field>label{padding:0 4px}
+  body.pearl-studio .auth-card .primary-button{width:100%;min-height:50px;margin-top:20px}
+  body.pearl-studio .auth-foot{margin-top:16px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .auth-steps{font:var(--ios-subheadline);color:var(--ios-label-2)}
+  body.pearl-studio .auth-steps strong{color:var(--ios-label)}
+}
+
+/* Reduced transparency: solid materials. Increased contrast: stronger text and edges.
+   The ID-free :not(#_) lifts these over the light and dark token sets. */
+@media(prefers-reduced-transparency:reduce) and (max-width:760px), (prefers-reduced-transparency:reduce) and (max-height:500px) and (pointer:coarse){
+  body.pearl-studio:not(#_){--ios-glass:var(--ios-glass-solid);--ios-glass-thick:var(--ios-glass-solid);--ios-sheet:var(--ios-glass-solid);--ios-cell:var(--ios-cell-solid);--ios-bubble:var(--ios-cell-solid);--ios-blur:none;--ios-blur-strong:none;--pearl-surface:var(--pearl-solid);--pearl-soft:var(--pearl-solid);--pearl-raised:var(--pearl-solid)}
+}
+@media(prefers-contrast:more) and (max-width:760px), (prefers-contrast:more) and (max-height:500px) and (pointer:coarse){
+  body.pearl-studio:not(#_){--ios-label-2:var(--ios-label-2-hc);--ios-label-3:var(--ios-label-3-hc);--muted:var(--ios-label-2-hc);--ios-separator:var(--ios-separator-hc);--ios-bar-hairline:var(--ios-separator-hc);--ios-glass-border:var(--ios-separator-hc);--ios-bubble-border:var(--ios-separator-hc);--ios-glass:var(--ios-glass-solid);--ios-glass-thick:var(--ios-glass-solid);--ios-cell:var(--ios-cell-solid);--ios-bubble:var(--ios-cell-solid)}
+  body.pearl-studio :is(.tabbar,.chat-composer,.popover-menu,.glass-card,.bot-list,.pearl-settings-grid,.chat-message .message-text,.artifact-card){outline:1px solid var(--ios-separator-hc);outline-offset:-1px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.pearl-studio .chat-thread:empty::before,body.pearl-studio .chat-thread:empty::after,body.pearl-studio :is(.dash-skeleton span,.rich-loading){animation:none}
+  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]{transition:none}
 }

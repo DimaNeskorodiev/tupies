@@ -14,10 +14,8 @@ struct SyncIndicatorButton: View {
             showing.toggle()
             Task { await store.refreshSync(connection.id) }
         } label: {
-            Image(systemName: health.symbol)
+            SyncHealthSymbol(health: health)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(health.color)
-                .symbolEffect(.pulse, isActive: health == .syncing)
                 .frame(minWidth: 24, minHeight: 24)
                 .contentShape(Rectangle())
         }
@@ -33,8 +31,8 @@ struct SyncIndicatorButton: View {
                 .navigationTitle("Sync")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { showing = false }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        SheetCloseButton { showing = false }
                     }
                 }
             }
@@ -47,6 +45,24 @@ struct SyncIndicatorButton: View {
                 .environmentObject(store)
         }
         #endif
+    }
+}
+
+/// The sync symbol: it turns while syncing, and swaps with a symbol transition when health changes.
+struct SyncHealthSymbol: View {
+    let health: SyncHealth
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let symbol = Image(systemName: health.symbol)
+            .foregroundStyle(health.color)
+            .contentTransition(.symbolEffect(.replace))
+            .accessibilityHidden(true)
+        if #available(iOS 18.0, macOS 15.0, *) {
+            symbol.symbolEffect(.rotate, options: .repeating, isActive: health == .syncing && !reduceMotion)
+        } else {
+            symbol.symbolEffect(.pulse, options: .repeating, isActive: health == .syncing && !reduceMotion)
+        }
     }
 }
 

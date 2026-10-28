@@ -2,6 +2,28 @@
 
 Checked on 27 October 2026. Current build: **0.5.0**. Earlier 0.4, 0.3 and 0.2 evidence is retained below as historical records.
 
+## Full Tupies release to both engines and both apps (28 October 2026, 14:22 UTC)
+
+- **Release:** a checkout snapshot without `apps/` and `prototypes/`, with isolated dependencies. It passed **603/603** tests on Node 22.23.1 after one `background-processes` timing failure that passed 3/3 alone. The lock files differ only in their package name, and the dependency trees are identical.
+- **VPS:**
+  - Idle checks, a full backup while stopped, one start, unchanged identity, sign-in configuration, counts, vault and state bytes.
+  - The final served-file check found 941 files returning 404: two new public folders had been created `0700`. After `chmod 755`, 1330/1330 served files match, with no-cache and ETags.
+- **Mac engine:** the same checks pass, with 1330/1330 served files verified. Sync resumed within seconds and the log reports "Tupies is running".
+- **iPhone 15 Pro:** `devicectl` lists `Tupies` 0.5.0 (3) for `dev.hermesstudio.app`, and it launched. The signature has the same app identifier and team as build 2 and no push entitlement. Whether its screens look right on the device has not yet been checked by hand.
+- **Mac app:** `/Applications/Tupies.app` build 3 passes strict signature verification and launched. A capture of its window shows "This Mac" and "Home server" both online, the Home server workspace in the new design, and a green sync indicator.
+
+## iPhone polish and name check (28 October 2026, source)
+
+- **Node:** **603/603 tests** pass on Node 22.23.1, including 14 new motion regressions in `test/mobile-motion.test.mjs`. `npm run check` passes for 72 modules. One earlier full run had a single `engine-parallel` timing failure; that file passed 5/5 on its own and the full suite passed on both reruns.
+- **Apple:** unsigned iOS Simulator and macOS builds succeed with no compiler warnings, and `apps/apple/Tests/run-logic-tests.sh` passes, including the Node↔Swift signature checks. A signed simulator build installed on a fresh iPhone 17 Pro (iOS 26.4) simulator and paired through the URL scheme with a disposable engine; the confirm sheet worked.
+- **In the app:**
+  - A frame-by-frame recording of a cold launch shows launch, then "Connecting", then a crossfade into the Dashboard with correct safe areas. The mid-screen colour never leaves the pearl base (`#f4f8fb`), so there is no white flash.
+  - An edge swipe from a chat returned to Bots. Light and dark switched live. Chat, bubbles, the composer and file cards were checked in both.
+  - Agents checked these in the app as well: held, flicked and cancelled swipes; message and bot-row menus; body-dragging clean sheets and refusing dirty ones; the keyboard hiding and restoring the tab bar; Send keeping focus; and Settings section Back.
+- **Browser:** Chromium at 375×812 and 1280×800. Computed styles on nine desktop routes are unchanged, and desktop stays light with the OS set to dark. Phone dark mode was checked on 12 screens. Text tokens pass WCAG AA (lowest 4.56:1).
+- **Independent review:** 12 findings, all fixed. The worst were a composer stuck at keyboard height after WebKit reported a stale viewport scale (older than this change), keyboard state never detected in WKWebView, and sheets with typed input that could be swiped away.
+- **Not verified:** haptic feel, the physical-device keyboard, VoiceOver, the camera scanner and 120Hz frame pacing. The deployment is recorded in the section above.
+
 ## Tupies rename and initial GitHub upload preparation (28 October 2026)
 
 - **Source:** the package, current UI/product text, document authorship, native display/product names and Xcode project/scheme now use Tupies. Web/native T marks are generated from a local SVG by `npm run brand:build`. Existing pairing, signature, Keychain, cookie, discovery and Docker-volume identities are retained; no live engine or installed app was updated.
