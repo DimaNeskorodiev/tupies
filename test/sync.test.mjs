@@ -460,6 +460,8 @@ test('desktop read receipts cross the sealed engine link without becoming replic
   await eventually(()=>Object.hasOwn(hub.app.notifications.state.read,id),'sealed read receipt');
   await eventually(()=>hub.app.store.state.messages.bot_atlas.some(row=>row.id==='receipt_response'),'synced reply');
   await hub.app.notifications.flush();assert.equal(sent.length,0);
+  assert.deepEqual(hub.app.notifications.unreadBots(),{});
+  assert.deepEqual(replica.app.notifications.unreadBots(),{});
   assert.ok(!hub.app.notifications.state.outbox.some(row=>row.status==='pending'));
   for(const app of [hub.app,replica.app]){
     assert.ok(!Object.keys(app.sync.meta.docs).some(key=>/notification|readReceipt/i.test(key)));
