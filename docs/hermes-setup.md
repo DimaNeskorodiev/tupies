@@ -46,7 +46,7 @@ Tupies serializes refreshes for each connection and stores replacement credentia
 
 Sign-out attempts remote revocation and clears local tokens. If remote revocation is unconfirmed, disconnect Tupies in ChatGPT Settings. A process restart loses pending browser attempts but retains established encrypted credentials. Tokens never belong in exported skill files, source control, browser storage or screenshots.
 
-## Read-only browser
+## Browser use
 
 A bot with **Browser** turned on (Bot settings › Advanced settings) can open public HTTPS pages in a real headless browser. That helps with pages that need JavaScript; `http_fetch` stays the simple choice for plain pages and APIs. Tupies drives a browser installed on the engine and never downloads one:
 
@@ -54,7 +54,7 @@ A bot with **Browser** turned on (Bot settings › Advanced settings) can open p
 - **Debian or Ubuntu server:** install Chromium as the owner, for example `sudo apt install chromium`, then restart the service. `STUDIO_BROWSER=/path/to/chrome` names any other location.
 - **Hardened services:** a systemd unit with `RestrictNamespaces=true` blocks Chromium's sandbox. Allow `user pid net` and raise `TasksMax` with a drop-in, as in `docs/deployment.md`. Otherwise Chromium's error appears in the bot's tool result. `STUDIO_BROWSER_NO_SANDBOX=true` runs without the sandbox, with weaker isolation.
 
-The bot editor says when this engine has no browser, and `GET /api/state` reports `browser.available`. Each task's browser starts on first use (about a second), has a fresh profile and closes when the task ends. A model that can see images can also take screenshots, saved under `browser/` in the bot's files.
+The bot editor says when this engine has no browser, and `GET /api/state` reports `browser.available`. The browser starts on first use and closes when the task ends. Current source adds approved typing, forms, tabs, frames, dialogs and bounded file transfers. An **Open browser** handoff lets the owner enter passwords, verification codes and CAPTCHA responses directly, then resume the bot. The owner may retain a bot-specific sign-in on that engine; temporary profiles are discarded. Models never receive the private handoff input directly. Screenshots for an image-capable model are saved under `browser/`, but are refused after private owner input in that task. See [Browser use](browser.md) for controls, permissions and limits. These source features do not update an operational release automatically.
 
 ## Third-party APIs and MCP
 
