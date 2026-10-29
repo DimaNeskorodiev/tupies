@@ -4,6 +4,9 @@ The browser API is same-origin and single-owner. Read `/api/auth` to discover wh
 
 Native push registration is a device-only exception: **GET/PUT/DELETE `/api/device/notifications`** requires the bearer of a currently paired iOS app. A browser/web-view cookie or linked-engine bearer is refused. PUT accepts exactly `{token,environment,enabled,botReplies,routines}`: a hexadecimal APNs token, `sandbox` or `production`, and three booleans. Device identity comes from the bearer; callers cannot supply a device ID, destination or topic. DELETE takes `{}` and removes this app's registration. Responses are `{available,registered,enabled,botReplies,routines,environment?,reason?,delivery:{status,lastError?}}`, with no token or credentials. Missing configuration, a linked replica or an environment mismatch is reported as unavailable; normal bot work continues. See [iPhone notifications](notifications.md).
 
+**POST `/api/notifications/read`** accepts `{botId,roomId?,messageIds:[...]}` from an authenticated workspace cookie (with CSRF) or paired-app session, never a linked-engine bearer. At most 20 safe message IDs are accepted; the server derives exact event hashes only for existing final owner-visible replies in that conversation. It returns `{acknowledged:true}` without exposing enrollment or execution controls. This suppresses pending alerts during the eight-second grace period; it does not mark a run successful, approve work or retract a push already sent. Linked-engine forwarding uses bounded ephemeral `notificationReads:[{id,at}]` inside the existing sealed v2 sync exchange; receipts are not workspace documents.
+
+
 | Route | Behavior |
 | --- | --- |
 | GET /api/auth | setupRequired, authenticated, session csrf when signed in, and passwordSignIn (false on an internet address that accepts paired apps only; setup and login are then refused with 403). |

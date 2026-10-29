@@ -135,6 +135,7 @@ export async function createStudioServer(options={}) {
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
   const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport}).init();
+  sync.onNotificationReads = ids => notifications.markRead(ids);
   const bootstrapToken=options.bootstrapToken || randomBytes(24).toString('base64url');
   const sessions=new Map(), attempts=new WindowCounter(),skillImports=new Map();
   const secureCookie=options.secureCookie ?? (tlsMode || process.env.STUDIO_SECURE_COOKIE==='true' || !!publicOrigin);
