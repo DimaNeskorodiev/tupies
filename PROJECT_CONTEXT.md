@@ -2,6 +2,12 @@
 
 Last updated: 29 October 2026. Current application version: 0.5.0.
 
+## Mobile navigation and chat motion reliability (29 October 2026, source only)
+
+Phone navigation settles immediately when an animation is cancelled, the page backgrounds, the native view returns or the viewport changes. Interrupted edge drags restore the live screen without activating Back. Tab selection continues from its visible position, with a shorter, subtler glide; screen copies pause decorative animations. Push/pop takes 280 ms, tab crossfades 150 ms and message entrances 240 ms.
+
+Streaming chat now owns one scroll frame/timer at a time, bounds its trailing distance inside the renderer's near-bottom range, and yields immediately to touch or wheel scrolling. Composer resizing cancels its pinning loop on interruption, navigation or owner scrolling. Drafts, exact search anchors, Reduce Motion and engine actions retain their existing boundaries. The isolated PR passes **1037/1037 full regressions, 66/66 focused UI checks and 106 syntax checks on Node 22.23.1**, with the 23-page guide rebuilt. Six new regressions cover interruption/burst/cancellation cases; disposable phone-width WebKit checks include a slow 45-chunk reply, stable manual reading position, multiline typing, retained drafts and repeated navigation. See [verification](docs/verification.md). These source changes have not been deployed to either operational engine or installed Apple app; physical iPhone gesture/keyboard/120 Hz acceptance remains outstanding.
+
 ## Search and rich-chat PR integration (29 October 2026, source only)
 
 PR #7 combines unified Search and the rich-chat palette with `main` after Skills PR #6 and notification PR #5. Documentation conflicts retain every feature history and the current deployment record; the generated guide includes all 23 pages. The combined source passes **1031/1031** full regressions on **Node 22.23.1**, **106** syntax checks and the browser-asset rebuild. Actual disposable Chrome verifies Enter/Cmd+K query reuse, exact-message navigation, the unchanged unsent draft, the light table/midnight code palette and retained Skills assignments. Operational engines, installed Apple artifacts and the original shared checkout are unchanged. Earlier isolated/shared-checkout counts below remain historical.
