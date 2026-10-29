@@ -1,6 +1,16 @@
 # iPhone notifications
 
-The notification implementation is in source and verified with fixtures. **Activation is pending Apple setup:** no notification-enabled build is installed and no real APNs delivery has been tested yet. The currently installed iPhone app remains build 2. The owner chose to finish Apple Developer/Xcode sign-in later.
+**Current status, 29 October 2026: all four targeted physical notification checks pass on the deployed v9 web UI.** Cold alert 06 opened the exact chat and nonce without a password, missing-bot state or application error. A disabled QA routine was manually run once for 07 and produced the correct result/alert/chat. Foreground chat 08 showed the reply with no banner. Foreground Dashboard 09 showed a banner whose tap opened the correct chat/nonce. All four real ChatGPT tasks completed, nonpartial and exact; Home recorded **four APNs sent events, one attempt each**.
+
+Both engines run immutable **v9** on official **Node 22.23.4**, verified by **918/918** tests, **98** syntax checks, **17.388 seconds** elapsed and **1,742** stable files. Home retained its PID/identity/vault/journal/configuration through 17 atomic file updates with protected preimages. Mac used a complete protected stopped backup and one v9 process with the same Node/environment/data and v2 identities/journal, with v7 untouched and no relink. Both receipts verify **1,355** public routes. The repaired catalog flow passes 13 new full-script cases, 68 focused regressions and **21** actual WebKit scenarios; immutable v8 reproduces the former failure. The fixture foreground shim and the physical observations above remain distinct evidence.
+
+**Mac build 6 is signed, independently verified and installed; iPhone remains build 5.** Mac6 refreshes the bundled fallback Engine to v9: **1,424** allowlisted engine-source files, **22,445** pinned payload records, four signed Mach-O images with JIT only on Node, and a passing signed disposable runtime smoke. Bundle digest is `9ebf…56e7`; native behavior source remains `b7b198…81e5`. The frozen build6 compile override changed no Swift behavior; the root project's two version settings are now 6. Atomic installation protected signed build5, retained the bridge and external v9 PID and changed no iPhone, pairing keys or preferences. The owner confirmed both Mac connections open afterward. iPhone5 retains its v8 native source/signing scope and original settings; no same-container-path or bitwise-preferences claim is made.
+
+All **three original native app-device records remain exact and active on both engines**, with no replacement IDs. Home retains **one enabled original-iPhone Sandbox registration**, with replies and routines enabled. Home remains the hub; Mac retains the original Home identity through v2.
+
+Owned QA cleanup was confirmed: device self-revoked, bot hidden, routine disabled and client EOF exit **0**, with no QA process left. The disabled routine was manually run once and left disabled. APNs duplicate cleanup removed exactly **three local and one remote temporary raw copies**, verifying the active key and both protected backups before/after. Metadata/directories/accounts/services were unchanged; no key was revoked.
+
+The root guide is rebuilt from this final handoff without changing immutable/deployed v9 or installed artifacts. These finite physical checks close the recorded cold-tap, manual-routine and two foreground cases. Broader notification/Focus/device/accessibility scenarios, human QA, two unexplained research failures, multi-day observation, public distribution and measured Grok parity remain open.
 
 Tupies uses Apple Push Notification service (APNs) for native alerts about bot replies and routine updates. The home server sends the alert, so the iPhone app does not need to stay open or poll in the background. A standalone engine can send its own alerts; a linked replica leaves delivery to the home server.
 
@@ -8,10 +18,10 @@ The notification is a private summary. Apple receives the app's push token, deli
 
 ## Apple setup
 
-Use the Apple Developer team that signs `dev.hermesstudio.app`. An Apple Developer account with access to Certificates, Identifiers & Profiles is required; creating an APNs key requires the Account Holder or Admin role.
+Use the existing Apple Developer signing team and the new explicit identifier `dev.tupies.app`. The migration must retain access to existing device keys before switching apps; a matching team alone does not establish Keychain access. An Apple Developer account with access to Certificates, Identifiers & Profiles is required; creating an APNs key requires the Account Holder or Admin role.
 
 1. Add the developer account in **Xcode → Settings → Accounts**, then enable **Push Notifications** for the explicit app identifier. The native project declares the capability; a signed build needs a provisioning profile that includes it. A wildcard profile cannot receive push notifications. Xcode can manage the explicit profile after the account is signed in; a manually created matching profile is another option.
-2. In **Certificates, Identifiers & Profiles → Keys**, create an **Apple Push Notification service** key. Prefer a topic-specific key restricted to `dev.hermesstudio.app` and the environment you will actually use.
+2. In **Certificates, Identifiers & Profiles → Keys**, create an **Apple Push Notification service** key. Prefer a topic-specific key restricted to `dev.tupies.app` and the environment you will actually use.
 3. For a development-signed build installed directly from Xcode, select **Sandbox**. For TestFlight or App Store distribution, use **Production**. The app, key, server setting and provisioning entitlement must agree.
 4. Download the `.p8` key once and protect it. Record its Key ID and your Team ID privately. Apple does not let you download the same private key again.
 5. Put the key on the home server outside bot workspaces, synced folders, the public directory and release archives. Its file should be readable only by the engine's service account, with a private parent directory. Never paste its contents into chat or commit it.
@@ -26,7 +36,7 @@ Set these operator variables on the delivery engine. Values below are placeholde
 STUDIO_APNS_KEY_FILE=/private/operator/path/AuthKey.p8
 STUDIO_APNS_KEY_ID=YOURKEYID1
 STUDIO_APNS_TEAM_ID=YOURTEAMID
-STUDIO_APNS_TOPIC=dev.hermesstudio.app
+STUDIO_APNS_TOPIC=dev.tupies.app
 STUDIO_APNS_ENVIRONMENT=sandbox
 ```
 
@@ -37,6 +47,8 @@ The provider connects only to Apple's fixed sandbox or production HTTP/2 endpoin
 ## Enable alerts on the iPhone
 
 In the native app, open **Settings → Notifications**. Choose the paired delivery engine, enable notifications, and allow Apple's notification permission prompt. Bot replies and routine updates have separate switches. The app requests a fresh APNs registration on launch and uploads the token over the engine's existing authenticated, pinned connection.
+
+**Check notification delivery** refreshes permission/registration and the engine's bounded status; it does not send a test push. An engine status of `sent` means Apple accepted the request, not that a banner was displayed. Physical background delivery and a tap into the correct saved engine/conversation require separate observation. Routine alerts currently open the routine's bot chat; room alerts open the room.
 
 Only the paired iPhone/iPad's bearer session can manage its registration. The web interface and models cannot register another device or change the Apple destination. Re-pairing, token changes, revocation and disabling notifications invalidate obsolete registrations. iOS notification settings can also disable banners and sounds; the app links to those settings when permission is denied.
 

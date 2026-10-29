@@ -1,0 +1,14 @@
+.direction-send{padding:8px 12px;border:1px solid var(--line);border-radius:16px;background:var(--pearl-surface,#fff);color:var(--ink);font-size:12px;white-space:nowrap}
+.direction-send[hidden]{display:none}
+.direction-send:disabled{opacity:.5}
+.direction-send:focus-visible{outline:2px solid var(--accent,#708bb0);outline-offset:3px}
+.direction-result,.direction-message-notice{font-size:12px;line-height:1.5;color:var(--muted);margin:8px 4px 0}
+.direction-result:empty{display:none}
+.chat-composer>.direction-result{grid-column:1/-1;min-width:0;overflow-wrap:anywhere}
+.direction-status{font-size:11px;font-weight:500;color:var(--muted);margin-left:8px}
+@media(max-width:760px),(max-height:500px) and (pointer:coarse){.direction-send{min-height:44px;font-size:13px}.direction-result{font-size:12px}}
+@media(max-width:760px),(max-height:500px) and (pointer:coarse){
+  body.pearl-studio .chat-composer>.direction-result{grid-row:5;margin:4px 12px 8px;color:var(--ios-label-2);font:var(--ios-caption1)}
+  body.pearl-studio .chat-composer .direction-send{grid-area:send;align-self:center;min-height:44px;max-width:86px;padding:5px 10px;border:0;border-radius:22px;background:var(--ios-fill);color:var(--ios-tint);font:600 calc(12px * var(--ios-s))/1.25 var(--ios-font);white-space:normal}
+  body.pearl-studio .chat-composer:has(.direction-send:not([hidden])) .send{display:none}
+}

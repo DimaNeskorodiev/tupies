@@ -1,0 +1,28 @@
+name: tupies-searxng
+
+services:
+  search:
+    # Resolve an official image to an immutable digest before activation; no floating default.
+    image: "${SEARXNG_IMAGE:?Set SEARXNG_IMAGE to an official searxng/searxng image digest}"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8080"
+    environment:
+      SEARXNG_SECRET: "${SEARXNG_SECRET:?Generate a private random SEARXNG_SECRET before activation}"
+      SEARXNG_BASE_URL: "http://127.0.0.1:8888/"
+      SEARXNG_PORT: "8080"
+      SEARXNG_BIND_ADDRESS: "0.0.0.0"
+      SEARXNG_LIMITER: "false"
+      SEARXNG_PUBLIC_INSTANCE: "false"
+      FORCE_OWNERSHIP: "false"
+    volumes:
+      - "./settings.yml:/etc/searxng/settings.yml:ro"
+      - "search-cache:/var/cache/searxng"
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  search-cache:

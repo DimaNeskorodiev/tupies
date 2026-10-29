@@ -60,6 +60,7 @@ test('an engine with STUDIO_TLS=engine serves TLS 1.3 with its identity key only
   assert.match(hub.url, /^https:\/\/127\.0\.0\.1:\d+$/);
   const info = await insecure(`${hub.url}/api/engine`);
   assert.equal(info.status, 200); assert.equal(info.body.tls, 'identity'); assert.equal(info.body.fingerprint, hub.app.sync.identity.fingerprint);
+  const pairingFile=path.join(hub.directory,'local-engine-fixture.json');await hub.app.writeLocalPairing(pairingFile,hub.url);const discovery=JSON.parse(await fs.readFile(pairingFile,'utf8'));assert.equal(discovery.tls,'engine','Local native discovery must require the identity pin on first contact.');
   assert.equal(certificateFingerprint(info.certificate.raw), hub.app.sync.identity.fingerprint, 'the TLS key is the identity key from the pairing link');
   const transport = new EngineTransport(); t.after(() => transport.close());
   const pinned = await transport.request(`${hub.url}/api/engine`, { pin: hub.app.sync.identity.fingerprint, requirePin: true });
@@ -93,7 +94,7 @@ test('a linked engine trusts the home server only by its pinned key and refuses 
   // The link says the server uses its own certificate, so even the first contact accepts nothing but the pinned key.
   assert.equal(new URL(link).searchParams.get('tls'), 'engine');
   assert.equal(new URL(mac.app.sync.devices.createPairing({ kind: 'engine', baseUrl: mac.url }).link).searchParams.get('tls'), null);
-  assert.equal(new URL(hub.app.sync.devices.createPairing({ kind: 'device', baseUrl: hub.url }).link).searchParams.get('tls'), null);
+  assert.equal(new URL(hub.app.sync.devices.createPairing({ kind: 'device', baseUrl: hub.url }).link).searchParams.get('tls'), 'engine');
   const fetches = [], engineFetch = mac.app.sync.engineFetch.bind(mac.app.sync);
   mac.app.sync.engineFetch = (url, init, pin, requirePin) => { fetches.push({ route: new URL(url).pathname, requirePin }); return engineFetch(url, init, pin, requirePin); };
   await mac.app.sync.connect(link);

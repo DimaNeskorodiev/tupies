@@ -101,9 +101,9 @@
     else if(groups.length)body=`<ol class="dash-days">${groups.map(group=>`<li class="dash-day"><h3 class="dash-day-label">${ctx.esc(group.label)}</h3><ol class="dash-events">${group.items.map(item=>eventRow(ctx,item,index++)).join('')}</ol></li>`).join('')}</ol>`;
     else {
       const wider=selected==='today'?['week','Show the last 7 days']:selected==='week'?['all','Show everything']:null,more=wider && items.length?`<button type="button" class="text-button" data-dash-action="range" data-range="${wider[0]}">${wider[1]}</button>`:'';
-      body=items.length?empty(ctx.icon('clock'),selected==='today'?'Quiet so far today':'A quiet week','Nothing new happened in this period.',more):empty(ctx.icon('activity'),'No activity yet','Give a bot a task and its progress will show up here.','<button type="button" class="text-button" data-nav="/bots">Open your bots</button>');
+      body=items.length?empty(ctx.icon('clock'),selected==='today'?'Quiet so far today':'A quiet week','Nothing new happened in this period.',more):empty(ctx.icon('activity'),'No activity yet','Give a bot a task and its result will show up here.','<button type="button" class="text-button" data-nav="/bots">Open your bots</button>');
     }
-    return head(ctx,'activity',ctx.icon('activity'),'Latest activity','A timeline of what your team has done.',0,control)+body;
+    return head(ctx,'activity',ctx.icon('activity'),'Latest activity','Recent task results from all your engines.',0,control)+body;
   }
 
   function needsSection(ctx) {

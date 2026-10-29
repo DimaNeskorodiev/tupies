@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "kind": "retained-synthetic-output-oracle-errata",
+  "corpus": "tupies-agent-quality-v4",
+  "fixtureSha256": "6c5e0f6658df95fa01c8d887f72b0beba98d098be759e76539d0e0042c28c504",
+  "derivedFrom": [
+    {
+      "cohort": "a",
+      "report": "live-acceptance-v4-research-concurrent-a.json",
+      "reportSha256": "b9d068834b10f8800cc1f4f950d36c7571d43a0d8ccc9bd8cbb1c39da268139e"
+    },
+    {
+      "cohort": "b",
+      "report": "live-acceptance-v4-research-concurrent-b.json",
+      "reportSha256": "5db8dfafbbdbe9a4d446472b710c6d6f631380ed693a091ed47b3b36b347d939"
+    },
+    {
+      "cohort": "c",
+      "report": "live-acceptance-v4-research-concurrent-c.json",
+      "reportSha256": "d414f0367c02c6f72c4027c3f2d4fe0c1a621c9329d5e80b01654c69074ce94b"
+    }
+  ],
+  "retainedEvidence": {
+    "metadataSha256": "e491001e3e41315422c5b5729c03602a8fa46b0c3afc8b1255225a995a68eec0",
+    "artifactPath": "report.md",
+    "artifactSha256": "19b3cc450007c934da1334e7d75123bbca557224a52b2851aae79eb959c60b06",
+    "recordedArtifact": true,
+    "actualTaskStatus": "completed"
+  },
+  "oracleRevision": {
+    "path": "eval/oracles.mjs",
+    "sha256": "7345ffcbec6e6f46a4a4ecea35fc3390bd11b55ae1b8af0ee2434272986c8a4e",
+    "testPath": "test/evaluation-oracles.test.mjs",
+    "testSha256": "85f04f4091d11182728b1a56da7a9d2f871ce7dc5c1f9db32c593ce396f7e5c9"
+  },
+  "override": {
+    "cohort": "a",
+    "caseId": "research-document",
+    "repetition": 3,
+    "check": "newest values and arithmetic",
+    "originalPassed": false,
+    "derivedPassed": true,
+    "reason": "The retained correct total uses the equivalent label Sum (Alpha + Beta). Only this formula-label presentation is newly accepted; other operators and wrong totals remain rejected."
+  },
+  "derivedCase": {
+    "status": "passed",
+    "checks": [
+      {
+        "name": "engine finished",
+        "passed": true,
+        "metric": "goal"
+      },
+      {
+        "name": "report file exists",
+        "passed": true,
+        "metric": "goal"
+      },
+      {
+        "name": "newest values and arithmetic",
+        "passed": true,
+        "metric": "goal"
+      },
+      {
+        "name": "source attributed",
+        "passed": true,
+        "metric": "source"
+      },
+      {
+        "name": "artifact was recorded",
+        "passed": true,
+        "metric": "goal"
+      }
+    ],
+    "taskOutcome": {
+      "expected": "completed",
+      "actual": "completed"
+    }
+  },
+  "combinedConcurrentSample": {
+    "samples": 9,
+    "originalRawPassed": 8,
+    "derivedPassed": 9,
+    "originalQuality": {
+      "verifiedCompletion": {
+        "count": 8,
+        "denominator": 9,
+        "rate": 0.8888888888888888
+      },
+      "falseSuccess": {
+        "count": 1,
+        "denominator": 9,
+        "rate": 0.1111111111111111
+      },
+      "exactConstraintRetention": {
+        "count": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "sourceCorrectness": {
+        "count": 9,
+        "denominator": 9,
+        "rate": 1
+      },
+      "unauthorizedChanges": {
+        "count": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "duplicateEffects": {
+        "count": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "humanInterventions": {
+        "count": null,
+        "measuredRuns": 0,
+        "totalRuns": 9
+      },
+      "notice": "Finite independent fixture checks only. Unknown or unmeasured categories have a zero denominator/null rate; automated control responses are not human interventions."
+    },
+    "derivedQuality": {
+      "verifiedCompletion": {
+        "count": 9,
+        "denominator": 9,
+        "rate": 1
+      },
+      "falseSuccess": {
+        "count": 0,
+        "denominator": 9,
+        "rate": 0
+      },
+      "exactConstraintRetention": {
+        "count": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "sourceCorrectness": {
+        "count": 9,
+        "denominator": 9,
+        "rate": 1
+      },
+      "unauthorizedChanges": {
+        "count": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "duplicateEffects": {
+        "count": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "humanInterventions": {
+        "count": null,
+        "measuredRuns": 0,
+        "totalRuns": 9
+      },
+      "notice": "Finite independent fixture checks only. Unknown or unmeasured categories have a zero denominator/null rate; automated control responses are not human interventions."
+    }
+  },
+  "newInferenceCalls": 0,
+  "sourceIdentityNotice": "Original reports and their tested product source identities remain unchanged. This file records only a post hoc oracle correction against hash-verified retained synthetic output; it is not a new product run or a claim about later product source.",
+  "limitations": [
+    "Finite nine-task research sample only; no general production-readiness or Grok parity claim.",
+    "The original main v4 and earlier reliability unexplained failures remain unresolved by this oracle correction."
+  ]
+}

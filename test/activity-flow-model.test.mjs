@@ -21,7 +21,7 @@ test('prompt classification changes geometry kind without inventing tool actions
 
 test('real tool events override prompt hints and expose only matched recorded results',()=>{
   const graph=build({events:[started('workspace_read',{path:'reports/data.csv'}),completed('workspace_read',{path:'reports/data.csv',size:123,rows:12})]}, {prompt:'Find the weather'});
-  assert.equal(graph.kind,'analysis');assert.match(graph.caption,/Read workspace result received/);
+  assert.equal(graph.kind,'analysis');assert.equal(graph.caption,'Reviewing results');
   assert.ok(graph.nodes.some(node=>node.value==='reports/data.csv'));assert.ok(factNodes(graph).some(node=>node.value==='123'));assert.ok(factNodes(graph).some(node=>node.value==='12'));
   const pending=build({events:[started('http_fetch',{url:'https://example.com/one'},'a'),completed('http_fetch',{status:201},'b')]});
   assert.ok(pending.nodes.some(node=>node.label==='In progress')===false);
@@ -34,7 +34,7 @@ test('real tool events override prompt hints and expose only matched recorded re
 test('HTTP facts require a complete JSON body and do not repair truncated work-log output',()=>{
   const events=[started('http_fetch',{url:'https://example.com/weather'}),completed('http_fetch',{url:'https://example.com/weather',status:200,contentType:'application/json',text:JSON.stringify({temperature:7,wind:14,condition:'Cloudy'})})];
   const graph=build({events});assert.equal(graph.kind,'research');assert.match(graph.context,/HTTP 200/);assert.ok(factNodes(graph).some(node=>node.value==='7'));assert.ok(factNodes(graph).some(node=>node.value==='14'));
-  assert.ok(graph.edges.some(edge=>edge.from==='input'&&edge.text==='example.com/weather'&&edge.detail==='Recorded tool input'));
+  assert.ok(graph.edges.some(edge=>edge.from==='input'&&edge.text==='Page'&&edge.detail==='Recorded tool input'));
   const truncated=build({events:[events[0],{...events[1],preview:'{"status":200,"text":"'+'.'.repeat(1980)}]});
   assert.equal(factNodes(truncated).length,0);assert.match(truncated.context,/incomplete|display limit/i);assert.doesNotMatch(allText(truncated),/HTTP 200/);
   const bodyTruncated=build({events:[events[0],completed('http_fetch',{status:200,text:'{"temperature":7,'})]});
@@ -58,12 +58,16 @@ test('credential destinations and sensitive fields are omitted even from signatu
 
 test('visible plan steps branch without implying pending steps or generic private reasoning completed',()=>{
   const graph=build({events:[{type:'model.started'}],plan:{steps:[{id:'one',title:'Read the evidence',status:'completed'},{id:'two',title:'Compare the options',status:'in_progress'},{id:'three',title:'Save a report',status:'pending'}]}}, {prompt:'Choose a plan'});
-  assert.equal(graph.kind,'reasoning');assert.equal(graph.caption,'Compare the options');assert.match(graph.context,/1 of 3/);
+  assert.equal(graph.kind,'reasoning');assert.equal(graph.caption,'Working on step 2 of 3');assert.match(graph.context,/1 of 3/);
   const pending=graph.nodes.find(node=>node.id==='plan-three');assert.equal(pending.detail,'Visible plan step · pending');assert.equal(pending.value,'Save a report');
-  assert.ok(graph.edges.some(edge=>edge.to===pending.id&&edge.text==='Save a report · pending'&&edge.detail.includes('plan metadata')));assert.doesNotMatch(allText(graph),/private thoughts|confidence|weighing/);
-  const longTitle='Review the original evidence and compare every available source with the report';
+  assert.ok(graph.edges.some(edge=>edge.to===pending.id&&edge.text==='Step 3 · Pending'&&edge.detail.includes('plan metadata')));assert.doesNotMatch(allText(graph),/private thoughts|confidence|weighing/);
+  const longTitle='Перевірити шиномонтажі Вроцлава та способи запису цього тижня, включаючи ціни, години роботи та доступність зимових шин';
   const long=build({plan:{steps:[{id:'long',title:longTitle,status:'in_progress'}]}},{prompt:'Choose a plan'});
-  assert.ok(long.edges.some(edge=>edge.to==='plan-long'&&edge.text===longTitle.slice(0,64).trim()&&edge.detail.includes('in_progress')));
+  assert.equal(long.caption,'Working on step 1 of 1','long titles stay in the collapsed plan and inspection');
+  assert.equal(long.nodes.find(node=>node.id==='plan-long').value,longTitle);
+  assert.ok(long.edges.some(edge=>edge.to==='plan-long'&&edge.text==='Step 1 · In progress'&&edge.detail.includes('in_progress')));
+  assert.ok(long.edges.every(edge=>!edge.text.includes(longTitle.slice(0,30))),'moving labels never repeat a long task or plan title');
+  assert.equal(long.edges.find(edge=>edge.from==='input').text,'Task');
 });
 
 test('delegation has an outbound edge only until the actual returned event arrives',()=>{
@@ -72,7 +76,7 @@ test('delegation has an outbound edge only until the actual returned event arriv
   const outgoing=build({status:'waiting_for_delegate',events},options);
   assert.equal(outgoing.kind,'team');assert.ok(outgoing.edges.some(edge=>edge.from==='core'&&edge.to==='peer'));assert.ok(!outgoing.edges.some(edge=>edge.from==='peer'&&edge.to==='core'));assert.match(outgoing.caption,/Waiting/);assert.ok(outgoing.nodes.some(node=>node.label==='Nova'));
   const working=build({status:'waiting_for_delegate',events,teammate:{botId:'bot_peer',status:'running',steps:3,event:'tool.started',tool:'http_fetch'}},options);
-  assert.equal(working.caption,'Nova: Read source');assert.equal(working.context,'Step 3 · Review the source reliability.');assert.notEqual(working.signature,outgoing.signature);
+  assert.equal(working.caption,'Nova: Reading a page');assert.equal(working.context,'Step 3 · Review the source reliability.');assert.notEqual(working.signature,outgoing.signature);
   const asking=build({status:'waiting_for_delegate',events,teammate:{botId:'bot_peer',status:'waiting_for_approval',steps:4,event:'approval.request'}},options);
   assert.equal(asking.caption,'Nova needs your approval');assert.match(asking.context,/Open Nova's chat/);
   // Progress of a bot other than the recorded target is never attributed to it.
@@ -96,6 +100,22 @@ test('identical retained data produces a stable signature; new facts and status 
   assert.equal(first.signature,same.signature);assert.equal(first.seed,same.seed);
   assert.notEqual(first.signature,build({...run,events:[...run.events,completed('http_fetch',{status:200})]},options).signature);
   assert.notEqual(first.signature,build({...run,status:'stopping'},options).signature);
+});
+
+test('activity describes the actual operation without showing service brands or raw tool names',()=>{
+  for(const [tool,args,label] of [
+    ['web_search',{query:'winter tyres'},'Searching the internet'],
+    ['integration_call',{integrationId:'duckduckgo',tool:'web_search',arguments:{q:'winter tyres'}},'Searching the internet'],
+    ['http_fetch',{url:'https://r.jina.ai/https://example.com/'},'Reading a page'],
+    ['integration_call',{integrationId:'jina-ai',tool:'read_url'},'Reading a page'],
+    ['browser_open',{url:'https://example.com/'},'Browsing a page'],
+    ['integration_call',{tool:'unknown_action'},'Using a connected service'],
+    ['unknown_tool',{},'Working'],
+  ]){
+    const graph=build({events:[started(tool,args)]});assert.equal(graph.caption,label);
+    const visible=[graph.caption,...graph.nodes.map(node=>node.label),...graph.edges.map(edge=>edge.text)].join(' ');
+    assert.doesNotMatch(visible,/jina|duckduckgo|http_fetch|web_search|integration_call|unknown_action|unknown_tool/i);
+  }
 });
 
 test('rendering is bounded and every edge refers to an existing node even for hostile large results',()=>{

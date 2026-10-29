@@ -51,11 +51,12 @@ enum Reachability: Equatable {
     case offline
     case revoked
     case identityChanged
+    case updateRequired
 
     var color: Color {
         switch self {
         case .online: return .green
-        case .offline, .revoked, .identityChanged: return .red
+        case .offline, .revoked, .identityChanged, .updateRequired: return .red
         case .unknown: return .gray
         }
     }
@@ -67,6 +68,7 @@ enum Reachability: Equatable {
         case .offline: return "Offline"
         case .revoked: return "Needs pairing"
         case .identityChanged: return "Identity changed"
+        case .updateRequired: return "Update required"
         }
     }
 }

@@ -15,6 +15,7 @@ extension ConnectionStore {
             case .unreachable: return "Offline"
             case .revoked: return "Needs pairing"
             case .failed: return "Error"
+            case .updateRequired: return "Update required"
             default: break
             }
         }

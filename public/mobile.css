@@ -721,9 +721,24 @@
   body.pearl-studio .artifact-card>.artifact-actions :is(a,button)+:is(a,button){border-left:.5px solid var(--ios-separator)}
   body.pearl-studio .artifact-card>.artifact-actions :is(a,button):active{background:var(--ios-fill)}
   /* The work log, run notices, approvals and questions */
+  body.pearl-studio .task-plan{padding:14px 16px;border:.5px solid var(--ios-separator);border-radius:18px;background:var(--ios-cell);color:var(--ios-label);font:var(--ios-subheadline);letter-spacing:var(--ios-track-subheadline)}
+  body.pearl-studio .task-plan-heading strong{color:var(--ios-label);font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font)}
+  body.pearl-studio .task-plan-heading>span{color:var(--ios-label-2);font:var(--ios-caption1)}
+  body.pearl-studio .task-plan>p{color:var(--ios-label-2);font:var(--ios-footnote)}
+  body.pearl-studio .task-plan li{grid-template-columns:16px minmax(0,1fr);color:var(--ios-label-2);font:var(--ios-subheadline)}
+  body.pearl-studio .task-plan li>small{grid-column:2;padding-top:0;color:var(--ios-label-2);font:var(--ios-caption1);white-space:normal}
+  body.pearl-studio .task-plan .plan-in_progress{color:var(--ios-label);font-weight:500}
+  body.pearl-studio .task-plan .plan-completed>span:nth-child(2){color:var(--ios-label-2)}
+  body.pearl-studio .task-plan .plan-indicator{color:var(--ios-label-2)}
+  body.pearl-studio .task-plan .plan-in_progress .plan-indicator{color:var(--ios-tint)}
+  body.pearl-studio .task-plan .plan-completed .plan-indicator{color:var(--ios-green)}
   body.pearl-studio .run-timeline{margin:8px 0 16px;border:.5px solid var(--ios-separator);border-radius:16px;background:var(--ios-cell);color:var(--ios-label-2);font:var(--ios-footnote);box-shadow:none}
   body.pearl-studio .run-timeline summary{min-height:44px;padding:10px 14px;color:var(--ios-label-2);font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font)}
   body.pearl-studio .run-timeline summary span{font:var(--ios-caption1);color:var(--ios-label-3)}
+  body.pearl-studio .task-details{margin:8px 0 12px}
+  body.pearl-studio .task-activity h4{font:var(--ios-footnote);font-weight:600}
+  body.pearl-studio .task-activity li{font:var(--ios-footnote)}
+  body.pearl-studio .task-activity time{font:var(--ios-caption1)}
   body.pearl-studio .timeline-event{border-top:.5px solid var(--ios-separator)}
   body.pearl-studio .timeline-event strong{font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font);color:var(--ios-label)}
   body.pearl-studio .timeline-event p{font:var(--ios-footnote);color:var(--ios-label-2)}
@@ -743,9 +758,11 @@
   /* The thinking window keeps its transparent flow; text follows the type ramp. */
   body.pearl-studio .thinking-message{display:flex;gap:8px;margin-bottom:20px}
   body.pearl-studio .thinking-message>.avatar{width:28px;height:28px;margin-top:0}
+  body.pearl-studio .thinking-card{color:var(--ios-label-2)}
   body.pearl-studio .thinking-caption{gap:8px;font:var(--ios-footnote);letter-spacing:var(--ios-track-footnote);color:var(--ios-label-2)}
   body.pearl-studio .thinking-elapsed{font:var(--ios-caption1);font-variant-numeric:tabular-nums;color:var(--ios-label-3)}
   body.pearl-studio .thinking-context{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .thinking-phase{color:var(--ios-label)}
   body.pearl-studio .thinking-flow-fragment{font:500 calc(11px * var(--ios-s))/1.4 var(--ios-font)}
   body.pearl-studio .thinking-flow-inspection{border-top-color:var(--ios-separator);color:var(--ios-label-2);font:var(--ios-footnote)}
   body.pearl-studio .thinking-stop{min-height:44px;gap:6px;padding:0 14px;border:0;border-radius:999px;background:var(--ios-fill);color:var(--ios-label);font:600 calc(13px * var(--ios-s))/1 var(--ios-font)}
@@ -835,6 +852,7 @@
   body.pearl-studio .bp-task-status{background:var(--ios-fill);color:var(--ios-label-2)}
   body.pearl-studio .bp-task-status.ok{background:var(--ios-green-soft);color:var(--ios-green)}
   body.pearl-studio .bp-task-status.fail{background:var(--ios-red-soft);color:var(--ios-red)}
+  body.pearl-studio .bp-task-body .bp-task-error{color:var(--ios-red)}
   body.pearl-studio .bp-fact-head strong{font:var(--ios-headline);letter-spacing:var(--ios-track-body);color:var(--ios-label)}
   body.pearl-studio :is(.bp-fact,.bp-note-row,.bp-file,.bp-person,.bp-mini){border-color:transparent}
   body.pearl-studio .bp-notice p{flex:1 1 calc(100% - 32px)}

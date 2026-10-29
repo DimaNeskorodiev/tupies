@@ -15,6 +15,7 @@ import { routineRuns, validateRoutine } from './lib/routines.mjs';
 import { Rooms, isDriveActive } from './lib/rooms.mjs';
 import { Providers } from './lib/providers.mjs';
 import { Integrations } from './lib/integrations.mjs';
+import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
 import { nativeApi, oauthCallback } from './lib/api-native.mjs';
 import { dashboard } from './lib/dashboard.mjs';
@@ -78,15 +79,19 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
   if(Object.hasOwn(input,'enabled')){ensure(typeof input.enabled==='boolean',400,'enabled must be true or false.');bot.enabled=input.enabled;}
   if(Object.hasOwn(input,'hidden')){ensure(typeof input.hidden==='boolean',400,'hidden must be true or false.');bot.hidden=input.hidden;}
+  if(Object.hasOwn(input,'episodicMemory')){ensure(typeof input.episodicMemory==='boolean',400,'episodicMemory must be true or false.');bot.episodicMemory=input.episodicMemory;}
+  if(Object.hasOwn(input,'searchFallbackIntegrationId')){ensure(typeof input.searchFallbackIntegrationId==='string' && (!input.searchFallbackIntegrationId || /^[a-zA-Z0-9_-]{1,100}$/.test(input.searchFallbackIntegrationId)),400,'Choose a valid search fallback integration.');bot.searchFallbackIntegrationId=input.searchFallbackIntegrationId;}
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
   if(bot.connectionId!==previous.connectionId || bot.model!==previous.model)bot.reasoningEffort='';
   return {description:'',instructions:'',model:'',reasoningEffort:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:['workspace','memory','skills','web','integrations','delegation','automation'],collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
 }
-function validateBinding(bot,state) {
+function validateBinding(bot,state,integrations) {
   if(bot.connectionId)ensure(state.connections.some(c=>c.id===bot.connectionId && c.type!=='legacy-hermes'),400,'Choose a model provider. Replace legacy gateway connections in Providers.');
   ensure((bot.collaborators||[]).every(target=>target!==bot.id && state.bots.some(b=>b.id===target)),400,'Choose other existing bots as collaborators.');
   ensure((bot.integrationIds||[]).every(target=>state.integrations.some(i=>i.id===target)),400,'Choose existing integrations.');
+  if(bot.searchFallbackIntegrationId)ensure((bot.integrationIds || []).includes(bot.searchFallbackIntegrationId),400,'Assign the search fallback integration to this bot before choosing it.');
+  if(bot.searchFallbackIntegrationId)ensure(availableSearchFallbacks(integrations,{...bot,tools:['web','integrations']}).some(item=>item.id===bot.searchFallbackIntegrationId),400,'Choose a configured supported search integration for the fallback.');
 }
 
 export async function createStudioServer(options={}) {
@@ -105,13 +110,16 @@ export async function createStudioServer(options={}) {
   const access=await new Access(dataDir,{publicHost:publicOrigin?new URL(publicOrigin).host:'',...(tlsMode?{trustProxy:'none'}:options.trustProxy?{trustProxy:options.trustProxy}:{})}).init();
   const providers=options.providers || new Providers(store,options);
   providers.oauth && (providers.oauth.refreshDelegate=connectionId=>sync.role()==='replica'?sync.delegateRefresh(connectionId):null);
+  if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}
   const speech=new Speech(store,options);
   const integrations=options.integrations || new Integrations(store,options);
-  const runtime=new Runtime(store,{...options,providers,integrations,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation()});
+  const runtime=new Runtime(store,{...options,providers,integrations,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();
-  const channels=new Channels(store,runtime,options);
+  const channels=new Channels(store,runtime,{...options,automation:()=>sync.runsAutomation()});
+  sync.options.linkBusy=()=>runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging');
+  sync.prepareLinkChange=()=>channels.pauseAutomation();
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
   const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport}).init();
@@ -240,10 +248,10 @@ export async function createStudioServer(options={}) {
         }
         if(method==='POST' && pathname==='/api/bots') {
           const input=await body(req);
-          const bot=await store.mutate(state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state);ensure(bot.skills.every(s=>state.skills.some(x=>x.id===s)),400,'Unknown skill.');state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
+          const bot=await store.mutate(state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);ensure(bot.skills.every(s=>state.skills.some(x=>x.id===s)),400,'Unknown skill.');state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
           return json(res,bot,201);
         }
-        let match=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)(?:\/(messages|run|runs|stop|approval|answer|capabilities|skills|compact))?$/);
+        let match=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)(?:\/(messages|run|runs|stop|approval|answer|steer|capabilities|skills|compact))?$/);
         if(match) {
           const [,botId,action]=match,bot=store.state.bots.find(b=>b.id===botId);ensure(bot,404,'Bot not found.');
           if(!action && method==='PATCH') {
@@ -254,14 +262,14 @@ export async function createStudioServer(options={}) {
               const updated=await store.mutate(state=>{const target=state.bots.find(b=>b.id===botId);ensure(target,404,'Bot not found.');target.hidden=input.hidden;store.audit('bot.updated',`${target.name} was ${input.hidden?'hidden':'shown again'}`,botId);return structuredClone(target);});
               return json(res,updated);
             }
-            ensure(!isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before editing it.');
+            const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before editing it.');idle();
             const updated=validateBot(input,bot);
             if(updated.connectionId!==bot.connectionId)delete updated.sessionId;
-            await store.mutate(state=>{validateBinding(updated,state);ensure(updated.skills.every(s=>state.skills.some(x=>x.id===s)),400,'Unknown skill.');state.bots[state.bots.findIndex(b=>b.id===botId)]=updated;store.audit('bot.updated',`${updated.name} was updated`,botId);});return json(res,updated);
+            await store.mutate(state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');validateBinding(updated,state,integrations);ensure(updated.skills.every(s=>state.skills.some(x=>x.id===s)),400,'Unknown skill.');state.bots[state.bots.findIndex(b=>b.id===botId)]=updated;store.audit('bot.updated',`${updated.name} was updated`,botId);});return json(res,updated);
           }
           if(!action && method==='DELETE') {
-            ensure(!isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Stop the active run and room turn before removing this bot.');
-            await store.mutate(state=>{state.bots=state.bots.filter(b=>b.id!==botId);state.routines=state.routines.filter(r=>r.botId!==botId);delete state.messages[botId];removeBotSessions(state,botId);delete state.memory[botId];delete state.runs[botId];delete state.runHistory?.[botId];delete state.submissions?.[botId];state.proposals=(state.proposals || []).filter(item=>item.botId!==botId);for(const b of state.bots)b.collaborators=(b.collaborators||[]).filter(id=>id!==botId);for(const room of state.rooms)room.botIds=room.botIds.filter(id=>id!==botId);for(const channel of state.channels)if(channel.botId===botId){channel.enabled=false;channel.error='The assigned bot was removed.';}store.audit('bot.deleted',`${bot.name} removed from this workspace`);});return json(res,{deleted:true});
+            const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Stop the active run and room turn before removing this bot.');idle();
+            await store.mutate(state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');state.bots=state.bots.filter(b=>b.id!==botId);state.routines=state.routines.filter(r=>r.botId!==botId);delete state.messages[botId];removeBotSessions(state,botId);delete state.memory[botId];delete state.runs[botId];delete state.runHistory?.[botId];delete state.submissions?.[botId];state.proposals=(state.proposals || []).filter(item=>item.botId!==botId);for(const b of state.bots)b.collaborators=(b.collaborators||[]).filter(id=>id!==botId);for(const room of state.rooms)room.botIds=room.botIds.filter(id=>id!==botId);for(const channel of state.channels)if(channel.botId===botId){channel.enabled=false;channel.error='The assigned bot was removed.';}store.audit('bot.deleted',`${bot.name} removed from this workspace`);});return json(res,{deleted:true});
           }
           if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);return pollReply(req,res,`bot:${botId}`,elsewhere,()=>({messages:store.state.messages[botId] || [],run:store.state.runs[botId] || null,elsewhere}));}
           if(action==='compact' && method==='POST'){
@@ -275,8 +283,9 @@ export async function createStudioServer(options={}) {
             return json(res,result,result.duplicate?200:202);
           }
           if(action==='run' && method==='GET')return json(res,{run:await runtime.poll(botId) || null});
+          if(action==='steer'&&method==='POST'){const result=await runtime.steer(botId,await body(req,12_000));return json(res,result,result.duplicate?200:202);}
           if(['stop','approval','answer'].includes(action) && method==='POST'){const input=await body(req);return json(res,await runtime.control(botId,action,input));}
-          if(action==='runs' && method==='GET')return json(res,{data:store.state.runHistory?.[botId] || []});
+          if(action==='runs' && method==='GET')return json(res,{data:store.redactValue(store.state.runHistory?.[botId] || [])});
           if(action==='capabilities' && method==='GET')return json(res,store.redactValue(await runtime.capabilities(bot)));
           if(action==='skills' && method==='GET')return json(res,{data:store.state.skills.filter(skill=>bot.skills.includes(skill.id))});
         }
@@ -289,9 +298,11 @@ export async function createStudioServer(options={}) {
           const room={id:id('room'),name,botIds:input.botIds,autoCollaborate:input.autoCollaborate??true,maxRounds:input.maxRounds||4,createdAt:now()};
           await store.mutate(state=>{ensure(state.rooms.length<100,400,'Workspace supports up to 100 rooms.');state.rooms.push(room);store.audit('room.created',`${name} room created`,null,{roomId:room.id});});return json(res,room,201);
         }
-        match=pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)(?:\/(messages|stop))?$/);
+        match=pathname.match(/^\/api\/rooms\/([a-zA-Z0-9_-]+)(?:\/(messages|stop|submissions)(?:\/([a-zA-Z0-9_-]{8,80}))?)?$/);
         if(match) {
-          const [,roomId,action]=match,room=store.state.rooms.find(r=>r.id===roomId);ensure(room,404,'Room not found.');
+          const [,roomId,action,submissionId]=match,room=store.state.rooms.find(r=>r.id===roomId);ensure(room,404,'Room not found.');
+          ensure(!submissionId||action==='submissions',404,'API route not found.');
+          if(action==='submissions'&&submissionId&&method==='GET'){const receipt=rooms.receipt(roomId,submissionId);ensure(receipt,404,'This engine has no receipt for that room message.');return json(res,{received:true,driveId:receipt.driveId,drive:rooms.receiptDrive(roomId,receipt)});}
           if(!action && method==='PATCH') {
             ensure(!isDriveActive(store.state.roomDrives[roomId]),409,'Wait for this room turn to finish before editing it.');
             const input=await body(req),updated={...room};
@@ -299,17 +310,17 @@ export async function createStudioServer(options={}) {
             if(Object.hasOwn(input,'autoCollaborate')){ensure(typeof input.autoCollaborate==='boolean',400,'Choose a valid collaboration mode.');updated.autoCollaborate=input.autoCollaborate;}
             if(Object.hasOwn(input,'maxRounds')){ensure(Number.isInteger(input.maxRounds)&&input.maxRounds>=1&&input.maxRounds<=8,400,'Choose between 1 and 8 handoffs.');updated.maxRounds=input.maxRounds;}
             if(Object.hasOwn(input,'botIds')) {ensure(Array.isArray(input.botIds) && input.botIds.length>=2 && input.botIds.length<=8 && new Set(input.botIds).size===input.botIds.length,400,'Choose 2–8 different bots.');ensure(input.botIds.every(id=>store.state.bots.some(b=>b.id===id)),400,'Choose existing bots.');updated.botIds=input.botIds;}
-            await store.mutate(state=>{state.rooms[state.rooms.findIndex(r=>r.id===roomId)]=updated;store.audit('room.updated',`${updated.name} room updated`,null,{roomId});});return json(res,updated);
+            await store.mutate(state=>{ensure(state.rooms.some(item=>item.id===roomId),404,'Room not found.');ensure(!isDriveActive(state.roomDrives[roomId]),409,'Wait for this room turn to finish before editing it.');state.rooms[state.rooms.findIndex(r=>r.id===roomId)]=updated;store.audit('room.updated',`${updated.name} room updated`,null,{roomId});});return json(res,updated);
           }
           if(!action && method==='DELETE') {
             ensure(!isDriveActive(store.state.roomDrives[roomId]),409,'Stop this room turn before removing it.');
-            await store.mutate(state=>{state.rooms=state.rooms.filter(r=>r.id!==roomId);delete state.roomMessages[roomId];delete state.roomDrives[roomId];store.audit('room.deleted',`${room.name} room removed`);});return json(res,{deleted:true});
+            await store.mutate(state=>{ensure(!isDriveActive(state.roomDrives[roomId]),409,'Stop this room turn before removing it.');state.rooms=state.rooms.filter(r=>r.id!==roomId);delete state.roomMessages[roomId];delete state.roomDrives[roomId];delete state.roomSubmissions?.[roomId];store.audit('room.deleted',`${room.name} room removed`);});return json(res,{deleted:true});
           }
           if(action==='messages' && method==='GET') {
             const drive=store.state.roomDrives[roomId];if(drive?.currentBotId)await runtime.poll(drive.currentBotId);await rooms.advance(roomId);
             return pollReply(req,res,`room:${roomId}`,null,()=>({messages:store.state.roomMessages[roomId] || [],drive:store.state.roomDrives[roomId] || null}));
           }
-          if(action==='messages' && method==='POST'){const input=await body(req);return json(res,{drive:await rooms.start(roomId,string(input.text,'Message',20_000))},202);}
+          if(action==='messages' && method==='POST'){const input=await body(req),result=await rooms.submit(roomId,string(input.text,'Message',20_000),{clientMessageId:input.clientMessageId});return json(res,result,result.duplicate?200:202);}
           if(action==='stop' && method==='POST'){const input=await body(req);return json(res,{drive:await rooms.stop(roomId,input)});}
         }
         if(pathname==='/api/skills' && method==='POST') {
@@ -386,12 +397,22 @@ export async function createStudioServer(options={}) {
   server.requestTimeout=30_000;server.headersTimeout=10_000;server.keepAliveTimeout=5_000;
   const timer=options.scheduler===false ? null : setInterval(async()=>{if(ticking || closed)return;ticking=true;try{await runtime.tick();if(sync.runsAutomation())await channels.tick();}catch(err){if(options.logErrors!==false)console.error('Tupies scheduler:',store.redact(err.message));}finally{ticking=false;}},options.pollInterval || 2500);
   timer?.unref();
-  function controlCommand(request,localUrl) {
+  async function controlCommand(request,localUrl) {
     ensure(request?.v===1,400,'Update Tupies: unsupported command version.');
     if(request.command==='pair') {
       const kind=request.kind==='engine'?'engine':'device',baseUrl=request.url?validateEngineUrl(request.url):publicOrigin || localUrl;
       const {qrSvg,...pairing}=sync.devices.createPairing({kind,baseUrl});
       return {pairing:{...pairing,name:sync.identity.name}};
+    }
+    if(request.command==='connect-home') {
+      ensure(Object.keys(request).every(key=>['v','command','link','confirm'].includes(key))&&request.confirm===true&&typeof request.link==='string'&&request.link.length<=3000,400,'Confirm the exact home-server link.');
+      await sync.connect(request.link);
+      return {connected:true,protocol:2};
+    }
+    if(request.command==='disconnect-home') {
+      ensure(Object.keys(request).every(key=>['v','command','confirm'].includes(key))&&request.confirm===true,400,'Confirm disconnecting this engine from its home server.');
+      await sync.disconnect();
+      return {disconnected:true,automationSuspended:!sync.runsAutomation()};
     }
     throw new HttpError(400,'Unknown command.');
   }
@@ -404,12 +425,12 @@ export async function createStudioServer(options={}) {
       await fs.rm(file,{force:true});
       const listener=net.createServer(socket=>{
         let input='';socket.setTimeout(5000,()=>socket.destroy());socket.on('error',()=>{});
-        socket.on('data',chunk=>{
+        socket.on('data',async chunk=>{
           input+=chunk;if(input.length>4096){socket.destroy();return;}
           const end=input.indexOf('\n');if(end<0)return;
           socket.removeAllListeners('data');
           let reply;
-          try{reply={ok:true,...controlCommand(JSON.parse(input.slice(0,end)),localUrl)};}
+          try{const request=JSON.parse(input.slice(0,end));if(['connect-home','disconnect-home'].includes(request.command))socket.setTimeout(30_000,()=>socket.destroy());reply={ok:true,...await controlCommand(request,localUrl)};}
           catch(err){reply={ok:false,error:err instanceof HttpError?err.message:'The command could not be handled.'};}
           socket.end(`${JSON.stringify(reply)}\n`);
         });
@@ -419,7 +440,7 @@ export async function createStudioServer(options={}) {
     },
     /** Lets the Mac app on this account pair with a loopback engine without a code: same-user processes can already read the data directory. */
     async writeLocalPairing(file,url) {
-      const write=async()=>{const pairing=sync.devices.createPairing({kind:'device',baseUrl:url,local:true});await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});await atomicWrite(file,JSON.stringify({v:1,url,code:pairing.code,fingerprint:pairing.fingerprint,name:sync.identity.name,expiresAt:pairing.expiresAt},null,2));};
+      const write=async()=>{const pairing=sync.devices.createPairing({kind:'device',baseUrl:url,local:true});await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});await atomicWrite(file,JSON.stringify({v:1,url,code:pairing.code,fingerprint:pairing.fingerprint,name:sync.identity.name,expiresAt:pairing.expiresAt,...(tlsMode?{tls:'engine'}:{})},null,2));};
       sync.devices.onLocalPairingUsed=()=>{write().catch(()=>{});};
       await write();
       // Local codes last a day; refresh well before then so a long-running engine never leaves a stale file.

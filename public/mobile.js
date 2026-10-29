@@ -108,7 +108,7 @@
   function sizeComposer(field = composer()) {
     if (!phone() || !field) return;
     const thread = query('#app .chat-thread');
-    const atBottom = thread && thread.scrollHeight - thread.scrollTop - thread.clientHeight < 90;
+    const atBottom = thread && !thread.__searchAnchor && thread.scrollHeight - thread.scrollTop - thread.clientHeight < 90;
     composerMotion?.cancel(); composerMotion = null;
     const before = parseFloat(field.style.height) || 0;
     field.style.height = '0px';
@@ -148,7 +148,7 @@
     // Do not fight browser pinch zoom or pan a magnified page back into place.
     if (zoomed(view)) return;
     const thread = query('#app .chat-thread');
-    const atBottom = thread && thread.scrollHeight - thread.scrollTop - thread.clientHeight < 90;
+    const atBottom = thread && !thread.__searchAnchor && thread.scrollHeight - thread.scrollTop - thread.clientHeight < 90;
     const height = view?.height || window.innerHeight, width = view?.width || window.innerWidth;
     if (!editing()) {
       // No keyboard can be up: CSS sizes the screen (100dvh), and this height is the resting one.
@@ -752,7 +752,8 @@
     state.nodes = children;
     const height = thread.scrollHeight, delta = height - state.height, bottom = height - thread.clientHeight;
     state.height = height;
-    const atBottom = bottom - thread.scrollTop < 6, gliding = !!state.glide, following = gliding || state.atBottom && atBottom;
+    if (thread.__searchAnchor) {state.glide = null; state.atBottom = false;}
+    const atBottom = !thread.__searchAnchor && bottom - thread.scrollTop < 6, gliding = !!state.glide, following = gliding || state.atBottom && atBottom;
     state.atBottom = atBottom;
     if (!state.filled) {state.filled = true; return;}
     if (!phone()) return;
@@ -782,6 +783,7 @@
     const step = () => {
       const current = state.glide;
       if (!current || threadWatch !== state || !thread.isConnected) return;
+      if (thread.__searchAnchor) {state.glide = null; state.atBottom = false; return;}
       const progress = clamp((now() - current.start) / 340, 0, 1);
       state.offset = current.from * (1 - settleCurve(progress));
       thread.scrollTop = thread.scrollHeight - thread.clientHeight - state.offset;

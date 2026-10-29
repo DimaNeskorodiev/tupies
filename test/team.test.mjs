@@ -51,19 +51,24 @@ test('a bot knows the whole team by default and really talks with a teammate it 
 });
 
 test('waiting for a teammate shows its live progress and does not spend the waiting bot\'s runtime',async t=>{
-  const seen=[];
+  const seen=[],runtime=600,parentStep=150,childWork=450;let parentWork=0;
   const {engine,store}=await engineFixture(t,async request=>{
     const atlas=request.messages[0].content.startsWith(`You are ${store.state.bots.find(bot=>bot.id==='bot_atlas').name}`);
-    if(!atlas){seen.push(structuredClone(store.state.runs.bot_atlas));await delay(450);return {text:'The primary source is most reliable.',toolCalls:[]};}
-    await delay(150);
+    if(!atlas){seen.push(structuredClone(store.state.runs.bot_atlas));t.mock.timers.tick(childWork);return {text:'The primary source is most reliable.',toolCalls:[]};}
+    parentWork+=parentStep;t.mock.timers.tick(parentStep);
     if(request.messages.at(-1).role==='user')return {text:'',toolCalls:[call('ask-scout','delegate_task',{botId:'bot_scout',task:'Which source is most reliable?'})]};
     return {text:'Scout says the primary source is best.',toolCalls:[]};
-  },{runTimeout:600});
-  await engine.start('bot_atlas','Ask Scout which source to trust.');
-  await waitFor(()=>['completed','failed'].includes(store.state.runs.bot_atlas?.status));
+  },{runTimeout:runtime});
+  // Exercise the real deadline/pause/resume logic without charging unrelated CPU/FS contention to this fixture.
+  // Provider work advances the same clock/timers used by production; real Store writes still finish normally.
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:Date.now()});
+  const started=await engine.start('bot_atlas','Ask Scout which source to trust.');
+  await engine.tasks.get(started.id);
   const atlas=store.state.runs.bot_atlas;
   assert.equal(atlas.status,'completed',atlas.error);assert.equal(store.state.runs.bot_scout.status,'completed');
-  assert.ok(Date.parse(atlas.finishedAt)-Date.parse(atlas.createdAt)>600,'the whole conversation outlasted one runtime limit');
+  assert.equal(parentWork,2*parentStep);assert.ok(parentWork<runtime,'the parent spent less than its own budget');assert.ok(childWork<runtime,'the child spent less than its own budget');
+  assert.equal(Date.parse(atlas.finishedAt)-Date.parse(atlas.createdAt),parentWork+childWork);
+  assert.ok(Date.parse(atlas.finishedAt)-Date.parse(atlas.createdAt)>runtime,'the whole conversation outlasted one runtime limit');
   assert.equal(seen[0].status,'waiting_for_delegate');
   assert.deepEqual({botId:seen[0].teammate.botId,status:seen[0].teammate.status,steps:seen[0].teammate.steps,event:seen[0].teammate.event},{botId:'bot_scout',status:'running',steps:1,event:'model.started'});
   assert.equal(Object.hasOwn(atlas,'teammate'),false);
@@ -72,12 +77,13 @@ test('waiting for a teammate shows its live progress and does not spend the wait
 test('a teammate that outlasts its own runtime limit fails without failing the bot that asked',async t=>{
   const {engine,store,requests}=await engineFixture(t,async request=>{
     const atlas=request.messages[0].content.startsWith(`You are ${store.state.bots.find(bot=>bot.id==='bot_atlas').name}`);
-    if(!atlas){await delay(500);return {text:'Too late.',toolCalls:[]};}
+    if(!atlas){t.mock.timers.tick(500);return {text:'Too late.',toolCalls:[]};}
     if(request.messages.at(-1).role==='user')return {text:'',toolCalls:[call('ask-scout','delegate_task',{botId:'bot_scout',task:'Check every source.'})]};
     return {text:'Scout ran out of time, so I answered myself.',toolCalls:[]};
   },{runTimeout:300});
-  await engine.start('bot_atlas','Ask Scout to check the sources.');
-  await waitFor(()=>['completed','failed'].includes(store.state.runs.bot_atlas?.status));
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:Date.now()});
+  const started=await engine.start('bot_atlas','Ask Scout to check the sources.');
+  await engine.tasks.get(started.id);
   assert.equal(store.state.runs.bot_atlas.status,'completed');assert.equal(store.state.runs.bot_scout.status,'failed');
   assert.match(requests.at(-1).messages.at(-1).content,/runtime limit/);
 });

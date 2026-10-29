@@ -326,7 +326,7 @@ test('the system prompt stays fixed through a task while the plan travels in an 
   assert.equal(current(store).context.window,128_000);assert.equal(current(store).context.source,'default');
 });
 
-test('a separate lane keeps its own history and leaves a short record in the Bot Chat',async t=>{
+test('a third-party Telegram lane keeps its own history without supplying Bot Chat model context',async t=>{
   const {engine,store,requests}=await fixture(t,async(_request,index)=>({text:index===1?'Chat answer.':'Lane answer.',toolCalls:[]}));
   await engine.start('bot_atlas','Hello in the app.');await waitFor(()=>current(store)?.status==='completed');
   const lane='telegram:channel_x:555',sessionId=sessionIdFor('bot_atlas',lane);
@@ -336,10 +336,9 @@ test('a separate lane keeps its own history and leaves a short record in the Bot
   assert.equal(current(store).sessionId,sessionId);assert.equal(sessionOwner(sessionId),'bot_atlas');assert.match(sessionId,/^bot_atlas--telegram-[0-9a-f]{16}$/);
   assert.deepEqual(store.state.conversations[sessionId].map(message=>message.role),['user','assistant']);
   assert.deepEqual(store.state.sessions.map(({id,botId,kind,key})=>({id,botId,kind,key})),[{id:sessionId,botId:'bot_atlas',kind:'telegram',key:lane}]);
-  // The Bot Chat keeps its own turns plus a record of the reply given elsewhere.
+  // The display retains the lane, but the Bot Chat model keeps only the owner's own turns.
   const chat=store.state.conversations.bot_atlas;
-  assert.deepEqual(chat.slice(0,2).map(message=>message.content),['Hello in the app.','Chat answer.']);
-  assert.match(chat.at(-1).content,/^\[Elsewhere: a Telegram chat with someone else\]\nAsked: Question from someone else\.\nAnswered: Lane answer\.$/);
+  assert.deepEqual(chat.map(message=>message.content),['Hello in the app.','Chat answer.']);
   assert.equal(store.state.messages.bot_atlas.filter(message=>message.role==='user').at(-1).sessionId,sessionId);
   assert.notEqual(requests[0].cacheKey,requests[1].cacheKey);
 });
@@ -398,7 +397,7 @@ test('older turns that no longer fit are summarized by the bot model instead of 
   const history=longChat(30),{engine,store,requests}=await fixture(t,summaryReply('## Goal\nKeep the thread going.\n## Done\n- Covered the early topics.'));
   await store.mutate(state=>{state.connections[0].contextWindow=40_000;state.conversations.bot_atlas=history;});
   await engine.start('bot_atlas','Continue.');await waitFor(()=>current(store)?.status==='completed');
-  assert.equal(requests.length,2);assert.equal(requests[0].tools.length,0);assert.match(requests[0].messages[0].content,/handoff summary/);assert.match(requests[0].messages[1].content,/User: topic 0 u+/);
+  assert.equal(requests.length,2);assert.equal(requests[0].tools.length,0);assert.match(requests[0].messages[0].content,/handoff summary/);assert.ok(/User \[history index 0\]: topic 0 u+/.test(requests[0].messages[1].content));
   const sent=requests[1].messages;
   assert.match(sent[1].content,/^<conversation_summary>\nEarlier messages of this conversation \(\d+\) were compacted[\s\S]*Covered the early topics\.[\s\S]*## Earlier user messages \(verbatim, oldest first\)\n- topic 0 u+/);
   assert.equal(sent.at(-1).content,'Continue.');assert.match(sent.at(-2).content,/^reply 29 r+$/);
@@ -458,14 +457,36 @@ test('a provider context overflow is compacted to the stated limit and the model
   await store.mutate(state=>{state.connections[0].models=[{id:'test-model',name:'Test model',reasoning:{supported:false,efforts:[]}}];state.conversations.bot_atlas=history;});
   await engine.start('bot_atlas','Continue.');await waitFor(()=>current(store)?.status==='completed');
   // The learned window no longer holds the older turns, so they are summarized before the step is sent again.
-  assert.equal(requests.length,3);assert.equal(requests[1].tools.length,0);
+  const modelSteps=requests.filter(request=>request.tools.length),summarySteps=requests.filter(request=>!request.tools.length);
+  assert.equal(modelSteps.length,2);assert.ok(summarySteps.length>1 && summarySteps.length<=5);
   const size=messages=>Math.ceil(Buffer.byteLength(JSON.stringify(messages))/4);
-  assert.ok(size(requests[2].messages)<64_000*0.9 && size(requests[0].messages)>size(requests[2].messages));
-  assert.match(requests[2].messages[1].content,/^<conversation_summary>/);
-  assert.equal(requests[2].messages.filter(message=>message.role==='user').at(-1).content,'Continue.');
+  const retry=modelSteps[1];
+  assert.ok(summarySteps.every(request=>size(request.messages)<64_000*0.8));
+  assert.ok(size(retry.messages)<64_000*0.9 && size(modelSteps[0].messages)>size(retry.messages));
+  assert.match(retry.messages[1].content,/^<conversation_summary>/);
+  assert.equal(retry.messages.filter(message=>message.role==='user').at(-1).content,'Continue.');
+  assert.equal(current(store).events.filter(event=>event.type==='tool.started').length,0);
+  assert.equal(store.state.sessions.find(item=>item.id==='bot_atlas').compactCoverage.complete,true);
   assert.ok(current(store).events.some(event=>event.type==='context.overflow' && event.limit===64_000));
   assert.deepEqual(store.state.connections[0].models[0],{id:'test-model',name:'Test model',reasoning:{supported:false,efforts:[]},contextWindow:64_000,contextSource:'provider-error'});
   assert.equal(current(store).context.window,64_000);assert.equal(current(store).context.source,'provider-error');
+});
+
+test('staged overflow compaction preserves a committed tool and never replays it',async t=>{
+  let taskSteps=0;
+  const {engine,store,requests}=await fixture(t,async request=>{
+    if(!request.tools.length)return {text:'## In progress\nKeep the report file and continue without replaying its write.',toolCalls:[]};
+    if(++taskSteps===1)return {text:'',toolCalls:[call('write-once','workspace_write',{path:'report.txt',content:'Committed exactly once.'})]};
+    if(taskSteps===2)throw new HttpError(502,"OpenAI returned HTTP 400: This model's maximum context length is 64,000 tokens.");
+    return {text:'The existing report is ready.',toolCalls:[]};
+  });
+  await store.mutate(state=>{state.bots.find(bot=>bot.id==='bot_atlas').approvalPolicy='balanced';state.conversations.bot_atlas=Array.from({length:30},(_,i)=>[{role:'user',content:`topic ${i} ${'u'.repeat(200)}`},{role:'assistant',content:`reply ${i} ${'r'.repeat(12_000)}`}]).flat();});
+  const run=await engine.start('bot_atlas','Write the report and verify it.');await engine.tasks.get(run.id);
+  assert.equal(current(store).status,'completed');assert.equal(taskSteps,3);
+  assert.equal(current(store).events.filter(event=>event.type==='tool.started' && event.tool==='workspace_write').length,1);
+  assert.equal(await fs.readFile(path.join(await getWorkspaceRoot(store,'bot_atlas'),'report.txt'),'utf8'),'Committed exactly once.');
+  assert.ok(requests.filter(request=>!request.tools.length).length<=5);
+  assert.equal(store.state.conversations.bot_atlas.filter(message=>message.role==='tool' && message.tool_call_id==='write-once').length,1);
 });
 
 test('a second context overflow in one task fails it instead of retrying again',async t=>{

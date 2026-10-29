@@ -39,7 +39,8 @@ extension URL {
 
     var isLoopback: Bool {
         guard let host = host?.lowercased() else { return false }
-        return host == "localhost" || host == "::1" || host == "[::1]" || host.hasPrefix("127.")
+        if host == "localhost" || host == "::1" || host == "[::1]" { return true }
+        return ipv4Octets?.first == 127
     }
 
     /// Hosts reached through an encrypted overlay network (Tailscale) — plain HTTP
@@ -47,9 +48,16 @@ extension URL {
     var isEncryptedOverlay: Bool {
         guard let host = host?.lowercased() else { return false }
         if host.hasSuffix(".ts.net") { return true }
-        let parts = host.split(separator: ".").compactMap { Int($0) }
-        if parts.count == 4, parts[0] == 100, (64...127).contains(parts[1]) { return true }
+        if let parts = ipv4Octets, parts[0] == 100, (64...127).contains(parts[1]) { return true }
         return false
+    }
+
+    private var ipv4Octets: [Int]? {
+        guard let host, host.split(separator: ".", omittingEmptySubsequences: false).count == 4 else { return nil }
+        let components = host.split(separator: ".", omittingEmptySubsequences: false)
+        guard components.allSatisfy({ !$0.isEmpty && $0.utf8.allSatisfy { (48...57).contains($0) } }) else { return nil }
+        let octets = components.compactMap { Int($0) }
+        return octets.count == 4 && octets.allSatisfy({ (0...255).contains($0) }) ? octets : nil
     }
 
     /// True when traffic to this URL travels unencrypted over a real network.

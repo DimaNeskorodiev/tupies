@@ -4,7 +4,9 @@ Start with `AGENTS.md` and `PROJECT_CONTEXT.md` at the repository root. `CLAUDE.
 
 ## Run locally
 
-Use Node 22 (at least 22.16). From the project root:
+Use Node 22 (at least 22.16).
+
+Release validation and the standalone Mac payload use the patched **22.23.4** runtime; the container pins its official multi-platform image digest. Older compatible Node 22 versions are not the current release security baseline. Revalidate a runtime update against the complete suite and retain its official archive hash/license. From the project root:
 
 ```sh
 npm ci
@@ -18,6 +20,8 @@ First run against an empty data directory prints a bootstrap token for choosing 
 
 Only one process may own a data directory; a second engine refuses to start while the first one's `control.sock` answers. `npm run pair` (add `-- --engine` for an engine link) asks the running engine for a pairing link through that socket. Check active tasks before stopping a development instance. A restart invalidates browser sessions and interrupts unfinished work without replaying actions.
 
+For owner-operated headless linking, `node scripts/link-engine.mjs connect --confirm` reads one exact trusted engine link from stdin. `node scripts/link-engine.mjs disconnect --confirm` deliberately unlinks the engine and suspends copied automation/subscription ownership. Both use the same private same-user socket and normal sync methods as the UI, including idle checks, protocol validation and TLS pinning. Set the existing absolute `STUDIO_DATA_DIR`; never put a pairing secret in command arguments or shell history. The command prints only confirmation, never the link or credentials. An uncertain response requires inspecting connection status before retrying.
+
 ## Change and verify
 
 ```sh
@@ -27,7 +31,15 @@ npm run check
 npm test
 ```
 
+`npm run eval:agent -- --mode fixture --repeat 3` runs the eight-family agent evaluation on disposable data. See [evaluation](evaluation.md) for explicit live-provider execution, budgets, source identities and the limits of scripted fixtures. Evaluations never use operational data as their execution directory. The optional, explicitly authorized ChatGPT subscription reader obtains a short-lived access grant read-only from the running home engine; that engine alone retains renewal ownership.
+
+`npm run verify:runtime -- --state-mib 22 --batches 3 --output output/runtime-verification/report.json` runs disposable large-state, crash and recovery verification. `npm run runtime:backup -- create --source STOPPED_RUNTIME --target NEW_SNAPSHOT` creates a complete offline snapshot. See [operations](operations.md) for verification and restore commands, private storage and the required stopped-engine checks.
+
+`npm run eval:retrieval` measures the actual fact, note and scoped-history rankers against 12 versioned public fixture queries without a model, network or operational data. Its labels await human review; candidate retrieval scores do not establish answer quality.
+
 The dev command watches the server. Reload the browser after changes. Rebuild after modifying `public/rich-content.mjs`, `public/speech.mjs`, vendor inputs or dependency versions. `public/app.js`, `public/creature-avatars.js` and CSS are served directly. The pearl theme is scoped by `body.pearl-studio` in `public/pearl.css`, loaded after component/phone styles; the default document explicitly selects the requested light appearance. `public/mobile.js` remains the viewport/draft/gesture controller.
+
+For a disposable full-stack browser/native walkthrough, run `node scripts/e2e-fixture.mjs`. It creates a new OS temporary store, disables scheduling and supplies a deterministic local model provider; the printed password is synthetic. It never loads `.env` or accepts a real data-directory argument. Stop with Ctrl-C to close the engine/provider and remove the temporary store. Scenario prompts and local outage/lost-acknowledgement controls are documented in the [readiness audit](plans/production-readiness-audit-20261028.md). This checks application mechanics, not real-model quality. Apple logic/transport/build commands are in `apps/apple/README.md`.
 
 Cushion companions use transparent local assets in `public/assets/companions/`. Dedicated portraits are the default for working UI; full-body mascots are requested only by single-bot welcomes/profile heroes. The 24-entry source catalog is `assets/companions/catalog.json`; the builder generates `public/companion-catalog.js`, which must load before the renderer. The twenty new 2×2 pose sheets retain their original alpha and exact prompts under `expansion-a/` and `expansion-b/`. The pipeline registers poses to a shared scale/foot baseline and derives compact portraits without recoloring or color-keying. Sources, alpha/layout metadata and exact generation prompts are in `assets/companions/`. `npm run avatars:build` runs both `scripts/build-roki-assets.mjs` (historical previews) and `scripts/build-companion-assets.mjs`, and is included in `npm run build`. The companion builder exports 32/64/128/256/512px WebP pose frames, 512px idle PNGs for new characters, the original four PNG/WebP sets, portable 256px animated WebPs, and catalog/registration manifests. Never hand-edit exports. `node scripts/build-companion-assets.mjs --only=cloud,tangerine` rebuilds a bounded subset during asset work; the normal command requires the complete catalog. Shared visibility observers pause offscreen animation; CSS handles body motion, pose layers, paused state and Reduce Motion. `/companions-preview.html` uses the production renderer; `/roki-preview.html` remains historical. Ship referenced local images; no runtime image service or CDN is required. `npm run docs:build` rebuilds the browser guide. `npm run build` also bundles assets and collects dependency notices.
 
@@ -43,7 +55,9 @@ Use Node 22 explicitly if another Node major is installed in the shell. Avoid de
 
 The product and npm package are named **Tupies** (`tupies`). The Apple project and scheme are `apps/apple/Tupies.xcodeproj` and `Tupies`; the app product is `Tupies.app`. `npm run brand:build` derives all web/native brand assets from the transparent cream mascot master `assets/brand/tupies-avatar.png`, and runs as part of the full build. It exports transparent web logos, compact face favicons, the Apple touch icon, three icon background variants, opaque iOS/transparent-margin macOS app icons and the native `TupiesAvatar` imageset. Graphite is the default icon background; Pearl and Sky are alternatives. See [brand sources and exact generation prompt](../assets/brand/README.md). `TUPIES_BUILD_WEB_ONLY=1` skips Apple assets. Historical design references and exact image-generation prompts retain their original names.
 
-Existing installations keep their stable identifiers: `STUDIO_*` configuration, the `hermes_studio_session` cookie, `hermes-studio://pair` links, engine product `hermes-studio`, cryptographic namespaces, `dev.hermesstudio.app` and its Keychain services, the `hermesStudio` web bridge, `HERMES_STUDIO_LOCAL_ENGINE_FILE`, and `~/Library/Application Support/Hermes Studio/local-engine.json`. The Docker volume remains `hermes-studio-data` so an upgrade continues using its account data. These are compatibility identifiers, not the display name. Existing checkout/service paths need no migration; the sample `docs/tupies.service` uses Tupies paths for new installations. Do not rename a live data directory, installed identity or volume as part of a branding change.
+The owner requested migration of the native bundle identifier from `dev.hermesstudio.app` to `dev.tupies.app`. Preserve pairings through an explicit, verified Keychain/preferences migration; changing the identifier alone creates a different app. Keep the original installation and data until the new app proves access to the existing device keys. See `apps/apple/README.md` for the migration's current implementation and verification status.
+
+Engine compatibility identifiers remain stable: `STUDIO_*` configuration, the `hermes_studio_session` cookie, `hermes-studio://pair` links, engine product `hermes-studio`, cryptographic namespaces, the `hermesStudio` web bridge, `HERMES_STUDIO_LOCAL_ENGINE_FILE`, and `~/Library/Application Support/Hermes Studio/local-engine.json`. The Docker volume remains `hermes-studio-data` so an upgrade continues using its account data. Existing checkout/service paths need no migration; the sample `docs/tupies.service` uses Tupies paths for new installations. Do not rename a live data directory, engine identity or volume as part of native app migration.
 
 User-visible text never shows these identifiers. Pairing instructions, placeholders and errors in the web UI, engine and Apple app say "pairing link" or "engine link" rather than the URL scheme, and the MCP and LSP clients identify themselves as `Tupies`. The link itself still uses the compatibility scheme. Installed apps and running engines only show the new name after they are updated: an app built before the rename still installs as `Hermes Studio.app`.
 
@@ -51,7 +65,7 @@ Prototype manifests use repository-relative paths and `generated_images/…` pro
 
 ## Source and data
 
-`server.mjs`, `lib/`, `public/`, `scripts/`, `test/`, `docs/`, `assets/`, the package lock, notices and agent context files belong to the project. `node_modules/` is installed locally and can be recreated. `data/`, `.env`, `.runtime/` and backups are operational/private and ignored. Never copy them into release archives or agent context files.
+`server.mjs`, `lib/`, `public/`, `scripts/`, `eval/`, `test/`, `docs/`, `assets/`, the package lock, notices and agent context files belong to the project. `node_modules/` is installed locally and can be recreated. `data/`, `.env`, `.runtime/` and backups are operational/private and ignored. Never copy them into release archives or agent context files.
 
 Keep tests alongside the behavior they protect. See `architecture.md` for component ownership, `api.md` for requests, and `security.md` before changing authorization, networking, document parsing or process execution.
 
@@ -59,4 +73,4 @@ Keep tests alongside the behavior they protect. See `architecture.md` for compon
 
 Build and verify first. Releases include source, package/lock, built public assets, fonts, notices and docs. Exclude dependencies, runtime/account data, private files, environment settings, backups and scratch output. A release can install production libraries with `npm ci --omit=dev`; rebuilding source assets needs development dependencies.
 
-`docker compose up --build -d` builds the independent service. The Compose named volume is separate from a native `data/` directory; do not assume it imports the Mac account. Follow `deployment.md` and `operations.md` for ports, TLS, backups and deliberate data migration.
+`docker compose up --build -d` builds the independent service. The container uses `TUPIES_BUILD_WEB_ONLY=1` for its asset build, so a web engine does not need the Apple icon directory; native signing/build outputs and private development state stay outside its build context. The Compose named volume is separate from a native `data/` directory; do not assume it imports the Mac account. Follow `deployment.md` and `operations.md` for ports, TLS, backups and deliberate data migration.

@@ -13,8 +13,8 @@ enum SigningMessages {
         Data("hermes-studio/paired/v1\n\(deviceId)\n\(publicKey)".utf8)
     }
 
-    static func session(deviceId: String, timestamp: Int64, nonce: String) -> Data {
-        Data("hermes-studio/session/v1\n\(deviceId)\n\(String(timestamp))\n\(nonce)".utf8)
+    static func session(engineNodeId: String, engineFingerprint: String, deviceId: String, timestamp: Int64, nonce: String) -> Data {
+        Data("hermes-studio/session/v2\n\(engineNodeId)\n\(engineFingerprint)\n\(deviceId)\n\(String(timestamp))\n\(nonce)".utf8)
     }
 }
 

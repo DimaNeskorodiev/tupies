@@ -3,10 +3,8 @@ import Security
 
 /// Minimal generic-password Keychain wrapper.
 ///
-/// Items are stored with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, so they
-/// never sync to iCloud or migrate to another device. On macOS the modern data-protection
-/// keychain is used when the app is signed with a team; unsigned development builds fall
-/// back to the login keychain (which may ask for access after each rebuild).
+/// Every normal operation targets one explicit, provisioned data-protection group.
+/// The passive transfer app alone may read the old Mac login Keychain as a fallback.
 enum Keychain {
     enum Failure: LocalizedError {
         case status(OSStatus)
@@ -14,7 +12,7 @@ enum Keychain {
         var errorDescription: String? {
             switch self {
             case .status(let status) where status == errSecMissingEntitlement:
-                return "This copy of Tupies isn’t code-signed, so it can’t use the Keychain to store its device key. Run it from Xcode or install a signed build."
+                return "This copy of Tupies is missing its required Keychain signing permission. Install the complete signed app before transferring or pairing."
             case .status(let status):
                 let message = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"
                 return "Keychain error: \(message)"
@@ -22,19 +20,41 @@ enum Keychain {
         }
     }
 
-    static func set(_ data: Data, service: String, account: String) throws {
-        var status = write(data, service: service, account: account, modern: true)
-        #if os(macOS)
-        if status == errSecMissingEntitlement {
-            status = write(data, service: service, account: account, modern: false)
+    static func set(_ data: Data, service: String, account: String, accessGroup: String? = nil) throws {
+        let query = try baseQuery(service: service, account: account, accessGroup: accessGroup)
+        var status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if status == errSecItemNotFound {
+            status = add(data, query: query)
+            if status == errSecDuplicateItem {
+                status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+            }
         }
-        #endif
         guard status == errSecSuccess else { throw Failure.status(status) }
     }
 
-    static func data(service: String, account: String) throws -> Data? {
-        for modern in modes {
-            var query = baseQuery(service: service, account: account, modern: modern)
+    /// Copy-first transfer: an existing destination is never overwritten or deleted.
+    @discardableResult
+    static func insertIfAbsent(_ data: Data, service: String, account: String, accessGroup: String) throws -> Bool {
+        let query = try baseQuery(service: service, account: account, accessGroup: accessGroup)
+        let status = add(data, query: query)
+        if status == errSecDuplicateItem { return false }
+        guard status == errSecSuccess else { throw Failure.status(status) }
+        return true
+    }
+
+    static func data(service: String, account: String, accessGroup: String? = nil, allowLegacyMacFallback: Bool = false) throws -> Data? {
+        let modernQuery = try baseQuery(service: service, account: account, accessGroup: accessGroup)
+        var queries = [modernQuery]
+        #if os(macOS)
+        if allowLegacyMacFallback {
+            queries.append([
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account,
+            ])
+        }
+        #endif
+        for var query in queries {
             query[kSecReturnData as String] = true
             query[kSecMatchLimit as String] = kSecMatchLimitOne
             var result: CFTypeRef?
@@ -42,8 +62,13 @@ enum Keychain {
             switch status {
             case errSecSuccess:
                 return result as? Data
-            case errSecItemNotFound, errSecMissingEntitlement:
+            case errSecItemNotFound:
                 continue
+            case errSecMissingEntitlement:
+                #if os(macOS)
+                if allowLegacyMacFallback { continue }
+                #endif
+                throw Failure.status(status)
             default:
                 throw Failure.status(status)
             }
@@ -51,42 +76,34 @@ enum Keychain {
         return nil
     }
 
-    static func delete(service: String, account: String) {
-        for modern in modes {
-            SecItemDelete(baseQuery(service: service, account: account, modern: modern) as CFDictionary)
-        }
+    static func delete(service: String, account: String, accessGroup: String? = nil) {
+        guard let query = try? baseQuery(service: service, account: account, accessGroup: accessGroup) else { return }
+        SecItemDelete(query as CFDictionary)
     }
 
     // MARK: - Private
 
-    private static var modes: [Bool] {
-        #if os(macOS)
-        return [true, false]
-        #else
-        return [true]
-        #endif
-    }
-
-    private static func baseQuery(service: String, account: String, modern: Bool) -> [String: Any] {
+    private static func baseQuery(service: String, account: String, accessGroup: String?) throws -> [String: Any] {
+        guard let group = accessGroup ?? AppIdentity.keychainGroup,
+              !group.isEmpty, group.count <= 256, !group.contains("$("), !group.contains("*") else {
+            throw Failure.status(errSecMissingEntitlement)
+        }
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: group,
         ]
         #if os(macOS)
-        if modern { query[kSecUseDataProtectionKeychain as String] = true }
+        query[kSecUseDataProtectionKeychain as String] = true
         #endif
         return query
     }
 
-    private static func write(_ data: Data, service: String, account: String, modern: Bool) -> OSStatus {
-        let query = baseQuery(service: service, account: account, modern: modern)
-        SecItemDelete(query as CFDictionary)
+    private static func add(_ data: Data, query: [String: Any]) -> OSStatus {
         var attributes = query
         attributes[kSecValueData as String] = data
-        if modern {
-            attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        }
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         return SecItemAdd(attributes as CFDictionary, nil)
     }
 }

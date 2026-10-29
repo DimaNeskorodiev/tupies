@@ -138,7 +138,7 @@ struct SettingsView: View {
                             Button("Start Local Engine") {
                                 Task {
                                     do {
-                                        try await local.start(extra: store.localConnection.map { [$0.baseURL] } ?? [])
+                                        try await local.start(expectedConnection: store.localConnection)
                                     } catch {
                                         store.alert = AppAlert(title: "Couldn’t start Tupies", message: error.localizedDescription)
                                     }
@@ -155,7 +155,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Local Engine")
                 } footer: {
-                    Text("Starts `node --env-file-if-exists=.env server.mjs` in the Tupies folder. An engine started here stops when you quit Tupies; one started elsewhere is never touched.")
+                    Text(local.launchSummary)
                 }
                 #endif
 
@@ -194,7 +194,7 @@ struct SettingsView: View {
             LocalEngineLogSheet()
                 .environmentObject(local)
         }
-        .task { await local.refresh(extra: store.localConnection.map { [$0.baseURL] } ?? []) }
+        .task { await local.refresh(expectedConnection: store.localConnection) }
         #endif
     }
 
