@@ -124,6 +124,7 @@ test('reduced motion draws once, updates elapsed time, and redraws only for mean
   const h=harness(t,{reduced:true,width:280});assert.equal(h.frames.size,0);assert.equal(h.timers.size,1);assert.ok(h.stats().strokes>0);
   const drawn=h.stats().strokes;h.quiet();assert.equal(h.stats().strokes,drawn);assert.match(h.card().querySelector('[data-thinking-elapsed]').textContent,/1m 1[56]s/);
   h.setWidth(300);h.quiet();assert.ok(h.stats().strokes>drawn);assert.equal(h.frames.size,0);assert.equal(h.timers.size,1);
+  const resized=h.stats().strokes;h.card().style.color='rgb(170, 181, 201)';h.quiet();assert.ok(h.stats().strokes>resized,'a theme text-color change redraws a still graph');assert.equal(h.frames.size,0);
   h.mediaChange(false);h.advance(16);assert.equal(h.frames.size,1);h.mediaChange(true);h.advance(32);assert.equal(h.frames.size,0);
 });
 

@@ -16,6 +16,7 @@ struct PairingLink: Hashable, Identifiable {
         case missing(String)
         case invalidAddress
         case invalidFingerprint
+        case unsupportedTransport
 
         var errorDescription: String? {
             switch self {
@@ -31,6 +32,8 @@ struct PairingLink: Hashable, Identifiable {
                 return "The pairing link has an invalid engine address."
             case .invalidFingerprint:
                 return "The pairing link has an invalid security fingerprint. Copy it again from Tupies."
+            case .unsupportedTransport:
+                return "This pairing link uses an unsupported security mode. Update Tupies and copy a new link from your engine."
             }
         }
     }
@@ -43,16 +46,19 @@ struct PairingLink: Hashable, Identifiable {
     let fingerprint: String
     let name: String
     let kind: Kind
+    /// An engine-owned TLS certificate must match the link's fingerprint on the very first request.
+    let requiresPinnedTLS: Bool
 
     var id: String { "\(baseURL.absoluteString)|\(code)" }
 
-    init(version: Int = 1, baseURL: URL, code: String, fingerprint: String, name: String, kind: Kind = .device) {
+    init(version: Int = 1, baseURL: URL, code: String, fingerprint: String, name: String, kind: Kind = .device, requiresPinnedTLS: Bool = false) {
         self.version = version
         self.baseURL = baseURL
         self.code = code
         self.fingerprint = fingerprint
         self.name = name
         self.kind = kind
+        self.requiresPinnedTLS = requiresPinnedTLS
     }
 
     /// Finds a `hermes-studio://` link inside arbitrary pasted text.
@@ -88,6 +94,10 @@ struct PairingLink: Hashable, Identifiable {
 
         guard let urlText = query["url"], !urlText.isEmpty else { throw ParseError.missing("url") }
         guard let baseURL = normalizedBaseURL(urlText) else { throw ParseError.invalidAddress }
+        let tls = query["tls"]
+        guard tls == nil || tls == "engine" else { throw ParseError.unsupportedTransport }
+        let requiresPinnedTLS = tls == "engine"
+        guard !requiresPinnedTLS || baseURL.scheme?.lowercased() == "https" else { throw ParseError.invalidAddress }
 
         guard let code = query["code"]?.trimmingCharacters(in: .whitespacesAndNewlines), !code.isEmpty else {
             throw ParseError.missing("code")
@@ -104,7 +114,8 @@ struct PairingLink: Hashable, Identifiable {
             code: code,
             fingerprint: Fingerprint.normalize(fingerprint),
             name: String(displayName.prefix(80)),
-            kind: .device
+            kind: .device,
+            requiresPinnedTLS: requiresPinnedTLS
         )
     }
 
@@ -147,14 +158,15 @@ struct PairingLink: Hashable, Identifiable {
         func encode(_ value: String) -> String {
             value.addingPercentEncoding(withAllowedCharacters: unreserved) ?? value
         }
-        let query = [
+        let fields = [
             ("v", String(version)),
             ("url", baseURL.absoluteString),
             ("code", code),
             ("fp", fingerprint),
             ("name", name),
             ("kind", kind.rawValue),
-        ].map { "\($0.0)=\(encode($0.1))" }.joined(separator: "&")
+        ] + (requiresPinnedTLS ? [("tls", "engine")] : [])
+        let query = fields.map { "\($0.0)=\(encode($0.1))" }.joined(separator: "&")
         return URL(string: "\(Self.scheme)://pair?\(query)")!
     }
 }

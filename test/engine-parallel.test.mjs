@@ -68,7 +68,7 @@ test('a failed parallel read has error metadata while successful siblings remain
   const results=requests[1].messages.filter(message=>message.role==='tool');
   assert.deepEqual(results.map(message=>message.tool_call_id),['invalid','valid','disabled']);
   assert.equal(results[0].is_error,true);assert.match(results[0].content,/Memory query/);
-  assert.deepEqual(JSON.parse(results[1].content),{entries:[]});assert.equal(results[1].is_error,undefined);
+  const valid=JSON.parse(results[1].content);assert.deepEqual(valid.entries,[]);assert.equal(valid.totalMatches,0);assert.equal(valid.truncated,false);assert.equal(results[1].is_error,undefined);
   assert.equal(results[2].is_error,true);assert.match(results[2].content,/not enabled/);
 });
 
@@ -84,6 +84,9 @@ test('stop drains all started reads, blocks later writes and settles every admit
   await engine.control('bot_atlas','stop',{runId:run.id,remoteRunId:run.remoteRunId});await waitFor(()=>aborted.length===2);
   assert.equal(current(store).status,'stopping');assert.equal(isActive(current(store)),true);assert.deepEqual(settled,[]);
   drain.resolve();await waitFor(()=>current(store)?.status==='cancelled');
+  // Terminal status is committed before the final event and optional task note.
+  // Wait for settlement before asserting that all finishing work is observable.
+  await engine.tasks.get(run.id);
   assert.equal(settled.length,2);assert.deepEqual(started,['first','second']);
   const results=store.state.conversations.bot_atlas.filter(message=>message.role==='tool');
   assert.deepEqual(results.map(message=>message.tool_call_id),calls.map(item=>item.id));assert.ok(results.every(message=>message.is_error===true && /cancelled/.test(message.content)));

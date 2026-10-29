@@ -5,12 +5,17 @@ import Foundation
 // engines do not break the app.
 
 struct EngineInfo: Decodable, Equatable {
+    struct Protocols: Decodable, Equatable {
+        let deviceSession: Int?
+    }
     let product: String
     let version: String?
     let name: String?
     let fingerprint: String
     let publicKey: String
     let role: String?
+    let nodeId: String?
+    let protocols: Protocols?
 }
 
 struct PairRequestBody: Encodable {
@@ -49,6 +54,9 @@ struct PairResponse: Decodable {
 }
 
 struct SessionRequestBody: Encodable {
+    let v: Int = 2
+    let engineNodeId: String
+    let engineFingerprint: String
     let deviceId: String
     let timestamp: Int64
     let nonce: String
@@ -154,6 +162,13 @@ struct APIErrorBody: Decodable {
 struct SessionToken: Codable, Equatable {
     let token: String
     let expiresAt: Date
+    /// Absent on old stored tokens. Never reuse those to skip the current protocol check.
+    var protocolVersion: Int? = nil
+}
+
+struct DeviceSessionTarget: Equatable {
+    let nodeId: String
+    let fingerprint: String
 }
 
 enum ISODate {

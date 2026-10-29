@@ -33,6 +33,12 @@ struct NotificationDestination: Equatable {
     var hash: String { roomID.map { "#/room/\($0)" } ?? "#/bot/\(botID)" }
 
     func matchesVisibleHash(_ hash: String) -> Bool { self.hash == hash }
+    func matchesRenderedPage(_ page: WebPageSnapshot) -> Bool {
+        let expectedView = roomID == nil ? "bot" : "room"
+        let expectedID = roomID ?? botID
+        return page.hasReadyInterface && page.hash == hash && page.view == expectedView &&
+            ((page.conversationReady && page.conversationID == expectedID) || page.conversationMissing)
+    }
     func connectionID(in connections: [Connection]) -> UUID? { connections.first { $0.nodeId == engineID }?.id }
 }
 

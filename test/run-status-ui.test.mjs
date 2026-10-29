@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import {JSDOM} from 'jsdom';
 
 const source=(await readFile(new URL('../public/app.js',import.meta.url),'utf8')).replace(/\nstart\(\);\s*$/,'\n');
+const activityModel=await readFile(new URL('../public/activity-flow-model.js',import.meta.url),'utf8');
 
 // Run the actual browser rendering code against small deterministic DOM targets.
 // No account, provider or browser session is used by these regression tests.
@@ -81,6 +83,17 @@ test('an active turn shows streamed text and Stop while preventing a concurrent 
   const stopped=h.render();assert.match(stopped,/Live streamed answer/);assert.match(stopped,/Task stopped/);assert.equal(h.send.disabled,false);
 });
 
+test('long current steps stay in collapsed details while the graph uses a short status',()=>{
+  const title='Перевірити шиномонтажі Вроцлава, включаючи ціни, години роботи, доступність зимових шин та способи запису цього тижня <details>';
+  const h=harness({id:'run_long_plan',status:'running',events:[{type:'tool.started',tool:'task_plan_set'}],plan:{steps:[{id:'one',title,status:'in_progress'}]}});
+  vm.runInContext(activityModel,h.ctx);
+  const html=h.render(),copy=html.match(/<div class="thinking-copy">([\s\S]*?)<\/div>/)?.[1];
+  assert.ok(copy);assert.match(copy,/Working on step 1 of 1/);assert.ok(!copy.includes(title));
+  assert.ok(html.includes(title.replace('<details>','&lt;details&gt;')));
+  assert.doesNotMatch(copy,/visible plan steps|thinking-context/);assert.doesNotMatch(copy,/data-action="stop-run"|<canvas|<details>/);
+  assert.match(html,/data-action="stop-run"/);assert.match(html,/Step 1 · In progress/);
+});
+
 test('new and edited team rooms offer the supported one-to-eight handoff range',()=>{
   const h=harness(null);
   h.run('roomDialog()');
@@ -106,4 +119,27 @@ test('a durable plan renders escaped steps and preserves unfinished progress aft
   assert.match(html,/Inspect &lt;script&gt;alert\(1\)&lt;\/script&gt;/);assert.doesNotMatch(html,/<script>/);
   assert.match(html,/Verify &amp; test/);assert.match(html,/In progress/);assert.match(html,/Keep &lt;unfinished&gt;/);
   assert.match(html,/Task stopped/);assert.equal(h.send.disabled,false);
+});
+
+test('one collapsed panel contains the plan and short activity, keeping expansion only for its task',()=>{
+  const h=harness({id:'run_details',status:'running',events:[
+    {type:'model.started'},{type:'model.delta',text:'not activity'},
+    {type:'tool.started',tool:'integration_call',arguments:{integrationId:'duckduckgo',tool:'web_search'}},
+    {type:'tool.started',tool:'integration_call',arguments:{integrationId:'duckduckgo',tool:'web_search'}},
+    {type:'tool.completed',tool:'integration_call',preview:'private raw result'},
+  ],plan:{steps:[{id:'one',title:'Find useful sources',status:'in_progress'}]}});
+  vm.runInContext(activityModel,h.ctx);
+  const html=h.run('renderTimeline(fixtureRun)'),dom=new JSDOM(html),panel=dom.window.document.querySelector('details');
+  try{
+    assert.equal(panel.open,false);assert.equal(dom.window.document.querySelectorAll('details').length,1);
+    assert.match(panel.querySelector('summary').textContent,/Task details.*0\/1 steps/);
+    assert.equal(panel.querySelectorAll('.task-activity li').length,1);
+    assert.match(panel.textContent,/Searching the internet/);assert.doesNotMatch(panel.textContent,/Work log|duckduckgo|integration_call|private raw result|model\.started/);
+    h.ctx.fixtureContainer=dom.window.document.body;panel.open=true;
+    assert.equal(h.run('taskDetailsOpen(fixtureContainer,fixtureRun)'),true);
+    assert.equal(h.run("taskDetailsOpen(fixtureContainer,{id:'a_new_task'})"),false);
+    h.ctx.document=dom.window.document;panel.querySelector('summary').focus();
+    h.run('updateThreadContent(fixtureContainer,renderTimeline(fixtureRun,true))');
+    assert.equal(dom.window.document.activeElement.tagName,'SUMMARY','a refresh preserves keyboard focus on the disclosure');
+  }finally{dom.window.close();}
 });

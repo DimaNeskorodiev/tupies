@@ -6,6 +6,13 @@ data
 .runtime
 backups
 node_modules
+apps
+prototypes
+output
+eval
+test
+.agents
+.codex
 coverage
 *.log
 .DS_Store

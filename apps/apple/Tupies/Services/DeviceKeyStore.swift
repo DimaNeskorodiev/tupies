@@ -58,9 +58,13 @@ final class DeviceKeyStore {
     }
 
     private let service: String
+    private let accessGroup: String?
+    private let allowLegacyMacFallback: Bool
 
-    init(service: String = "dev.hermesstudio.app.device-key") {
+    init(service: String = AppIdentity.deviceKeyService, accessGroup: String? = nil, allowLegacyMacFallback: Bool = false) {
         self.service = service
+        self.accessGroup = accessGroup
+        self.allowLegacyMacFallback = allowLegacyMacFallback
     }
 
     func createKey(for id: UUID) throws -> DeviceSigningKey {
@@ -75,7 +79,16 @@ final class DeviceKeyStore {
     }
 
     func loadKey(for id: UUID) throws -> DeviceSigningKey? {
-        guard let data = try Keychain.data(service: service, account: id.uuidString) else { return nil }
+        guard let data = try storedData(for: id) else { return nil }
+        return try Self.signingKey(from: data)
+    }
+
+    func storedData(for id: UUID) throws -> Data? {
+        try Keychain.data(service: service, account: id.uuidString, accessGroup: accessGroup, allowLegacyMacFallback: allowLegacyMacFallback)
+    }
+
+    static func signingKey(from data: Data) throws -> DeviceSigningKey {
+        guard data.count <= 16_384 else { throw EngineError.invalidResponse }
         let stored = try JSONDecoder().decode(StoredKey.self, from: data)
         switch stored.kind {
         case .secureEnclave:
@@ -86,13 +99,13 @@ final class DeviceKeyStore {
     }
 
     func storageKind(for id: UUID) -> StorageKind? {
-        guard let data = try? Keychain.data(service: service, account: id.uuidString),
+        guard let data = try? storedData(for: id),
               let stored = try? JSONDecoder().decode(StoredKey.self, from: data) else { return nil }
         return stored.kind
     }
 
     func deleteKey(for id: UUID) {
-        Keychain.delete(service: service, account: id.uuidString)
+        Keychain.delete(service: service, account: id.uuidString, accessGroup: accessGroup)
     }
 
     // MARK: - Private
@@ -105,7 +118,7 @@ final class DeviceKeyStore {
         case .software(let softwareKey):
             stored = StoredKey(kind: .software, data: softwareKey.rawRepresentation)
         }
-        try Keychain.set(try JSONEncoder().encode(stored), service: service, account: id.uuidString)
+        try Keychain.set(try JSONEncoder().encode(stored), service: service, account: id.uuidString, accessGroup: accessGroup)
     }
 
     /// Returns a usable Secure Enclave key, or nil if the enclave is unavailable or

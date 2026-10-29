@@ -90,6 +90,7 @@
 						CreatedOnToolsVersion = 26.0;
 						SystemCapabilities = {
 							com.apple.Push = { enabled = 1; };
+							com.apple.Keychain = { enabled = 1; };
 						};
 					};
 				};
@@ -258,7 +259,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "Config/Tupies-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Config/Tupies-iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
@@ -280,7 +281,8 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.5.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.hermesstudio.app;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tupies.app;
+				TUPIES_REQUIRE_TRANSFER = NO;
 				PRODUCT_MODULE_NAME = Tupies;
 				PRODUCT_NAME = "Tupies";
 				SDKROOT = auto;
@@ -304,7 +306,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "Config/Tupies-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Config/Tupies-iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
@@ -326,7 +328,8 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.5.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.hermesstudio.app;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tupies.app;
+				TUPIES_REQUIRE_TRANSFER = NO;
 				PRODUCT_MODULE_NAME = Tupies;
 				PRODUCT_NAME = "Tupies";
 				SDKROOT = auto;

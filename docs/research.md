@@ -1,6 +1,12 @@
 # Research and primary references
 
+## DuckDuckGo fallback
+
+The [fallback comparison](research/search-fallback-20261028.md) uses current official documentation for SearXNG, Brave, Tavily and Exa. The owner chose a private SearXNG instance; [setup](searxng.md) covers a loopback-only pinned container, JSON configuration, upstream limitations and the exact-approved selected fallback route. An isolated live container verified results and partial upstream failures; no production service was activated.
+
 ## Grok Bot and the combined improvement plan
+
+The [28 October Grok Bot follow-up](research/grok-bot-0.77.0-followup.md) rechecks the identical 0.77.0 artifact against Tupies after shipped Phases 1–5. It identifies source-backed tool-recovery, compaction and recall limits, separates Grok's visible memory/device client behavior from its unavailable backend, and supplies a [measurable agent-quality plan](plans/tupies-agent-quality-20261028.md). No live-product superiority claim follows from the static comparison. Q0–Q4 are now implemented in source; see the plan’s implementation status and the finite fixture/browser/search evidence in [verification](verification.md). The owner chose keyless DuckDuckGo for default search, informed by [Hermes’s primary DDGS provider source](https://github.com/NousResearch/hermes-agent/blob/main/plugins/web/ddgs/provider.py); Tupies keeps its own Node transport and introduces no Hermes/Python dependency.
 
 The [Grok Bot 0.77.0 comparison](research/grok-bot-0.77.0.md) traces the supplied desktop package's service/gateway routing, coordinator, separate local execution daemon, submission reconciliation, app-scoped device policy, forms and shared-knowledge review. Backend inference/context/recovery and live quality remain unknown. The [combined Tupies improvement plan](plans/studio-best-of-openbot-grok.md) joins those findings with OpenBot's task/history/resource design, using the current A–C context baseline. This is proposed work; no engine deployment or application change follows from the investigation.
 

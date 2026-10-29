@@ -8,7 +8,7 @@ import {Store} from '../lib/store.mjs';
 import {Notifications, notificationPayload} from '../lib/notifications.mjs';
 import {listDocuments} from '../lib/sync/docs.mjs';
 import {createStudioServer} from '../server.mjs';
-import {PAIR_MESSAGE, SESSION_MESSAGE} from '../lib/sync/crypto.mjs';
+import {PAIR_MESSAGE, SESSION_MESSAGE,fingerprint} from '../lib/sync/crypto.mjs';
 import {NativeEngine} from '../lib/engine.mjs';
 
 const TOKEN = 'ab'.repeat(32), OTHER_TOKEN = 'cd'.repeat(32), BASE = Date.parse('2026-10-27T12:00:00Z');
@@ -136,18 +136,20 @@ test('routine completion, failure and admission error notify without duplicate r
   for (const sent of f.sent) {assert.equal(sent.payload.studio.kind, 'routine'); assert.equal(sent.payload.studio.routineId, 'routine_fixture'); assert.ok(!JSON.stringify(sent.payload).includes('Private'));}
 });
 
-test('a routine retry clears its previous error before admission and sends only the new outcome', async t => {
+test('a routine retry clears its previous error with durable admission and sends only the new outcome', async t => {
   const f = await fixture(t, {seed:state => state.routines.push({id:'routine_retry', botId:'bot_atlas', intervalMinutes:5, prompt:'Fixture routine', lastRunAt:iso(-1000), lastError:'Previous failure'})});
+  f.advance(Date.now()-BASE);
   await f.notifications.register(f.device, enrollment());
   let release, entered;
   const started = new Promise(resolve => {entered = resolve;});
   const admission = new Promise(resolve => {release = resolve;});
-  const engine = {store:f.store, previousRoutineOutput:() => '', async start() {assert.equal(Object.hasOwn(f.store.state.routines[0], 'lastError'), false); entered(); return admission;}};
-  const running = NativeEngine.prototype.runRoutine.call(engine, 'routine_retry');
-  await started; await f.notifications.flush(); assert.equal(f.sent.length, 0, 'a new attempt is not a new failure');
-  release({id:'run_retry_success'}); await running;
-  await f.store.mutate(state => {state.runs.bot_atlas = {id:'run_retry_success', botId:'bot_atlas', source:'routine', routineId:'routine_retry', status:'completed', createdAt:iso(0), finishedAt:iso(0)};});
-  await f.notifications.flush(); assert.equal(f.sent.length, 1);
+  await f.store.mutate(state=>{state.connections.push({id:'fixture_provider',type:'openai',name:'Fixture',model:'fixture',secret:f.store.seal('synthetic-fixture-key')});state.bots[0].connectionId='fixture_provider';state.bots[0].tools=[];});
+  const engine=new NativeEngine(f.store,{providers:{async complete(){assert.equal(Object.hasOwn(f.store.state.routines[0],'lastError'),false);assert.equal(f.store.state.routines[0].lastRunId,f.store.state.runs.bot_atlas.id);entered();await admission;return {text:'Actual routine retry completed.',toolCalls:[]};}}});
+  try {
+    const run=await engine.runRoutine('routine_retry');await started;await f.notifications.flush();assert.equal(f.sent.length,0,'An admitted retry is not another admission-failure alert.');
+    release();const until=Date.now()+4000;while(f.store.state.runs.bot_atlas.status!=='completed'&&Date.now()<until)await new Promise(resolve=>setTimeout(resolve,5));assert.equal(f.store.state.runs.bot_atlas.status,'completed');assert.equal(f.store.state.runs.bot_atlas.id,run.id);
+    await f.notifications.flush();assert.equal(f.sent.length,1);
+  } finally { release();await engine.close(); }
   await f.store.mutate(state => {state.routines = [];}); await f.notifications.flush();
   assert.equal(Object.keys(f.notifications.state.routines).length, 0, 'deleted routine cursors are removed');
 });
@@ -319,7 +321,8 @@ test('notification routes require the current paired iOS bearer and preserve bro
   const pairing = app.sync.devices.createPairing({baseUrl:url});
   const paired = await request('/api/pair', {method:'POST', data:{v:1, code:pairing.code, name:'Fixture phone', platform:'ios', publicKey:publicDer, proof:signText(PAIR_MESSAGE(pairing.code, publicDer))}});
   const deviceId = paired.body.deviceId, timestamp = Date.now(), nonce = randomBytes(16).toString('base64url');
-  const session = await request('/api/device/session', {method:'POST', data:{deviceId, timestamp, nonce, signature:signText(SESSION_MESSAGE(deviceId, timestamp, nonce))}});
+  const engineNodeId=app.sync.nodeId,engineFingerprint=app.sync.identity.fingerprint;
+  const session = await request('/api/device/session', {method:'POST', data:{v:2,engineNodeId,engineFingerprint,deviceId, timestamp, nonce, signature:signText(SESSION_MESSAGE(engineNodeId,engineFingerprint,deviceId,timestamp,nonce))}});
   const bearer = session.body.token;
   const registered = await request('/api/device/notifications', {method:'PUT', bearer, data:enrollment()});
   assert.equal(registered.status, 200); assert.equal(registered.body.registered, true); assert.ok(!JSON.stringify(registered.body).includes(TOKEN));
@@ -330,7 +333,8 @@ test('notification routes require the current paired iOS bearer and preserve bro
   const removed = await request('/api/device/notifications', {method:'DELETE', bearer, data:{}});
   assert.equal(removed.body.registered, false); assert.equal(removed.body.enabled, false);
   const engineToken = 'hsd_'+'x'.repeat(43);
-  await app.store.mutate(state => state.devices.push({id:'dev_engine', kind:'engine', platform:'engine'}));
+  const engineDevice={id:'dev_engine',kind:'engine',platform:'engine',protocolVersion:2,nodeId:'node_engine_fixture',publicKey:publicDer,fingerprint:fingerprint(publicDer)};
+  await app.sync.security.add(engineDevice);await app.store.mutate(state => state.devices.push(engineDevice));
   app.sync.devices.sessions.set(engineToken, {deviceId:'dev_engine', expires:Date.now()+60000});
   assert.equal((await request('/api/device/notifications', {bearer:engineToken})).status, 403);
   await app.sync.devices.revoke(deviceId);

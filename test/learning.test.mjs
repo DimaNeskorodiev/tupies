@@ -235,11 +235,13 @@ test('suggestions sync as their own documents and appear on the dashboard and in
   const view=dashboard(store);
   const need=view.needs.find(item=>item.kind==='review');
   assert.deepEqual([need.botId,need.title,need.nav,need.action],['bot_atlas','1 memory update and 1 skill change to review','/bots/bot_atlas/learning','Review']);
-  assert.equal(view.activity[0].text,'suggested a skill change for your review');assert.equal(view.activity[0].nav,'/bots/bot_atlas/learning');
+  assert.equal(store.state.activity[0].type,'learning.proposed','the local audit log retains proposal events');
+  assert.ok(!view.activity.some(item=>item.kind==='skill'),'the shared task timeline excludes local review events');
   await decideProposal(store,{botId:'bot_atlas',proposalId:skill.id,action:'reject',idle});
   const after=dashboard(store);
   assert.equal(after.needs.find(item=>item.kind==='review').title,'1 memory update to review');
-  assert.equal(after.activity[0].text,'declined Atlas’s suggested skill change');
+  assert.equal(store.state.activity[0].type,'learning.rejected');
+  assert.deepEqual(after.activity,view.activity,'review changes stay in Needs you and the local audit log');
 });
 
 test('the owner reviews suggestions over the API; accepting waits for the bot and deleting the bot removes them',async t=>{

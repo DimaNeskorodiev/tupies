@@ -56,3 +56,17 @@ test('integration config rejects unsafe methods, paths, credentials, schemas and
   assert.throws(()=>f.integrations.validate({...base,authType:'header',headerName:'Host',apiKey:SECRET,tools:[{name:'x',method:'GET',path:'/x'}]}),/authentication header/);
   const integration=await add(f,{type:'mcp'});await assert.rejects(f.integrations.discover(integration.id),/unmatched response/);assert.equal(f.integrations.sessions.has(integration.id),false);
 });
+
+test('an explicit MCP tool error is retained as failed with unknown action outcome',async t=>{
+  const f=await fixture(t,(req,res)=>{
+    const method=req.body.method;
+    if(method==='initialize')return json(res,{jsonrpc:'2.0',id:req.body.id,result:{protocolVersion:'2025-06-18',capabilities:{},serverInfo:{name:'fixture',version:'1'}}});
+    if(method==='notifications/initialized'){res.writeHead(202);return res.end();}
+    if(method==='tools/list')return json(res,{jsonrpc:'2.0',id:req.body.id,result:{tools:[{name:'act',inputSchema:{type:'object',properties:{}}}]}});
+    return json(res,{jsonrpc:'2.0',id:req.body.id,result:{isError:true,content:[{type:'text',text:'The operation failed after dispatch.'}]}});
+  });
+  const integration=await add(f,{type:'mcp'});await f.integrations.discover(integration.id);
+  const result=await f.integrations.call(integration.id,'act',{},{approved:true,botId:'bot_atlas'});
+  assert.equal(result.errorCode,'integration_failed');assert.equal(result.outcome,'unknown');assert.equal(result.isError,true);assert.equal(f.requests.filter(r=>r.body?.method==='tools/call').length,1);
+  assert.equal(f.store.state.activity[0].type,'integration.failed');
+});

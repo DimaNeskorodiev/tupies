@@ -182,7 +182,8 @@ test('quick details supports keyboard menu navigation and Escape returns focus t
   assert.equal(anchor.getAttribute('aria-expanded'),'true');assert.equal(h.doc.activeElement,items[0]);
   h.key(h.doc.activeElement,'End');assert.equal(h.doc.activeElement,items.at(-1));
   h.key(h.doc.activeElement,'Home');assert.equal(h.doc.activeElement,items[0]);
-  h.key(h.doc.activeElement,'ArrowDown');h.key(h.doc.activeElement,'ArrowDown');
+  const detailsIndex=items.findIndex(item=>item.dataset.action==='toggle-inspector');assert.ok(detailsIndex>0);
+  for(let index=1;index<=detailsIndex;index++){h.key(h.doc.activeElement,'ArrowDown');assert.equal(h.doc.activeElement,items[index]);}
   assert.equal(h.doc.activeElement.dataset.action,'toggle-inspector');await h.click(h.doc.activeElement);
   const inspector=h.doc.querySelector('.bot-inspector');
   assert.equal(h.doc.querySelector('[role=menu]'),null);assert.equal(anchor.getAttribute('aria-expanded'),'false');
