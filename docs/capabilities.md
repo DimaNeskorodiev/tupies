@@ -57,3 +57,7 @@ See [Tool use](tool-use.md) for coding workflows and the comparison evidence. Tu
 Task side effects are never replayed automatically after a restart or ambiguous response. Interrupted tasks retain their transcript and workspace. Files already committed before failure/cancellation remain attached with explicit partial status; a task is not marked completed merely because one file was produced. Inspect the actual result before sending follow-up work. A Stop request cancels Tupies's active operation and child work; external services may already have completed an approved action.
 
 Trusted script/terminal execution runs with the Tupies service account. It is not an OS sandbox and can access what that account can access. Use a dedicated service account/container and restricted mounts. Terminal is off in the default bot tool groups; every script or terminal invocation still requires exact approval.
+
+## Coding on this Mac
+
+An opt-in Coding group lets a bot discover local repositories and Claude project locations, connect an optional installed Claude Code worker, supervise exact-approved background actions and require independent checks before successful completion. Azure assigned work items and verified draft PR publication use engine-local sealed credentials. Codex execution, real account/task acceptance and remote/iPhone dispatch remain outside the delivered boundary. See [local coding](local-coding.md).

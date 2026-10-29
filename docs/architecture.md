@@ -90,3 +90,7 @@ Every committed mutation still rewrites the whole `state.json`, so its cost grow
 The browser calls a same-origin authenticated HTTP API; engine and persistence do not live in the client. The Apple app (`apps/apple/`) pairs with device keys, signs in with bearer sessions and hosts the same web interface for each engine, switching between them in one click. Several engines can share one workspace through the home-server sync described in [Engines, devices and sync](sync.md).
 
 Native Mac/iOS computer actions need a separate device boundary: explicit device pairing, scoped capabilities, short-lived credentials, action-specific approvals, revocation, audit events and OS permission handling. The intended device worker should execute only a declared action authorized for its device. A model-generated command must never grant itself device or account access. Device pairing for apps is shipped; no device worker, screen-control transport or Mac/iOS action implementation is.
+
+## Mac-local coding workers
+
+The optional local coding coordinator owns approved external Claude runs, separate repository copies, independent verification and Azure draft PR publication. Its local account/job directory never enters sync. Codex execution and remote Mac dispatch remain unavailable. See [local coding](local-coding.md).

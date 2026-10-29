@@ -76,7 +76,7 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'icon'))bot.icon=string(input.icon,'icon',40);
   if(Object.hasOwn(input,'connectionId'))bot.connectionId=string(input.connectionId,'connectionId',100,false);
   for(const key of ['tools','collaborators','integrationIds'])if(Object.hasOwn(input,key)){ensure(Array.isArray(input[key]) && input[key].length<=30 && input[key].every(item=>typeof item==='string' && /^[a-zA-Z0-9_-]{1,100}$/.test(item)),400,`Choose valid ${key}.`);bot[key]=[...new Set(input[key])];}
-  if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','terminal','browser'].includes(tool)),400,'Choose supported bot tools.');
+  if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','terminal','browser','coding'].includes(tool)),400,'Choose supported bot tools.');
   if(Object.hasOwn(input,'approvalPolicy')){ensure(['balanced','strict'].includes(input.approvalPolicy),400,'Choose a supported action review policy.');bot.approvalPolicy=input.approvalPolicy;}
   if(Object.hasOwn(input,'skillInstallPolicy')){ensure(['ask','trusted'].includes(input.skillInstallPolicy),400,'Choose ask or trusted for skill installation.');bot.skillInstallPolicy=input.skillInstallPolicy;}
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
@@ -250,7 +250,7 @@ export async function createStudioServer(options={}) {
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
         if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
-        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json}))return;
+        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
         const receiptMatch=method==='GET' && pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/submissions\/([A-Za-z0-9_-]{8,80})$/);
         if(receiptMatch) {

@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Mac-local coding orchestration (29 October 2026)
+
+Installed in the isolated Mac engine: conversation-led project/agent discovery, optional exact-approved Claude Code delegation, separate committed working copies, progress/cancellation, independent checks and Azure draft-PR publication. See [Coding on this Mac](local-coding.md). Real account/task and signed Mac UI acceptance remain open. Next: Codex adapter with equivalent command approvals, easier Azure Entra sign-in, richer scoped project discovery and job-history management. iPhone and Home-server dispatch are explicitly deferred; they require a separate authenticated Mac worker boundary.
+
 ## Browser use and automatic skill learning (29 October 2026)
 
 The owner requested these as two separate workstreams, starting with browser use. Interactive browser work is implemented in current source: approved typing/forms, tabs, frames, dialogs, bounded uploads/downloads, a live owner handoff for sign-in/2FA/CAPTCHA and optional per-bot sign-in persistence on the executing engine. See [Browser use](browser.md). Operational rollout and real-site/physical-device acceptance remain distinct from source fixture verification. No blanket competitor-equivalence claim is made.
