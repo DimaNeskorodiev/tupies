@@ -28,6 +28,16 @@ The cream Tupies mascot supplies all web/Apple brand marks and app icons, with G
 
 The owner approved the reordered sequence in the [plan review](plans/studio-best-of-openbot-grok-review.md) on 27 October 2026: 1 ask and recall (shipped to both engines on 27 October 2026), 2 image understanding (shipped to both engines on 27 October 2026), 3 reliable sends and routines and 4 read-only browser (both shipped to both engines on 28 October 2026), 5 reviewed learning (shipped to both engines on 28 October 2026), 6 durable waits only after the owner's decisions, 7 Mac app packaging. The original [OpenBot and Grok Bot improvement plan](plans/studio-best-of-openbot-grok.md) proposes a dependency-aware sequence across the items below: validate/deploy completed context work; questions/history retrieval; reliable submissions and storage; durable tasks; browser/vision; resource-aware collaboration/routines; explicit device capabilities and reviewed shared learning; packaged setup and attention. It preserves Tupies's independent engine and existing permission/sync contracts. Competitor findings are in [research](research.md); the sequence is a proposal, not implementation or deployment evidence.
 
+## Rich chat appearance (29 October 2026, source only)
+
+Implemented: blue/violet reply surfaces, blue table striping and headers, midnight code panels with a consistent vivid syntax palette, tinted quotes/inline code and matching metric cards. Light/dark and accessibility treatments retain the existing appearance policy. Browser evidence belongs in [verification](verification.md); operational deployment and physical-device acceptance remain separate.
+
+## Unified search (29 October 2026, source only)
+
+Implemented: one desktop sidebar Search field combines local name filtering with saved-message search through Enter, its arrow button or Cmd/Ctrl+K, preserving the query and unsent drafts. Phone header and scoped conversation searches remain. Source/browser verification belongs in [verification](verification.md); deployment to operational engines and installed apps is separate.
+
+PR #7 integration includes Skills PR #6 and notification PR #5, with 1031 full regressions, 106 syntax checks, rebuilt browser assets/23-page guide and actual desktop Search/draft/palette acceptance. Deployment remains separate.
+
 ## Notification refinement (29 October 2026, installed)
 
 Implemented and installed: eight-second delivery grace, exact attended-chat receipts across sealed linked engines with priority over file uploads, bot names/short previews/routine names and an iOS communication-notification extension with 24 local portraits. Complete source regressions and both native platform builds pass; both engines run v10 and both Apple apps are build7. Refreshed iOS containing-app/extension provisioning and in-place installation preserved identities and settings. Two labeled operator preview pushes passed owner-observed appearance/chat-tap checks. Remaining observation: physical attended/away suppression, locked-preview/Focus policy and actual routine-completion delivery on build7. New Mac UI acceptance is unverified; respect the owner’s prohibition on further Mac profile actions. Earlier v9 checks remain historical evidence. See [notifications](notifications.md) and [verification](verification.md).

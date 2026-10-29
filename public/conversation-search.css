@@ -20,7 +20,6 @@
   .conversation-search-excerpt{font:var(--ios-subheadline,inherit);font-size:var(--phone-secondary,15px)}
   #conversation-search-results{font-size:var(--phone-caption,13px)}
 }
-.sidebar-conversation-search{display:flex;align-items:center;gap:9px;width:100%;padding:10px 8px;margin:8px 0 2px;border-radius:10px;background:transparent;color:var(--muted);font-size:12px;text-align:left}
-.sidebar-conversation-search>svg{width:16px;height:16px;flex:none}
-.sidebar-conversation-search>.kbd{margin-left:auto;white-space:nowrap}
-.sidebar-conversation-search:hover,.sidebar-conversation-search:focus-visible{background:var(--pearl-surface,#fff);color:var(--ink)}
+.searchbox .workspace-search-submit{display:grid;place-items:center;align-self:stretch;flex:none;min-width:24px;margin:-4px -6px -4px 0;padding:4px 6px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}
+.searchbox .workspace-search-submit:hover{background:var(--pearl-surface,#fff)}
+.searchbox .workspace-search-submit:focus-visible{outline:2px solid var(--accent,#708bb0);outline-offset:2px}
