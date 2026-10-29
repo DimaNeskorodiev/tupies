@@ -135,7 +135,7 @@ final class NotificationCoordinator: NSObject, ObservableObject, UNUserNotificat
     }
 
     func openSystemSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
 
