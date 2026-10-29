@@ -353,7 +353,7 @@ function roomMenu(anchor,id){
   openMenu(anchor,`${menuItem('Search conversation','search',`data-action="search-conversations" data-scope="room" ${key}`)}${menuItem('Teammates','team',`data-action="room-details" ${key}`)}${menuItem('Voice options','sliders','data-action="chat-options"')}<hr>${menuItem('Room settings','edit',`data-action="edit-room" ${key}`)}`,{label:'Room options'});
 }
 function sidebarMarkup(current){
-  return `<aside class="sidebar" aria-label="Main navigation"><div class="brand">${brandMark()}<span class="brand-name">Tupies</span></div><label class="searchbox" for="workspace-search">${icon('search')}<input id="workspace-search" aria-label="Search workspace" placeholder="Search" value="${esc(search)}" autocomplete="off"><span class="kbd">↵</span></label><button class="sidebar-conversation-search" data-action="search-conversations">${icon('chat')}<span>Search conversations</span><span class="kbd">⌘ K</span></button><nav class="nav-list">${navItem('dashboard','Dashboard','home')}${navItem('bots','Bots','grid',visibleBots().length)}${navItem('rooms','Team rooms','team')}${navItem('routines','Routines','routine')}</nav><div class="sidebar-label">Team<button data-action="create-bot" aria-label="New bot" title="New bot">${icon('plus')}</button></div><div class="roster">${visibleBots().map(bot=>`<button class="roster-item ${current.view==='bot'&&current.id===bot.id?'selected':''}" data-nav="/bot/${esc(bot.id)}">${avatar(bot,'small')}<span><span class="roster-name">${esc(bot.name)}</span><span class="roster-role">${esc(bot.title||'Teammate')}</span></span><i class="dot ${botStatus(bot).className==='ready'?'ready':''}"></i></button>`).join('')}</div><div class="sidebar-bottom">${navItem('settings','Settings','gear',0,syncAlert())}</div></aside>`;
+  return `<aside class="sidebar" aria-label="Main navigation"><div class="brand">${brandMark()}<span class="brand-name">Tupies</span></div><form class="searchbox" id="workspace-search-form" role="search">${icon('search')}<input id="workspace-search" aria-label="Search workspace and conversations" title="Filter by name, or press Enter to search messages" placeholder="Search" value="${esc(search)}" autocomplete="off"><button type="submit" class="workspace-search-submit kbd" aria-label="Search conversations" aria-keyshortcuts="Meta+K Control+K" title="Search messages (Enter or Cmd/Ctrl+K)">↵</button></form><nav class="nav-list">${navItem('dashboard','Dashboard','home')}${navItem('bots','Bots','grid',visibleBots().length)}${navItem('rooms','Team rooms','team')}${navItem('routines','Routines','routine')}</nav><div class="sidebar-label">Team<button data-action="create-bot" aria-label="New bot" title="New bot">${icon('plus')}</button></div><div class="roster">${visibleBots().map(bot=>`<button class="roster-item ${current.view==='bot'&&current.id===bot.id?'selected':''}" data-nav="/bot/${esc(bot.id)}">${avatar(bot,'small')}<span><span class="roster-name">${esc(bot.name)}</span><span class="roster-role">${esc(bot.title||'Teammate')}</span></span><i class="dot ${botStatus(bot).className==='ready'?'ready':''}"></i></button>`).join('')}</div><div class="sidebar-bottom">${navItem('settings','Settings','gear',0,syncAlert())}</div></aside>`;
 }
 function renderApp(){
   if(bootPending)return;
@@ -807,7 +807,7 @@ function focusSearchMessage(container,scope,id){
   if(!align())node.scrollIntoView?.({block:'center',behavior:'auto'});
   frame=window.requestAnimationFrame?.(()=>{align();frame=window.requestAnimationFrame?.(align);});timer=setTimeout(align,400);
 }
-function conversationSearchDialog(scope='',id=''){
+function conversationSearchDialog(scope='',id='',query=''){
   clearSearchAnchor?.();conversationSearchNavigation++;pendingSearchMessage=null;dismissConversationSearch();
   const scoped=['bot','room'].includes(scope)&&id,choices=scoped?`<option value="${scope}" selected>This conversation</option><option value="all">All conversations</option>`:'<option value="all">All conversations</option><option value="bot">Bot chats</option><option value="room">Team rooms</option>';
   openDialog('Search conversations',`<form id="conversation-search-form"><div class="field"><label for="conversation-search-query">Words or a phrase</label><input type="search" id="conversation-search-query" autocomplete="off" maxlength="200" placeholder="Find an earlier message…"></div><div class="conversation-search-controls"><label for="conversation-search-scope">Search in</label><select id="conversation-search-scope">${choices}</select><button class="primary-button" type="submit">${icon('search')}Search</button></div><p class="subtle-label">Searches stored messages on this engine. Your query is not sent to a model.</p><div id="conversation-search-results" role="status" aria-live="polite"><p>Enter at least two characters.</p></div></form>`);
@@ -825,7 +825,7 @@ function conversationSearchDialog(scope='',id=''){
     }catch(error){if(current()&&error.name!=='AbortError')results.innerHTML=`<p role="alert">${esc(errorText(error))}</p>`;}
   };
   form.addEventListener('submit',event=>{event.preventDefault();void run();});input.addEventListener('input',()=>{controller?.abort();conversationSearchRequest++;clearTimeout(timer);timer=setTimeout(run,250);});$('#conversation-search-scope',dialog).addEventListener('change',()=>void run());
-  dialog.addEventListener('close',dispose,{once:true});input.focus();
+  dialog.addEventListener('close',dispose,{once:true});input.value=query;input.focus();if(query.trim())void run();
 }
 function openSearchResult(scope,id,messageId){
   if(!['bot','room'].includes(scope)||![id,messageId].every(value=>/^[a-zA-Z0-9_-]{1,120}$/.test(value)))return;
@@ -1052,7 +1052,7 @@ document.addEventListener('click',async event=>{
   try{
     switch(action){
       case 'retry':await start();break;
-      case 'search-conversations':conversationSearchDialog(el.dataset.scope,id);break;
+      case 'search-conversations':conversationSearchDialog(el.dataset.scope,id,el.dataset.scope?'':search);break;
       case 'open-search-result':openSearchResult(el.dataset.scope,id,el.dataset.messageId);break;
       case 'chat-options':await chatOptionsDialog(id);break;
       case 'compact-context':case 'new-topic':{const topic=action==='new-topic';el.disabled=true;toast(topic?'Starting a new topic…':'Summarizing older messages…');try{const result=await api(`/api/bots/${encodeURIComponent(id)}/compact`,{method:'POST',body:topic?{topic:true}:{}});closeDialog();if(route().id===id)await loadChat(id);toast(result.compacted?(topic?'New topic started. The earlier conversation was summarized.':'Older messages were summarized.'):result.reason||'Nothing to summarize yet.');}finally{if(el.isConnected)el.disabled=false;}break;}
@@ -1158,6 +1158,7 @@ document.addEventListener('click',async event=>{
 });
 document.addEventListener('submit',async event=>{
   if(event.target.id==='conversation-search-form')return;
+  if(event.target.id==='workspace-search-form'){event.preventDefault();if(auth?.authenticated)conversationSearchDialog('','',$('#workspace-search',event.target).value);return;}
   const form=event.target;if(!(form instanceof HTMLFormElement))return;event.preventDefault();if(['message-form','room-message-form'].includes(form.id))stopSpeechForSend();const f=new FormData(form);const values=Object.fromEntries(f);const submittedText=$('textarea[name=text]',form)?.value;const submit=$('button[type=submit]',form);if(submit)submit.disabled=true;const errorBox=$('.form-error',form);if(errorBox)errorBox.textContent='';
   try{
     switch(form.id){
@@ -1223,8 +1224,7 @@ document.addEventListener('change',async event=>{
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&$('.menu-layer')){const anchor=$('.menu-layer').anchor;closeMenu();anchor?.focus();return;}
   if(event.key==='Escape'&&$('.bot-inspector.open')&&!$('dialog')){$('.bot-inspector').classList.remove('open');$('.chat-more')?.focus();return;}
-  if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'&&auth?.authenticated){event.preventDefault();conversationSearchDialog();}
-  if(event.target.id==='workspace-search'&&event.key==='Enter'&&auth?.authenticated){event.preventDefault();const query=event.target.value;conversationSearchDialog();$('#conversation-search-query').value=query;$('#conversation-search-form').requestSubmit();}
+  if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'&&auth?.authenticated){event.preventDefault();conversationSearchDialog('','',search);}
   if(['message-input','room-message-input'].includes(event.target.id)&&event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&(!phoneLayout()||event.metaKey||event.ctrlKey)){event.preventDefault();const form=event.target.closest('form');if(!$('.send',form)?.disabled)form.requestSubmit();}
 });
 // A new screen starts at the top; switching tabs inside one screen (a bot profile's sections) keeps the place.
