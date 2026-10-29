@@ -16,7 +16,7 @@ const baseGraph={kind:'research',signature:'fetch-1',caption:'Reading a source',
   {id:'wind-result',from:'core',to:'wind',text:'4 km/h',detail:'Recorded wind',weight:1,bend:.2},
 ]};
 const clone=value=>JSON.parse(JSON.stringify(value));
-function harness(t,{reduced=false,width=540,height=188}={}){
+function harness(t,{reduced=false,width=540,height=188,packetHeight=28,hiddenDimensions=false}={}){
   const dom=new JSDOM('<!doctype html><style></style><body><article class="thinking-message"><div class="thinking-card" data-thinking-card><canvas data-thinking="run-1" data-keep="thinking-run-1"></canvas><div class="thinking-caption"><span data-thinking-elapsed></span><button type="button" class="thinking-stop" data-action="stop-run">Stop</button></div><p class="thinking-context" data-thinking-context></p></div></article></body>',{runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window,frames=new Map(),timers=new Map(),observers=[],mediaListeners=new Set();let id=0,strokes=0,arcs=0,maxQueued=0,documentHidden=false,top=0,labels=[];
   w.document.querySelector('style').textContent=css;
@@ -28,8 +28,8 @@ function harness(t,{reduced=false,width=540,height=188}={}){
   const ctx=new Proxy({},{get(target,name){if(name in target)return target[name];if(name==='createRadialGradient')return()=>gradient;if(name==='measureText')return value=>({width:String(value).length*5.8});if(name==='clearRect')return()=>{labels=[];};return(...args)=>{if(name==='stroke')strokes++;if(name==='arc')arcs++;if(name==='fillText')labels.push({text:args[0],x:args[1],y:args[2],width:String(args[0]).length*5.8,align:target.textAlign});for(const arg of args)if(typeof arg==='number')assert.ok(Number.isFinite(arg),`${String(name)} received a non-finite value`);};},set(target,name,value){target[name]=value;return true;}});
   Object.defineProperty(w.HTMLCanvasElement.prototype,'clientWidth',{get:()=>width});Object.defineProperty(w.HTMLCanvasElement.prototype,'clientHeight',{get:()=>height});w.HTMLCanvasElement.prototype.getContext=()=>ctx;
   w.HTMLCanvasElement.prototype.getBoundingClientRect=()=>({top,left:0,bottom:top+height,right:width,width,height});
-  Object.defineProperty(w.HTMLElement.prototype,'offsetWidth',{get(){return Math.min(165,width*.46,(this.textContent?.length||0)*6+18);}});
-  Object.defineProperty(w.HTMLElement.prototype,'offsetHeight',{get(){return 28;}});
+  Object.defineProperty(w.HTMLElement.prototype,'offsetWidth',{get(){return hiddenDimensions&&this.hidden?0:Math.min(165,width*.46,(this.textContent?.length||0)*6+18);}});
+  Object.defineProperty(w.HTMLElement.prototype,'offsetHeight',{get(){return hiddenDimensions&&this.hidden?0:Number(this.dataset.fixtureHeight||packetHeight);}});
   w.ResizeObserver=class{observe(){}disconnect(){this.dead=true;}};
   w.IntersectionObserver=class{constructor(fn){this.fn=fn;observers.push(this);}observe(){}disconnect(){this.dead=true;}};
   let card=w.document.querySelector('.thinking-card');const canvas=w.document.querySelector('canvas');
@@ -44,7 +44,7 @@ function harness(t,{reduced=false,width=540,height=188}={}){
   function mediaChange(matches){media.matches=matches;for(const fn of mediaListeners)fn({matches});}
   function page(name,persisted){const event=new w.Event(name);Object.defineProperty(event,'persisted',{value:persisted});w.dispatchEvent(event);}
   t.after(()=>{page('pagehide',false);w.close();});
-  return{w,canvas,frames,timers,mediaListeners,observers,advance,run,quiet,update,replacement,visibility,mediaChange,page,card:()=>card,stats:()=>({strokes,arcs,maxQueued,labels:labels.slice()}),setWidth:value=>{width=value;},setTop:value=>{top=value;}};
+  return{w,canvas,frames,timers,mediaListeners,observers,advance,run,quiet,update,replacement,visibility,mediaChange,page,card:()=>card,stats:()=>({strokes,arcs,maxQueued,labels:labels.slice()}),setWidth:value=>{width=value;},setHeight:value=>{height=value;},setTop:value=>{top=value;}};
 }
 const packets=h=>[...h.w.document.querySelectorAll('.thinking-flow-fragment')];
 const xy=button=>button.style.transform.match(/translate3d\(([-\d.]+)px,([-\d.]+)px/).slice(1).map(Number);
@@ -55,6 +55,42 @@ test('adaptive activity stays transparent and has a bounded responsive text laye
   assert.equal(packets(h).length,2);
   for(const button of packets(h).filter(button=>!button.hidden)){const[x,y]=xy(button);assert.ok(x>=0&&x+button.offsetWidth<=280);assert.ok(y>=0&&y+button.offsetHeight<=188);}
   assert.equal(h.w.document.querySelectorAll('.thinking-flow-layer').length,1);
+});
+
+test('shrinking the canvas keeps moving and selected cards inside its bounds on the first repaint',t=>{
+  for(const selected of [false,true]){
+    const h=harness(t,{width:700,height:240,packetHeight:68}),graph=clone(baseGraph);
+    graph.edges=graph.edges.slice(0,1);graph.nodes=graph.nodes.slice(0,2);
+    for(const node of graph.nodes){node.x=.92;node.y=.91;}
+    h.update(graph);h.run(16,2400);const button=packets(h)[0];
+    assert.ok(xy(button)[0]>280,'the old canvas places this card beyond the new width');
+    if(selected)button.click();
+    h.setWidth(280);h.setHeight(112);h.update(graph);h.advance(2416);
+    assert.equal(button.hidden,false);
+    const[x,y]=xy(button);assert.ok(x>=0&&x+button.offsetWidth<=280,'width is bounded immediately');assert.ok(y>=0&&y+button.offsetHeight<=112,'height is bounded immediately');
+    if(selected)assert.equal(button.getAttribute('aria-pressed'),'true');
+  }
+});
+
+test('a hidden card is measured at its wrapped height before it becomes visible again',t=>{
+  const h=harness(t,{reduced:true,width:280,height:112,packetHeight:58,hiddenDimensions:true}),graph=clone(baseGraph);
+  graph.edges=graph.edges.slice(0,1);graph.nodes=graph.nodes.slice(0,2);
+  for(const node of graph.nodes){node.x=.7;node.y=.9;}
+  h.update(graph);const button=packets(h)[0];button.hidden=true;button.style.visibility='visible';button.dataset.fixtureHeight='84';
+  graph.edges[0].text='A longer retained result that wraps across two lines';h.update(graph);
+  assert.equal(button.hidden,false);assert.equal(button.style.visibility,'visible','measurement restores the prior visibility style');
+  const[x,y]=xy(button);assert.ok(x>=0&&x+button.offsetWidth<=280);assert.ok(y>=0&&y+button.offsetHeight<=112,'the actual wrapped height fits, not the hidden fallback estimate');
+});
+
+test('activity cards distinguish a source from the request that reaches the bot',t=>{
+  const h=harness(t,{reduced:true}),graph={kind:'research',nodes:[
+    {id:'input',x:.1,y:.5,kind:'input',label:'Task'},
+    {id:'source',x:.5,y:.2,kind:'source',label:'Page'},
+    {id:'core',x:.5,y:.8,kind:'agent',label:'Atlas'},
+  ],edges:[{id:'page',from:'input',to:'source',text:'Page'},{id:'task',from:'input',to:'core',text:'Task'}]};
+  h.update(graph);const [page,task]=packets(h);
+  assert.equal(page.getAttribute('aria-label'),'Inspect source: Page');assert.equal(task.getAttribute('aria-label'),'Inspect request: Task');
+  assert.equal(page.dataset.kind,'source');assert.equal(task.dataset.kind,'input');
 });
 
 test('static canvas labels yield to readable data fragments and avoid one another without hiding nodes',t=>{

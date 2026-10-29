@@ -1,41 +1,50 @@
-/* The event flow belongs to the conversation surface, without a panel behind it. */
+/* Pearl activity: glass reading points suspended over an open, luminous flow. */
 .thinking-message{align-items:flex-start}
-.thinking-message .message-content{flex:1;min-width:0;max-width:650px}
-.thinking-card{--thinking-height:112px;position:relative;min-height:0;padding:var(--thinking-height) 0 0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;isolation:isolate;color:var(--muted,#5d7189)}
+.thinking-message .message-content{flex:1;min-width:0;max-width:690px}
+.thinking-card{--thinking-height:184px;position:relative;min-height:0;padding:var(--thinking-height) 0 0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;isolation:isolate;color:var(--muted,#5d7189)}
 .thinking-card::after{display:none}
 .thinking-canvas{position:absolute;inset:0 0 auto;width:100%;height:var(--thinking-height);display:block;z-index:0;background:transparent;pointer-events:none}
-.thinking-flow-layer{position:absolute;inset:0 0 auto;height:var(--thinking-height);z-index:1;pointer-events:none;touch-action:pan-y;overflow:hidden}
-.thinking-flow-fragment{position:absolute;top:0;left:0;display:block;box-sizing:border-box;max-width:min(136px,46%);padding:5px 8px;border:1px solid var(--line,#6d82a01c);border-radius:999px;background:var(--pearl-solid,#f5f8fc);box-shadow:none;color:var(--ink,#526a7e);font-family:inherit;font-size:11px;line-height:1.5;font-weight:500;text-align:center;white-space:nowrap;text-overflow:ellipsis;text-shadow:none;pointer-events:auto;will-change:transform,opacity;transition:none;overflow:hidden}
-.thinking-flow-fragment::before{content:'';display:inline-block;width:3px;height:3px;margin-right:5px;vertical-align:2px;border-radius:50%;background:var(--think-mid,#9970ed)}
-.thinking-flow-fragment:hover,.thinking-flow-fragment[aria-pressed=true]{color:var(--pearl-blue,#5931ad);border-color:currentColor}
-.thinking-flow-fragment:focus-visible{outline:2px solid var(--think-mid,#9970ed);outline-offset:2px;border-radius:4px}
+.thinking-flow-layer{position:absolute;inset:0 0 auto;height:var(--thinking-height);z-index:1;pointer-events:none;touch-action:pan-y;overflow:visible}
+.thinking-flow-fragment{position:absolute;top:0;left:0;display:flex;align-items:center;gap:10px;box-sizing:border-box;width:max-content;max-width:min(196px,46%);min-height:58px;padding:10px 14px 10px 10px;border:1px solid var(--pearl-border,#ffffffed);border-radius:19px;background:linear-gradient(145deg,var(--pearl-raised,#fffffff0),var(--pearl-surface,#ffffffbd));box-shadow:0 7px 20px -8px color-mix(in srgb,var(--think-deep,#456389) 24%,transparent),0 1px 3px #3f567a0a,inset 0 1px 0 var(--pearl-border,#fff);color:var(--ink,#263855);font-family:inherit;text-align:left;white-space:normal;text-shadow:none;pointer-events:auto;will-change:transform,opacity;transition:border-color .2s,box-shadow .2s;overflow:visible;cursor:pointer;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.thinking-flow-fragment::before{display:none}
+.thinking-flow-icon{display:grid;place-items:center;width:30px;height:30px;flex:none;border:1px solid color-mix(in srgb,var(--think-mid,#8caedb) 16%,transparent);border-radius:11px;background:linear-gradient(145deg,color-mix(in srgb,var(--think-light,#d7eaff) 23%,var(--pearl-raised,#fff)),color-mix(in srgb,var(--think-mid,#8caedb) 16%,var(--pearl-surface,#fff)));color:var(--pearl-blue,#3866a0);box-shadow:inset 0 1px 0 var(--pearl-border,#fff)}
+.thinking-flow-icon svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.thinking-flow-fragment[data-kind=output] .thinking-flow-icon,.thinking-flow-fragment[data-kind=fact] .thinking-flow-icon{color:var(--pearl-amber,#a66832);background:linear-gradient(145deg,var(--pearl-raised,#fff),var(--pearl-amber-soft,#ffe4c533));border-color:color-mix(in srgb,var(--pearl-amber,#a66832) 13%,transparent)}
+.thinking-flow-fragment[data-kind=agent] .thinking-flow-icon{color:var(--think-peer,var(--pearl-blue,#3866a0))}
+.thinking-flow-copy{display:block;min-width:0;flex:1}
+.thinking-flow-copy::before{content:attr(data-label);display:block;margin-bottom:3px;color:var(--muted,#607086);font:500 9px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:1.05px;text-transform:uppercase}
+.thinking-card .thinking-flow-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font:500 calc(12px * var(--ios-s,1))/1.35 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.15px;color:var(--ink,#263855)}
+.thinking-flow-fragment:hover,.thinking-flow-fragment[aria-pressed=true]{border-color:color-mix(in srgb,var(--think-mid,#87acdf) 50%,var(--pearl-border,#fff));box-shadow:0 9px 24px -7px color-mix(in srgb,var(--think-deep,#456389) 30%,transparent),0 0 0 3px color-mix(in srgb,var(--think-mid,#87acdf) 9%,transparent),inset 0 1px 0 var(--pearl-border,#fff)}
+.thinking-flow-fragment:focus-visible{outline:2px solid var(--pearl-focus,#956322);outline-offset:3px}
 .thinking-flow-fragment[hidden]{display:none}
-.thinking-caption{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:4px 0 0;font-size:13px;line-height:1.55;color:var(--muted,#5d7189);letter-spacing:0}
+.thinking-caption{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:8px 4px 0;font-size:13px;line-height:1.55;color:var(--muted,#5d7189);letter-spacing:0}
 .thinking-copy{flex:1;min-width:0}
 .thinking-phase{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:none;color:var(--ink,#526a7e);font-weight:500}
-.thinking-spark{height:4px;width:4px;flex:none;border-radius:50%;background:var(--think-mid,#9970ed);box-shadow:none;animation:none}
-.thinking-dots{display:none}
+.thinking-phase::before{content:'';display:inline-block;width:5px;height:5px;margin:0 8px 2px 0;border-radius:50%;background:var(--think-mid,#87acdf);box-shadow:0 0 0 4px color-mix(in srgb,var(--think-mid,#87acdf) 12%,transparent)}
+.thinking-spark,.thinking-dots{display:none}
 .thinking-elapsed{flex:none;font-size:11px;color:var(--muted,#738399);font-variant-numeric:tabular-nums}
-.thinking-context{position:relative;z-index:2;color:var(--muted,#738399);font-size:12px;line-height:1.6;margin:5px 0 0;overflow-wrap:anywhere}
+.thinking-context{position:relative;z-index:2;color:var(--muted,#738399);font-size:12px;line-height:1.6;margin:5px 4px 0;overflow-wrap:anywhere}
 .thinking-context:empty{display:none}
-.thinking-stop{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-height:32px;border:1px solid var(--line,#778ba62b);background:var(--pearl-soft,transparent);color:var(--ink,#526a7e);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;transition:background .2s,border-color .2s}
+.thinking-stop{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;min-height:34px;border:1px solid var(--line,#778ba62b);background:var(--pearl-soft,transparent);color:var(--ink,#526a7e);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;transition:background .2s,border-color .2s}
 .thinking-stop:hover:not(:disabled){background:var(--pearl-raised,#ffffff7a);border-color:var(--muted,#778ba653);color:var(--ink,#526a7e)}
-.thinking-stop:focus-visible{outline:2px solid var(--think-mid,#9970ed);outline-offset:3px}
+.thinking-stop:focus-visible{outline:2px solid var(--pearl-focus,#956322);outline-offset:3px}
 .thinking-stop:disabled{opacity:.5;cursor:default}
 .thinking-stop svg{width:9px;height:9px;fill:currentColor;stroke:none}
-.thinking-flow-inspection{position:relative;z-index:2;padding:12px 0 0;margin:12px 0 0;border:0;border-top:1px solid var(--line,#6d82a01c);background:transparent;color:var(--muted,#72849a);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.thinking-flow-inspection{position:relative;z-index:2;padding:15px 16px;margin:14px 4px 0;border:1px solid var(--pearl-border,#fff);border-radius:18px;background:var(--pearl-surface,#ffffffbd);box-shadow:var(--pearl-shadow,0 6px 24px #36506f09);color:var(--muted,#72849a);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .thinking-flow-inspection[hidden]{display:none}
 .thinking-flow-inspection-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .thinking-flow-inspection-head strong{font-size:inherit;font-weight:600;color:var(--ink,#5d7189);overflow-wrap:anywhere;min-width:0}
 .thinking-flow-inspection p{margin:4px 0 0}
-.thinking-flow-inspection pre{margin:5px 0 0;font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;color:var(--ink,#5d7189)}
-.thinking-flow-close{flex:none;border:0;background:none;border-radius:8px;padding:3px 5px;color:var(--pearl-blue,#5d7189);font:inherit}
-.thinking-flow-close:focus-visible{outline:2px solid var(--think-mid,#9970ed);outline-offset:2px}
+.thinking-flow-inspection pre{margin:8px 0 0;font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;color:var(--ink,#5d7189)}
+.thinking-flow-close{flex:none;border:0;background:none;border-radius:8px;padding:4px 6px;color:var(--pearl-blue,#5d7189);font:inherit;cursor:pointer}
+.thinking-flow-close:focus-visible{outline:2px solid var(--pearl-focus,#956322);outline-offset:2px}
 .thinking-message.is-compact{margin-top:-10px}
 .thinking-message.is-compact>.avatar{visibility:hidden}
-.thinking-message.is-compact .thinking-card{--thinking-height:72px}
+.thinking-message.is-compact .thinking-card{--thinking-height:112px}
 .thinking-message.is-compact .thinking-context{display:none}
-.thinking-message.is-compact .thinking-flow-fragment{font-size:10px;max-width:min(128px,46%)}
-@media(max-width:760px){.thinking-card{--thinking-height:96px}.thinking-elapsed{display:none}.thinking-caption{gap:10px}.thinking-stop{padding:5px 9px}}
-@media(pointer:coarse){.thinking-flow-fragment{min-height:34px}.thinking-stop{min-height:32px}.thinking-flow-close{min-height:32px}}
-@media(prefers-reduced-motion:reduce){.thinking-flow-fragment{will-change:auto}.thinking-spark{animation:none}}
+.thinking-message.is-compact .thinking-flow-fragment{min-height:48px;max-width:min(188px,46%);padding:7px 10px;border-radius:16px;gap:8px}
+.thinking-message.is-compact .thinking-flow-icon{width:26px;height:26px;border-radius:9px}
+.thinking-message.is-compact .thinking-flow-copy::before{font-size:8px;margin-bottom:2px}
+@media(max-width:760px){.thinking-card{--thinking-height:168px}.thinking-elapsed{display:none}.thinking-caption{gap:8px;padding-top:5px}.thinking-flow-fragment{gap:7px;padding:9px;max-width:46%;border-radius:17px}.thinking-flow-icon{width:25px;height:28px;border-radius:9px}.thinking-flow-icon svg{width:14px;height:14px}.thinking-card .thinking-flow-title{font-size:calc(11px * var(--ios-s,1))}.thinking-flow-copy::before{font-size:8px;letter-spacing:.8px}.thinking-stop{padding:5px 10px}.thinking-message.is-compact .thinking-card{--thinking-height:112px}}
+@media(pointer:coarse){.thinking-flow-fragment{min-height:48px}.thinking-stop{min-height:44px}.thinking-flow-close{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.thinking-flow-fragment{will-change:auto;transition:none}}
