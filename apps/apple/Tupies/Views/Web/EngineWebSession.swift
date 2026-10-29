@@ -83,6 +83,7 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     private var retryTask: Task<Void, Never>?
     private var reauthAttempts: [Date] = []
     private var cancellables: Set<AnyCancellable> = []
+    private var lastNotificationAttendance = Date.distantPast
     private var downloadNames: [ObjectIdentifier: URL] = [:]
     private var notificationNavigation = NotificationNavigation()
     private var readiness = WebSessionReadiness()
@@ -264,6 +265,24 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
         updateTextSize()
         #endif
         webView.evaluateJavaScript("window.dispatchEvent(new Event('studio:visible'))", completionHandler: nil)
+    }
+
+    /// Native window/app state is independent of WebKit's DOM focus. The hint is
+    /// presentation-only, expires in the page and cannot authorize an engine action.
+    private func reportNotificationAttendance() {
+        let now = Date()
+        guard now.timeIntervalSince(lastNotificationAttendance) >= 0.5 else { return }
+        lastNotificationAttendance = now
+        var attended = isPageVisible && readiness.mayReveal && !phase.isError &&
+            store?.activeID == id && store?.showSettings == false && store?.pairingSheet == nil && popup == nil && sharedFile == nil
+        #if os(iOS)
+        attended = attended && UIApplication.shared.applicationState == .active &&
+            webView.window?.windowScene?.activationState == .foregroundActive && webView.window?.isKeyWindow == true
+        #else
+        attended = attended && NSApp.isActive && webView.window?.isKeyWindow == true &&
+            webView.window?.occlusionState.contains(.visible) == true
+        #endif
+        webView.evaluateJavaScript("document.documentElement.dataset.studioAttended = '\(attended ? "true" : "false")'; document.documentElement.dataset.studioAttendedAt = String(Date.now());", completionHandler: nil)
     }
 
     /// A notification chooses a bot identifier, never a supplied URL or executable action.
@@ -677,6 +696,7 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
       window.__hermesStudioApp = true;
       try {
         document.documentElement.dataset.studioApp = '\(platform)';
+        document.documentElement.dataset.studioAttendance = '1';
         if ('\(platform)' === 'ios') document.documentElement.dataset.studioHaptics = 'true';
       } catch (_) {}
       const post = (message) => { try { window.webkit.messageHandlers.hermesStudio.postMessage(message); } catch (_) {} };
@@ -734,6 +754,8 @@ extension EngineWebSession: WKScriptMessageHandler {
             checkPageReadiness()
         case "page-state":
             checkPageReadiness()
+        case "notification-attendance":
+            reportNotificationAttendance()
         case "app-settings":
             // Only the page on screen may open the app's settings.
             guard store?.activeID == id else { return }

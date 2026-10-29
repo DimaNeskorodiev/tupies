@@ -34,6 +34,7 @@ struct NotificationSettingsSection: View {
                         Text(connection.name).tag(Optional(connection.id))
                     }
                 }
+                Button("Preview and Lock Screen settings", systemImage: "arrow.up.forward.app") { notifications.openSystemSettings() }
                 Button("Check notification delivery") { Task { await notifications.refresh() } }
                     .disabled(notifications.busy)
             }
@@ -47,7 +48,7 @@ struct NotificationSettingsSection: View {
         } header: {
             Text("Notifications")
         } footer: {
-            Text("Bot replies and routine results, even while Tupies is closed. Pick one delivery server to avoid duplicates. Apple only sees a generic alert; message content stays on your server.")
+            Text("Replies you read in an active chat stay quiet on your other devices. Alerts include the bot’s name and a short preview through Apple Push Notifications. Choose When Unlocked in iPhone notification settings to hide previews on the Lock Screen.")
         }
         .animation(.snappy, value: notifications.enabled)
         .task { await notifications.refresh() }

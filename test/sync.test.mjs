@@ -36,9 +36,9 @@ async function provider(t) {
   return { remote, url: `http://127.0.0.1:${server.address().port}/v1` };
 }
 
-async function engine(t, { directory, name } = {}) {
+async function engine(t, { directory, name, notifications } = {}) {
   directory ||= await fs.mkdtemp(path.join(tmpdir(), 'studio-sync-'));
-  const app = await createStudioServer({ dataDir: directory, scheduler: false, logErrors: false, sync: { longPollMs: 1500, fileScanInterval: 300, engineName: name } });
+  const app = await createStudioServer({ dataDir: directory, scheduler: false, logErrors: false, notifications, sync: { longPollMs: 1500, fileScanInterval: 300, engineName: name } });
   const { url } = await app.listen(0); let cookie = '', csrf = '', closed = false;
   async function request(route, { method = 'GET', data, headers = {}, security = true, bearer } = {}) {
     const response = await fetch(`${url}${route}`, { method, redirect: 'manual', headers: { ...(cookie && !bearer ? { Cookie: cookie } : {}), ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}), ...(data !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(security && csrf && !bearer ? { 'X-CSRF-Token': csrf } : {}), ...headers }, ...(data !== undefined ? { body: JSON.stringify(data) } : {}) });
@@ -444,4 +444,49 @@ test('separate conversation lanes replicate as their own documents and belong to
   // Deleting a bot removes its Bot Chat, every other lane and their records, and nothing of another bot.
   state.conversations.bot_scout=[];removeBotSessions(state,'bot_atlas');
   assert.deepEqual(Object.keys(state.conversations),['bot_scout']);assert.deepEqual(state.sessions,[]);
+});
+
+test('desktop read receipts cross the sealed engine link without becoming replicated documents or execution state', async t => {
+  const sent=[], transport={available:true,environment:'sandbox',async send(item){sent.push(item);return {status:200};},close(){}};
+  const hub=await engine(t,{name:'Receipt hub',notifications:{transport,graceMs:8000}}), replica=await engine(t,{name:'Receipt Mac'});
+  await hub.setup();await replica.setup();await link(hub,replica);
+  await hub.app.store.mutate(state=>state.devices.push({id:'receipt_phone',kind:'device',platform:'ios'}));
+  await hub.app.notifications.register(hub.app.sync.devices.find('receipt_phone'),{token:'ab'.repeat(32),environment:'sandbox',enabled:true,botReplies:true,routines:true});
+  const at=new Date().toISOString();
+  await replica.app.store.mutate(state=>{state.messages.bot_atlas=[{id:'receipt_request',role:'user',source:'chat',runId:'receipt_run',content:'Fixture request',createdAt:at},{id:'receipt_response',role:'assistant',runId:'receipt_run',content:'Fixture answer',createdAt:at}];});
+  const response=await replica.request('/api/notifications/read',{method:'POST',data:{botId:'bot_atlas',messageIds:['receipt_response']}});
+  assert.equal(response.status,200);
+  const id=Object.keys(replica.app.notifications.state.read)[0];assert.ok(id);
+  await eventually(()=>Object.hasOwn(hub.app.notifications.state.read,id),'sealed read receipt');
+  await eventually(()=>hub.app.store.state.messages.bot_atlas.some(row=>row.id==='receipt_response'),'synced reply');
+  await hub.app.notifications.flush();assert.equal(sent.length,0);
+  assert.ok(!hub.app.notifications.state.outbox.some(row=>row.status==='pending'));
+  for(const app of [hub.app,replica.app]){
+    assert.ok(!Object.keys(app.sync.meta.docs).some(key=>/notification|readReceipt/i.test(key)));
+    assert.ok(!Object.hasOwn(app.store.state,'notificationReads'));assert.equal(app.store.state.runs.bot_atlas,undefined);
+  }
+  await assert.rejects(hub.app.sync.receiveNotificationReads([{id:'../bad',at:Date.now()}]),{status:400});
+  const count=Object.keys(hub.app.notifications.state.read).length;
+  await hub.app.sync.receiveNotificationReads([{id:'f'.repeat(32),at:Date.now()-6*60000}]);
+  assert.equal(Object.keys(hub.app.notifications.state.read).length,count);
+});
+
+test('read receipts reach the home server while the regular file-sync request is blocked', async t => {
+  const hub=await engine(t,{name:'Fast receipt hub'}),replica=await engine(t,{name:'Busy file Mac'});
+  await hub.setup();await replica.setup();await link(hub,replica);
+  const realRequest=replica.app.sync.request.bind(replica.app.sync);let release,blocked=false;
+  const gate=new Promise(resolve=>{release=resolve;});
+  replica.app.sync.request=async(route,options)=>{
+    if(!blocked&&route==='/api/sync/exchange'&&options.aad==='exchange-reply'){
+      blocked=true;await gate;
+    }
+    return realRequest(route,options);
+  };
+  t.after(()=>release());
+  await replica.app.store.mutate(state=>{state.bots[0].title='Trigger background sync';});
+  await eventually(()=>blocked,'blocked regular sync');
+  const id='a'.repeat(32);replica.app.sync.recordNotificationReads([id]);
+  try{await eventually(()=>Object.hasOwn(hub.app.notifications.state.read,id),'independent priority receipt',3000);}
+  finally{release();}
+  assert.equal(blocked,true);
 });
