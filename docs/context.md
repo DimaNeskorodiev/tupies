@@ -24,7 +24,7 @@ Other work runs in its own lane with a separate model history (`lib/sessions.mjs
 | Team room | `room:<room>` per member | Persistent; each turn carries only what is new (below) |
 | Routine | `routine:<routine>` | Fresh on every run; the last completed output (≤4,000 characters) comes along as `<previous_output>` |
 
-A lane's id is derived from the bot and the key (`<botId>--<kind>-<16 hex>`), so every engine computes the same one, and it starts with the bot's id, so sync can tell whose it is. Each lane has a synced record in `state.sessions` (`{id, botId, kind, key, createdAt, updatedAt}` plus lane data such as `roomSeen`). The display transcript still shows every lane's messages in the Bot Chat. A display message from another lane carries its `sessionId`, and a routine's carries its `routineId`. When a run in another lane completes, the Bot Chat history gets one short record so the bot knows about replies the owner can see:
+A lane's id is derived from the bot and the key (`<botId>--<kind>-<16 hex>`), so every engine computes the same one, and it starts with the bot's id, so sync can tell whose it is. Each lane has a synced record in `state.sessions` (`{id, botId, kind, key, createdAt, updatedAt}` plus lane data such as `roomSeen`). The display transcript still shows every lane's messages in the Bot Chat. A display message from another lane carries its `sessionId`, and a routine's carries its `routineId`. When an owner room or routine run completes, the Bot Chat model history gets one short record:
 
 ```
 [Elsewhere: routine "Morning digest"]
@@ -32,7 +32,9 @@ Asked: …
 Answered: …
 ```
 
-The record holds at most 500 characters of the request and 2,000 of the answer. Telegram lanes are chosen with the channel's **Your own Telegram user ID** (`ownerUserId`), which must also be an allowed user ID. Without it, every Telegram chat gets its own lane. Deleting a bot removes its Bot Chat, every lane and their records.
+The record holds at most 500 characters of the request and 2,000 of the answer, with engine-owned `sourceLane`, `sourceSessionId` and `runId` metadata. Third-party Telegram work never supplies this bridge to the owner's model context. Telegram lanes are chosen with the channel's **Your own Telegram user ID** (`ownerUserId`), which must also be an allowed user ID. Without it, every Telegram chat gets its own lane. Deleting a bot removes its Bot Chat, every lane and their records.
+
+**Older context:** request construction and summary generation filter explicitly Telegram-scoped bridges and the exact old `[Elsewhere: a Telegram chat with someone else]` message shape, without changing the display transcript. A later compaction excludes those records from its new model history. An already generated legacy summary may have paraphrased private material without retaining its source; a marker filter cannot reliably detect or rebuild that text. Such ambiguous existing summaries are preserved rather than silently erased. Forward lane isolation and recognized-bridge filtering are verified; complete repair of unknown legacy summary content is not claimed.
 
 ## Team rooms
 
@@ -60,7 +62,7 @@ Token counts are UTF-8 bytes over four, which counts Cyrillic about twice as den
 `compactConversation` in `lib/engine.mjs` keeps the conversation itself for as long as possible. Above the compaction point it does the following, in order:
 
 1. **Tool outputs from earlier tasks** longer than 200 characters are replaced with a stub, all at once. Doing them together keeps the context identical from one step to the next. Their retained copies expired with their tasks, so the stub offers no handle.
-   - **Summary.** If the context is still over the point after step 1, the older turns are summarized (see below), once per task, before anything else gives way.
+   - **Summary.** If the context is still over the point after step 1, the older turns are summarized (see below), before anything else gives way. Up to three attempts are allowed in a task, with a new attempt only after the canonical history has grown; an unchanged oversized history cannot trigger an endless summary loop.
 2. **The current task's oldest tool outputs** are shortened to 4,000 characters and then omitted. A retained copy's `resultId` stays readable with `tool_result_read`.
 3. **Whole earlier turns** are dropped, oldest first. This also happens when more than 900 messages would be sent, since providers accept at most 1,000. The current turn always stays.
 
@@ -72,11 +74,18 @@ Tool calls and their results are never separated. A note in the turn context tel
 
 1. **What is kept.** The turn in progress stays whole, and so do the most recent whole turns that fit a tail budget: 2.5% of the effective window, 10K–25K tokens, at most a fifth of it. Everything earlier is summarized.
 2. **The summary request.** The bot's own model writes a handoff summary with these sections: Goal, User preferences and constraints, Done, In progress, Decisions, Files and artifacts, Open questions and Critical details.
-   - Its input is a clipped transcript of up to 160,000 characters, keeping the beginning and most of the recent part. The transcript is wrapped as data.
-   - An earlier summary is passed in to be updated, not rewritten.
-3. **The new history.** One `<conversation_summary>` message holds the summary and up to 24,000 characters of the user's earlier messages, quoted verbatim. The kept turns follow it.
-4. **The record.** The lane record stores `summary`, `compactedAt`, `compactions` and `compactMethod`. A Bot Chat gets a lane record (`kind: 'chat'`) the first time it is summarized. Its display transcript gets a short Tupies note, and the run records a `context.compacted` event with `method` and `summarizedMessages`.
-5. **When the summary request fails during a task**, a plain record of the latest requests and answers is used instead (`compactMethod: 'fallback'`), so turns are never dropped silently.
+   - Short histories use one summary request. Oversized histories use at most four source chunks and one merge, within a shared timeout and cancellation signal. The source path no longer clips every user/tool/assistant message or silently discards the middle before summary generation. Long messages can span chunks with exact source/body offsets.
+   - Requests reserve output capacity and overhead using the selected model's effective window and the existing UTF-8 token estimate. Source chunks are also capped at 160,000 characters each. An earlier summary is passed in to be updated; if it must be shortened for the model window, coverage says so.
+   - When the finite call/input budget cannot cover every source, a chunk fails during automatic compaction, or the final merge fails, the handoff explicitly says it is partial. It records covered/omitted source character counts, failed chunks and merge status. This is input coverage, not a guarantee of the model's summary quality.
+3. **The source-linked handoff.** `lib/context-handoff.mjs` retains a bounded record of the requested outcome, exact requirement candidates and observed tool replies. Where available, a user message keeps its actual `sourceMessageId`; tool records carry run/call identities. Legacy history entries use clearly labelled snapshot indexes, not invented `session_read` IDs. Exact excerpts survive later compactions without depending entirely on another model paraphrase. Earlier constraints and recent corrections remain candidates together; this helper cannot decide which conflicting natural-language statement is applicable.
+   - Before summary generation, engine-owned message/run references are checked against the same lane-readable display history as transcript retrieval, including the current task. Missing or out-of-scope identities in current or inherited handoffs are downgraded to snapshot locations while their text is preserved. `compactCoverage.sourceReferences` records whether validation ran and how many identities were rejected. This validates reference availability, not the truth of a model-written summary or every citation inside its prose.
+   - At most 32 requirement excerpts and 16 tool observations fit a 12,000-character structured record. Failures/unknown outcomes are prioritized. Dropped items are counted. A source tool reply is marked observed, failed or unknown, never promoted to independently verified task completion.
+   - All handoff content is data. It cannot grant permissions, revive an approval or authorize replay. Literal requirement recognition is bounded and multilingual but does not guarantee that every important sentence was recognized. Search/read the source for missing exact details.
+4. **The new history.** One `<conversation_summary>` message holds the model summary, the source-linked record and up to 24,000 characters of earlier user quotations. Its total visible size is limited to a quarter of the effective model window (with a small minimum), shrinking quotations and whole handoff entries as needed and disclosing partial coverage. The kept turns follow it. Only the model history changes; the display transcript remains intact.
+5. **The record.** The lane record stores `summary`, `compactedAt`, `compactions`, `compactMethod` (`summary`, `staged-summary`, `partial-summary` or `fallback`) and `compactCoverage`. A Bot Chat gets a lane record (`kind: 'chat'`) the first time it is summarized. Its display transcript gets a short Tupies note, and the run records a `context.compacted` event with the method, summarized-message count and coverage.
+6. **When all summary requests fail during a task**, a plain record of recent requests and answers is used (`compactMethod: 'fallback'`) alongside the exact handoff and partial-coverage notice. Stop still cancels compaction; cancellation never becomes a fallback success. An owner-requested failure leaves the history unchanged.
+
+The deterministic regression fixtures reproduce a requirement that the former middle-elision path lost, preserve exact identifiers and failed tool observations through three compactions, bound requests for small windows and verify that overflow recovery never repeats an already committed write. They do not establish real-model retention or superiority to another product; the agent evaluation runner records those separately.
 
 ## Owner-requested compaction
 

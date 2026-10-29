@@ -71,6 +71,20 @@ final class PinningDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendab
         self.report = report
     }
 
+    /// Pairing codes, signed session challenges and push tokens belong only to the paired origin.
+    /// URLSession can replay a POST/PUT body across a 307/308 redirect even when it strips Authorization.
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest
+    ) async -> URLRequest? {
+        guard let original = task.originalRequest?.url, let destination = request.url,
+              destination.user == nil, destination.password == nil,
+              destination.isSameOrigin(as: original) else { return nil }
+        return request
+    }
+
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,

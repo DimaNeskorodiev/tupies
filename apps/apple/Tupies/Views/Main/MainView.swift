@@ -245,6 +245,14 @@ struct ConnectionStateOverlay: View {
             } actions: {
                 retryButton("Try Again")
             }
+        case .updateRequired(let message):
+            ContentUnavailableView {
+                Label("Update required", systemImage: "arrow.down.app")
+            } description: {
+                Text(message)
+            } actions: {
+                retryButton("Check Again")
+            }
         default:
             ConnectingView(connection: connection)
         }
@@ -281,8 +289,10 @@ struct ConnectionStateOverlay: View {
         Task {
             defer { startingLocal = false }
             do {
-                try await local.start(extra: [connection.baseURL])
-                _ = try? await local.waitForPairingInfo(timeout: 45)
+                try await local.start(expectedConnection: connection)
+                try await local.waitForExpectedEngine(connection, timeout: 45)
+                guard LocalEngineStartPolicy.retains(store.connection(connection.id), expected: connection) else { throw EngineError.missingConnection }
+                local.recordManagedConnection(connection)
                 store.webSession(for: connection.id).signIn()
             } catch {
                 store.alert = AppAlert(title: "Couldn’t start Tupies", message: error.localizedDescription)

@@ -137,10 +137,10 @@
     }
     return observed;
   }
-  function toolKind(name) {
+  function toolKind(name,args={}) {
     if(/^delegate_task$/.test(name))return 'team';
     if(/^task_plan_/.test(name))return 'reasoning';
-    if(/^(http_fetch|browser_|brain_|memory_|skills_read|skills_file|skills_list)/.test(name))return 'research';
+    if(/^(web_search|http_fetch|browser_|brain_|memory_|skills_read|skills_file|skills_list)/.test(name)||name==='integration_call'&&/internet|page/.test(operation(name,args)))return 'research';
     return 'analysis';
   }
   function promptKind(prompt) {
@@ -149,7 +149,28 @@
     if(/\b(why|think|plan|decide|choose|options|strategy)\b/i.test(prompt))return 'reasoning';
     return 'research';
   }
-  const operation=name=>/^http_fetch$/.test(name)?'Read source':/^browser_/.test(name)?'Read page':/^workspace_(write|edit)$/.test(name)?'Edit file':/^workspace_delete$/.test(name)?'Delete file':/^workspace_/.test(name)?'Read workspace':/^documents_create$/.test(name)?'Create document':/^documents_read$/.test(name)?'Read document':/^(brain|memory)_/.test(name)?'Memory':/^task_plan_/.test(name)?'Plan':/^shell_|^terminal|^skills_run/.test(name)?'Run command':/^lsp_/.test(name)?'Code intelligence':/^integration_/.test(name)?'Integration':text(name,42)||'Tool';
+  function operation(name,args={}) {
+    const tool=name==='integration_call'?text(args?.tool,100):text(name,100);
+    if(name==='web_search'||name==='integration_call'&&/search/i.test(tool))return 'Searching the internet';
+    if(name==='http_fetch'||/^browser_(text|snapshot)$/.test(name)||name==='integration_call'&&/read|fetch|browse|crawl/i.test(tool))return 'Reading a page';
+    if(/^browser_/.test(name))return 'Browsing a page';
+    if(/^workspace_(write|edit)$/.test(name))return 'Editing files';
+    if(name==='workspace_delete')return 'Removing a file';
+    if(name==='workspace_image')return 'Looking at an image';
+    if(/^workspace_/.test(name))return 'Looking through files';
+    if(name==='documents_create')return 'Creating a document';
+    if(name==='documents_read')return 'Reading a document';
+    if(/^(brain|memory)_(write|append|set)$/.test(name))return 'Updating notes';
+    if(/^(brain|memory)_/.test(name))return 'Checking memory';
+    if(/^task_plan_/.test(name))return 'Planning the task';
+    if(/^task_outcome_/.test(name))return 'Checking the result';
+    if(/^shell_|^terminal|^skills_run/.test(name))return 'Running a command';
+    if(/^lsp_/.test(name))return 'Checking code';
+    if(/^skills_/.test(name))return 'Reading a playbook';
+    if(/^integration_/.test(name))return 'Using a connected service';
+    if(/^routines_/.test(name))return 'Arranging a routine';
+    return 'Working';
+  }
   function resultState(call) {
     if(!call.completed)return {label:'In progress',failed:false,parsed:null,complete:false,detail:'The tool started; no completion has been recorded.'};
     const parsed=parsePreview(call.completed.preview),value=plain(parsed.value)?parsed.value:null;
@@ -185,7 +206,7 @@
     const prompt=text(options.prompt,260),events=(Array.isArray(run.events)?run.events:[]).filter(event=>plain(event)&&event.type!=='model.delta').slice(-LIMITS.events);
     const calls=collectCalls(events),latestCall=calls.at(-1),last=events.findLast(event=>['tool.started','tool.completed','model.started','delegation.started','delegation.completed','plan.updated','memory.recalled'].includes(event.type));
     const latestDelegation=events.findLast(event=>event.type==='delegation.started'||event.type==='delegation.completed');
-    let kind=latestCall?toolKind(latestCall.tool):promptKind(prompt);
+    let kind=latestCall?toolKind(latestCall.tool,latestCall.arguments):promptKind(prompt);
     if(run.status==='waiting_for_delegate'||latestDelegation&&events.indexOf(latestDelegation)>=(latestCall?.index??-1))kind='team';
     const status=text(run.status,50)||'running',botName=text(bot.name,48)||'Bot',nodes=[],edges=[],nodeIds=new Set();
     const seed=hash(`${text(bot.id,100)}|${text(run.id,100)}|${prompt}`);
@@ -200,11 +221,11 @@
     };
     const input=add('input','Task',prompt||'Current task','User task context; not a tool result',.07,.5,'input');
     const core=add('core',botName,botName,'Current bot',.4,.5,'agent',true);
-    link(input,core,prompt?text(prompt,64):'Task','The bot received this task',-.06,0);
+    link(input,core,'Task','The bot received this task',-.06,0);
     let caption=statusLabels[status]||'Thinking',context='',failed=false;
     const plan=plain(run.plan)&&Array.isArray(run.plan.steps)?run.plan.steps.filter(step=>plain(step)&&typeof step.title==='string').slice(0,12):[];
     const activeStep=plan.find(step=>step.status==='in_progress');
-    if(activeStep&&!statusLabels[status])caption=text(activeStep.title,100);
+    if(activeStep&&!statusLabels[status])caption=`Working on step ${plan.indexOf(activeStep)+1} of ${plan.length}`;
     const peers=Array.isArray(options.peers)?options.peers:[];
     if(kind==='team'&&latestDelegation) {
       const target=latestDelegation.targetBotId||latestDelegation.botId,peer=peers.find(item=>plain(item)&&item.id===target),peerName=text(peer?.name,48)||'Teammate';
@@ -231,8 +252,8 @@
       }
     } else if(kind==='reasoning'&&plan.length) {
       plan.forEach((step,index)=>{
-        const id=add(`plan-${text(step.id,64)||index}`,step.title,step.title,`Visible plan step · ${text(step.status,30)||'pending'}`,index%2?.83:.65,.14+index*.7/Math.max(1,plan.length-1),'transform',step.status==='in_progress');
-        const title=text(step.title,64),stepStatus=text(step.status,30)||'pending',packet=title.length+stepStatus.length+3<=64?`${title} · ${stepStatus}`:title;
+        const id=add(`plan-${text(step.id,64)||index}`,`Step ${index+1}`,step.title,`Visible plan step · ${text(step.status,30)||'pending'}`,index%2?.83:.65,.14+index*.7/Math.max(1,plan.length-1),'transform',step.status==='in_progress');
+        const stepStatus=text(step.status,30)||'pending',statusLabel=stepStatus==='completed'?'Done':stepStatus==='in_progress'?'In progress':'Pending',packet=`Step ${index+1} · ${statusLabel}`;
         link(core,id,packet,`Visible plan step · ${stepStatus}; plan metadata, not proof that an action succeeded`,(index%3-1)*.17,index%3);
       });
       context=`${plan.filter(step=>step.status==='completed').length} of ${plan.length} visible plan steps completed`;
@@ -241,9 +262,10 @@
       let factBudget=LIMITS.facts,completedCount=0;
       selected.forEach((call,index)=>{
         const key=hash(`${call.key}|${call.started?.id||call.started?.seq||call.completed?.id||call.completed?.seq||call.index}`).toString(36),target=safeTarget(call.arguments,call.tool),y=.2+index*.6/Math.max(1,selected.length-1);
-        const sourceId=add(`source-${key}`,targetLabel(target),target||call.tool,call.started?`Requested input · ${call.tool}`:'Input unavailable in retained events',.16,y,'source',index===selected.length-1);
-        const toolId=add(`tool-${key}`,operation(call.tool),call.tool,call.started?'Actual tool.started event':'Actual tool.completed event; input not retained',.43,y,'transform',index===selected.length-1);
-        link(input,sourceId,targetLabel(target),'Recorded tool input',(index-1.5)*.06,1);link(sourceId,toolId,operation(call.tool),call.tool,(index%3-1)*.08,0);
+        const action=operation(call.tool,call.arguments),web=/internet|page/.test(action),sourceLabel=web?(action==='Searching the internet'?'Search':'Page'):call.tool==='integration_call'?'Connected service':target===call.tool?'Input':targetLabel(target);
+        const sourceId=add(`source-${key}`,sourceLabel,target||call.tool,call.started?`Requested input · ${call.tool}`:'Input unavailable in retained events',.16,y,'source',index===selected.length-1);
+        const actionTag=action.split(' ')[0],toolId=add(`tool-${key}`,actionTag,call.tool,call.started?'Actual tool.started event':'Actual tool.completed event; input not retained',.43,y,'transform',index===selected.length-1);
+        link(input,sourceId,sourceLabel,'Recorded tool input',(index-1.5)*.06,1);link(sourceId,toolId,actionTag,call.tool,(index%3-1)*.08,0);
         const outcome=resultState(call);
         if(call.completed){
           completedCount++;
@@ -265,7 +287,7 @@
           }
           if(index===selected.length-1){failed=outcome.failed;context=target?`${targetLabel(target)} · ${outcome.label}`:outcome.label;}
         }else if(index===selected.length-1)context=target||call.tool;
-        if(index===selected.length-1&&!statusLabels[status]&&last?.type!=='model.started')caption=call.completed?(outcome.failed?`${operation(call.tool)} failed`:outcome.complete?`${operation(call.tool)} result received`:'Reading a result preview'):operation(call.tool);
+        if(index===selected.length-1&&!statusLabels[status]&&last?.type!=='model.started')caption=call.completed?(outcome.failed?'Action failed':'Reviewing results'):action;
       });
       if(kind==='analysis'&&completedCount>1&&nodes.length<LIMITS.nodes) {
         const summary=add('results','Results',`${completedCount} tool results received`,'Count of recorded completions; no values were synthesized',.91,.5,'output',true);
@@ -280,9 +302,9 @@
     if(run.partialOutput&&!statusLabels[status])caption='Writing the reply';
     if(status==='failed'||status==='interrupted')failed=true;
     if(!context&&activeStep)context=text(activeStep.title,160);
-    const result={kind,nodes,edges,caption:text(caption,110),context:text(context,180),seed,status,failed,terminal:terminal.has(status)};
+    const result={kind,nodes,edges,caption:text(caption,240),context:text(context,180),seed,status,failed,terminal:terminal.has(status)};
     result.signature=hash(JSON.stringify(result)).toString(36);
     return result;
   }
-  window.StudioActivityModel=Object.freeze({build});
+  window.StudioActivityModel=Object.freeze({build,describeTool:operation});
 })();

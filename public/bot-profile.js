@@ -44,7 +44,7 @@ function view(botId){
   let v=views.get(botId);
   if(v){views.delete(botId);views.set(botId,v);return v;}
   v={id:botId,tab:'overview',tickets:{},loading:{},scroll:{},focus:null,brain:null,byPath:null,brainAt:0,brainError:'',layout:null,graphShown:false,noteTarget:'',note:null,noteHTML:'',noteAt:0,noteError:'',noteLoading:false,revealReader:false,query:'',folder:'',tag:'',sort:'recent',shown:LIST_PAGE,
-    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false};
+    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false};
   views.set(botId,v);while(views.size>8)views.delete(views.keys().next().value);
   return v;
 }
@@ -168,11 +168,35 @@ function eventText(item,bot){
 const RUN_STATUS={completed:['Done','ok'],failed:['Failed','fail'],cancelled:['Stopped',''],interrupted:['Interrupted','fail'],unknown:['Unknown','fail']};
 const RUN_SOURCE={chat:'Chat',routine:'Routine',room:'Team room',telegram:'Telegram',delegation:'For a teammate'};
 function duration(ms){if(!Number.isFinite(ms))return '';const seconds=Math.round(ms/1000);return seconds<60?`${seconds}s`:seconds<3600?`${Math.round(seconds/60)} min`:`${(seconds/3600).toFixed(1)} h`;}
+const CHECK_KIND={file_exists:'File exists',file_contains:'File content',file_sha256:'File version',command_success:'Command result',source_read:'Source read',teammate_completed:'Teammate result'};
+const RECEIPT_TOOL={workspace_image:'Read image',web_search:'Search web',http_fetch:'Read web page',task_outcome_set:'Set result checks',task_outcome_check:'Check results',work_records_read:'Read earlier work',delegate_task:'Ask teammate'};
+const shortValue=(value,max=200)=>String(value??'').slice(0,max);
+function taskEvidence(item,v){
+  const verification=item.verification,checks=Array.isArray(verification?.checks)?verification.checks.slice(0,12):[],records=Array.isArray(item.workRecords)?item.workRecords.slice(0,60):[];
+  let label='';
+  if(verification?.coverage==='declared_checks'&&checks.length){const failed=checks.filter(check=>check.passed===false).length,unverified=checks.some(check=>typeof check.passed!=='boolean');label=failed?`${plural(failed,'declared check')} failed`:unverified?'Some declared checks are unverified':`${plural(checks.length,'declared check')} passed`;}
+  else if(verification?.coverage==='not_declared')label='No mechanical checks declared';
+  const checked=label?`<small class="${verification?.passed===false?'bp-task-error':'bp-task-checks'}">${esc(label)}</small>`:'';
+  const diagnostics=item.diagnostics,diagnosticRows=[];
+  if(diagnostics?.context){const c=diagnostics.context;diagnosticRows.push(`${Number(c.tokens)||0} estimated context tokens${Number.isFinite(c.effective)?` of ${c.effective.toLocaleString()} available`:''}.`);}
+  if(diagnostics?.memory){const m=diagnostics.memory;diagnosticRows.push(`Memory: ${Number(m.selected)||0} of ${Number(m.total)||0} facts selected; ${Number(m.omitted)||0} omitted. ${Number(m.refreshes)||0} recall passes.`);if(m.omittedPins?.length)diagnosticRows.push(`${m.omittedPins.length} pinned facts did not fit.`);if(m.truncated?.length)diagnosticRows.push(`${m.truncated.length} fact excerpts were shortened; full values remain in Memory.`);}
+  if(diagnostics?.compaction){const c=diagnostics.compaction;diagnosticRows.push(`Summary coverage: ${c.coverage?.complete===true?'complete within the selected sources':'partial; read original sources for missing details'}. ${Number(c.coverage?.summaryCalls)||0} summary calls.`);if(c.coverage?.mergeFailed)diagnosticRows.push('Summary merge failed; the handoff retains partial coverage.');}
+  const diagnosticHTML=diagnosticRows.length?`<p class="bp-task-body"><small><strong>Context and memory coverage</strong></small>${diagnosticRows.map(row=>`<small>${esc(row)}</small>`).join('')}</p>`:'';
+  if(!checks.length&&!records.length&&!diagnosticRows.length)return checked;
+  const checkRows=checks.map(check=>`<p class="bp-task-body"><small><strong>${esc(CHECK_KIND[check.kind]||'Declared check')} · ${check.passed===true?'Passed':check.passed===false?'Failed':'Not checked'}</strong></small><small>${esc(shortValue(check.detail||check.id,300))}</small></p>`).join('');
+  const receiptRows=records.map(record=>{
+    const status=record.outcome==='unknown'?'Outcome uncertain':record.status==='failed'?'Failed':record.status==='pending'?'Pending':record.status==='succeeded'?'Observed':'Not confirmed';
+    const target=typeof record.path==='string'&&!record.path.startsWith('/')&&!/^[a-z]:|[\\\x00-\x1f]/i.test(record.path)&&record.path.split('/').every(part=>part&&part!=='.'&&part!=='..')?shortValue(record.path,240):'';
+    const info=[target,Number.isInteger(record.exitCode)?`Exit ${record.exitCode}`:'',record.error?shortValue(record.error,300):''].filter(Boolean).join(' · ');
+    return `<p class="bp-task-body"><small><strong>${esc(RECEIPT_TOOL[record.tool]||shortValue(record.tool,80).replace(/_/g,' '))} · ${status}</strong></small>${info?`<small>${esc(info)}</small>`:''}</p>`;
+  }).join('');
+  return `${checked}<details class="bp-proposal-more" data-task-evidence="${esc(item.id)}"${v.taskDetails.has(item.id)?' open':''}><summary>Checks and tool activity${records.length?` (${records.length})`:''}</summary><p class="bp-task-body"><small>Checks cover declared properties. Tool activity records observations; neither proves every part of the request was satisfied.</small></p>${diagnosticHTML}${checkRows}${receiptRows}</details>`;
+}
 function tasksCard(bot,v){
   const runs=(v.runs||[]).slice(0,6),tokens=usage=>(Number(usage?.input_tokens)||Number(usage?.prompt_tokens)||0)+(Number(usage?.output_tokens)||Number(usage?.completion_tokens)||0);
   const body=v.runs?runs.length?`<ul class="bp-tasks">${runs.map(item=>{const [label,tone]=RUN_STATUS[item.status]||[item.status||'Finished',''],used=tokens(item.usage);
     const meta=[RUN_SOURCE[item.source]||'Task',item.finishedAt?ctx.relative(item.finishedAt):'',duration(item.durationMs),used?`${used.toLocaleString()} tokens`:'',item.questions?plural(item.questions,'question'):''].filter(Boolean).join(' · ');
-    return `<li><span class="bp-task-status ${tone}">${esc(label)}</span><span class="bp-task-body"><span class="bp-task-title">${esc(item.task||'Untitled task')}</span><small>${esc(meta)}</small>${item.error&&item.status!=='completed'?`<small class="bp-task-error">${esc(item.error)}</small>`:''}</span></li>`;}).join('')}</ul>`:`<p class="bp-muted">No finished tasks recorded yet. Tasks finished on this engine appear here.</p>`:v.runsError?`<p class="bp-muted">${esc(v.runsError)}</p>`:'<p class="bp-muted">Loading…</p>';
+    return `<li><span class="bp-task-status ${tone}">${esc(label)}</span><div class="bp-task-body"><span class="bp-task-title">${esc(item.task||'Untitled task')}</span><small>${esc(meta)}</small>${taskEvidence(item,v)}${item.error&&item.status!=='completed'?`<small class="bp-task-error">${esc(item.error)}</small>`:''}</div></li>`;}).join('')}</ul>`:`<p class="bp-muted">No finished tasks recorded yet. Tasks finished on this engine appear here.</p>`:v.runsError?`<p class="bp-muted">${esc(v.runsError)}</p>`:'<p class="bp-muted">Loading…</p>';
   return `<section class="glass-card bp-card"><h2>${icon('clock')}Recent tasks</h2>${body}</section>`;
 }
 function overviewPanel(bot,v){
@@ -268,6 +292,11 @@ function reader(bot,v){
 }
 
 /* Memory */
+function factProvenance(entry){
+  const source=entry.provenance || {},label={'owner-edit':'Edited by you','owner-chat':'Saved from your conversation',reviewed:'Accepted after your review',unknown:'Source not recorded'}[source.kind] || 'Source not recorded';
+  const at=Number.isFinite(Date.parse(source.observedAt))?new Date(source.observedAt).toLocaleDateString():'',ids=(Array.isArray(source.messageIds)?source.messageIds:[]).filter(id=>typeof id==='string'&&/^[a-zA-Z0-9_-]{1,120}$/.test(id)).slice(0,10);
+  return `<details class="bp-proposal-more"><summary>Source and changes</summary><p class="bp-hint">${esc(label)}${at?` · ${esc(at)}`:''}. ${entry.supersedes?'Replaces an earlier revision. ':''}Source information records origin; it does not grant permission.</p>${ids.length?`<p class="bp-hint">Source messages: ${ids.map(id=>`<code>${esc(id)}</code>`).join(', ')}</p>`:''}</details>`;
+}
 function memoryPanel(bot,v){
   if(!v.memory)return v.memoryError&&!v.loading.memory?retry(v.memoryError,'retry'):loading('Opening memory…');
   const entries=[...v.memory].sort((a,b)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned))||String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))),pinned=entries.filter(entry=>entry.pinned).length;
@@ -279,7 +308,7 @@ function memoryList(bot,v,entries=[...v.memory].sort((a,b)=>Number(Boolean(b.pin
   if(!entries.length)return empty('pin','A fresh memory',`Add a preference or a standing piece of context, or let ${esc(bot.name)} learn through its memory tools.`);
   const words=fold(v.memoryQuery).split(/\s+/).filter(Boolean),list=entries.filter(entry=>words.every(word=>fold(`${entry.key} ${entry.value}`).includes(word)));
   if(!list.length)return '<p class="bp-muted bp-none">No facts match your search.</p>';
-  return list.map(entry=>v.editing===entry.id?factForm(bot,v,entry):`<article class="bp-fact${entry.pinned?' pinned':''}"><div class="bp-fact-head"><strong>${esc(entry.key)}</strong>${entry.pinned?`<span class="bp-pin-label">${icon('pin')}Pinned</span>`:''}<small>${esc(ctx.relative(entry.updatedAt))}</small></div><p>${factText(entry.value)}</p>${v.confirming===entry.id?`<div class="bp-confirm"><span>Remove this fact from future tasks?</span><button class="secondary-button" data-profile-action="cancel-delete">Keep it</button><button class="danger-button" data-profile-action="confirm-delete" data-id="${esc(entry.id)}">Remove</button></div>`:`<div class="bp-fact-actions"><button class="icon-button${entry.pinned?' active':''}" data-profile-action="pin-fact" data-id="${esc(entry.id)}" aria-pressed="${Boolean(entry.pinned)}" aria-label="${entry.pinned?'Unpin':'Pin'} ${esc(entry.key)}" title="${entry.pinned?'Unpin':'Pin'}">${icon('pin')}</button><button class="icon-button" data-profile-action="edit-fact" data-id="${esc(entry.id)}" aria-label="Edit ${esc(entry.key)}" title="Edit">${icon('edit')}</button><button class="icon-button" data-profile-action="delete-fact" data-id="${esc(entry.id)}" aria-label="Remove ${esc(entry.key)}" title="Remove">${icon('trash')}</button></div>`}</article>`).join('');
+  return list.map(entry=>v.editing===entry.id?factForm(bot,v,entry):`<article class="bp-fact${entry.pinned?' pinned':''}"><div class="bp-fact-head"><strong>${esc(entry.key)}</strong>${entry.pinned?`<span class="bp-pin-label">${icon('pin')}Pinned</span>`:''}<small>${esc(ctx.relative(entry.updatedAt))}</small></div><p>${factText(entry.value)}</p>${factProvenance(entry)}${v.confirming===entry.id?`<div class="bp-confirm"><span>Remove this fact from future tasks?</span><button class="secondary-button" data-profile-action="cancel-delete">Keep it</button><button class="danger-button" data-profile-action="confirm-delete" data-id="${esc(entry.id)}">Remove</button></div>`:`<div class="bp-fact-actions"><button class="icon-button${entry.pinned?' active':''}" data-profile-action="pin-fact" data-id="${esc(entry.id)}" aria-pressed="${Boolean(entry.pinned)}" aria-label="${entry.pinned?'Unpin':'Pin'} ${esc(entry.key)}" title="${entry.pinned?'Unpin':'Pin'}">${icon('pin')}</button><button class="icon-button" data-profile-action="edit-fact" data-id="${esc(entry.id)}" aria-label="Edit ${esc(entry.key)}" title="Edit">${icon('edit')}</button><button class="icon-button" data-profile-action="delete-fact" data-id="${esc(entry.id)}" aria-label="Remove ${esc(entry.key)}" title="Remove">${icon('trash')}</button></div>`}</article>`).join('');
 }
 function factForm(bot,v,entry){
   const draft=v.draft;
@@ -293,7 +322,7 @@ async function saveFact(bot,v,body,message){
 }
 
 /* Learning: suggested memory and skill changes. The engine checks each one against the current memory or skill again on accept. */
-const REVIEW_PROMPT='Look back over your conversations since your last review and suggest what is worth learning. List the messages from the last 24 hours with session_search (leave the query empty and set after), and read around anything important with session_read. Look for lasting facts, preferences and decisions; core-memory facts that are outdated or duplicated; and repeated workflows that a new skill, or a better version of one of your skills, would handle. Suggest changes with memory_propose and skills_propose, citing the message IDs they come from. Do not change memory or skills directly: the owner reviews every suggestion. If nothing is worth changing, say so in one line.';
+const REVIEW_PROMPT='Look back over your conversations since your last review and suggest what is worth learning. List the messages from the last 24 hours with session_search (leave the query empty and set after), and read around anything important with session_read. Look for lasting facts, preferences and decisions; core-memory facts that are outdated or duplicated; and repeated workflows that a new skill, or a better version of one of your skills, would handle. Search existing Brain notes before proposing duplicate knowledge. If notes overlap or contradict each other, suggest a consolidation in your reply with the exact note paths and source messages; do not merge, edit or delete notes during this review. Suggest changes with memory_propose and skills_propose, citing the message IDs they come from. Do not change memory or skills directly: the owner reviews every suggestion. If nothing is worth changing, say so in one line.';
 const PROPOSAL_STATUS={accepted:['Accepted','ok'],rejected:['Declined',''],stale:['Out of date','fail'],undone:['Undone','']};
 const PROPOSAL_FROM={chat:'a chat with you',routine:'a routine',room:'a team room',telegram:'a Telegram chat',delegation:'a teammate’s request'};
 function lineDiff(before,after){
@@ -407,6 +436,7 @@ async function upload(bot,v,input){
 function capture(v){
   const page=document.querySelector('.bot-profile');if(page?.dataset.profileBot!==v.id)return;
   const settings=page.querySelector('[data-profile-disclosure="settings"]');if(settings)v.settingsOpen=settings.open;
+  v.taskDetails=new Set([...page.querySelectorAll('details[data-task-evidence]')].filter(element=>element.open).map(element=>element.dataset.taskEvidence));
   const active=document.activeElement;
   if(page.contains(active)&&active.dataset?.profileInput)v.focus={key:active.dataset.profileInput,start:active.selectionStart,end:active.selectionEnd};
   else if(active?.matches?.('[data-profile-disclosure] > summary'))v.focus={disclosure:active.parentElement.dataset.profileDisclosure};

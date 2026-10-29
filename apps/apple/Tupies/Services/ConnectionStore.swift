@@ -21,12 +21,13 @@ final class ConnectionStore: ObservableObject {
     @Published var thisMacError: String?
 
     private enum Keys {
-        static let connections = "hermes.connections.v1"
-        static let active = "hermes.activeConnection.v1"
-        static let deviceName = "hermes.deviceName"
+        static let connections = AppSettings.connections
+        static let active = AppSettings.active
+        static let deviceName = AppSettings.deviceName
+        static let suppressedLocalIdentities = AppSettings.suppressedLocalIdentities
     }
 
-    private static let tokenService = "dev.hermesstudio.app.session"
+    private static let tokenService = AppIdentity.sessionService
     /// Refresh tokens this long before they expire.
     private static let refreshMargin: TimeInterval = 5 * 60
 
@@ -37,6 +38,10 @@ final class ConnectionStore: ObservableObject {
     private var webSessions: [UUID: EngineWebSession] = [:]
     private var toastTask: Task<Void, Never>?
     private var didAttemptLocalAutoPair = false
+    private var localPairingIntent: LocalEnginePairingIntent {
+        get { LocalEnginePairingIntent(suppressedFingerprints: defaults.stringArray(forKey: Keys.suppressedLocalIdentities) ?? []) }
+        set { defaults.set(newValue.suppressedFingerprints, forKey: Keys.suppressedLocalIdentities) }
+    }
 
     init(defaults: UserDefaults = .standard, keys: DeviceKeyStore = .shared) {
         self.defaults = defaults
@@ -89,6 +94,7 @@ final class ConnectionStore: ObservableObject {
     /// While a session is still valid it also unpairs the device on the engine, so the pairing does not linger there.
     func remove(_ id: UUID) {
         guard let removed = connections.first(where: { $0.id == id }) else { return }
+        if removed.kind == .local { localPairingIntent.removed(removed.fingerprint) }
         if tokens[id] == nil, let stored = loadStoredToken(for: id) { tokens[id] = stored }
         if let token = tokens[id], token.expiresAt.timeIntervalSinceNow > 30 {
             let client = EngineClient(connection: removed)
@@ -166,7 +172,7 @@ final class ConnectionStore: ObservableObject {
         guard link.kind == .device else { throw PairingLink.ParseError.engineLink }
         let engineName = displayName ?? link.name
         let expected = Fingerprint.normalize(link.fingerprint)
-        let client = EngineClient(baseURL: link.baseURL, engineName: engineName, fingerprint: expected)
+        var client = EngineClient(baseURL: link.baseURL, engineName: engineName, fingerprint: expected, requirePin: link.requiresPinnedTLS)
 
         progress(.verifying)
         let info = try await client.engineInfo()
@@ -175,6 +181,8 @@ final class ConnectionStore: ObservableObject {
               let advertisedKey = Data(base64Encoded: info.publicKey),
               Fingerprint.of(publicKeyDER: advertisedKey) == expected
         else { throw EngineError.identityMismatch(engine: engineName) }
+        let target = try client.sessionTarget(from: info, expectedNodeId: nil)
+        if client.trust.pinned { client.requirePin = true }
 
         progress(.creatingKey)
         let id = UUID()
@@ -193,6 +201,7 @@ final class ConnectionStore: ObservableObject {
             ))
 
             guard Fingerprint.normalize(response.engine.fingerprint) == expected,
+                  response.engine.nodeId == target.nodeId,
                   let engineKey = Data(base64Encoded: response.engine.publicKey),
                   Fingerprint.of(publicKeyDER: engineKey) == expected
             else { throw EngineError.identityMismatch(engine: engineName) }
@@ -216,7 +225,7 @@ final class ConnectionStore: ObservableObject {
                 kind: kind,
                 addedAt: previous?.addedAt ?? now,
                 lastUsed: now,
-                pinnedTLS: client.trust.pinned ? true : nil
+                pinnedTLS: link.requiresPinnedTLS || client.trust.pinned ? true : nil
             )
 
             if let previous = previous, let index = connections.firstIndex(of: previous) {
@@ -227,10 +236,14 @@ final class ConnectionStore: ObservableObject {
             }
             sortConnections()
             save()
+            if connection.kind == .local { localPairingIntent.explicitlyConnected(connection.fingerprint) }
             reachability[id] = .online
 
             progress(.signingIn)
             activate(id)
+            #if os(macOS)
+            LocalEngineController.shared.recordManagedConnection(connection)
+            #endif
             return connection
         } catch {
             keys.deleteKey(for: id)
@@ -254,21 +267,44 @@ final class ConnectionStore: ObservableObject {
     // MARK: - This Mac
 
     #if os(macOS)
+    /// A previously chosen included engine resumes only for its exact verified managed identity.
+    func resumeIncludedEngineIfNeeded() async {
+        let local = LocalEngineController.shared
+        guard let connection = activeConnection, localPairingIntent.permitsAutomaticConnection(to: connection.fingerprint),
+              local.canResumeBundledEngine(for: connection) else { return }
+        if await local.refresh(expectedConnection: connection) != nil { return }
+        guard activeID == connection.id, self.connection(connection.id) != nil,
+              localPairingIntent.permitsAutomaticConnection(to: connection.fingerprint) else { return }
+        do {
+            try await local.start(expectedConnection: connection, bundledPort: connection.baseURL.effectivePort)
+            try await local.waitForExpectedEngine(connection)
+            guard self.connection(connection.id) != nil, localPairingIntent.permitsAutomaticConnection(to: connection.fingerprint) else { return }
+            webSession(for: connection.id).signIn()
+        } catch { thisMacError = error.localizedDescription }
+    }
+
     /// Pairs with the engine on this Mac using its discovery file. Throws
     /// `LocalEngineError` when the engine isn't running or hasn't published a code.
-    func connectThisMac() async throws {
+    func connectThisMac(expectedConnection: Connection? = nil) async throws {
         isConnectingThisMac = true
         defer { isConnectingThisMac = false }
         let local = LocalEngineController.shared
-        if let existing = localConnection, await local.probe(existing.baseURL) {
+        if let existing = expectedConnection ?? localConnection {
+            guard LocalEngineStartPolicy.retains(connection(existing.id), expected: existing) else { throw EngineError.missingConnection }
+            let running = await local.probeExpected(existing)
+            guard LocalEngineStartPolicy.retains(connection(existing.id), expected: existing) else { throw EngineError.missingConnection }
+            guard running else { throw LocalEngineStartPolicy.Failure.externalLauncherRequired }
+            localPairingIntent.explicitlyConnected(existing.fingerprint)
             activate(existing.id)
+            local.recordManagedConnection(existing)
             return
         }
         guard let discovery = local.readDiscovery(), let link = discovery.pairingLink else {
             if await local.refresh() != nil { throw LocalEngineError.noPairingInfo }
             throw LocalEngineError.notRunning
         }
-        guard await local.probe(link.baseURL) else { throw LocalEngineError.notRunning }
+        guard await local.probe(link.baseURL, fingerprint: link.fingerprint, requirePin: link.requiresPinnedTLS) else { throw LocalEngineError.notRunning }
+        guard localConnection == nil else { throw EngineError.missingConnection }
         try await pair(link, kind: .local, displayName: discovery.displayName)
         thisMacError = nil
     }
@@ -279,7 +315,9 @@ final class ConnectionStore: ObservableObject {
         didAttemptLocalAutoPair = true
         let local = LocalEngineController.shared
         guard let discovery = local.readDiscovery(), let link = discovery.pairingLink,
-              await local.probe(link.baseURL) else { return }
+              localPairingIntent.permitsAutomaticConnection(to: link.fingerprint),
+              await local.probe(link.baseURL, fingerprint: link.fingerprint, requirePin: link.requiresPinnedTLS) else { return }
+        guard localConnection == nil, localPairingIntent.permitsAutomaticConnection(to: link.fingerprint) else { return }
         do {
             isConnectingThisMac = true
             defer { isConnectingThisMac = false }
@@ -297,11 +335,16 @@ final class ConnectionStore: ObservableObject {
     func validToken(for id: UUID, forceRefresh: Bool = false) async throws -> String {
         if !forceRefresh {
             if tokens[id] == nil, let stored = loadStoredToken(for: id) { tokens[id] = stored }
-            if let token = tokens[id], token.expiresAt.timeIntervalSinceNow > Self.refreshMargin {
+            if let token = tokens[id], token.protocolVersion == 2, token.expiresAt.timeIntervalSinceNow > Self.refreshMargin {
                 return token.token
             }
         }
-        if let running = tokenTasks[id] { return try await running.value.token }
+        if let running = tokenTasks[id] {
+            let token = try await running.value
+            try Task.checkCancellation()
+            guard self.connection(id) != nil else { throw EngineError.missingConnection }
+            return token.token
+        }
         guard let connection = connection(id) else { throw EngineError.missingConnection }
 
         let task = Task { try await self.openSession(for: connection) }
@@ -309,6 +352,8 @@ final class ConnectionStore: ObservableObject {
         do {
             let token = try await task.value
             tokenTasks[id] = nil
+            try Task.checkCancellation()
+            guard self.connection(id) != nil else { throw EngineError.missingConnection }
             tokens[id] = token
             storeToken(token, for: id)
             if reachability[id] != .online { reachability[id] = .online }
@@ -322,6 +367,10 @@ final class ConnectionStore: ObservableObject {
                 webSessions[id]?.markRevoked(error.localizedDescription)
             } else if case EngineError.unreachable = error {
                 reachability[id] = .offline
+            } else if case EngineError.engineUpdateRequired = error {
+                reachability[id] = .updateRequired
+            } else if case EngineError.appUpdateRequired = error {
+                reachability[id] = .updateRequired
             }
             throw error
         }
@@ -329,19 +378,34 @@ final class ConnectionStore: ObservableObject {
 
     /// Runs an authenticated request, refreshing the token once on 401.
     func authorized<T>(_ id: UUID, _ operation: (EngineClient, String) async throws -> T) async throws -> T {
+        let token = try await validToken(for: id)
         guard let connection = connection(id) else { throw EngineError.missingConnection }
         let client = EngineClient(connection: connection)
-        let token = try await validToken(for: id)
         do {
             return try await operation(client, token)
         } catch let error as EngineError where error.isUnauthorizedHTTP {
             invalidateToken(for: id)
             let fresh = try await validToken(for: id, forceRefresh: true)
-            return try await operation(client, fresh)
+            guard let current = self.connection(id) else { throw EngineError.missingConnection }
+            return try await operation(EngineClient(connection: current), fresh)
         }
     }
 
     private func openSession(for connection: Connection) async throws -> SessionToken {
+        var client = EngineClient(connection: connection)
+        let target = try await client.verifiedSessionTarget(expectedNodeId: connection.nodeId)
+        if client.trust.pinned { client.requirePin = true }
+        try Task.checkCancellation()
+        guard let index = connections.firstIndex(where: { $0.id == connection.id && $0.fingerprint == connection.fingerprint }) else {
+            throw EngineError.missingConnection
+        }
+        // Old saved connections may predate node IDs. Fill this only after the stored identity matched.
+        if connections[index].nodeId == nil || (client.trust.pinned && connections[index].pinnedTLS != true) {
+            connections[index].nodeId = target.nodeId
+            if client.trust.pinned { connections[index].pinnedTLS = true }
+            save()
+            webSessions[connection.id]?.updateConnection(connections[index])
+        }
         let key: DeviceSigningKey?
         do {
             key = try keys.loadKey(for: connection.id)
@@ -351,16 +415,17 @@ final class ConnectionStore: ObservableObject {
         guard let key = key else { throw EngineError.unauthorized(engine: connection.name) }
         let timestamp = Int64((Date().timeIntervalSince1970 * 1000).rounded())
         let nonce = Data.random(count: 16).base64URLEncodedString()
-        let signature = try key.sign(SigningMessages.session(deviceId: connection.deviceId, timestamp: timestamp, nonce: nonce))
-        let client = EngineClient(connection: connection)
+        let signature = try key.sign(SigningMessages.session(engineNodeId: target.nodeId, engineFingerprint: target.fingerprint, deviceId: connection.deviceId, timestamp: timestamp, nonce: nonce))
         let response = try await client.openSession(SessionRequestBody(
+            engineNodeId: target.nodeId,
+            engineFingerprint: target.fingerprint,
             deviceId: connection.deviceId,
             timestamp: timestamp,
             nonce: nonce,
             signature: signature.base64EncodedString()
         ))
         let expiresAt = ISODate.parse(response.expiresAt) ?? Date().addingTimeInterval(50 * 60)
-        return SessionToken(token: response.token, expiresAt: expiresAt)
+        return SessionToken(token: response.token, expiresAt: expiresAt, protocolVersion: 2)
     }
 
     func invalidateToken(for id: UUID) {
@@ -399,6 +464,10 @@ final class ConnectionStore: ObservableObject {
             } else if Fingerprint.normalize(info.fingerprint) != Fingerprint.normalize(connection.fingerprint) {
                 markReachability(.identityChanged, for: id)
             } else if reachability[id] != .revoked {
+                do { _ = try client.sessionTarget(from: info, expectedNodeId: connection.nodeId) }
+                catch EngineError.engineUpdateRequired { markReachability(.updateRequired, for: id); return }
+                catch EngineError.appUpdateRequired { markReachability(.updateRequired, for: id); return }
+                catch EngineError.identityMismatch { markReachability(.identityChanged, for: id); return }
                 markReachability(.online, for: id)
             }
         } catch {

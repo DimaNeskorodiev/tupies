@@ -23,6 +23,22 @@ function json(res,data,status=200){res.writeHead(status,{'content-type':'applica
 function sse(res,events){res.writeHead(200,{'content-type':'text/event-stream'});for(const event of events)res.write(`data: ${JSON.stringify(event)}\r\n\r\n`);res.end();}
 async function connection(f,type='openai'){const value={...f.providers.validate({name:'Test provider',type,baseUrl:`${f.origin}/v1`,apiKey:SECRET,defaultModel:'fixture-model'}),id:'provider_test'};await f.store.mutate(state=>state.connections.push(value));return value;}
 
+test('per-request summary output caps survive stored connection refresh across protocols',async t=>{
+  for(const type of ['openai','anthropic','custom'])await t.test(type,async t=>{
+    const f=await fixture(t,(req,res)=>{
+      if(req.url.endsWith('/responses'))json(res,{id:'cap-fixture',status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:'Bounded summary.'}]}]});
+      else if(req.url.endsWith('/messages'))json(res,{content:[{type:'text',text:'Bounded summary.'}],stop_reason:'end_turn',usage:{input_tokens:10,output_tokens:5}});
+      else json(res,{choices:[{message:{role:'assistant',content:'Bounded summary.'},finish_reason:'stop'}],usage:{prompt_tokens:10,completion_tokens:5}});
+    });
+    const c=await connection(f,type),messages=[{role:'user',content:'Summarize this fixture.'}];
+    await f.providers.complete({...c,maxOutputTokens:2048},{messages,maxOutputTokens:512});
+    assert.equal(f.requests[0].body.max_output_tokens ?? f.requests[0].body.max_tokens,512);
+    assert.equal(f.store.state.connections[0].maxOutputTokens,4096);
+    await f.providers.complete(c,{messages,maxOutputTokens:8192});assert.equal(f.requests[1].body.max_output_tokens ?? f.requests[1].body.max_tokens,4096,'a request cap cannot raise the configured limit');
+    await assert.rejects(f.providers.complete(c,{messages,maxOutputTokens:12}),/Per-request output limit/);assert.equal(f.requests.length,2);
+  });
+});
+
 test('direct OpenAI Responses streams text, preserves reasoning and returns exact function calls',async t=>{
   const f=await fixture(t,(req,res)=>{
     assert.equal(req.headers.authorization,`Bearer ${SECRET}`);assert.equal(req.url,'/v1/responses');assert.equal(req.body.store,false);assert.equal(req.body.stream,true);assert.equal(req.body.parallel_tool_calls,true);
@@ -201,10 +217,12 @@ test('ChatGPT registration verifies signed identity, seals credentials, rotates 
     json(res,{access_token:'access-initial',refresh_token:'refresh-initial',id_token:token({iss:origin,aud:'issued-test-client',sub:'account-1',email:'test@example.invalid',nonce:auth.searchParams.get('nonce'),exp:Math.floor(Date.now()/1000)+3600}),token_type:'Bearer',expires_in:3600,scope:'openid profile email offline_access resource.invoke chatgpt.tokens.use.direct'});
   });origin=f.origin;
   const providers=new Providers(f.store,{oauthIssuer:origin,allowTestOAuth:true,requestTimeout:1000}),c={...providers.validate({name:'ChatGPT',type:'chatgpt'}),id:'oauth_test'};await f.store.mutate(state=>state.connections.push(c));
-  const start=await providers.loginStart(c,{redirectUri:'http://127.0.0.1:4310/auth/callback'});auth=new URL(start.authUrl);assert.equal(auth.searchParams.get('client_id'),'dynamic_agent_client');assert.match(auth.searchParams.get('ext_agent_host_id'),/^urn:uuid:/);
-  await assert.rejects(providers.loginCallback({state:'wrong',code:'code',client_id:'issued-test-client'}),/does not match/);assert.equal(exchangeCount,0);
+  let detached=true,authorized=0;providers.oauth.credentialAccess=()=>detached?'Synthetic former-home credential guard':null;providers.oauth.onAuthorized=async id=>{assert.equal(id,c.id);authorized++;detached=false;};
+  assert.equal(providers.loginStatus(c).status,'signed_out');
+  const start=await providers.loginStart(c,{redirectUri:'http://127.0.0.1:4310/auth/callback'});auth=new URL(start.authUrl);assert.equal(auth.searchParams.get('client_id'),'dynamic_agent_client');assert.match(auth.searchParams.get('ext_agent_host_id'),/^urn:uuid:/);assert.equal(providers.loginStatus(c).status,'pending');
+  await assert.rejects(providers.loginCallback({state:'wrong',code:'code',client_id:'issued-test-client'}),/does not match/);assert.equal(exchangeCount,0);assert.equal(authorized,0);
   await providers.loginCallback({state:auth.searchParams.get('state'),code:'good-code',client_id:'issued-test-client'});
-  assert.equal(providers.loginStatus(c).status,'connected');assert.equal(await providers.oauth.bearer(c),'access-initial');assert.equal(exchangeCount,1);
+  assert.equal(authorized,1);assert.equal(providers.loginStatus(c).status,'connected');assert.equal(await providers.oauth.bearer(c),'access-initial');assert.equal(exchangeCount,1);
   await assert.rejects(providers.loginCallback({state:auth.searchParams.get('state'),code:'good-code',client_id:'issued-test-client'}),/does not match/);
   const bundle=JSON.parse(f.store.unseal(c.oauthSecret));bundle.expiresAt=Date.now()-1;await f.store.mutate(()=>{c.oauthSecret=f.store.seal(JSON.stringify(bundle));});
   assert.deepEqual(await Promise.all([providers.oauth.bearer(c),providers.oauth.bearer(c)]),['access-renewed','access-renewed']);assert.equal(refreshCount,1);

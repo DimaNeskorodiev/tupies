@@ -68,7 +68,7 @@ struct ThisMacSetupView: View {
             .padding(24)
         }
         .navigationTitle("This Mac")
-        .task { await local.refresh(extra: store.localConnection.map { [$0.baseURL] } ?? []) }
+        .task { await local.refresh(expectedConnection: store.localConnection) }
     }
 
     private var primaryTitle: String {
@@ -84,9 +84,11 @@ struct ThisMacSetupView: View {
         Task {
             defer { working = false }
             do {
-                try await local.start(extra: store.localConnection.map { [$0.baseURL] } ?? [])
-                _ = try await local.waitForPairingInfo()
-                try await store.connectThisMac()
+                let existing = store.localConnection
+                try await local.start(expectedConnection: existing)
+                if let existing { try await local.waitForExpectedEngine(existing) }
+                else { _ = try await local.waitForPairingInfo() }
+                try await store.connectThisMac(expectedConnection: existing)
                 onPaired()
             } catch {
                 self.error = error.localizedDescription
@@ -97,6 +99,7 @@ struct ThisMacSetupView: View {
 
 struct LocalEngineStatusRow: View {
     @EnvironmentObject private var local: LocalEngineController
+    @EnvironmentObject private var store: ConnectionStore
 
     var body: some View {
         HStack(spacing: 10) {
@@ -108,7 +111,7 @@ struct LocalEngineStatusRow: View {
                 ProgressView().controlSize(.small)
             } else {
                 Button {
-                    Task { await local.refresh() }
+                    Task { await local.refresh(expectedConnection: store.localConnection) }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -145,6 +148,25 @@ struct LocalEnginePathsForm: View {
     @EnvironmentObject private var local: LocalEngineController
 
     var body: some View {
+        if local.canUseBundledEngine {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(local.usesBundledEngine ? "Engine included with Tupies" : "Using a developer engine", systemImage: local.usesBundledEngine ? "shippingbox" : "hammer")
+                    .font(.callout)
+                DisclosureGroup("Advanced engine settings") {
+                    paths
+                        .padding(.top, 8)
+                    if !local.usesBundledEngine {
+                        Button("Use the included engine") { local.useBundledEngine() }
+                            .padding(.top, 6)
+                    }
+                }
+            }
+        } else {
+            paths
+        }
+    }
+
+    private var paths: some View {
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
             GridRow {
                 Text("Tupies folder")

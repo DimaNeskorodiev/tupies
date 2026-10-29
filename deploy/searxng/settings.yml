@@ -1,0 +1,39 @@
+# Private single-owner fallback. Do not publish the Compose port on a public interface.
+use_default_settings:
+  engines:
+    keep_only:
+      - bing
+      - google
+      - brave
+      - wikipedia
+
+general:
+  debug: false
+  instance_name: "Tupies Search"
+
+search:
+  safe_search: 1
+  formats:
+    - html
+    - json
+
+server:
+  # SEARXNG_SECRET is required by Compose and overrides the upstream default.
+  public_instance: false
+  limiter: false
+  image_proxy: false
+  method: "GET"
+
+engines:
+  - name: bing
+    disabled: false
+  - name: google
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: wikipedia
+    disabled: false
+
+outgoing:
+  request_timeout: 4.0
+  max_request_timeout: 8.0

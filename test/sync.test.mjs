@@ -66,7 +66,8 @@ async function pairDevice(target, link, key = device(), extra = {}) {
 }
 async function deviceSession(target, deviceId, key, overrides = {}) {
   const timestamp = Date.now(), nonce = randomBytes(16).toString('base64url');
-  return target.request('/api/device/session', { method: 'POST', data: { deviceId, timestamp, nonce, signature: key.sign(SESSION_MESSAGE(deviceId, timestamp, nonce)), ...overrides } });
+  const engineNodeId=target.app.sync.nodeId,engineFingerprint=target.app.sync.identity.fingerprint;
+  return target.request('/api/device/session', { method: 'POST', data: {v:2,engineNodeId,engineFingerprint, deviceId, timestamp, nonce, signature: key.sign(SESSION_MESSAGE(engineNodeId,engineFingerprint,deviceId,timestamp,nonce)), ...overrides } });
 }
 async function link(hub, replica) {
   const pairing = await hub.request('/api/pairing', { method: 'POST', data: { kind: 'engine' } });
@@ -113,7 +114,7 @@ test('device pairing proves both identities, issues short sessions and revocatio
   const deviceId = result.body.deviceId;
   assert.equal((await deviceSession(hub, deviceId, wrong)).status, 401);
   assert.equal((await deviceSession(hub, deviceId, key, { timestamp: Date.now() - 3_600_000 })).status, 400);
-  const timestamp = Date.now(), nonce = randomBytes(16).toString('base64url'), signed = { deviceId, timestamp, nonce, signature: key.sign(SESSION_MESSAGE(deviceId, timestamp, nonce)) };
+  const timestamp = Date.now(), nonce = randomBytes(16).toString('base64url'),engineNodeId=hub.app.sync.nodeId,engineFingerprint=hub.app.sync.identity.fingerprint,signed = {v:2,engineNodeId,engineFingerprint, deviceId, timestamp, nonce, signature: key.sign(SESSION_MESSAGE(engineNodeId,engineFingerprint,deviceId,timestamp,nonce)) };
   const session = await hub.request('/api/device/session', { method: 'POST', data: signed });
   assert.equal(session.status, 200); assert.match(session.body.token, /^hsd_/);
   assert.equal((await hub.request('/api/device/session', { method: 'POST', data: signed })).status, 401, 'a signed session request cannot be replayed');
@@ -219,6 +220,64 @@ test('linked engines replicate bots, chats, memory, providers, devices and notes
   assert.equal(hubStatus.node.role, 'hub'); assert.ok(hubStatus.engines.some(item => item.nodeId === replica.app.sync.nodeId && item.name === 'Tupies Mac'));
 });
 
+test('linked engines share terminal dashboard outcomes while execution and audit records stay local', async t => {
+  const model = await provider(t);
+  const hub = await engine(t, { name: 'Home server' }), replica = await engine(t, { name: 'Tupies Mac' });
+  await hub.setup(); await replica.setup();
+  const connection = await hub.request('/api/connections', { method: 'POST', data: { name: 'Timeline fixture provider', type: 'openai', baseUrl: model.url, apiKey: KEY, defaultModel: 'fixture-model' } });
+  assert.equal(connection.status, 201);
+  await link(hub, replica);
+  await eventually(() => replica.app.store.state.connections.some(item => item.id === connection.body.id), 'the timeline provider on the Mac');
+
+  model.remote.handler = () => answer('Finished on the home server.');
+  assert.equal((await hub.request('/api/bots/bot_atlas/messages', { method: 'POST', data: { text: 'Finish the server task' } })).status, 202);
+  const complete = await eventually(() => hub.app.store.state.runs.bot_atlas?.status === 'completed' && hub.app.store.state.runs.bot_atlas, 'the completed server task');
+
+  // A provider failure before any output still needs a shared terminal row.
+  model.remote.handler = () => ({ id: 'response-empty', status: 'completed', output: [] });
+  assert.equal((await replica.request('/api/bots/bot_nova/messages', { method: 'POST', data: { text: 'Try a task with no provider output' } })).status, 202);
+  const failed = await eventually(() => replica.app.store.state.runs.bot_nova?.status === 'failed' && replica.app.store.state.runs.bot_nova, 'the failed Mac task');
+  assert.ok(!replica.app.store.state.messages.bot_nova.some(message => message.runId === failed.id && message.role === 'assistant'), 'zero output is not replaced by a fabricated reply');
+
+  // An unfinished reply and its pending delete approval remain unfinished after Stop.
+  model.remote.handler = () => ({ ...answer('Only a partial draft.'), output: [
+    ...answer('Only a partial draft.').output,
+    { type: 'function_call', call_id: 'timeline-delete', name: 'workspace_delete', arguments: JSON.stringify({ path: 'untouched.txt' }) },
+  ] });
+  assert.equal((await replica.request('/api/bots/bot_scout/messages', { method: 'POST', data: { text: 'Stop after a partial draft' } })).status, 202);
+  const waiting = await eventually(() => replica.app.store.state.runs.bot_scout?.status === 'waiting_for_approval' && replica.app.store.state.runs.bot_scout, 'the exact local delete approval');
+  await eventually(() => (hub.app.store.state.messages.bot_scout || []).some(message => message.runId === waiting.id), 'the pending task request on the home server');
+  assert.equal(hub.app.store.state.runs.bot_scout, undefined, 'the pending approval is not copied to the other engine');
+  assert.ok(!(await hub.request('/api/dashboard')).body.activity.some(item => item.id === `run:${waiting.id}`), 'a synced request alone never claims that a task finished');
+  assert.equal((await replica.request('/api/bots/bot_scout/stop', { method: 'POST', data: { runId: waiting.id, remoteRunId: waiting.remoteRunId } })).status, 200);
+  const cancelled = await eventually(() => replica.app.store.state.runs.bot_scout?.status === 'cancelled' && replica.app.store.state.runs.bot_scout, 'the stopped partial Mac task');
+  const partial = replica.app.store.state.messages.bot_scout.find(message => message.runId === cancelled.id && message.role === 'assistant');
+  assert.equal(partial.partial, true); assert.equal(partial.runStatus, 'cancelled');
+
+  const expected = new Map([[complete.id, { status: 'completed', botId: 'bot_atlas', text: 'finished a task' }], [failed.id, { status: 'failed', botId: 'bot_nova', text: 'couldn’t finish a task' }], [cancelled.id, { status: 'cancelled', botId: 'bot_scout', text: 'stopped working on a task' }]]);
+  const shared = await eventually(async () => {
+    const left = (await hub.request('/api/dashboard')).body.activity, right = (await replica.request('/api/dashboard')).body.activity;
+    if (left.length !== expected.size || right.length !== expected.size) return false;
+    assert.deepEqual(left, right);
+    return left;
+  }, 'the same terminal timeline on both engines');
+  for (const [runId, expectedRow] of expected) {
+    const row = shared.find(item => item.id === `run:${runId}`);
+    assert.ok(row, `the task ${runId} appears once`); assert.equal(row.text, expectedRow.text);
+    const left = hub.app.store.state.messages[expectedRow.botId].find(message => message.runId === runId && message.role === 'user');
+    const right = replica.app.store.state.messages[expectedRow.botId].find(message => message.runId === runId && message.role === 'user');
+    assert.deepEqual(left.taskOutcome, right.taskOutcome); assert.equal(left.taskOutcome.status, expectedRow.status); assert.equal(row.at, left.taskOutcome.finishedAt);
+  }
+  assert.deepEqual(shared.map(item => item.at), shared.map(item => item.at).sort().reverse(), 'terminal timestamps determine order');
+  assert.equal(replica.app.store.state.runs.bot_atlas, undefined);
+  assert.equal(hub.app.store.state.runs.bot_nova, undefined);
+  assert.equal(hub.app.store.state.runs.bot_scout, undefined);
+  assert.ok(!(replica.app.store.state.runHistory?.bot_atlas || []).some(run => run.id === complete.id));
+  assert.ok(!(hub.app.store.state.runHistory?.bot_nova || []).some(run => run.id === failed.id));
+  assert.ok(!replica.app.store.state.activity.some(entry => entry.runId === complete.id), 'server audit events stay on the server');
+  assert.ok(!hub.app.store.state.activity.some(entry => [failed.id, cancelled.id].includes(entry.runId)), 'Mac audit events stay on the Mac');
+});
+
 test('concurrent edits keep the newest version and a conflict copy for files', async t => {
   const hub = await engine(t, { name: 'Home server' }), replica = await engine(t, { name: 'Tupies Mac' });
   await hub.setup(); await replica.setup();
@@ -277,15 +336,16 @@ test('engine links are sealed, single-purpose and refuse impersonation', async t
   assert.equal((await replica.request('/api/sync/connect', { method: 'POST', data: { link: deviceLink } })).status, 400);
   assert.equal((await replica.request('/api/sync/connect', { method: 'POST', data: { link: pairing.link } })).status, 200);
   assert.equal((await replica.request('/api/pairing', { method: 'POST', data: { kind: 'engine' } })).status, 409, 'a linked engine cannot become a second hub');
-  assert.equal((await hub.request('/api/sync/connect', { method: 'POST', data: { link: 'hermes-studio://pair?v=1&kind=engine' } })).status, 409, 'a hub cannot sync elsewhere');
+  assert.equal((await hub.request('/api/sync/connect', { method: 'POST', data: { link: 'hermes-studio://pair?v=2&kind=engine' } })).status, 409, 'a hub cannot sync elsewhere');
 
   // The engine session can only replicate, and only with sealed payloads.
   await eventually(() => replica.app.sync.peer?.token, 'an engine session');
   const token = replica.app.sync.peer.token;
   assert.equal((await hub.request('/api/state', { bearer: token })).status, 403);
-  const garbage = await fetch(`${hub.url}/api/sync/exchange`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream' }, body: Buffer.from('{"node":"x","since":0}') });
+  const secureHeaders={'X-Tupies-Sync-Version':'2','X-Tupies-Key-Epoch':String(hub.app.sync.security.record.epoch)};
+  const garbage = await fetch(`${hub.url}/api/sync/exchange`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream',...secureHeaders }, body: Buffer.from('{"node":"x","since":0}') });
   assert.equal(garbage.status, 400);
-  const raw = await fetch(`${hub.url}/api/sync/blobs/${'0'.repeat(64)}`, { headers: { Authorization: `Bearer ${token}` } });
+  const raw = await fetch(`${hub.url}/api/sync/blobs/${'0'.repeat(64)}`, { headers: { Authorization: `Bearer ${token}`,...secureHeaders } });
   assert.equal(raw.status, 404);
 
   await replica.request('/api/sync/disconnect', { method: 'POST', data: {} });

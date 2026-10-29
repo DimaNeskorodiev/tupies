@@ -159,7 +159,7 @@ test('every text from runs and messages is redacted before it is shortened',asyn
   state.runs.bot_atlas={id:'run_atlas',status:'running',createdAt:ago(3),plan:{steps:[{id:'s',title:`Use ${SECRET}`,status:'in_progress'}]},events:[]};
   state.messages.bot_nova=[{id:'m2',role:'user',content:'Check access',runId:'run_nova',createdAt:ago(2)}];
   state.runs.bot_nova={id:'run_nova',status:'waiting_for_input',createdAt:ago(2),pending_controls:[{kind:'question',questions:[{id:'q',header:'Key',prompt:`Is ${SECRET} still valid?`}]}],events:[]};
-  state.messages.bot_scout=[{id:'m3',role:'user',content:'Fetch the report',runId:'run_scout',createdAt:ago(9)}];
+  state.messages.bot_scout=[{id:'m3',role:'user',content:'Fetch the report',runId:'run_scout',createdAt:ago(9),taskOutcome:{status:'failed',finishedAt:ago(8),error:`Upstream echoed ${SECRET}`}}];
   state.runs.bot_scout={id:'run_scout',status:'failed',error:`Upstream echoed ${SECRET}`,createdAt:ago(9),finishedAt:ago(8),events:[]};
   state.activity.unshift({id:'event_fail',type:'run.failed',title:'Scout: failed',botId:'bot_scout',runId:'run_scout',createdAt:ago(8)});
   const json=JSON.stringify(dashboard(store));
@@ -185,38 +185,62 @@ test('recent files come only from verified run artifacts, newest first, de-dupli
   for(const file of files){assert.match(file.path,/^reports\/file-\d+\.docx$/);assert.equal(file.botId,'bot_atlas');assert.equal(file.downloadUrl,`/api/bots/bot_atlas/files/download?path=${encodeURIComponent(file.path)}`);}
 });
 
-test('the timeline speaks in sentences, hides settings noise and stays bounded',async t=>{
+test('the timeline uses shared task outcomes, ignores local audit noise and never guesses an unanswered task ended',async t=>{
   const store=await storeFixture(t),state=store.state,chief=state.bots.find(bot=>bot.id==='bot_atlas').name;
-  state.messages.bot_atlas=[{id:'m1',role:'user',content:'Summarize competitor research',runId:'run_done',createdAt:ago(12)},{id:'m2',role:'user',content:'Check the inbox',runId:'run_lost',createdAt:ago(11)}];
-  state.runs.bot_atlas={id:'run_newer',status:'completed',createdAt:ago(2)};
-  state.rooms.push({id:'room_x',name:'Launch room',botIds:['bot_atlas','bot_nova']});
-  const entries=[
-    ['run.started','Atlas received a task','bot_atlas',{runId:'run_done'}],['run.completed','Atlas: completed','bot_atlas',{runId:'run_done'}],
-    ['run.started','Atlas received a task','bot_atlas',{runId:'run_lost'}],
-    ['run.approval','Action denied','bot_atlas',{runId:'run_done'}],['run.question_answered','Questions skipped','bot_nova',{skipped:true}],
-    ['memory.updated','Atlas memory updated','bot_atlas'],['file.uploaded','3 files added to Nova','bot_nova'],['file.written','Nova: drafts/brief.md','bot_nova'],
-    ['skill.learned','Nova learned weekly-digest','bot_nova',{skillId:'weekly-digest'}],['routine.created','Atlas scheduled Morning digest','bot_atlas',{source:'agent'}],
-    ['routine.deleted','Weekly review routine removed','bot_atlas'],['room.completed','Launch room: completed',null,{roomId:'room_x',driveId:'d1'}],['room.started','Launch room received a team task',null,{roomId:'room_x',driveId:'d1'}],
-    ['provider.created','Fixture provider added',null],['security.setup','Workspace password created',null],['bot.updated','Atlas was updated','bot_atlas'],['device.paired','Phone was paired',null],
-    ['integration.called','GitHub: list_repositories','bot_atlas',{integrationId:'missing'}],['bot.created','Scout joined your team','bot_scout'],
+  state.messages.bot_atlas=[
+    {id:'u1',role:'user',content:'Summarize competitor research',runId:'run_done',createdAt:ago(12),taskOutcome:{status:'completed',finishedAt:ago(10),checks:{passed:2,failed:0}}},
+    {id:'answer1',role:'user',kind:'answer',content:'A clarification, not the task title',runId:'run_done',createdAt:ago(11)},
+    {id:'a1',role:'assistant',content:'Done',runId:'run_done',createdAt:ago(10)},
+    {id:'u2',role:'user',content:'Check the inbox',runId:'run_lost',createdAt:ago(9)},
+    {id:'u3',role:'user',content:'Stopped task',runId:'run_stop',createdAt:ago(8),taskOutcome:{status:'cancelled',finishedAt:ago(7)}},
+    {id:'a3',role:'assistant',content:'Partial work',runId:'run_stop',partial:true,runStatus:'cancelled',createdAt:ago(7)},
+    {id:'u4',role:'user',content:'Legacy success',runId:'run_old',createdAt:ago(6)},
+    {id:'a4',role:'assistant',content:'Done',runId:'run_old',createdAt:ago(5)},
+    {id:'u5',role:'user',content:'Legacy partial',runId:'run_partial',createdAt:ago(4)},
+    {id:'a5',role:'assistant',content:'Some progress',partial:true,runStatus:'failed',runId:'run_partial',createdAt:ago(3)},
+    {id:'bad',role:'user',content:'Bad legacy status',runId:'run_invalid',createdAt:ago(2)},
+    {id:'badreply',role:'assistant',partial:true,runStatus:'completed',content:'Partial only',runId:'run_invalid',createdAt:ago(1)},
+    {id:'u6',role:'user',content:'No output before failure',runId:'run_failed',createdAt:ago(2),taskOutcome:{status:'failed',finishedAt:ago(1),error:'Provider unavailable'}},
   ];
-  let minute=0;
-  state.activity=entries.map(([type,title,botId,extra={}])=>({id:`event_${type}_${minute}`,type,title,botId,createdAt:ago(++minute),...extra}));
-  const {activity}=dashboard(store),sentence=item=>[item.subject,item.text].filter(Boolean).join(' ');
-  assert.deepEqual(activity.map(sentence),[
-    `${chief} finished a task`,`${chief} was interrupted`,`You declined an action for ${chief}`,'You skipped Nova’s question',`You updated ${chief}’s memory`,'You added 3 files to Nova’s workspace',
-    'You saved brief.md in Nova’s workspace','Nova learned the weekly-digest skill',`${chief} scheduled Morning digest`,'You removed the Weekly review routine','Launch room finished a team task',
-    `${chief} used GitHub`,'Scout joined your team',
+  state.runs.bot_atlas={id:'run_newer',status:'completed',createdAt:ago(0)};
+  state.activity=[{id:'e1',type:'run.completed',title:'Atlas: completed',botId:'bot_atlas',runId:'run_done',createdAt:ago(0)},
+    {id:'e2',type:'run.started',title:'Atlas received a task',botId:'bot_atlas',runId:'run_lost',createdAt:ago(9)},
+    {id:'e3',type:'run.approval',title:'Action denied',botId:'bot_atlas',runId:'run_done',createdAt:ago(0)},
+    {id:'e4',type:'memory.updated',title:'Atlas memory updated',botId:'bot_atlas',createdAt:ago(0)}];
+  const {activity}=dashboard(store);
+  assert.deepEqual(activity.map(item=>[item.id,`${item.subject} ${item.text}`]),[
+    ['run:run_failed',`${chief} couldn’t finish a task`],['run:run_partial',`${chief} couldn’t finish a task`],
+    ['run:run_old',`${chief} finished a task`],['run:run_stop',`${chief} stopped working on a task`],['run:run_done',`${chief} finished a task`],
   ]);
-  assert.equal(activity[0].detail,'Summarize competitor research');
-  const json=JSON.stringify(activity);
-  for(const [type] of entries)assert.ok(!json.includes(`"${type}"`) && !json.includes(` ${type}`),`raw type ${type} is never shown`);
+  assert.equal(activity[0].detail,'Provider unavailable');
+  assert.equal(activity.at(-1).detail,'Summarize competitor research · 2 declared checks passed');
+  assert.equal(activity.at(-1).at,state.messages.bot_atlas[0].taskOutcome.finishedAt,'use the shared terminal time, not the local audit timestamp');
+  assert.ok(!activity.some(item=>item.id==='run:run_lost'),'a newer local run cannot turn an unanswered synced request into an interruption');
+  const remote={state:structuredClone(state),redact:store.redact.bind(store),redactValue:store.redactValue.bind(store)};
+  remote.state.runs={};remote.state.runHistory={};remote.state.activity=[];
+  assert.deepEqual(dashboard(remote).activity,activity,'local execution and audit records cannot change the shared timeline');
+});
 
-  state.activity=Array.from({length:500},(_,index)=>({id:`event_${index}`,type:'bot.created',title:'Atlas joined your team',botId:'bot_atlas',createdAt:ago(index)}));
-  assert.equal(dashboard(store).activity.length,80);
+test('room outcomes sync without inferring room completion from a member reply; activity order and bounds are stable',async t=>{
+  const store=await storeFixture(t),state=store.state;
+  state.rooms.push({id:'room_x',name:'Launch room',botIds:['bot_atlas','bot_nova']});
+  state.roomMessages.room_x=[
+    {id:'rm1',role:'user',content:'Plan launch',driveId:'drive_done',createdAt:ago(5),taskOutcome:{status:'completed',finishedAt:ago(3)}},
+    {id:'rm2',role:'assistant',botId:'bot_atlas',content:'My part is done',driveId:'drive_pending',createdAt:ago(1)},
+    {id:'rm3',role:'user',content:'Another task',driveId:'drive_pending',createdAt:ago(2)},
+    {id:'rm4',role:'user',content:'Interrupted task',driveId:'drive_restart',createdAt:ago(1),taskOutcome:{status:'interrupted',finishedAt:ago(0)}},
+  ];
+  state.activity=[{type:'room.completed',roomId:'room_x',driveId:'drive_pending',createdAt:ago(0)}];
+  assert.deepEqual(dashboard(store).activity.map(item=>[item.id,item.text]),[['room:drive_restart','was interrupted'],['room:drive_done','finished a team task']]);
+  const at=ago(1);
+  state.messages.bot_atlas=Array.from({length:500},(_,index)=>({id:`message_${index}`,role:'user',content:`Task ${index}`,runId:`run_${String(index).padStart(3,'0')}`,createdAt:at,taskOutcome:{status:'completed',finishedAt:at}}));
+  const first=dashboard(store).activity;
+  assert.equal(first.length,80);
+  // Keep the same 400-message scan window while reversing iteration order.
+  state.messages.bot_atlas=state.messages.bot_atlas.slice(-400).reverse();
+  assert.deepEqual(dashboard(store).activity,first);
   for(let index=0;index<30;index++){state.bots.push({...state.bots[0],id:`bot_extra_${index}`,name:`Extra ${index}`});state.runs[`bot_extra_${index}`]={id:`run_extra_${index}`,status:'waiting_for_approval',createdAt:ago(1),pending_controls:[{kind:'approval',tool:'workspace_delete',arguments:{path:'a.md'}}]};}
-  const bounded=dashboard(store);
-  assert.equal(bounded.needs.length,20);assert.equal(bounded.counts.needs,20);
+  const bounded=dashboard(store);assert.equal(bounded.needs.length,20);assert.equal(bounded.counts.needs,20);
 });
 
 // Browser module: the real public/dashboard.js runs in a DOM with a stubbed app.js context.

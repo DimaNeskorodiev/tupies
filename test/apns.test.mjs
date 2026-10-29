@@ -65,7 +65,7 @@ test('APNs signs a valid ES256 JWT and sends bounded alert metadata only to fixe
   assert.deepEqual(f.connections[0].settings,{rejectUnauthorized:true,minVersion:'TLSv1.2',servername:'api.sandbox.push.apple.com'});
   const stream=f.streams[0],headers=stream.headers;
   assert.equal(headers[':method'],'POST');assert.equal(headers[':path'],'/3/device/'+DEVICE_TOKEN);
-  assert.equal(headers['apns-topic'],'dev.hermesstudio.app');assert.equal(headers['apns-push-type'],'alert');assert.equal(headers['apns-priority'],'5');
+  assert.equal(headers['apns-topic'],'dev.tupies.app');assert.equal(headers['apns-push-type'],'alert');assert.equal(headers['apns-priority'],'5');
   assert.equal(headers['apns-expiration'],String(now/1000+86400));assert.match(headers['apns-id'],/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
   assert.equal(Buffer.byteLength(headers['apns-collapse-id']),64);assert.equal(headers['content-length'],String(stream.body.length));assert.deepEqual(JSON.parse(stream.body),PAYLOAD);
   const token=headers.authorization.replace(/^bearer /,''),[head,claims,signature]=token.split('.');

@@ -1,0 +1,26 @@
+.conversation-search-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.conversation-search-controls label{color:var(--muted);font-size:13px}
+.conversation-search-controls select{flex:1;min-width:140px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--pearl-surface,#fff);color:var(--ink)}
+#conversation-search-results{margin-top:18px;font-size:13px;line-height:1.5;color:var(--muted)}
+.conversation-search-list{display:grid;gap:10px;margin-top:12px}
+.conversation-search-result{display:grid;gap:8px;width:100%;padding:16px;text-align:left;border:1px solid var(--line);border-radius:16px;background:var(--pearl-surface,#fff);color:var(--ink)}
+.conversation-search-result:hover,.conversation-search-result:focus-visible{border-color:var(--accent,#708bb0);outline:2px solid var(--accent,#708bb0);outline-offset:2px}
+.conversation-search-result>span:first-child{display:grid;gap:3px}
+.conversation-search-result strong{font-weight:600;overflow-wrap:anywhere}
+.conversation-search-result small,.conversation-search-notice{color:var(--muted);font-size:12px}
+.conversation-search-excerpt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}
+.chat-message.search-message-target{outline:2px solid var(--accent,#708bb0);outline-offset:4px;border-radius:18px}
+.topbar-actions{display:flex;align-items:center;gap:4px;grid-column:3}
+@media(max-width:760px),(max-height:500px) and (pointer:coarse){
+  .topbar{grid-template-columns:44px minmax(0,1fr) auto}
+  .topbar-title{min-width:0}
+  .topbar .conversation-search-open{width:44px;min-width:44px;height:44px;margin-left:auto;color:var(--ios-label,var(--ink))}
+  .topbar .conversation-search-open+.topbar-settings{margin-left:4px}
+  .conversation-search-result{padding:14px;min-height:60px;background:var(--ios-secondary-grouped-background,var(--pearl-surface,#fff));color:var(--ios-label,var(--ink))}
+  .conversation-search-excerpt{font:var(--ios-subheadline,inherit);font-size:var(--phone-secondary,15px)}
+  #conversation-search-results{font-size:var(--phone-caption,13px)}
+}
+.sidebar-conversation-search{display:flex;align-items:center;gap:9px;width:100%;padding:10px 8px;margin:8px 0 2px;border-radius:10px;background:transparent;color:var(--muted);font-size:12px;text-align:left}
+.sidebar-conversation-search>svg{width:16px;height:16px;flex:none}
+.sidebar-conversation-search>.kbd{margin-left:auto;white-space:nowrap}
+.sidebar-conversation-search:hover,.sidebar-conversation-search:focus-visible{background:var(--pearl-surface,#fff);color:var(--ink)}

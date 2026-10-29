@@ -5,6 +5,9 @@ enum EngineError: LocalizedError, Equatable {
     case unreachable(engine: String)
     case untrustedCertificate(engine: String)
     case certificateMismatch(engine: String)
+    case tlsHandshake(engine: String)
+    case engineUpdateRequired(engine: String)
+    case appUpdateRequired(engine: String)
     case notStudio
     case identityMismatch(engine: String)
     case proofInvalid(engine: String)
@@ -18,9 +21,15 @@ enum EngineError: LocalizedError, Equatable {
         case .unreachable(let engine):
             return "Can’t reach \(engine). Check Tailscale/VPN or that the server is running."
         case .untrustedCertificate(let engine):
-            return "\(engine)’s HTTPS certificate isn’t trusted by this device."
+            return "\(engine)’s HTTPS certificate isn’t trusted by this device. Check its certificate or create a new pairing link from your own engine."
         case .certificateMismatch(let engine):
             return "Security check failed: the server at \(engine)’s address isn’t the one you paired with, so nothing was sent. If you moved Tupies to a new server, pair this device again."
+        case .tlsHandshake(let engine):
+            return "A secure connection to \(engine) could not be established. Check the engine’s HTTPS configuration and try again."
+        case .engineUpdateRequired(let engine):
+            return "Update Tupies on \(engine) to use secure device sign-in, then choose Check Again. Your saved connection and device key are kept."
+        case .appUpdateRequired(let engine):
+            return "\(engine) requires a newer device sign-in protocol. Update this Tupies app and try again. Your saved connection and device key are kept."
         case .notStudio:
             return "This address doesn’t answer like a Tupies engine."
         case .identityMismatch(let engine):
@@ -96,6 +105,36 @@ struct EngineClient {
         try await send("GET", "/api/engine", timeout: timeout)
     }
 
+    /// A launcher must distinguish a refused connection from an answering but unsafe engine.
+    func localStartEngineInfo(timeout: TimeInterval = 2.5) async throws -> EngineInfo {
+        try await send("GET", "/api/engine", timeout: timeout, preserveTransportError: true)
+    }
+
+    /// Validate identity and protocol metadata before signing any session request.
+    func verifiedSessionTarget(expectedNodeId: String?) async throws -> DeviceSessionTarget {
+        let info = try await engineInfo()
+        return try sessionTarget(from: info, expectedNodeId: expectedNodeId)
+    }
+
+    func sessionTarget(from info: EngineInfo, expectedNodeId: String?) throws -> DeviceSessionTarget {
+        guard info.product == "hermes-studio" else { throw EngineError.notStudio }
+        let expected = Fingerprint.normalize(fingerprint)
+        guard !expected.isEmpty, Fingerprint.normalize(info.fingerprint) == expected,
+              let key = Data(base64Encoded: info.publicKey), Fingerprint.of(publicKeyDER: key) == expected
+        else { throw EngineError.identityMismatch(engine: engineName) }
+        let version = info.protocols?.deviceSession ?? 0
+        guard version == 2 else {
+            if version > 2 { throw EngineError.appUpdateRequired(engine: engineName) }
+            throw EngineError.engineUpdateRequired(engine: engineName)
+        }
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")
+        guard let nodeId = info.nodeId, !nodeId.isEmpty, nodeId.count <= 120,
+              nodeId.unicodeScalars.allSatisfy({ allowed.contains($0) })
+        else { throw EngineError.invalidResponse }
+        guard expectedNodeId == nil || expectedNodeId == nodeId else { throw EngineError.identityMismatch(engine: engineName) }
+        return DeviceSessionTarget(nodeId: nodeId, fingerprint: expected)
+    }
+
     /// `POST /api/pair` — registers this device's public key using a pairing code.
     func pair(_ body: PairRequestBody) async throws -> PairResponse {
         try await send("POST", "/api/pair", body: body)
@@ -107,6 +146,8 @@ struct EngineClient {
             return try await send("POST", "/api/device/session", body: body)
         } catch EngineError.http(let status, _) where status == 401 {
             throw EngineError.unauthorized(engine: engineName)
+        } catch EngineError.http(let status, _) where status == 426 {
+            throw EngineError.appUpdateRequired(engine: engineName)
         }
     }
 
@@ -149,7 +190,8 @@ struct EngineClient {
         _ path: String,
         body: (any Encodable)? = nil,
         token: String? = nil,
-        timeout: TimeInterval? = nil
+        timeout: TimeInterval? = nil,
+        preserveTransportError: Bool = false
     ) async throws -> Response {
         guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw EngineError.invalidResponse }
         var request = URLRequest(url: url)
@@ -167,8 +209,10 @@ struct EngineClient {
         do {
             (data, response) = try await Self.session.data(for: request, delegate: delegate)
         } catch {
-            if delegate.rejected { throw EngineError.certificateMismatch(engine: engineName) }
-            throw map(error)
+            if delegate.rejected {
+                throw requirePin ? EngineError.certificateMismatch(engine: engineName) : EngineError.untrustedCertificate(engine: engineName)
+            }
+            throw preserveTransportError ? error : map(error)
         }
 
         guard let http = response as? HTTPURLResponse else { throw EngineError.invalidResponse }
@@ -184,16 +228,22 @@ struct EngineClient {
     }
 
     private func map(_ error: Error) -> Error {
+        Self.transportError(error, engine: engineName)
+    }
+
+    static func transportError(_ error: Error, engine: String) -> Error {
         if error is CancellationError { return error }
-        guard let urlError = error as? URLError else { return EngineError.unreachable(engine: engineName) }
+        guard let urlError = error as? URLError else { return EngineError.unreachable(engine: engine) }
         switch urlError.code {
         case .cancelled:
             return CancellationError()
         case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot,
              .serverCertificateNotYetValid, .clientCertificateRejected, .clientCertificateRequired:
-            return EngineError.untrustedCertificate(engine: engineName)
+            return EngineError.untrustedCertificate(engine: engine)
+        case .secureConnectionFailed:
+            return EngineError.tlsHandshake(engine: engine)
         default:
-            return EngineError.unreachable(engine: engineName)
+            return EngineError.unreachable(engine: engine)
         }
     }
 
@@ -218,7 +268,7 @@ struct EngineClient {
             NSURLErrorTimedOut, NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost,
             NSURLErrorNetworkConnectionLost, NSURLErrorDNSLookupFailed, NSURLErrorNotConnectedToInternet,
             NSURLErrorInternationalRoamingOff, NSURLErrorDataNotAllowed, NSURLErrorCannotLoadFromNetwork,
-            NSURLErrorSecureConnectionFailed, NSURLErrorBadServerResponse,
+            NSURLErrorBadServerResponse,
         ]
         return codes.contains(nsError.code)
     }

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 
 const source=(await readFile(new URL('../public/app.js',import.meta.url),'utf8')).replace(/\nstart\(\);\s*$/,'\n');
 const reply=(status,data)=>({status,ok:status>=200&&status<300,async json(){return data;}});
@@ -12,7 +13,7 @@ const mismatch=()=>reply(403,{error:'Security token expired. Reload and try agai
 function harness(responses) {
   const calls=[];
   const document={hidden:false,activeElement:null,addEventListener(){},querySelector(){return null;},querySelectorAll(){return [];}};
-  const ctx=vm.createContext({document,window:{addEventListener(){}},location:{hash:'#/integrations'},URL,setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){},fetch:async(path,options={})=>{
+  const ctx=vm.createContext({document,window:{addEventListener(){}},location:{hash:'#/integrations'},URL,crypto:webcrypto,setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){},fetch:async(path,options={})=>{
     const call={path,method:options.method||'GET',headers:{...options.headers},body:options.body,credentials:options.credentials};calls.push(call);
     const response=responses[calls.length-1];if(!response)throw new Error('Unexpected additional fetch.');
     if(response instanceof Error)throw response;
@@ -86,4 +87,21 @@ test('a failed recovery retry is never automatically replayed again',async()=>{
   const h=harness([mismatch(),reply(200,{authenticated:true,csrf:'fresh-token'}),new Error('Ambiguous retry connection failure.')]);
   await assert.rejects(h.run("api('/api/integrations',{method:'POST',body:{name:'QA'}})"),/Ambiguous retry/);
   assert.equal(h.calls.length,3);assert.equal(h.calls.filter(c=>c.path==='/api/auth').length,1);
+});
+
+for(const room of [false,true])test(`${room?'room':'bot'} CSRF recovery cannot replay an old message after sign-in changes`,async()=>{
+  let release;const probe=new Promise(resolve=>{release=resolve;}),h=harness([mismatch(),()=>probe,reply(202,{accepted:true})]);
+  const sending=h.run(`${room?'sendRoomMessage':'sendMessage'}('target_qa',{text:'Old session task.'})`),rejected=assert.rejects(sending,/sign-in session changed/);await new Promise(resolve=>setImmediate(resolve));assert.equal(h.calls.length,2);
+  h.run("sendSessionGeneration++;pendingSends.clear();auth={authenticated:true,csrf:'new-session'};");release(reply(200,{authenticated:true,csrf:'new-session'}));await rejected;
+  assert.equal(h.calls.length,2,'The original task must not be dispatched with the new session token.');assert.equal(h.run('auth.csrf'),'new-session');
+});
+
+test('a late old-session 401 cannot sign out a newly authenticated session',async()=>{
+  let release;const pending=new Promise(resolve=>{release=resolve;}),h=harness([()=>pending]),loading=h.run("api('/api/state')"),rejected=assert.rejects(loading,/sign-in session changed/);
+  h.run("sendSessionGeneration++;auth={authenticated:true,csrf:'new-session'};");release(reply(401,{error:'Old session expired'}));await rejected;assert.equal(h.run('auth.authenticated'),true);assert.equal(h.run('authRenders'),0);assert.equal(h.calls.length,1);
+});
+
+test('an expired-session policy lookup cannot overwrite a later sign-in',async()=>{
+  let release;const pending=new Promise(resolve=>{release=resolve;}),h=harness([reply(401,{error:'Sign in to continue.'}),()=>pending]);
+  await assert.rejects(h.run("api('/api/state')"),/Sign in/);h.run("sendSessionGeneration++;auth={authenticated:true,csrf:'new-session'};");release(reply(200,{authenticated:false,csrf:null}));await new Promise(resolve=>setImmediate(resolve));assert.equal(h.run('auth.authenticated'),true);assert.equal(h.run('auth.csrf'),'new-session');assert.equal(h.run('authRenders'),1);
 });
