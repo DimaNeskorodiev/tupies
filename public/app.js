@@ -53,7 +53,7 @@ const paths = {
 const $ = (selector, root=document) => root.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name]||paths.spark}"/></svg>`;
-const initialState = {settings:{},bots:[],connections:[],integrations:[],channels:[],routines:[],skills:[],activity:[],rooms:[],runs:{},roomDrives:{},sync:null};
+const initialState = {settings:{},bots:[],connections:[],integrations:[],channels:[],routines:[],skills:[],activity:[],rooms:[],runs:{},roomDrives:{},unreadBots:{},sync:null};
 let syncView=null, pairingTimer=null;
 let providerCatalog=[], providerFeatures={}, loginPollTimer=null;
 const offeredDefaultModels=new Set();
@@ -149,6 +149,7 @@ const statusPill = bot => {const status=botStatus(bot);return `<span class="stat
 const pendingSends=new Map();
 const pendingDirections=new Map();let directionNavigationGeneration=0;
 let sendSessionGeneration=0;
+const readBotReplies=new Set();let unreadStateApplied=0;
 const changedSessionError=()=>Object.assign(new Error('The sign-in session changed. Review the conversation before sending this message again.'),{name:'AbortError'});
 const submissionId=()=>{const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);return [...bytes].map(value=>value.toString(16).padStart(2,'0')).join('');};
 const uncertainFailure=error=>!error?.status||error.status===408||error.status>=500;
@@ -250,7 +251,7 @@ function conversationLoadError(error,loaded){
 }
 function conversationErrorMarkup(error,id,room=false){return error?`<div class="run-status run-error conversation-load-error" role="status">${icon('info')}<span>${esc(error.message)} ${esc(error.detail)}</span><button class="text-button" data-action="${room?'reload-room':'reload-chat'}" data-id="${esc(id)}">Try again</button></div>`:'';}
 function setFormError(form,error){const box=$('.form-error',form);if(box)box.textContent=errorText(error);else toast(errorText(error),true);}
-function applyWorkspaceState(result,request){if(request<workspaceStateApplied)return false;workspaceStateApplied=request;data={...initialState,...result};return true;}
+function applyWorkspaceState(result,request){if(request<workspaceStateApplied)return false;workspaceStateApplied=request;const previousUnread=data.unreadBots;data={...initialState,...result,unreadBots:request<unreadStateApplied?previousUnread:result.unreadBots||{}};unreadStateApplied=Math.max(unreadStateApplied,request);return true;}
 async function refresh(render=true,{current=()=>true}={}){const generation=sendSessionGeneration,valid=()=>generation===sendSessionGeneration&&auth?.authenticated&&current(),request=++workspaceStateRequest,result=await api('/api/state');if(!valid()||!applyWorkspaceState(result,request))return false;if(!providerCatalog.length){try{const catalog=await api('/api/providers');if(!valid())return false;providerCatalog=catalog.providers||[];providerFeatures=catalog.features||{};}catch{}}if(valid()&&render)renderApp();return valid();}
 function conversationTargetExists(view,id){return view==='bot'?!!botById(id):view==='room'?data.rooms.some(room=>room.id===id):false;}
 function hasConversationFrame(view,id){const form=$(view==='room'?'#room-message-form':'#message-form'),thread=$(view==='room'?'#room-thread':'#chat-thread');return !!thread&&form?.dataset.id===id;}
@@ -288,6 +289,7 @@ async function start(){
 function renderAuth(){
   bootPending=false;sendSessionGeneration++;window.StudioSkills?.reset();pendingSends.clear();pendingSearchMessage=null;conversationSearchRequest++;conversationRouteResolution=null;
   clearPendingDirections();clearSearchAnchor?.();
+  readBotReplies.clear();
   dismissConversationSearch();
   cleanupSpeech();window.StudioMobile?.reset();tellApp({type:'chrome',ownsChrome:false});
   const setup=auth?.setupRequired,intro=`<section class="auth-intro">${brandMark('large')}<h1>Your team.<br>Your own space.</h1><p>A considered home for your AI teammates.<br>Your models. Your engine. Hosted by you.</p><div class="bottom-note">${icon('shield')}Private by design. Yours to run.</div></section>`;
@@ -358,8 +360,27 @@ function roomMenu(anchor,id){
   const key=`data-id="${esc(id)}"`;
   openMenu(anchor,`${menuItem('Search conversation','search',`data-action="search-conversations" data-scope="room" ${key}`)}${menuItem('Teammates','team',`data-action="room-details" ${key}`)}${menuItem('Voice options','sliders','data-action="chat-options"')}<hr>${menuItem('Room settings','edit',`data-action="edit-room" ${key}`)}`,{label:'Room options'});
 }
+const botHasUnread=id=>typeof data.unreadBots?.[id]==='string'&&!readBotReplies.has(`${id}:${data.unreadBots[id]}`);
+const botUnreadMarkup=id=>botHasUnread(id)?'<span class="roster-unread" role="img" aria-label="Unread message" title="Unread message"></span>':'';
+function updateSidebarUnread(){
+  for(const row of document.querySelectorAll('.sidebar .roster-item')){
+    const id=row.dataset.nav?.replace(/^\/bot\//,''),marker=row.querySelector('.roster-unread');
+    if(botHasUnread(id)){if(!marker)row.insertAdjacentHTML('beforeend',botUnreadMarkup(id));}else marker?.remove();
+  }
+}
+function acknowledgeSidebarRead({view,botId,messageIds}){
+  if(view!=='bot')return;
+  for(const id of messageIds)readBotReplies.add(`${botId}:${id}`);
+  while(readBotReplies.size>2000)readBotReplies.delete(readBotReplies.values().next().value);
+  updateSidebarUnread();
+}
+async function refreshUnread(){
+  if(document.hidden||!auth?.authenticated)return;
+  const generation=sendSessionGeneration,request=++workspaceStateRequest;
+  try{const result=await api('/api/notifications/unread');if(generation!==sendSessionGeneration||request<unreadStateApplied||!auth?.authenticated)return;unreadStateApplied=request;data.unreadBots=result.unreadBots||{};updateSidebarUnread();}catch{}
+}
 function sidebarMarkup(current){
-  return `<aside class="sidebar" aria-label="Main navigation"><div class="brand">${brandMark()}<span class="brand-name">Tupies</span></div><form class="searchbox" id="workspace-search-form" role="search">${icon('search')}<input id="workspace-search" aria-label="Search workspace and conversations" title="Filter by name, or press Enter to search messages" placeholder="Search" value="${esc(search)}" autocomplete="off"><button type="submit" class="workspace-search-submit kbd" aria-label="Search conversations" aria-keyshortcuts="Meta+K Control+K" title="Search messages (Enter or Cmd/Ctrl+K)">↵</button></form><nav class="nav-list">${navItem('dashboard','Dashboard','home')}${navItem('bots','Bots','grid',visibleBots().length)}${navItem('rooms','Team rooms','team')}${navItem('routines','Routines','routine')}</nav><div class="sidebar-label">Team<button data-action="create-bot" aria-label="New bot" title="New bot">${icon('plus')}</button></div><div class="roster">${visibleBots().map(bot=>`<button class="roster-item ${current.view==='bot'&&current.id===bot.id?'selected':''}" data-nav="/bot/${esc(bot.id)}">${avatar(bot,'small')}<span><span class="roster-name">${esc(bot.name)}</span><span class="roster-role">${esc(bot.title||'Teammate')}</span></span><i class="dot ${botStatus(bot).className==='ready'?'ready':''}"></i></button>`).join('')}</div><div class="sidebar-bottom">${navItem('settings','Settings','gear',0,syncAlert())}</div></aside>`;
+  return `<aside class="sidebar" aria-label="Main navigation"><div class="brand">${brandMark()}<span class="brand-name">Tupies</span></div><form class="searchbox" id="workspace-search-form" role="search">${icon('search')}<input id="workspace-search" aria-label="Search workspace and conversations" title="Filter by name, or press Enter to search messages" placeholder="Search" value="${esc(search)}" autocomplete="off"><button type="submit" class="workspace-search-submit kbd" aria-label="Search conversations" aria-keyshortcuts="Meta+K Control+K" title="Search messages (Enter or Cmd/Ctrl+K)">↵</button></form><nav class="nav-list">${navItem('dashboard','Dashboard','home')}${navItem('bots','Bots','grid',visibleBots().length)}${navItem('rooms','Team rooms','team')}${navItem('routines','Routines','routine')}</nav><div class="sidebar-label">My Tupies<button data-action="create-bot" aria-label="New bot" title="New bot">${icon('plus')}</button></div><div class="roster">${visibleBots().map(bot=>`<button class="roster-item ${current.view==='bot'&&current.id===bot.id?'selected':''}" data-nav="/bot/${esc(bot.id)}">${avatar(bot,'small')}<span><span class="roster-name">${esc(bot.name)}</span><span class="roster-role">${esc(bot.title||'Teammate')}</span></span>${botUnreadMarkup(bot.id)}</button>`).join('')}</div><div class="sidebar-bottom">${navItem('settings','Settings','gear',0,syncAlert())}</div></aside>`;
 }
 function renderApp(){
   if(bootPending)return;
@@ -947,8 +968,8 @@ const platformIcon=device=>device.kind==='engine'?'server':device.platform==='io
 let sidebarKey='';
 function updateSidebar(){
   const key=JSON.stringify([data.bots.map(bot=>[bot.id,bot.name,bot.title,bot.icon,bot.color,botStatus(bot).className]),data.rooms.length,data.sync?.node,data.sync?.hub?.connected]);
-  const aside=$('.sidebar');if(!aside||key===sidebarKey)return;
-  const scroll=aside.scrollTop;aside.outerHTML=sidebarMarkup(route());sidebarKey=key;const next=$('.sidebar');if(next)next.scrollTop=scroll;
+  const aside=$('.sidebar');if(!aside)return;if(key===sidebarKey){updateSidebarUnread();return;}
+  const scroll=$('.roster',aside)?.scrollTop||0;aside.outerHTML=sidebarMarkup(route());sidebarKey=key;const next=$('.sidebar .roster');if(next)next.scrollTop=scroll;
 }
 function updateElsewhereNotice(bot){
   const wrap=$('.chat-composer-wrap');if(!wrap||!bot)return;let notice=$('.sync-elsewhere',wrap);
@@ -1259,6 +1280,7 @@ async function refreshVisible(){
   }catch{}
 }
 for(const name of ['visibilitychange','focus','pageshow','studio:visible'])(name==='visibilitychange'?document:window).addEventListener(name,refreshVisible);
+setInterval(refreshUnread,5000);
 setInterval(async()=>{if(document.hidden||!auth?.authenticated||['bot','room','sync'].includes(route().view)||$('dialog')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;try{const before=JSON.stringify(data),current=location.hash;await refresh(false);updateSidebar();if(current===location.hash&&before!==JSON.stringify(data)&&!$('dialog'))showPage();await offerDefaultModel();}catch{}},10000);
-window.StudioNotificationReads?.install(() => {const current=route();return {authenticated:!!auth?.authenticated,generation:sendSessionGeneration,view:current.view,id:current.id,messages:current.view==='room'?roomChat.messages:chat.messages,api};});
+window.StudioNotificationReads?.install(() => {const current=route();return {authenticated:!!auth?.authenticated,generation:sendSessionGeneration,view:current.view,id:current.id,messages:current.view==='room'?roomChat.messages:chat.messages,api,onRead:acknowledgeSidebarRead};});
 start();
