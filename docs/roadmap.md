@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Compact sidebar (29 October 2026, source only)
+
+Implemented: **My Tupies** replaces the desktop roster's Team label, with a smaller brand area, tighter navigation/section spacing and compact bot rows. The roster uses remaining vertical space and scrolls above fixed Settings. One blue dot marks an unread final bot reply; availability dots are removed. Existing attended read receipts clear the exact reply, with durable latest-read metadata and background updates that retain drafts/focus/scroll. Browser checks cover the desktop layout and retained phone navigation; evidence is in [verification](verification.md). Operational deployment and physical-device acceptance remain separate.
+
 ## Mobile motion reliability (29 October 2026, source only)
 
 Implemented: immediate cleanup of interrupted screen transitions/edge drags, shorter navigation and message motion, a restrained tab selection glide, one bounded streaming-scroll loop and cancellable composer pinning. Disposable phone-width WebKit verifies repeated navigation, retained drafts and a reading position that stays fixed through a long streamed reply; regression details are in [verification](verification.md). Next: deploy the reviewed static assets and validate on the physical iPhone, especially real keyboard transitions, edge gestures, reduced-motion preferences and 120 Hz feel. Existing engines and signed apps are unchanged.
