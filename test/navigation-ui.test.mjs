@@ -36,12 +36,13 @@ test('the header has no workspace breadcrumb, only a page name for phones',()=>{
   assert.match(header,/<span class="topbar-title">Bots<\/span>/);
 });
 
-test('Settings starts with essentials and keeps expert sections in a closed disclosure',()=>{
+test('Settings starts with Skills beside Models and keeps expert sections in a closed disclosure',()=>{
   const h=harness('#/settings');h.run('renderApp()');
   const page=h.app.innerHTML.match(/<section class="page settings-overview">[\s\S]*?<\/section>/)[0];
   const [essentials,advanced]=page.split('<details class="pearl-advanced" data-disclosure="settings-more">');
-  for(const view of ['connections','sync','help'])assert.match(essentials,new RegExp(`data-nav="/${view}"`));
-  for(const view of ['skills','integrations','channels','activity']){
+  assert.deepEqual([...essentials.matchAll(/class="pearl-resource-card" data-nav="\/([^\"]+)"/g)].map(match=>match[1]),['skills','connections','sync','help']);
+  assert.match(essentials,/Manage installed skills and assign them to your bots\./);
+  for(const view of ['integrations','channels','activity']){
     assert.ok(!essentials.includes(`data-nav="/${view}"`));assert.match(advanced,new RegExp(`data-nav="/${view}"`));
   }
   assert.match(advanced,/<summary>More settings<\/summary>/);assert.match(page,/data-action="logout"/);
@@ -53,6 +54,8 @@ test('every settings section remains directly reachable with a collapsed section
     assert.match(h.app.innerHTML,/<h1>Settings<\/h1>/,view);
     assert.match(h.app.innerHTML,new RegExp(`class="settings-tab active" data-nav="/${tab}" aria-current="page"`),view);
     assert.match(h.app.innerHTML,/<details class="pearl-advanced settings-section-picker" data-disclosure="settings-sections">/,view);
+    const tabs=h.app.innerHTML.match(/<nav class="settings-tabs"[\s\S]*?<\/nav>/)[0];
+    assert.deepEqual([...tabs.matchAll(/data-nav="\/([^\"]+)"/g)].map(match=>match[1]),['skills','connections','integrations','channels','sync','activity','help'],view);
     assert.match(h.app.innerHTML,/data-nav="\/settings">[\s\S]*All settings/,view);
     assert.match(h.app.innerHTML,/data-nav="\/settings" aria-current="page"/,view);
   }
