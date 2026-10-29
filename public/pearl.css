@@ -244,7 +244,7 @@ body.pearl-studio {
   height: calc(100dvh - 32px);
   border: 1px solid var(--pearl-border);
   border-radius: 30px;
-  background: rgba(255, 255, 255, .28);
+  background: var(--pearl-soft);
   overflow: hidden;
 }
 .pearl-studio .chat-main { min-width: 0; min-height: 0; }
@@ -268,6 +268,7 @@ body.pearl-studio {
 .pearl-studio .chat-message { gap: 15px; max-width: min(850px, 100%); margin: 0 auto 28px; }
 .pearl-studio .chat-message.user { max-width: min(690px, 86%); margin-left: auto; margin-right: 0; }
 .pearl-studio .chat-message > .avatar { width: 56px; height: 56px; margin-top: 4px; }
+.pearl-studio .thinking-message > .avatar { width: 32px; height: 32px; margin-top: 0; }
 .pearl-studio .user-message-avatar { width: 34px; height: 34px; margin-top: 5px; background: var(--pearl-blue-soft); border: 1px solid var(--pearl-border); border-radius: 50%; color: var(--muted); font-size: 10px; font-weight: 450; }
 .pearl-studio .message-label { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 0 0 10px; gap: 12px; }
 .pearl-studio .message-label time { color: var(--muted); opacity: .9; font-size: 11px; }
@@ -280,7 +281,7 @@ body.pearl-studio {
   box-shadow: 0 6px 24px rgba(66, 92, 130, .035);
 }
 .pearl-studio .message-text, .pearl-studio .message-text.rich-prose { color: var(--ink); font-size: 15px; font-weight: 400; line-height: 1.7; letter-spacing: -.12px; padding: 0; }
-.pearl-studio .chat-message.user .message-text { padding: 16px 20px; border: 1px solid rgba(255,255,255,.65); border-radius: 23px; background: var(--pearl-blue-soft); }
+.pearl-studio .chat-message.user .message-text { padding: 16px 20px; border: 1px solid var(--pearl-border); border-radius: 23px; background: var(--pearl-blue-soft); }
 .pearl-studio .chat-message.from-teammate .message-text { padding: 0; border: 0; border-radius: 0; background: none; }
 .pearl-studio .message-voice-actions { margin-top: 8px; }
 .pearl-studio .message-voice-actions button { min-height: 32px; padding: 6px 2px; color: var(--muted); font-size: 11px; }
@@ -293,6 +294,39 @@ body.pearl-studio {
 .pearl-studio .rich-prose :is(th, td), .pearl-studio .rich-table-wrap :is(th, td) { border-color: var(--line); color: var(--ink); font-size: 13px; }
 .pearl-studio .rich-prose th, .pearl-studio .rich-table-wrap th { background: var(--pearl-blue-soft); }
 .pearl-studio .rich-prose hr { border-color: var(--line); }
+
+/* Plans share the chat's glass surface and semantic text colors in every theme. */
+.pearl-studio .task-plan { margin: 12px 0 16px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 20px; background: var(--pearl-surface); color: var(--ink); box-shadow: none; font: inherit; font-size: 13px; }
+.pearl-studio .task-plan-heading { flex-wrap: wrap; gap: 4px 12px; }
+.pearl-studio .task-plan-heading strong { color: var(--ink); font-weight: 600; }
+.pearl-studio .task-plan-heading > span { color: var(--muted); font-size: 12px; }
+.pearl-studio .task-plan > p { color: var(--muted); font-size: inherit; line-height: 1.5; }
+.pearl-studio .task-plan ol { gap: 12px; }
+.pearl-studio .task-plan li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 2px 10px; color: var(--muted); line-height: 1.5; font-weight: 400; }
+.pearl-studio .task-plan li > small { color: var(--muted); font-size: 11px; }
+.pearl-studio .task-plan .plan-in_progress { color: var(--ink); font-weight: 500; }
+.pearl-studio .task-plan .plan-completed > span:nth-child(2) { color: var(--muted); }
+.pearl-studio .task-plan .plan-indicator { color: var(--muted); }
+.pearl-studio .task-plan .plan-in_progress .plan-indicator { color: var(--pearl-blue); }
+.pearl-studio .task-plan .plan-completed .plan-indicator { color: var(--pearl-blue); }
+.pearl-studio .run-timeline { border-color: var(--line); border-radius: 18px; background: var(--pearl-soft); color: var(--muted); font: inherit; font-size: 13px; }
+.pearl-studio .run-timeline summary { color: var(--muted); }
+.pearl-studio .run-timeline summary span { color: var(--muted); font-size: 12px; }
+.pearl-studio .timeline-event { border-color: var(--line); }
+.pearl-studio .timeline-event strong { color: var(--ink); font-size: 13px; overflow-wrap: anywhere; }
+.pearl-studio .timeline-event p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.pearl-studio .timeline-event time { color: var(--muted); font-size: 11px; }
+.pearl-studio .task-details { margin: 8px 0 12px; }
+.pearl-studio .task-details > summary { min-height: 44px; padding: 10px 14px; font-size: 13px; }
+.pearl-studio .task-details-body { padding: 0 16px 14px; }
+.pearl-studio .task-details .task-plan { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.pearl-studio .task-activity { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pearl-studio .task-activity:first-child { margin-top: 0; padding-top: 0; border: 0; }
+.pearl-studio .task-activity h4 { margin: 0 0 8px; color: var(--ink); font-size: 13px; font-weight: 600; }
+.pearl-studio .task-activity ol { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.pearl-studio .task-activity li { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+.pearl-studio .task-activity li > span { min-width: 0; overflow-wrap: anywhere; }
+.pearl-studio .task-activity time { flex: none; color: var(--muted); font-size: 11px; }
 .pearl-studio :is(.rich-widget, .rich-code, .rich-infographic, .artifact-card, .preview-paper, .preview-slide) { background: var(--pearl-surface); border-color: var(--pearl-border); box-shadow: 0 6px 24px rgba(66, 92, 130, .04); border-radius: 20px; color: var(--ink); }
 .pearl-studio :is(.rich-code-head, .rich-prose blockquote, .artifact-format, .rich-metrics article, .preview-sheet > summary) { background: var(--pearl-blue-soft); border-color: var(--line); color: var(--muted); }
 .pearl-studio .rich-code pre { color: var(--ink); font-size: 12px; }
@@ -568,7 +602,7 @@ body.pearl-studio {
   .pearl-studio .dash-file-actions :is(button, a) { min-height: 44px; }
   .pearl-studio .dash-file-actions .dash-download { width: 44px; min-width: 44px; }
   .pearl-studio .bot-profile .bp-hero { padding: 23px; gap: 16px; }
-  .pearl-studio .bp-hero-avatar .avatar { width: 88px; height: 88px; }
+  .pearl-studio .bp-hero-avatar .avatar.companion-mascot.large { width: 88px; height: 88px; }
   .pearl-studio .bot-profile .bp-hero h1 { font-size: 1.65rem; font-weight: 400; letter-spacing: -.8px; }
   .pearl-studio .bp-role, .pearl-studio .bp-intro, .pearl-studio .bp-row { font-size: var(--phone-secondary); }
   .pearl-studio .bp-card h2, .pearl-studio .bp-reader h2 { font-size: 1.1rem; font-weight: 450; }

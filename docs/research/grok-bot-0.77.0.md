@@ -2,6 +2,8 @@
 
 Reviewed 27 October 2026 from the supplied Grok Bot 0.77.0 disk image. The combined implementation proposal is in [Tupies improvement plan](../plans/studio-best-of-openbot-grok.md). The [OpenBot investigation](openbot-0.52.1.md) supplies the other product reference.
 
+**Historical baseline:** Tupies has since shipped Phases 1–5. The [28 October follow-up](grok-bot-0.77.0-followup.md) rechecks this exact package, updates the comparison against current source and proposes the next quality track. Feature gaps described below belong to the first review.
+
 Grok Bot's clearest lessons are a separate boundary for the user's computer, reliable submission and live-state delivery, structured questions/forms, and reviewable shared knowledge. OpenBot adds complementary examples of durable task coordination and retrievable history. Tupies can adopt these patterns while retaining its own direct-provider engine and self-hosted Mac/VPS architecture.
 
 Tupies's baseline has advanced since the OpenBot review: releases A–C, including structured summary compaction and Summarize/New topic controls, are implemented and were deployed to both engines on 27 October 2026 at 20:15 CET. The persistent handoff records 448 tests for C. Those results are existing evidence, not tests rerun for this investigation.
@@ -92,9 +94,9 @@ Tupies C's own behavior is observable in our source: a new topic stores a backgr
 
 Evidence: A:61973; original renderer `index.eager-app-pljxi3Ue.js`, UTF-16 offset 3665141, localization IDs `T1rcxH`/`8agLZa`; `index.eager-common-B2THygQN.js`, offset 41284. Tupies: `lib/compaction.mjs`, `docs/context.md`.
 
-## Comparison with OpenBot and Tupies
+## Historical comparison with OpenBot and Tupies
 
-| Area | Grok Bot 0.77 | OpenBot 0.52.1 | Current Tupies source |
+| Area | Grok Bot 0.77 | OpenBot 0.52.1 | Tupies at the first review |
 | --- | --- | --- | --- |
 | Engine ownership | Desktop/coordinator route to gateway/service execution; backend loop unavailable | Own orchestration around Codex, Claude SDK, ACP and other harnesses | Own Node model/tool loop and direct provider protocols |
 | Durable work | Acceptance reconciliation and client transport/lifecycle visible; backend storage/recovery unknown | SQLite coordination, task lanes, command receipts and event waits visible | Atomic whole-state persistence and bounded runs; durable task history/queues remain future work |

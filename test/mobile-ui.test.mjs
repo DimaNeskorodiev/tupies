@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 import {JSDOM} from 'jsdom';
 
 const mobileSource=await readFile(new URL('../public/mobile.js',import.meta.url),'utf8');
@@ -20,11 +21,11 @@ function harness({phone=true,reduced=false,app=false}={}) {
   window.cancelAnimationFrame=id=>frames.delete(id);
   const viewport=Object.assign(new window.EventTarget(),{height:852,offsetTop:0,scale:1});
   Object.defineProperty(window,'visualViewport',{value:viewport});
-  const context=vm.createContext({window,document:window.document,location:window.location,URL,
+  const context=vm.createContext({window,document:window.document,location:window.location,URL,crypto:webcrypto,
     HTMLFormElement:window.HTMLFormElement,FormData:window.FormData,
     getComputedStyle:window.getComputedStyle.bind(window),setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){}});
   vm.runInContext(mobileSource,context,{filename:'mobile.js'});
-  if(app)vm.runInContext(appSource,context,{filename:'app.js'});
+  if(app){vm.runInContext(appSource,context,{filename:'app.js'});vm.runInContext("auth={authenticated:true,csrf:'fixture-session'};",context);}
   const query=selector=>window.document.querySelector(selector),mobile=window.StudioMobile;
   function render(id='bot_one',room=false) {
     mobile.beforeRender();query('#main-content').innerHTML=composerMarkup(id,room);
@@ -194,7 +195,9 @@ test('cancelled, short and vertical edge swipes cannot navigate; a deliberate co
   try {
     h.render();const root=h.query('#main-content'),back=h.query('.chat-back');let navigations=0;
     back.addEventListener('click',()=>navigations++);
-    const touch=(type,x,y)=>h.event(root,type,{touches:type==='touchend'||type==='touchcancel'?[]:[{clientX:x,clientY:y}]});
+    // A short, slow drag is not a flick. Keep event timing independent of host scheduling.
+    let gestureTime=0;
+    const touch=(type,x,y)=>{gestureTime+=200;const event=new h.window.Event(type,{bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:gestureTime});Object.assign(event,{touches:type==='touchend'||type==='touchcancel'?[]:[{clientX:x,clientY:y}]});root.dispatchEvent(event);};
     touch('touchstart',5,100);touch('touchmove',130,105);touch('touchcancel');touch('touchend');
     touch('touchstart',5,100);touch('touchmove',40,105);touch('touchend');
     touch('touchstart',5,100);touch('touchmove',140,170);touch('touchend');
@@ -211,12 +214,15 @@ test('sheet dragging cancels cleanly and only a completed downward drag dismisse
     const dialog=h.query('dialog'),handle=h.query('.sheet-grabber');let dismissals=0;
     handle.setPointerCapture=()=>{};h.mobile.mountDialog(dialog,()=>dismissals++);
     assert.equal(h.window.document.activeElement,h.query('h2'));
-    const pointer=(type,y)=>h.event(handle,type,{button:0,pointerId:1,clientY:y});
+    let gestureTime=0;
+    const pointer=(type,y,elapsed=200)=>{gestureTime+=elapsed;const event=new h.window.Event(type,{bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:gestureTime});Object.assign(event,{button:0,pointerId:1,clientY:y});handle.dispatchEvent(event);};
     pointer('pointerdown',100);pointer('pointermove',210);pointer('pointercancel',210);pointer('pointerup',210);
     pointer('pointerdown',100);pointer('pointermove',135);pointer('pointerup',135);
     assert.equal(dismissals,0);assert.equal(dialog.style.transform,'');
     pointer('pointerdown',100);pointer('pointermove',210);pointer('pointerup',210);
     assert.equal(dismissals,1);assert.equal(dialog.style.transform,'');
+    pointer('pointerdown',100);pointer('pointermove',135,20);pointer('pointerup',135,10);
+    assert.equal(dismissals,2,'a short completed flick remains a valid dismissal');
   } finally {h.close();}
 });
 

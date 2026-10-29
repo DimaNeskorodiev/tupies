@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d AS build
+FROM node:22.23.4-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS build
 
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -8,9 +8,9 @@ COPY public ./public
 COPY docs ./docs
 COPY assets ./assets
 COPY README.md ./README.md
-RUN npm run build && npm prune --omit=dev --ignore-scripts
+RUN TUPIES_BUILD_WEB_ONLY=1 npm run build && npm prune --omit=dev --ignore-scripts
 
-FROM node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
+FROM node:22.23.4-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 bash ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -19,10 +19,10 @@ ENV NODE_ENV=production \
     STUDIO_PORT=4310 \
     STUDIO_DATA_DIR=/data
 
-COPY --chown=node:node package.json package-lock.json server.mjs ./
+COPY --chown=node:node package.json package-lock.json server.mjs LICENSE ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node lib ./lib
-COPY --chown=node:node scripts/pair.mjs ./scripts/pair.mjs
+COPY --chown=node:node scripts/pair.mjs scripts/link-engine.mjs scripts/runtime-backup.mjs ./scripts/
 COPY --from=build --chown=node:node /app/public ./public
 COPY --chown=node:node assets ./assets
 COPY --from=build --chown=node:node /app/assets/licenses ./assets/licenses

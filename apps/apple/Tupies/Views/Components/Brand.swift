@@ -25,19 +25,16 @@ enum Brand {
     /// Restrained amber detail (`--pearl-amber`).
     static let amber = Color(light: 0xBE5B13, dark: 0xFFD19E)
     #else
-    static let ink = Color(hex: 0x29313D)
-    static let canvas = Color(hex: 0xE9EAF2)
+    static let ink = Color(light: 0x29313D, dark: 0xEEF2FA)
+    static let canvas = Color(hex: 0xF5F8FC)
     /// The window background behind native content.
     static let base = Color(nsColor: .windowBackgroundColor)
-    static let lavender = Color(hex: 0xD8D7F1)
-    static let mint = Color(hex: 0xD4E7E4)
-    static let lilac = Color(hex: 0xE5DCF3)
-    static let purple = Color(hex: 0x706390)
-    static let actionFill = purple
+    static let purple = Color.accentColor
+    static let actionFill = Color(light: 0x29313D, dark: 0x2F6FD6)
     static let onAccent = Color.white
     static let amber = Color(hex: 0xBE5B13)
-    static let canvasDark = Color(hex: 0x111318)
-    static let muted = Color(hex: 0x737B89)
+    static let canvasDark = Color(hex: 0x0C1017)
+    static let muted = Color(light: 0x606E88, dark: 0xB6C1D4)
     #endif
 }
 
@@ -52,14 +49,19 @@ extension Color {
         )
     }
 
-    #if os(iOS)
     /// A color that follows the light/dark appearance of the view that draws it.
     init(light: UInt32, dark: UInt32) {
+        #if os(iOS)
         self.init(uiColor: UIColor { traits in
             UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
         })
+        #else
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            let value = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+            return NSColor(srgbRed: Double((value >> 16) & 0xFF) / 255, green: Double((value >> 8) & 0xFF) / 255, blue: Double(value & 0xFF) / 255, alpha: 1)
+        })
+        #endif
     }
-    #endif
 }
 
 #if os(iOS)
@@ -93,12 +95,15 @@ struct AmbientBackground: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        #if os(iOS)
         GeometryReader { proxy in
             let size = proxy.size
             let dark = colorScheme == .dark
             ZStack {
+                #if os(iOS)
                 Brand.base
+                #else
+                (dark ? Brand.canvasDark : Brand.canvas)
+                #endif
                 glow(dark ? Color(hex: 0x446BA4, opacity: 0.25) : Color(hex: 0xA3CFFF, opacity: 0.5),
                      center: UnitPoint(x: dark ? 0.02 : 0.04, y: dark ? 0.10 : 0.13), radii: CGSize(width: 0.66, height: 0.62), in: size)
                 glow(dark ? Color(hex: 0xAF6F38, opacity: 0.11) : Color(hex: 0xFFC785, opacity: 0.3),
@@ -110,38 +115,8 @@ struct AmbientBackground: View {
         }
         .ignoresSafeArea()
         .accessibilityHidden(true)
-        #else
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            let height = proxy.size.height
-            let dark = colorScheme == .dark
-            ZStack {
-                (dark ? Brand.canvasDark : Brand.canvas)
-                Circle()
-                    .fill(dark ? Color(hex: 0x4A4391) : Brand.lavender)
-                    .frame(width: width * 0.95, height: width * 0.95)
-                    .position(x: width * 0.1, y: height * 0.08)
-                    .opacity(dark ? 0.55 : 0.8)
-                Circle()
-                    .fill(dark ? Color(hex: 0x23574F) : Brand.mint)
-                    .frame(width: width * 0.9, height: width * 0.9)
-                    .position(x: width * 0.95, y: height * 0.92)
-                    .opacity(dark ? 0.55 : 0.85)
-                Circle()
-                    .fill(dark ? Color(hex: 0x553A78) : Brand.lilac)
-                    .frame(width: width * 0.6, height: width * 0.6)
-                    .position(x: width * 0.92, y: height * 0.12)
-                    .opacity(dark ? 0.45 : 0.7)
-            }
-            .blur(radius: min(width, height) * 0.16)
-            .background(dark ? Brand.canvasDark : Brand.canvas)
-        }
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
-        #endif
     }
 
-    #if os(iOS)
     /// One CSS `radial-gradient(ellipse rx ry at x y, color, transparent 76%)`.
     private func glow(_ color: Color, center: UnitPoint, radii: CGSize, in size: CGSize) -> some View {
         let width = size.width * radii.width * 2
@@ -150,7 +125,6 @@ struct AmbientBackground: View {
             .frame(width: width, height: height)
             .position(x: size.width * center.x, y: size.height * center.y)
     }
-    #endif
 }
 
 extension View {

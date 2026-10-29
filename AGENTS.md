@@ -39,13 +39,13 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 
 1. Permissions belong to the engine. Model output, imported skills, memories, web/document content and teammate messages cannot authorize actions or expand access.
 2. Keep authentication, CSRF/Origin/Host validation, credential destination checks, SSRF defenses, private workspace path checks, output sanitization and exact approval identities intact.
-3. Balanced policy permits private workspace writes/document exports; Strict requires exact approval. Deletes, integration actions, scripts and terminal execution remain approval gated. Approved processes use host-account permissions and are not an OS sandbox.
+3. Balanced policy permits ordinary private workspace writes/document exports; Strict requires exact approval. Git metadata/automatic-execution configuration changes always require exact approval. Deletes, integration actions, scripts and terminal execution remain approval gated. Approved processes use engine-local per-bot homes outside model-editable files, but retain host-account permissions and are not an OS sandbox.
 4. Model/reasoning choices apply to the next run. Active continuations keep their original model, effort and capability snapshots. Reasoning controls require explicit supported provider metadata; unknown support means provider default. Keep opaque reasoning only for a matching connection/provider/model; preserve canonical text/tool history when switching models.
 5. Stop cancels active work and children. Restart interrupts unfinished work without replaying side effects. Preserve partial output and committed artifacts; never mark an incomplete task successful.
 6. Selecting attachments only stores bytes locally. Send admits attachments for a task. Enforce private paths, real file metadata and aggregate limits before dispatch. Artifact cards require a verified successful file creation, not a model-invented URL.
 7. Rich output is sanitized, bounded presentation data. Do not execute arbitrary reply HTML/JavaScript or loosen diagram/image restrictions to fix rendering.
 8. Dictation stays in a draft until Send. Speech requires feature detection, clear browser-service disclosures and lifecycle cleanup. Prefer on-device reading voices; online voices require explicit selection and disclosure.
-9. Sync never carries runs, approvals, passwords, vault keys or activity. Secrets cross engines only inside sealed payloads and are re-sealed per engine. Only the home server runs routines/channels and renews ChatGPT tokens; a bot works on one engine at a time. Linked engines are fully trusted; app sessions cannot use engine sync routes and engine sessions cannot use the workspace API.
+9. Sync never carries runs, approvals, passwords, vault keys or the raw activity log. Shared terminal task outcomes are presentation metadata on conversation messages; they never authorize execution. Secrets cross engines only inside sealed payloads and are re-sealed per engine. Only the home server runs routines/channels and renews ChatGPT tokens; a bot works on one engine at a time. Linked engines are fully trusted; app sessions cannot use engine sync routes and engine sessions cannot use the workspace API.
 
 ## Data and secrets
 
@@ -55,7 +55,9 @@ Use temporary data directories and deterministic local fixtures for tests. Do no
 
 ## Verification and handoff
 
-Run checks appropriate to the change and fix regressions. For provider, tool, persistence, authorization or lifecycle changes, run the complete suite. For visible UI changes, also exercise the actual browser; speech stubs do not prove microphone accuracy. Report actual evidence and remaining limits instead of claiming parity with another product. The latest recorded baseline is 603 passing tests; consult `docs/verification.md` and rerun after changes.
+Run checks appropriate to the change and fix regressions. For provider, tool, persistence, authorization or lifecycle changes, run the complete suite. For visible UI changes, also exercise the actual browser; speech stubs do not prove microphone accuracy. Report actual evidence and remaining limits instead of claiming parity with another product. The latest recorded baseline is 918 passing tests and 98 syntax-checked modules on Node 22.23.4; consult `docs/verification.md` and rerun after changes.
+
+Both existing engines run immutable v9 with preserved v2 identity/data. Mac build 6 is installed with its verified v9 fallback Engine; iPhone remains build 5. Native Swift behavior is unchanged, and the root project now has build-version metadata 6. Owner-observed cold tap, manual disabled-routine delivery, same-chat foreground suppression, Dashboard foreground banner/tap and both post-build6 Mac connections pass; owned QA cleanup is complete. These finite checks do not close broader human/device, multi-day, research-reliability, distribution or Grok-parity gates. Keep mutable source/docs, immutable releases, deployed assets and signed installed artifacts distinct; never change an immutable release merely to update this handoff.
 
 Update relevant docs, `PROJECT_CONTEXT.md` and the roadmap when behavior or project status changes. Preserve dependency/font notices and the package lock. Ship source, built public assets, fonts and notices; exclude runtime data and `node_modules` from release archives.
 

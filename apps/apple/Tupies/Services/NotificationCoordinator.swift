@@ -10,11 +10,11 @@ import UserNotifications
 final class NotificationCoordinator: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationCoordinator()
     private enum Keys {
-        static let enabled = "hermes.notifications.enabled"
-        static let replies = "hermes.notifications.botReplies"
-        static let routines = "hermes.notifications.routines"
-        static let connection = "hermes.notifications.connection"
-        static let registrations = "hermes.notifications.registrations"
+        static let enabled = AppSettings.notificationsEnabled
+        static let replies = AppSettings.notificationsReplies
+        static let routines = AppSettings.notificationsRoutines
+        static let connection = AppSettings.notificationsConnection
+        static let registrations = AppSettings.notificationsRegistrations
     }
 
     @Published private(set) var enabled: Bool
@@ -48,6 +48,16 @@ final class NotificationCoordinator: NSObject, ObservableObject, UNUserNotificat
     }
 
     func prepare() { center.delegate = self }
+
+    /// The early delegate receives cold taps but never registers or contacts an engine.
+    func reloadPreferencesAfterMigration() {
+        guard store == nil else { return }
+        enabled = defaults.bool(forKey: Keys.enabled)
+        botReplies = defaults.object(forKey: Keys.replies) as? Bool ?? true
+        routines = defaults.object(forKey: Keys.routines) as? Bool ?? true
+        connectionID = defaults.string(forKey: Keys.connection).flatMap(UUID.init(uuidString:))
+        registrations = Set((defaults.stringArray(forKey: Keys.registrations) ?? []).compactMap(UUID.init(uuidString:)))
+    }
 
     func attach(_ store: ConnectionStore) {
         guard self.store !== store else { return }

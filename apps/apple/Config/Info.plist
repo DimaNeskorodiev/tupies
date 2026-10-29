@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>TupiesKeychainGroup</key><string>$(AppIdentifierPrefix)dev.tupies.app</string>
+    <key>TupiesLegacyKeychainGroup</key><string>$(AppIdentifierPrefix)dev.hermesstudio.app</string>
+    <key>TupiesRequiresLegacyTransfer</key><string>$(TUPIES_REQUIRE_TRANSFER)</string>
+    <key>LSApplicationQueriesSchemes</key><array><string>tupies-transfer</string></array>
 	<key>StudioAPNSEnvironment</key>
 	<string>$(APS_ENVIRONMENT)</string>
 	<key>CFBundleURLTypes</key>
@@ -10,9 +14,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>dev.hermesstudio.app.pair</string>
+			<string>dev.tupies.app.pair</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>tupies</string>
 				<string>hermes-studio</string>
 			</array>
 		</dict>

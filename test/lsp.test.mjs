@@ -66,8 +66,8 @@ test('LSP owner and private-root checks block cross-run files, symlinks, and ser
 });
 
 test('LSP launch refuses symlinked private temporary storage',async t=>{
-  const {directory,root,start}=await fixture(t);await fs.symlink(directory,path.join(root,'.tmp'));
-  await assert.rejects(start(),/Symbolic links/);
+  const {directory,owner,start}=await fixture(t),home=path.join(directory,'process-homes',owner.botId);await fs.mkdir(home,{recursive:true});await fs.symlink(directory,path.join(home,'.tmp'));
+  await assert.rejects(start(),/real directories/);
 });
 
 test('LSP text clipping remains explicit for diagnostic messages and symbol names',async t=>{

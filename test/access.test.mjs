@@ -48,7 +48,7 @@ async function engine(t) {
     const paired = await call('/api/pair', { method: 'POST', from, data: { v: 1, code, kind: 'device', name: 'Fixture phone', platform: 'ios', publicKey: key, proof: signer(PAIR_MESSAGE(code, key)) } });
     assert.equal(paired.status, 201, JSON.stringify(paired.body));
     const deviceId = paired.body.deviceId;
-    const signIn = (via = from) => { const timestamp = Date.now(), nonce = randomBytes(16).toString('base64url'); return call('/api/device/session', { method: 'POST', from: via, data: { deviceId, timestamp, nonce, signature: signer(SESSION_MESSAGE(deviceId, timestamp, nonce)) } }); };
+    const signIn = (via = from) => { const timestamp = Date.now(), nonce = randomBytes(16).toString('base64url'),engineNodeId=app.sync.nodeId,engineFingerprint=app.sync.identity.fingerprint; return call('/api/device/session', { method: 'POST', from: via, data: {v:2,engineNodeId,engineFingerprint, deviceId, timestamp, nonce, signature: signer(SESSION_MESSAGE(engineNodeId,engineFingerprint,deviceId,timestamp,nonce)) } }); };
     return { deviceId, signIn };
   }
   return { app, port, url, directory, call, cookieOf, setup, pairDevice, close };
@@ -151,7 +151,7 @@ test('sign-in limits follow the real client behind a proxy, so strangers cannot 
   const phone = await studio.pairDevice('198.51.100.77');
   for (let attempt = 0; attempt < 30; attempt++) {
     const timestamp = Date.now(), nonce = randomBytes(16).toString('base64url');
-    assert.equal((await studio.call('/api/device/session', { method: 'POST', from: '198.51.100.66', data: { deviceId: phone.deviceId, timestamp, nonce, signature: Buffer.alloc(70).toString('base64') } })).status, 401);
+    assert.equal((await studio.call('/api/device/session', { method: 'POST', from: '198.51.100.66', data: {v:2,engineNodeId:studio.app.sync.nodeId,engineFingerprint:studio.app.sync.identity.fingerprint, deviceId: phone.deviceId, timestamp, nonce, signature: Buffer.alloc(70).toString('base64') } })).status, 401);
   }
   const bogus = await studio.call('/api/device/session', { method: 'POST', from: '198.51.100.66', data: { deviceId: 'dev_unknown', timestamp: Date.now(), nonce: randomBytes(16).toString('base64url'), signature: 'AA==' } });
   assert.equal(bogus.status, 429);

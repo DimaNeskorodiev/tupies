@@ -44,9 +44,6 @@ struct RootView: View {
         } message: { alert in
             Text(alert.message)
         }
-        .onOpenURL { url in
-            store.handleIncomingURL(url)
-        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 store.resume()
@@ -58,6 +55,7 @@ struct RootView: View {
         }
         .task {
             #if os(macOS)
+            await store.resumeIncludedEngineIfNeeded()
             await store.autoPairLocalIfNeeded()
             #else
             NotificationCoordinator.shared.attach(store)
