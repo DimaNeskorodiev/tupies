@@ -6,6 +6,10 @@ On phones, **Return** inserts a new line. Tap **Send**, or use **Cmd/Ctrl+Enter*
 
 ## Search and direction during work
 
+The desktop sidebar keeps a compact brand and navigation area above **My Tupies**, your visible bot list. The list uses the remaining window height and scrolls independently, with **Settings** always available below it. Click a bot to open its conversation or **+** to create one. Phones keep their existing bottom navigation and teammate switcher.
+
+A single blue dot beside a bot means its main conversation has an unread reply, including a routine result. Bots with everything read have no dot. The dot clears after the final reply is visible in an attended chat; an offscreen reply stays unread. A partial stream does not create or clear a dot. Updates arrive while you use another chat, and read status survives reloading. These dots do not indicate online availability.
+
 Use the single **Search** field in the desktop sidebar: typing filters bots, rooms and routines by name; press **Enter**, click its **↵** button or press **Cmd/Ctrl+K** to search saved messages with the same query. On phones, use the search icon in the header. Use **Search conversation** in a bot or room's menu for a scoped search. Results show the conversation, author, date and excerpt; selecting one opens and focuses the matched message while keeping the current page session's draft. Search reads bounded stored transcripts on this engine without calling a model. A partial-search notice means older messages may require narrowing the scope.
 
 While a direct-chat task works, type additional guidance and choose **Add direction**. The transcript distinguishes queued, applied and cancelled guidance. It applies at the next model boundary; an already admitted action can finish first. Guidance keeps the same model, permissions and original required checks. Resolve a pending question or approval first. To abandon a required outcome, use **Stop** and send a revised task. There are at most eight guidance updates/32 KB per task; updates contain text only.
