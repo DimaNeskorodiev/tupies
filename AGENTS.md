@@ -59,6 +59,8 @@ Run checks appropriate to the change and fix regressions. For provider, tool, pe
 
 Both existing engines run immutable v9 with preserved v2 identity/data. Mac build 6 is installed with its verified v9 fallback Engine; iPhone remains build 5. Native Swift behavior is unchanged, and the root project now has build-version metadata 6. Owner-observed cold tap, manual disabled-routine delivery, same-chat foreground suppression, Dashboard foreground banner/tap and both post-build6 Mac connections pass; owned QA cleanup is complete. These finite checks do not close broader human/device, multi-day, research-reliability, distribution or Grok-parity gates. Keep mutable source/docs, immutable releases, deployed assets and signed installed artifacts distinct; never change an immutable release merely to update this handoff.
 
+**Current operational override (29 October 2026):** both engines serve the v10 notification baseline with the pearl glass activity `thinking-waves.js`/`.css` update. Mac runs a separate isolated release copy; frozen v10 and the signed Mac7/iPhone7 apps, including the bundled fallback v10, remain unchanged. This supersedes the earlier deployment paragraph above. Consult ignored `docs/local-workspace.md` for the current runtime owner and paths before restarting or switching an engine. The UI update did not alter pairings or profiles; no further Mac profile installation or changes are authorized without new owner approval.
+
 Update relevant docs, `PROJECT_CONTEXT.md` and the roadmap when behavior or project status changes. Preserve dependency/font notices and the package lock. Ship source, built public assets, fonts and notices; exclude runtime data and `node_modules` from release archives.
 
 ## Documentation map
