@@ -118,7 +118,7 @@ struct NotificationRegistrationStatus: Decodable {
         if delivery?.status == "storage_error" { return "The engine could not save notification delivery. Check its storage and try again." }
         if delivery?.status == "unknown" { return "The last alert’s delivery could not be confirmed. Open Tupies to check for new replies." }
         if delivery?.status == "failed" { return "The last alert could not be delivered. Check notification delivery on the engine." }
-        return registered && enabled ? "Registered for bot replies and routine results. Message content stays on your engine." : "Notification delivery is not enabled on this engine."
+        return registered && enabled ? "Registered for bot replies and routine results. Alerts can include a short preview." : "Notification delivery is not enabled on this engine."
     }
 }
 

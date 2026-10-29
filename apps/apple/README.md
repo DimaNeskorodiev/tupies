@@ -1,6 +1,6 @@
 # Tupies for iPhone, iPad and Mac
 
-A native SwiftUI shell around the Tupies Engine's web UI. One multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
+A native SwiftUI shell around the Tupies Engine's web UI. The main multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+; an iOS-only `NotificationService` extension supplies local bot avatars through communication notifications. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
 
 The app adds what a browser tab can't:
 
@@ -192,6 +192,12 @@ open -a "/Applications/Tupies.app" 'hermes-studio://pair?v=1&url=…'   # pair a
 **Native transport HTTP regression:** run `node apps/apple/Tests/transport-client.mjs` on macOS with Xcode. It compiles the real Swift client and sends generated pairing, session and push fixture values through two disposable localhost origins. Same-origin redirects work; off-origin redirects are refused before credentials or request bodies can be replayed. The regression failed against the earlier client (one foreign-origin request) and passes with the redirect boundary. It needs permission to listen on localhost and never reads operational accounts.
 
 **Native security HTTP regression:** run `node apps/apple/Tests/security-client.mjs`. It compiles the actual Swift client and uses generated keys plus two real disposable TLS engines. The engines' own emitted device links must include `tls=engine`. The test checks first-contact pinning, zero HTTP requests to a wrong-key TLS endpoint, upgrade-required handling before any proof is sent to an older engine, target-bound session signatures, cross-engine and same-engine replay refusal, and continued use of existing paired device keys. The pure logic harness also checks that a mandatory pin rejects a certificate that would otherwise pass certificate trust, using a per-test anchor without changing the device's trust store.
+
+## Rich notification source update (29 October 2026)
+
+The iOS app embeds `dev.tupies.app.NotificationService`, with `INSendMessageIntent` activity metadata. Communication Notifications belongs to the containing app’s entitlement/profile; the extension uses its own ordinary development profile, matching Apple’s official sample. Refresh both signing profiles before installing. This adds no Keychain group, app group, engine access, background polling or URL fetch. The extension donates an incoming bot message and updates notification content with the sender’s bundled portrait. Timeout/donation failure falls back to the original alert with unchanged routing. iOS controls preview disclosure and Focus behavior; Settings now links directly to notification settings and explains **When Unlocked**.
+
+`node scripts/build-notification-assets.mjs` derives 24 PNG portraits from the shipped companion WebPs, matching the web identity-selection algorithm. It runs after companion generation in `npm run avatars:build`. The extension target/dependency/embed phase is filtered to iOS; the Mac app keeps building without it. Signed Mac7 is now installed with notification-only v10; original keys, metadata and transfer app are preserved. Its UI verification awaits Mac unlock. iPhone remains build5 pending Apple Developer provisioning. Neither frozen v9/v10 nor signed artifacts are changed by this handoff. See [notification behavior and verification](../../docs/notifications.md).
 
 ## Build 4 security and bundled-engine migration
 

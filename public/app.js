@@ -1254,4 +1254,5 @@ async function refreshVisible(){
 }
 for(const name of ['visibilitychange','focus','pageshow','studio:visible'])(name==='visibilitychange'?document:window).addEventListener(name,refreshVisible);
 setInterval(async()=>{if(document.hidden||!auth?.authenticated||['bot','room','sync'].includes(route().view)||$('dialog')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;try{const before=JSON.stringify(data),current=location.hash;await refresh(false);updateSidebar();if(current===location.hash&&before!==JSON.stringify(data)&&!$('dialog'))showPage();await offerDefaultModel();}catch{}},10000);
+window.StudioNotificationReads?.install(() => {const current=route();return {authenticated:!!auth?.authenticated,generation:sendSessionGeneration,view:current.view,id:current.id,messages:current.view==='room'?roomChat.messages:chat.messages,api};});
 start();
