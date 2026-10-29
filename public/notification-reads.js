@@ -42,7 +42,10 @@
       pending = true;
       try {
         await current.api('/api/notifications/read', {method:'POST', body:{botId, ...(current.view === 'room' ? {roomId:current.id} : {}), messageIds:batch.map(row => row.id)}});
-        if (generation === version) for (const row of batch) sent.add(row.key);
+        if (generation === version && context().generation === version) {
+          for (const row of batch) sent.add(row.key);
+          current.onRead?.({view:current.view, id:current.id, botId, messageIds:batch.map(row => row.id)});
+        }
         while (sent.size > 2000) sent.delete(sent.values().next().value);
       } catch {retryAt = now() + 10000;}
       finally {pending = false;}
