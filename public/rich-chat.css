@@ -1,0 +1,188 @@
+/* Rich replies share a blue/violet palette across desktop, phones and previews.
+   Code keeps a midnight surface in either appearance for stable syntax colors. */
+body.pearl-studio {
+  --rich-bubble: linear-gradient(135deg, #ffffff 12%, #eef6ff 70%, #f2efff);
+  --rich-edge: #c8d9f5;
+  --rich-surface: #f5f9ff;
+  --rich-ink: #19345c;
+  --rich-muted: #49638c;
+  --rich-accent: #235cc6;
+  --rich-violet: #6543c0;
+  --rich-teal: #086e76;
+  --rich-header: linear-gradient(115deg, #e1eeff, #eae4ff);
+  --rich-row: #f8fbff;
+  --rich-row-alt: #edf4ff;
+  --rich-hover: #e0edff;
+  --rich-inline: #e5edff;
+  --rich-quote: linear-gradient(110deg, #e7f2ff, #f0eaff);
+  --rich-shadow: 0 8px 28px #3563a60a, inset 0 1px 0 #ffffffb3;
+}
+
+:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio,
+body.pearl-studio:is([data-theme=dark], [data-appearance=dark]) {
+  --rich-bubble: linear-gradient(135deg, #101f3a, #162547 65%, #241e43);
+  --rich-edge: #3c5786;
+  --rich-surface: #11213e;
+  --rich-ink: #eaf2ff;
+  --rich-muted: #afc4e8;
+  --rich-accent: #8fc6ff;
+  --rich-violet: #c4adff;
+  --rich-teal: #7de4d6;
+  --rich-header: linear-gradient(115deg, #16406a, #35295f);
+  --rich-row: #12233f;
+  --rich-row-alt: #1a2e50;
+  --rich-hover: #233d65;
+  --rich-inline: #263665;
+  --rich-quote: linear-gradient(110deg, #153557, #29244d);
+  --rich-shadow: 0 10px 28px #040c201f, inset 0 1px 0 #a8caff12;
+}
+
+/* Match the app's system-dark policy: automatic dark appearance is phone-only. */
+@media (prefers-color-scheme: dark) and (max-width: 760px), (prefers-color-scheme: dark) and (max-height: 500px) and (pointer: coarse) {
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) {
+    --rich-bubble: linear-gradient(135deg, #101f3a, #162547 65%, #241e43);
+    --rich-edge: #3c5786;
+    --rich-surface: #11213e;
+    --rich-ink: #eaf2ff;
+    --rich-muted: #afc4e8;
+    --rich-accent: #8fc6ff;
+    --rich-violet: #c4adff;
+    --rich-teal: #7de4d6;
+    --rich-header: linear-gradient(115deg, #16406a, #35295f);
+    --rich-row: #12233f;
+    --rich-row-alt: #1a2e50;
+    --rich-hover: #233d65;
+    --rich-inline: #263665;
+    --rich-quote: linear-gradient(110deg, #153557, #29244d);
+    --rich-shadow: 0 10px 28px #040c201f, inset 0 1px 0 #a8caff12;
+  }
+}
+
+body.pearl-studio .chat-message:not(.user):not(.thinking-message) > .message-content {
+  background: var(--rich-bubble);
+  border-color: var(--rich-edge);
+  box-shadow: var(--rich-shadow);
+}
+body.pearl-studio .rich-prose :is(h1, h2, h3, h4, h5, h6) { color: var(--rich-ink); }
+body.pearl-studio .rich-prose :is(h1, h2, h3) { color: var(--rich-accent); }
+body.pearl-studio .rich-prose a { color: var(--rich-accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+body.pearl-studio .rich-prose :not(pre) > code {
+  padding: .15em .4em;
+  border: 1px solid var(--rich-edge);
+  border-radius: 7px;
+  background: var(--rich-inline);
+  color: var(--rich-violet);
+}
+body.pearl-studio .rich-prose blockquote {
+  padding: 12px 16px;
+  border: 0;
+  border-left: 3px solid var(--rich-violet);
+  border-radius: 0 14px 14px 0;
+  background: var(--rich-quote);
+  color: var(--rich-ink);
+}
+
+/* Opaque cell fills prevent the old translucent white from turning dark rows grey. */
+body.pearl-studio .rich-table-wrap {
+  border: 1px solid var(--rich-edge);
+  border-radius: 16px;
+  background: var(--rich-surface);
+  box-shadow: 0 5px 20px #2455a508;
+}
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) table {
+  display: table;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0;
+  background: var(--rich-surface);
+  color: var(--rich-ink);
+}
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) :is(th, td) {
+  padding: 11px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--rich-edge);
+  color: var(--rich-ink);
+}
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) th {
+  position: static;
+  background: transparent;
+  color: var(--rich-accent);
+  font-weight: 650;
+}
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--rich-header);
+}
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) td { background: var(--rich-row); }
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) tbody tr:nth-child(even) td { background: var(--rich-row-alt); }
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) tbody tr:hover td { background: var(--rich-hover); }
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) tbody tr:last-child td { border-bottom: 0; }
+body.pearl-studio :is(.rich-prose, .rich-table-wrap) td:first-child { font-weight: 550; }
+
+body.pearl-studio .rich-code {
+  border: 1px solid #395782;
+  border-radius: 16px;
+  background: #09162b;
+  color: #e4eeff;
+  box-shadow: 0 8px 24px #07152d14, inset 0 1px 0 #abcaff0d;
+}
+body.pearl-studio .rich-code-head {
+  background: linear-gradient(110deg, #143458, #2b2455);
+  border-color: #395782;
+  color: #bed7ff;
+}
+body.pearl-studio .rich-code-head > span { font-weight: 600; letter-spacing: .04em; }
+body.pearl-studio .rich-code-head button {
+  border-color: #5a74a0;
+  background: #263c64;
+  color: #d3eaff;
+}
+body.pearl-studio .rich-code-head button:is(:hover, :active) { background: #365788; color: #fff; }
+body.pearl-studio .rich-code-head button:focus-visible { outline: 2px solid #8edbff; outline-offset: 3px; }
+body.pearl-studio .rich-code pre, body.pearl-studio .rich-code .hljs { background: transparent; color: #e4eeff; }
+body.pearl-studio .rich-code :is(.hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #c9a6ff; }
+body.pearl-studio .rich-code :is(.hljs-title, .hljs-title.class_, .hljs-title.function_) { color: #83d9ff; }
+body.pearl-studio .rich-code :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-number, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-section) { color: #ffcd8a; }
+body.pearl-studio .rich-code :is(.hljs-string, .hljs-regexp, .hljs-meta .hljs-string) { color: #7ee4c6; }
+body.pearl-studio .rich-code :is(.hljs-built_in, .hljs-symbol, .hljs-bullet, .hljs-meta) { color: #ffacb9; }
+body.pearl-studio .rich-code :is(.hljs-code, .hljs-comment, .hljs-formula) { color: #99afd1; }
+body.pearl-studio .rich-code :is(.hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag) { color: #89dfef; }
+body.pearl-studio .rich-code :is(.hljs-subst, .hljs-operator, .hljs-variable, .hljs-emphasis, .hljs-strong) { color: #e4eeff; }
+body.pearl-studio .rich-code .hljs-addition { color: #97f0c9; background: #133f3d; }
+body.pearl-studio .rich-code .hljs-deletion { color: #ffb2c3; background: #4c2543; }
+
+body.pearl-studio :is(.rich-widget, .rich-infographic) {
+  background: var(--rich-bubble);
+  border-color: var(--rich-edge);
+  color: var(--rich-ink);
+}
+body.pearl-studio .rich-visual-head strong, body.pearl-studio .rich-eyebrow { color: var(--rich-accent); }
+body.pearl-studio .rich-metrics article { background: var(--rich-header); border-color: var(--rich-edge); }
+body.pearl-studio .rich-metrics strong { color: var(--rich-violet); }
+body.pearl-studio .rich-metrics article:nth-child(3n) strong { color: var(--rich-teal); }
+body.pearl-studio .rich-metrics :is(span, small), body.pearl-studio .rich-visual-caption { color: var(--rich-muted); }
+body.pearl-studio .rich-steps li > span { background: var(--rich-inline); color: var(--rich-violet); border-color: var(--rich-edge); }
+
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
+  body.pearl-studio .chat-message:not(.user):not(.thinking-message) > .message-content { background: none; box-shadow: none; }
+  body.pearl-studio .chat-message:not(.user) .message-text { background: var(--rich-bubble); border-color: var(--rich-edge); box-shadow: var(--rich-shadow); }
+  body.pearl-studio :is(.rich-prose, .rich-table-wrap) :is(th, td) { padding: 10px 12px; }
+  body.pearl-studio .rich-code-head button { background: transparent; }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  body.pearl-studio :is(.chat-message, .rich-widget, .rich-infographic) {
+    --rich-bubble: var(--rich-surface);
+    --rich-shadow: none;
+  }
+}
+@media (prefers-contrast: more) {
+  body.pearl-studio .rich-table-wrap, body.pearl-studio .rich-code { outline: 1px solid var(--rich-accent); outline-offset: -1px; }
+  body.pearl-studio :is(.rich-prose, .rich-table-wrap) :is(th, td) { border-bottom-width: 2px; }
+}
