@@ -47,6 +47,8 @@ test('duplicates that arrive together still start one task',async t=>{
 test('receipts survive a restart, are kept a week and are written with the task they admitted',async t=>{
   const {engine,store,options}=await fixture(t);
   const first=await engine.submit('bot_atlas','Before the restart.',{clientMessageId:ID});await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
+  // Visible status is set inside the atomic commit; reopen only after its owner has finished saving.
+  await Promise.all([...engine.tasks.values()]);await store.queue;
   const restarted=new NativeEngine(await new Store(store.directory).init(),options);await restarted.recover();
   const again=await restarted.submit('bot_atlas','Before the restart.',{clientMessageId:ID});
   assert.equal(again.duplicate,true);assert.equal(again.run.id,first.run.id);assert.equal(again.run.status,'completed');

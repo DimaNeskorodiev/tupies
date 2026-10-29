@@ -1,6 +1,6 @@
 # Tupies for iPhone, iPad and Mac
 
-A native SwiftUI shell around the Tupies Engine's web UI. One multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
+A native SwiftUI shell around the Tupies Engine's web UI. The main multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+; an iOS-only `NotificationService` extension supplies local bot avatars through communication notifications. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
 
 The app adds what a browser tab can't:
 
@@ -65,7 +65,7 @@ The native screens follow the iOS 26 design language, with fallbacks for iOS 17�
 
 ## Native iPhone notifications
 
-Installed build 5 includes an iOS Settings section for notification opt-in, bot-reply and routine-result switches, a delivery-engine selector and readable delivery status. `NotificationCoordinator` receives APNs callbacks, keeps its token only in memory, registers through the existing device bearer and suppresses foreground alerts for the matching authenticated bot/room view. A tap selects only an already paired engine and a validated bot/room route; pending navigation survives sign-in. Pushes cannot authorize actions.
+Installed build 7 retains the build5 iOS Settings section for notification opt-in, bot-reply and routine-result switches, a delivery-engine selector and readable delivery status. `NotificationCoordinator` receives APNs callbacks, keeps its token only in memory, registers through the existing device bearer and suppresses foreground alerts for the matching authenticated bot/room view. A tap selects only an already paired engine and a validated bot/room route; pending navigation survives sign-in. Pushes cannot authorize actions.
 
 The project has an iOS-only `aps-environment` entitlement: development in Debug, production in Release. This needs an explicit Push Notifications app identifier and matching provisioning profile. The installed legacy build 3 was signed without push on 28 October 2026:
 
@@ -192,6 +192,12 @@ open -a "/Applications/Tupies.app" 'hermes-studio://pair?v=1&url=…'   # pair a
 **Native transport HTTP regression:** run `node apps/apple/Tests/transport-client.mjs` on macOS with Xcode. It compiles the real Swift client and sends generated pairing, session and push fixture values through two disposable localhost origins. Same-origin redirects work; off-origin redirects are refused before credentials or request bodies can be replayed. The regression failed against the earlier client (one foreign-origin request) and passes with the redirect boundary. It needs permission to listen on localhost and never reads operational accounts.
 
 **Native security HTTP regression:** run `node apps/apple/Tests/security-client.mjs`. It compiles the actual Swift client and uses generated keys plus two real disposable TLS engines. The engines' own emitted device links must include `tls=engine`. The test checks first-contact pinning, zero HTTP requests to a wrong-key TLS endpoint, upgrade-required handling before any proof is sent to an older engine, target-bound session signatures, cross-engine and same-engine replay refusal, and continued use of existing paired device keys. The pure logic harness also checks that a mandatory pin rejects a certificate that would otherwise pass certificate trust, using a per-test anchor without changing the device's trust store.
+
+## Rich notification update (29 October 2026, installed)
+
+The iOS app embeds `dev.tupies.app.NotificationService`, with `INSendMessageIntent` activity metadata. Communication Notifications belongs to the containing app’s entitlement/profile; the extension uses its own ordinary development profile, matching Apple’s official sample. Both iOS profiles were refreshed for the installed build7. This adds no Keychain group, app group, engine access, background polling or URL fetch. The extension donates an incoming bot message and updates notification content with the sender’s bundled portrait. Timeout/donation failure falls back to the original alert with unchanged routing. iOS controls preview disclosure and Focus behavior; Settings now links directly to notification settings and explains **When Unlocked**.
+
+`node scripts/build-notification-assets.mjs` derives 24 PNG portraits from the shipped companion WebPs, matching the web identity-selection algorithm. It runs after companion generation in `npm run avatars:build`. The extension target/dependency/embed phase is filtered to iOS; the Mac app builds without it. Signed Mac7 and iPhone7 are installed in place with original signing/Keychain scope, saved identities and notification preferences preserved. Both engines run notification-only v10. Home received the original phone’s fresh registration; two labeled operator preview pushes received APNs 200 and passed owner-observed avatar/name/preview, routine-subtitle and chat-tap checks. Physical attended/away and Lock Screen/Focus policy checks remain open. New Mac UI acceptance is unverified. No macOS configuration/MDM profile was installed; app-bundled provisioning had been refreshed before the owner prohibited further Mac profile actions. Post-install documentation leaves frozen v9/v10 and signed artifacts unchanged. See [notification behavior and verification](../../docs/notifications.md).
 
 ## Build 4 security and bundled-engine migration
 

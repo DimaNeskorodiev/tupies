@@ -6,11 +6,25 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+        4853A0020000000000000002 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 4853A0020000000000000001; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+        4853A0020000000000000003 = {isa = PBXContainerItemProxy; containerPortal = 4853A0010000000000000050; proxyType = 1; remoteGlobalIDString = 4853A0020000000000000040; remoteInfo = NotificationService; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+        4853A0020000000000000043 /* Embed App Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (4853A0020000000000000002, ); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+        4853A0020000000000000001 /* NotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4853A0010000000000000001 /* Tupies.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tupies.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+        4853A0020000000000000010 /* NotificationService */ = {isa = PBXFileSystemSynchronizedRootGroup; path = NotificationService; sourceTree = "<group>"; };
 		4853A0010000000000000010 /* Tupies */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tupies;
@@ -24,6 +38,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+        4853A0020000000000000020 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		4853A0010000000000000020 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -39,6 +54,7 @@
 			children = (
 				4853A0010000000000000010 /* Tupies */,
 				4853A0010000000000000011 /* Config */,
+                4853A0020000000000000010 /* NotificationService */,
 				4853A0010000000000000031 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -47,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				4853A0010000000000000001 /* Tupies.app */,
+                4853A0020000000000000001 /* NotificationService.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -54,6 +71,18 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+        4853A0020000000000000040 /* NotificationService */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = 4853A0020000000000000061;
+            buildPhases = (4853A0020000000000000041, 4853A0020000000000000020, 4853A0020000000000000042, );
+            buildRules = ();
+            dependencies = ();
+            fileSystemSynchronizedGroups = (4853A0020000000000000010, );
+            name = NotificationService;
+            productName = NotificationService;
+            productReference = 4853A0020000000000000001;
+            productType = "com.apple.product-type.app-extension";
+        };
 		4853A0010000000000000040 /* Tupies */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4853A0010000000000000061 /* Build configuration list for PBXNativeTarget "Tupies" */;
@@ -61,10 +90,12 @@
 				4853A0010000000000000041 /* Sources */,
 				4853A0010000000000000020 /* Frameworks */,
 				4853A0010000000000000042 /* Resources */,
+                4853A0020000000000000043 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+                4853A0020000000000000004,
 			);
 			fileSystemSynchronizedGroups = (
 				4853A0010000000000000010 /* Tupies */,
@@ -90,6 +121,7 @@
 						CreatedOnToolsVersion = 26.0;
 						SystemCapabilities = {
 							com.apple.Push = { enabled = 1; };
+                            com.apple.CommunicationNotifications = { enabled = 1; };
 							com.apple.Keychain = { enabled = 1; };
 						};
 					};
@@ -110,11 +142,13 @@
 			projectRoot = "";
 			targets = (
 				4853A0010000000000000040 /* Tupies */,
+                4853A0020000000000000040 /* NotificationService */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+        4853A0020000000000000042 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		4853A0010000000000000042 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -125,6 +159,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+        4853A0020000000000000041 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		4853A0010000000000000041 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -133,6 +168,10 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+        4853A0020000000000000004 = {isa = PBXTargetDependency; platformFilter = ios; target = 4853A0020000000000000040; targetProxy = 4853A0020000000000000003; };
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4853A0010000000000000070 /* Debug */ = {
@@ -259,7 +298,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "Config/Tupies-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Config/Tupies-iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
@@ -306,7 +345,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "Config/Tupies-iOS.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Config/Tupies-iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
@@ -344,9 +383,58 @@
 			};
 			name = Release;
 		};
+        4853A0020000000000000072 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGN_ENTITLEMENTS = Config/NotificationService.entitlements;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 7;
+                DEVELOPMENT_TEAM = "";
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_FILE = "Config/NotificationService-Info.plist";
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+                MARKETING_VERSION = 0.5.0;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.tupies.app.NotificationService;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = iphoneos;
+                SKIP_INSTALL = YES;
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SUPPORTS_MACCATALYST = NO;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1,2";
+            };
+            name = Debug;
+        };
+        4853A0020000000000000073 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGN_ENTITLEMENTS = Config/NotificationService.entitlements;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 7;
+                DEVELOPMENT_TEAM = "";
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_FILE = "Config/NotificationService-Info.plist";
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+                MARKETING_VERSION = 0.5.0;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.tupies.app.NotificationService;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = iphoneos;
+                SKIP_INSTALL = YES;
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SUPPORTS_MACCATALYST = NO;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1,2";
+            };
+            name = Release;
+        };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+        4853A0020000000000000061 = {isa = XCConfigurationList; buildConfigurations = (4853A0020000000000000072, 4853A0020000000000000073, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 		4853A0010000000000000060 /* Build configuration list for PBXProject "Tupies" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
