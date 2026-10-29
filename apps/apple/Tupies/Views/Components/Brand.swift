@@ -75,38 +75,16 @@ extension UIColor {
 }
 #endif
 
-/// The Tupies "T" mark from the web favicon, drawn natively.
+/// The Tupies mascot, shared with the web branding and app icons.
 struct BrandMark: View {
     var size: CGFloat = 56
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        RoundedRectangle(cornerRadius: size * 19 / 64, style: .continuous)
-            .fill(LinearGradient(colors: [Brand.slateTop, Brand.slateBottom], startPoint: .top, endPoint: .bottom))
-            .overlay(
-                TGlyph()
-                    .stroke(.white, style: StrokeStyle(lineWidth: size * 7 / 64, lineCap: .round))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: size * 19 / 64, style: .continuous)
-                    .strokeBorder(.white.opacity(colorScheme == .dark ? 0.22 : 0.08), lineWidth: 1)
-            )
+        Image("TupiesAvatar")
+            .resizable()
+            .scaledToFit()
             .frame(width: size, height: size)
-            .shadow(color: (colorScheme == .dark ? Color.black : Brand.slate).opacity(colorScheme == .dark ? 0.45 : 0.28), radius: size * 0.22, y: size * 0.1)
             .accessibilityHidden(true)
-    }
-}
-
-private struct TGlyph: Shape {
-    func path(in rect: CGRect) -> Path {
-        let unit = min(rect.width, rect.height) / 64
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + x * unit, y: rect.minY + y * unit)
-        }
-        var path = Path()
-        path.move(to: point(18, 18)); path.addLine(to: point(46, 18))
-        path.move(to: point(32, 18)); path.addLine(to: point(32, 46))
-        return path
     }
 }
 

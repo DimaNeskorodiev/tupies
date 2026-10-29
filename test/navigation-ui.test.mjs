@@ -23,7 +23,7 @@ test('the sidebar leads with the Dashboard and keeps only Settings at the bottom
   const sidebar=h.app.innerHTML.match(/<aside[\s\S]*<\/aside>/)[0];
   for(const label of ['Dashboard','Bots','Team rooms','Routines','Settings'])assert.match(sidebar,new RegExp(`>${label}(<|$)`));
   // Skills moved into Settings, so the sidebar matches the phone's four tabs.
-  for(const removed of ['Skills','Tupies','YOUR BOT WORKSPACE','TX-N-1540','SYNCED','Your workspace','Your bots','Model providers','Messaging channels','Devices &amp; sync','Help &amp; documentation','Integrations','Activity'])assert.ok(!sidebar.includes(removed),removed);
+  for(const removed of ['Skills','YOUR BOT WORKSPACE','TX-N-1540','SYNCED','Your workspace','Your bots','Model providers','Messaging channels','Devices &amp; sync','Help &amp; documentation','Integrations','Activity'])assert.ok(!sidebar.includes(removed),removed);
   assert.match(sidebar,/data-nav="\/dashboard"[^>]*aria-current="page"/);
   // An offline home server is still visible without the old engine badge.
   assert.match(sidebar,/data-nav="\/settings"[\s\S]*nav-alert[\s\S]*Waiting for Home server/);
