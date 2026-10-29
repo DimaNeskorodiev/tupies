@@ -2,6 +2,10 @@
 
 Last updated: 29 October 2026. Current application version: 0.5.0.
 
+## Chat send and task-update interactions (29 October 2026, source only)
+
+Confirmed bot/room messages and active-task updates dismiss the phone/touch software keyboard. Failed sends, newer drafts, navigation and sign-out retain their existing draft/focus boundaries; desktop typing keeps focus. **Update task** replaces **Add direction** with a send arrow, a visible explanation and a phone layout that gives the draft its own full-width row. Enter uses the visible action, and pending or blocked task updates stay disabled. Touch pointer events remain uncancelled so WebKit delivers taps on Send and Update task. This is presentation/submission routing only: task admission, attachment handling and permissions are unchanged. See [chat controls](docs/chat-controls.md) and [verification](docs/verification.md). **1037/1037** regressions, **106** syntax checks and disposable Chromium/WebKit phone/desktop acceptance pass; the **23-page guide** is rebuilt. Operational engines and installed Apple apps require a separate deployment; physical iPhone keyboard acceptance remains outstanding.
+
 ## Search and rich-chat PR integration (29 October 2026, source only)
 
 PR #7 combines unified Search and the rich-chat palette with `main` after Skills PR #6 and notification PR #5. Documentation conflicts retain every feature history and the current deployment record; the generated guide includes all 23 pages. The combined source passes **1031/1031** full regressions on **Node 22.23.1**, **106** syntax checks and the browser-asset rebuild. Actual disposable Chrome verifies Enter/Cmd+K query reuse, exact-message navigation, the unchanged unsent draft, the light table/midnight code palette and retained Skills assignments. Operational engines, installed Apple artifacts and the original shared checkout are unchanged. Earlier isolated/shared-checkout counts below remain historical.
