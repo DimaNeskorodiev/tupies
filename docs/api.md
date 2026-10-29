@@ -4,6 +4,9 @@ The browser API is same-origin and single-owner. Read `/api/auth` to discover wh
 
 Native push registration is a device-only exception: **GET/PUT/DELETE `/api/device/notifications`** requires the bearer of a currently paired iOS app. A browser/web-view cookie or linked-engine bearer is refused. PUT accepts exactly `{token,environment,enabled,botReplies,routines}`: a hexadecimal APNs token, `sandbox` or `production`, and three booleans. Device identity comes from the bearer; callers cannot supply a device ID, destination or topic. DELETE takes `{}` and removes this app's registration. Responses are `{available,registered,enabled,botReplies,routines,environment?,reason?,delivery:{status,lastError?}}`, with no token or credentials. Missing configuration, a linked replica or an environment mismatch is reported as unavailable; normal bot work continues. See [iPhone notifications](notifications.md).
 
+**POST `/api/notifications/read`** accepts `{botId,roomId?,messageIds:[...]}` from an authenticated workspace cookie (with CSRF) or paired-app session, never a linked-engine bearer. At most 20 safe message IDs are accepted; the server derives exact event hashes only for existing final owner-visible replies in that conversation. It returns `{acknowledged:true}` without exposing enrollment or execution controls. This suppresses pending alerts during the eight-second grace period; it does not mark a run successful, approve work or retract a push already sent. Linked-engine forwarding uses bounded ephemeral `notificationReads:[{id,at}]` inside the existing sealed v2 sync exchange; receipts are not workspace documents.
+
+
 | Route | Behavior |
 | --- | --- |
 | GET /api/auth | setupRequired, authenticated, session csrf when signed in, and passwordSignIn (false on an internet address that accepts paired apps only; setup and login are then refused with 403). |
@@ -191,12 +194,23 @@ Polling runs only for enabled, explicitly allowlisted channels. The engine recei
 
 ## Skills, rooms and routines
 
+Reviewed public-profile adaptations also return `attribution {title,author,url,kind,reviewedAt}` and `capabilityNotes` in catalog/inspection responses and installed metadata. These identify the original public profile and the newly written Tupies implementation; optional-service notes do not grant or imply a connected account.
+
+Skills catalog/import features are current-source capabilities; deployment evidence is separate. The catalog is bundled and offline. `skillInstallPolicy` is an owner-editable bot field (`ask`, the default, or `trusted`); `PATCH /api/bots/{id}` waits for an idle bot. Trusted automatic installs apply only to compatible exact bundled versions in Balanced; Strict still requires exact approval. `skills_search`, `skills_inspect` and `skills_install` are Skills-group bot tools; installation adds at most three new skill assignments per run and never grants other tools or script/integration permissions. See [Skills](skills.md).
+
 | Route | Behavior |
 | --- | --- |
-| POST /api/skills | Import `{content}` or `{files:[{path,contentBase64}]}`. |
+| GET /api/skills/catalog | Search with optional `query`, `category` and `botId`. Returns `{skills,categories,source,offline}`; entries include exact `catalogId`, `version`, `digest`, examples, requirements/compatibility and installation/assignment state. |
+| POST /api/skills/inspect | `{catalogId,botId?,version?,digest?}` returns catalog metadata plus original `content`, resource filenames and size. Provided version/digest must still match. |
+| POST /api/skills/install | `{catalogId,version,digest,botId}` installs that exact catalog version and assigns it to the idle target bot. Returns HTTP 201 `{skill,assignedTo,compatibility,alreadyInstalled,alreadyAssigned,replacedSkillIds}`; an identical package is reused. |
+| GET /api/skills/installed | Optional `botId` chooses compatibility/assignment diagnostics; all installed workspace revisions are returned as `{skills,platform}`, including unassigned versions. Managed package availability requires all manifest bytes. |
+| POST /api/skills/assign | `{skillId,botId,enabled?}` enables/disables one installed assignment (`enabled` defaults to true). Requires an idle target; enabling checks package integrity and replaces another assigned revision of the same catalog entry. |
+| POST /api/skills/import/preview | One of `{content}`, `{files:[{path,contentBase64}]}`, `{archiveBase64}` or `{url}`, plus required `botId` and optional `skillPath`. Validates/downloads without execution. Returns `{importId,packages,requiresSelection}`; packages identify each `key`, skill, source provenance, compatibility and original instructions/files for review. Preview is bound to this sign-in session and bot, expires in five minutes and is engine-local/transient; at most four are retained. |
+| POST /api/skills/import | `{importId,key,botId}` installs one exact package from that session's matching unexpired preview, then consumes the preview. HTTP 201 returns the installation/assignment result. A restart or expired preview requires previewing again. |
+| POST /api/skills | Legacy local-library import `{content}` or `{files:[{path,contentBase64}]}` without assignment or managed package manifest. New store imports use preview/install. |
 | GET /api/skills/{id} | Root instruction document and resource metadata. |
 | GET /api/skills/{id}/export | Complete `{files:[{path,contentBase64}]}` portable package. |
-| DELETE /api/skills/{id} | Remove an unused local skill and unassign it. |
+| DELETE /api/skills/{id} | Remove an installed/local skill and unassign it from every bot; refused while a bot is using it. |
 | POST /api/rooms | Create `{name,botIds,autoCollaborate?,maxRounds?}` with selected members. |
 | PATCH or DELETE /api/rooms/{id} | Edit/remove an idle room. |
 | GET /api/rooms/{id}/messages | Persistent shared messages and drive. Supports `ETag`/`If-None-Match` like bot messages. |

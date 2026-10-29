@@ -19,7 +19,7 @@
     "runtime:backup": "node scripts/runtime-backup.mjs",
     "verify:runtime": "node scripts/verify-runtime.mjs",
     "docs:build": "node scripts/build-guide.mjs",
-    "avatars:build": "node scripts/build-roki-assets.mjs && node scripts/build-companion-assets.mjs",
+    "avatars:build": "node scripts/build-roki-assets.mjs && node scripts/build-companion-assets.mjs && node scripts/build-notification-assets.mjs",
     "assets:build": "node scripts/build-assets.mjs",
     "licenses:build": "node scripts/collect-licenses.mjs",
     "build": "npm run brand:build && npm run avatars:build && npm run assets:build && npm run docs:build && npm run licenses:build",

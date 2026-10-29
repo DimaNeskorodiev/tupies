@@ -18,6 +18,7 @@ enum Brand { static let canvas = Color.white }
     enum Reachability { case online, offline }
     var activeID: UUID?
     var showSettings = false
+    var pairingSheet: String?
     private let saved: Connection
     private let key: P256.Signing.PrivateKey
     private var token: String?

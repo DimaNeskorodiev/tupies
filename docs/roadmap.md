@@ -2,7 +2,17 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
-Both live engines run immutable **v9** on official **Node 22.23.4**, with preserved identity/vault/configuration and v2 workspace state. Home retained its process through 17 atomic file changes with protected preimages; Mac used a complete protected stopped backup and one v9 process with the same Node/environment/data, no relink and v7 untouched. Both receipts verify **1,355** public routes. The release passes **918/918** tests, **98** syntax checks, **17.388 seconds** and **1,742** stable source files, plus **21** actual isolated WebKit scenarios with immutable-v8 failure reproduction.
+## Skills catalog (29 October 2026, source only)
+
+Implemented in mutable source: Skills is the first Settings item, ahead of Models. Its default Installed library has search/category/assignment filters, per-skill **Assign to bots** sheets with immediately saved per-bot changes, and **Files & options** for inspection, copy, portable export and confirmed removal. Catalog and skill Settings remain adjacent tabs, with per-bot Ask/Trusted installation preferences and Strict review preserved. The catalog contains sixteen reviewed offline playbooks (ten original workflows and six attributed [Grok Bot public-profile adaptations](grok-bot-skills.md)); a common inspected SKILL.md/folder/ZIP/HTTPS/GitHub import pipeline; Grok Bot/OpenBot exported skill folders; conservative Hermes requirements diagnostics; immutable versions, explicit per-bot catalog rollback and sync integrity gates; and bounded `skills_search`/`skills_inspect`/`skills_install`. Tool permissions and installation defaults are unchanged. See [skills](skills.md) and [verification](verification.md). Operational engines and installed apps remain separate deployment work.
+
+Next: evaluate real foreign-skill workflows and build explicit adapters for useful runtime-specific tools; expand the reviewed catalog through task evidence; consider federated registry search and later moderated third-party publishing. This release is not a live mirror of third-party marketplaces, an automatic dependency installer or full foreign-runtime compatibility.
+
+PR #6 integration with the notification source on current `main` passes 1031 full regressions and 106 syntax checks, plus disposable Chrome installation/assignment/reload checks. This validates source integration; operational deployment remains separate.
+
+**Latest deployment:** both engines run isolated notification-only **v10**; signed **Mac7/iPhone7** are installed in place with preserved identities and preferences. The owner confirmed avatar/name/preview, routine subtitle and chat tap for two labeled operator preview pushes. Physical attended/away suppression, Lock Screen/Focus policy and new Mac UI acceptance remain separate unverified checks. No macOS configuration/MDM profile was installed; further Mac profile actions are prohibited by the owner. See [notifications](notifications.md).
+
+The earlier checkpoint below used immutable **v9** on official **Node 22.23.4**, with preserved identity/vault/configuration and v2 workspace state. Home retained its process through 17 atomic file changes with protected preimages; Mac used a complete protected stopped backup and one v9 process with the same Node/environment/data, no relink and v7 untouched. Both receipts verify **1,355** public routes. The release passes **918/918** tests, **98** syntax checks, **17.388 seconds** and **1,742** stable source files, plus **21** actual isolated WebKit scenarios with immutable-v8 failure reproduction.
 
 **The targeted physical notification and Mac connection gates are closed.** Cold alert 06 opened the exact chat/nonce without password or error; a disabled routine was manually run once for 07 and its exact result/alert accepted; foreground chat 08 showed its reply without a banner; foreground Dashboard 09 showed a banner that tapped to the correct chat/nonce. All four real ChatGPT tasks completed, nonpartial and exact; APNs recorded four sent events with one attempt each. These are finite owner-observed cases, separate from the foreground-controlled fixture proof.
 
@@ -25,6 +35,12 @@ Implemented: blue/violet reply surfaces, blue table striping and headers, midnig
 ## Unified search (29 October 2026, source only)
 
 Implemented: one desktop sidebar Search field combines local name filtering with saved-message search through Enter, its arrow button or Cmd/Ctrl+K, preserving the query and unsent drafts. Phone header and scoped conversation searches remain. Source/browser verification belongs in [verification](verification.md); deployment to operational engines and installed apps is separate.
+
+PR #7 integration includes Skills PR #6 and notification PR #5, with 1031 full regressions, 106 syntax checks, rebuilt browser assets/23-page guide and actual desktop Search/draft/palette acceptance. Deployment remains separate.
+
+## Notification refinement (29 October 2026, installed)
+
+Implemented and installed: eight-second delivery grace, exact attended-chat receipts across sealed linked engines with priority over file uploads, bot names/short previews/routine names and an iOS communication-notification extension with 24 local portraits. Complete source regressions and both native platform builds pass; both engines run v10 and both Apple apps are build7. Refreshed iOS containing-app/extension provisioning and in-place installation preserved identities and settings. Two labeled operator preview pushes passed owner-observed appearance/chat-tap checks. Remaining observation: physical attended/away suppression, locked-preview/Focus policy and actual routine-completion delivery on build7. New Mac UI acceptance is unverified; respect the owner’s prohibition on further Mac profile actions. Earlier v9 checks remain historical evidence. See [notifications](notifications.md) and [verification](verification.md).
 
 ## Reliability and everyday use
 
