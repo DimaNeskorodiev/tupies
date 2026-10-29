@@ -14,7 +14,7 @@ With Workspace enabled, a typical coding workflow is:
 4. Read the edited section and, if Terminal is enabled, request `shell_run` for a real verification command. `cwd` selects a private workspace subfolder. `timeoutMs` defaults to 30000 and accepts 100–120000 milliseconds. Every terminal command needs exact approval, including its arguments, folder and timeout. Check `exitCode`, `timedOut` and `truncated` before reporting success.
 5. Update the plan to reflect actual verified work, then report the result and any remaining limits.
 
-Balanced policy permits private workspace writes and exact edits automatically. Strict policy requires approval of their exact arguments. Deletes, scripts, commands, integration actions and schedule changes retain their existing approval requirements. A bot's tool groups, collaborator assignments and active capability snapshots still apply. Reads and edits cannot select another bot's workspace, escape via relative paths or follow symlinks. Approved commands run with the host account's permissions; they are not an OS sandbox.
+Balanced policy permits private workspace writes and exact edits automatically. Strict policy requires approval of their exact arguments. Deletes, scripts, commands, integration actions, schedule changes and Manage Tupies changes (creating or changing bots, assigning skills) retain their existing approval requirements. A bot's tool groups, collaborator assignments and active capability snapshots still apply. Reads and edits cannot select another bot's workspace, escape via relative paths or follow symlinks. Approved commands run with the host account's permissions; they are not an OS sandbox.
 
 ## Result checks, recovery and evidence
 

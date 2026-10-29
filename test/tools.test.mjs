@@ -91,8 +91,9 @@ test('approved learning creates a portable skill and updates only the caller’s
 });
 
 test('automation tools require consent for future work and cannot inspect or remove another bot’s schedules',async t=>{
-  const {store,tools,bot}=await fixture(t);bot.tools=[...(bot.tools || []),'automation'];
-  const second=store.state.bots[1];second.tools=[...(second.tools || []),'automation'];
+  // Without Manage Tupies a bot sees and changes only its own routines.
+  const {store,tools,bot}=await fixture(t);bot.tools=['workspace','memory','skills','web','integrations','delegation','automation'];
+  const second=store.state.bots[1];second.tools=['workspace','memory','skills','web','integrations','delegation','automation'];
   const args={name:'Evidence review',prompt:'Review the available evidence and report changes.',intervalMinutes:60};
   await assert.rejects(tools.execute(bot,'routines_create',args),/approval/);assert.equal(store.state.routines.length,0);
   await assert.rejects(tools.execute(bot,'routines_create',{...args,intervalMinutes:4},{approved:true}),/interval/);

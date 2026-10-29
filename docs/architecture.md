@@ -33,6 +33,7 @@ Harness tools maintain a bounded plan on the active run and read retained tool o
 | lib/browser.mjs | The read-only browser: finding Chrome or Chromium, the DevTools pipe client, the egress proxy that applies web-reading rules to every connection, page sessions (outline with revision-bound references, click, scroll, text, back, screenshot), per-task ownership and the browser tools. |
 | lib/schedule.mjs | Routine schedules: validation, time-zone wall-clock maths (`zonedInstant`), the next run with one run per local date, and plain descriptions. |
 | lib/routines.mjs | Routine validation for the API and the `routines_create` tool, and per-routine run history from synced messages. |
+| lib/setup-tools.mjs | Manage Tupies from chat: `bots_list`, `bots_create`, `bots_update`, `skills_assign` and `routines_update`, their approval-card summaries and the system-prompt guidance. Bot changes go through the server's bot validation (`setup` in `server.mjs`). |
 | lib/learning.mjs | Reviewed learning: `memory_propose` and `skills_propose` record suggestions with their base revision (facts or `SKILL.md` sha256) and sources; the owner's accept, reject and undo re-check that base so a newer edit is never overwritten. |
 | lib/history.mjs | `session_search` and `session_read` over a bot's stored display transcript, with lane scoping that keeps Telegram chats with other people private to themselves. |
 | lib/workspace-code.mjs | Bounded recursive discovery, literal search, line/column paging and serialized hash-checked exact edits inside a bot's private workspace. |

@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Manage Tupies from chat (29 October 2026)
+
+Implemented: bots create routines, bots and skill assignments from chat after exact approval, with readable approval summaries and a one-time upgrade that gives bots on the old default tool set Routines and Manage Tupies. See [capabilities](capabilities.md). Next: confirm in real use that the owner's bots pick these tools for plain requests. Possible later steps: an owner-controlled option to skip approval for low-risk setup in the owner's own chat, model/provider choice in `bots_create`, and room creation.
+
 ## Pearl glass activity flow (29 October 2026, deployed shared UI)
 
 Implemented and deployed to both engines serving Mac and iOS: floating glass cards with local icons, explicit request/source/action/plan/teammate/result/observed labels, bounded two-line values, luminous paths with fewer pulses and canvas captions only for isolated nodes. The transparent graph is 184px on desktop, 168px on phones and 112px while streaming. Recorded provenance, preview limits, inspection, Stop and lifecycle behavior remain. The exact v10-derived operational snapshot passes **932/932 full tests and 100 syntax checks**; the PR snapshot against the merged notification/Skills baseline separately passes **110 targeted tests and 106 syntax checks**, with **954/954 full tests** recorded for the preceding notification-base snapshot. Mac uses a new isolated release with its existing runtime preserved; Home received two atomic public-file replacements without restarting. Signed Mac7/iPhone7 and the bundled fallback v10 remain unchanged; existing views need Reload. Disposable Chrome, macOS WKWebView and iPhone simulator rendering evidence is in [verification](verification.md). Next: physical Mac/iPhone task-interaction and accessibility acceptance, including actual reduced-motion preferences. The [production-renderer preview](../prototypes/activity-glass-preview.html) keeps sample data explicitly illustrative.

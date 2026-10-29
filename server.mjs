@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual, createHash, scrypt as scryptCallback } from 'node:crypto';
 import { brotliCompress, gzip, constants as zlib } from 'node:zlib';
 import { promisify } from 'node:util';
-import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage } from './lib/store.mjs';
+import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage, DEFAULT_BOT_TOOLS, TOOL_GROUPS_VERSION } from './lib/store.mjs';
 import { Runtime, isActive } from './lib/runtime.mjs';
 import { CONTEXT_LIMITS } from './lib/context-budget.mjs';
 import { removeBotSessions } from './lib/sessions.mjs';
@@ -76,7 +76,7 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'icon'))bot.icon=string(input.icon,'icon',40);
   if(Object.hasOwn(input,'connectionId'))bot.connectionId=string(input.connectionId,'connectionId',100,false);
   for(const key of ['tools','collaborators','integrationIds'])if(Object.hasOwn(input,key)){ensure(Array.isArray(input[key]) && input[key].length<=30 && input[key].every(item=>typeof item==='string' && /^[a-zA-Z0-9_-]{1,100}$/.test(item)),400,`Choose valid ${key}.`);bot[key]=[...new Set(input[key])];}
-  if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','terminal','browser'].includes(tool)),400,'Choose supported bot tools.');
+  if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','setup','terminal','browser'].includes(tool)),400,'Choose supported bot tools.');
   if(Object.hasOwn(input,'approvalPolicy')){ensure(['balanced','strict'].includes(input.approvalPolicy),400,'Choose a supported action review policy.');bot.approvalPolicy=input.approvalPolicy;}
   if(Object.hasOwn(input,'skillInstallPolicy')){ensure(['ask','trusted'].includes(input.skillInstallPolicy),400,'Choose ask or trusted for skill installation.');bot.skillInstallPolicy=input.skillInstallPolicy;}
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
@@ -87,7 +87,7 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
   if(bot.connectionId!==previous.connectionId || bot.model!==previous.model)bot.reasoningEffort='';
-  return {description:'',instructions:'',model:'',reasoningEffort:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:['workspace','memory','skills','web','integrations','delegation','automation'],collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
+  return {description:'',instructions:'',model:'',reasoningEffort:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
 }
 function validateBinding(bot,state,integrations) {
   if(bot.connectionId)ensure(state.connections.some(c=>c.id===bot.connectionId && c.type!=='legacy-hermes'),400,'Choose a model provider. Replace legacy gateway connections in Providers.');
@@ -125,7 +125,13 @@ export async function createStudioServer(options={}) {
   const speech=new Speech(store,options);
   const integrations=options.integrations || new Integrations(store,options);
   const skills=new SkillsService(store,{...options.skills,busyElsewhere:botId=>sync.busyElsewhere(botId),assertAdmission:()=>sync.assertAdmission(),isBusy:botId=>runtime.starting.has(botId) || runtime.compactions.has(botId) || rooms.reserved(botId)});
-  const runtime=new Runtime(store,{...options,providers,integrations,skills,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
+  // Bots that manage Tupies from chat (lib/setup-tools.mjs) create and change bots with the same checks as the bot API.
+  const botIdle=botId=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before changing it.');
+  const setup={
+    createBot:(input,{actor})=>store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);state.bots.push(bot);store.audit('bot.created',`${actor.name} added ${bot.name} to your team`,bot.id,{source:'agent',createdBy:actor.id});return structuredClone(bot);}),
+    updateBot:(botId,input,{actor})=>{botIdle(botId);return store.mutate(async state=>{botIdle(botId);const index=state.bots.findIndex(b=>b.id===botId);ensure(index>=0,404,'Bot not found.');const updated=validateBot(input,state.bots[index]);validateBinding(updated,state,integrations);await validateSkillAssignments(store,state,updated);botIdle(botId);state.bots[index]=updated;store.audit('bot.updated',`${actor.name} updated ${updated.name}`,botId,{source:'agent'});return structuredClone(updated);});},
+  };
+  const runtime=new Runtime(store,{...options,providers,integrations,skills,setup,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();

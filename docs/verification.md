@@ -1,5 +1,12 @@
 # Verification — Tupies Engine 0.5
 
+## Manage Tupies from chat (29 October 2026)
+
+- On this branch (based on main `82d4896`): complete suite on **Node 22.23.1** passes **1041/1041**, zero failures/skips/cancellations, with `node --test --test-concurrency=4 --test-timeout=180000 test/*.test.mjs`. Syntax checks pass for **107 modules**; `npm run build` rebuilds the **23-page guide**. (A run with a symlinked `node_modules` failed 42 document/image tests on this branch and on unmodified main alike; a real copy passes them.)
+- New `test/setup-tools.test.mjs` (7 tests) covers the one-time tool-group upgrade and that owner choices stay; `bots_create` through the server's bot validation (approval required, Terminal refused, unknown skill refused, owner default provider, audit source); `bots_update` (no self-edit, no Terminal grant, busy bot refused, owner-granted Terminal kept); `skills_assign`; cross-bot `routines_create/list/update/delete` with and without Manage Tupies; approval summaries and system-prompt guidance; and a scripted chat “Create a routine to check the bitcoin price every 10 minutes” that waits for approval, shows “Schedule “Bitcoin price”: Every 10 minutes” on the card and Dashboard, and schedules a 10-minute routine only after Allow once.
+- Actual disposable in-app browser (temporary store, scripted provider, no real accounts): the approval card shows the bold summary above the exact arguments; after Allow once the routine is listed as “Roki · Every 10 minutes”; a `bots_create` approval created a bot and the Bots count updated without navigation; the new bot's settings show Manage Tupies and Routines on, Terminal/Browser/Coding off.
+- Real model behavior (that a live model chooses these tools for plain requests) is not yet observed.
+
 ## Pearl glass activity flow (29 October 2026, deployed shared UI)
 
 - **Exact operational snapshot:** **932/932 full tests and 100 syntax checks on official Node 22.23.4**. This derives from immutable notification-only v10 with only `public/thinking-waves.js` and `.css` as production changes plus the renderer test update. It excludes the broader working checkout's unrelated changes.
