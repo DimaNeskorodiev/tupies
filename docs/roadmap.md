@@ -2,9 +2,9 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
-## Manage Tupies from chat (29 October 2026)
+## Manage Tupies from chat (29 October 2026, deployed)
 
-Implemented: bots create routines, bots and skill assignments from chat after exact approval, with readable approval summaries and a one-time upgrade that gives bots on the old default tool set Routines and Manage Tupies. See [capabilities](capabilities.md). Next: confirm in real use that the owner's bots pick these tools for plain requests. Possible later steps: an owner-controlled option to skip approval for low-risk setup in the owner's own chat, model/provider choice in `bots_create`, and room creation.
+Implemented and deployed to both engines: bots create routines, bots and skill assignments from chat after exact approval, with readable approval summaries and a one-time upgrade that gives bots on the old default tool set Routines and Manage Tupies. See [capabilities](capabilities.md). Next: confirm in real use that the owner's bots pick these tools for plain requests. Possible later steps: an owner-controlled option to skip approval for low-risk setup in the owner's own chat, model/provider choice in `bots_create`, and room creation.
 
 ## Pearl glass activity flow (29 October 2026, deployed shared UI)
 

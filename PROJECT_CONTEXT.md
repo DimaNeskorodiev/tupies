@@ -10,6 +10,7 @@ The owner asked for Tupies to set itself up from the conversation: “Create a r
 - Every change keeps exact approval. Approval cards and the Dashboard show a plain summary (“Schedule “Bitcoin price”: Every 10 minutes”) above the exact arguments. A bot cannot change its own settings, enable Terminal/Browser/Coding, assign integrations or loosen an approval policy. Bot creation and edits use the server's bot validation and idle checks. A chat whose task finishes refreshes workspace state, so a bot created from chat appears in the sidebar at once.
 - The system prompt now tells a bot to call these tools instead of describing Settings steps, and says plainly when Routines or Manage Tupies is off for it.
 - One-time store upgrade (`toolGroupsVersion` 2): bots still on an earlier exact default tool set get Routines and Manage Tupies; any other selection, including later owner changes, is kept.
+- Deployed with the owner's approval on 29 October 2026 (21:04–21:07 CET) to Home (v10 + activity glass + this change) and the Mac (adds local coding), each only this change on top of what it ran, with complete stopped backups and verified identity, vault, journal and configuration. The owner's four visible bots now have Routines and Manage Tupies on both engines. Paths, backups and rollback are in ignored `docs/local-workspace.md`.
 
 
 ## Pearl glass activity flow (29 October 2026, deployed shared UI)
