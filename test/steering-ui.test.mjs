@@ -17,7 +17,7 @@ function fixture(t,{steer=async()=>({accepted:true,update:{status:'queued'}})}={
 }
 
 test('direction is explicit for active owner chats; normal Send stays disabled and prompts/limits block direction',async t=>{
-  const h=fixture(t);await tick();assert.equal(h.query('[data-action="send-direction"]').hidden,false);assert.equal(h.query('#message-form .send').disabled,true);assert.equal(h.query('.direction-hint'),null);assert.match(h.query('[data-action="send-direction"]').title,/Files stay for the next message/);
+  const h=fixture(t);await tick();assert.equal(h.query('[data-action="send-direction"]').hidden,false);assert.equal(h.query('#message-form .send').disabled,true);assert.equal(h.query('[data-action="send-direction"]').textContent,'Update task');assert.equal(h.query('.direction-hint').hidden,false);assert.match(h.query('.direction-hint').textContent,/current task/);assert.match(h.query('[data-action="send-direction"]').title,/Files stay for your next message/);
   for(const status of ['waiting_for_approval','waiting_for_input','stopping']){h.thread.run.status=status;await h.run("loadChat('bot_atlas')");assert.equal(h.query('[data-action="send-direction"]').disabled,true);}
   h.thread.run.status='running';h.thread.run.steering={updates:Array.from({length:8},()=>({status:'applied'})),bytes:100};await h.run("loadChat('bot_atlas')");assert.equal(h.query('[data-action="send-direction"]').disabled,true);assert.match(h.query('[data-action="send-direction"]').title,/limit/);
   h.thread.run.source='routine';await h.run("loadChat('bot_atlas')");assert.equal(h.query('[data-action="send-direction"]').hidden,true);
@@ -26,9 +26,9 @@ test('direction is explicit for active owner chats; normal Send stays disabled a
 
 test('guidance sends original exact run IDs and text only, preserves attachments and shows queued/applied/cancelled honestly',async t=>{
   const h=fixture(t,{steer:async body=>{h.thread.messages=[{id:'direction_message',runId:body.runId,role:'user',kind:'steer',steerStatus:'queued',content:body.text}];return {accepted:true,update:{status:'queued'}};}});await tick();h.run("composerAttachments.set('bot_atlas',[{path:'fixture.txt',name:'fixture.txt'}])");await h.send('Use three concise bullets.');
-  const request=h.requests.find(item=>item.route.endsWith('/steer'));assert.deepEqual(Object.keys(request.options.body).sort(),['clientUpdateId','remoteRunId','runId','text']);assert.equal(request.options.body.runId,'run_original');assert.equal(request.options.body.remoteRunId,'remote_original');assert.equal(h.query('#message-input').value,'');assert.equal(h.run("composerAttachments.get('bot_atlas').length"),1);assert.match(h.query('.direction-status').textContent,/queued/);assert.equal(h.query('.direction-result').textContent,'Direction queued.');
+  const request=h.requests.find(item=>item.route.endsWith('/steer'));assert.deepEqual(Object.keys(request.options.body).sort(),['clientUpdateId','remoteRunId','runId','text']);assert.equal(request.options.body.runId,'run_original');assert.equal(request.options.body.remoteRunId,'remote_original');assert.equal(h.query('#message-input').value,'');assert.equal(h.run("composerAttachments.get('bot_atlas').length"),1);assert.match(h.query('.direction-status').textContent,/queued/);assert.equal(h.query('.direction-result').textContent,'Update queued for this task.');
   h.thread.messages[0].steerStatus='applied';await h.run("loadChat('bot_atlas')");assert.equal(h.query('.direction-status').textContent,'Added to task');
-  h.thread.messages[0].steerStatus='cancelled';h.thread.messages[0].steerNotice='<img src=x onerror=alert(1)> stopped';await h.run("loadChat('bot_atlas')");assert.equal(h.query('.direction-status').textContent,'Direction cancelled');assert.equal(h.query('.direction-message-notice img'),null);assert.match(h.query('.direction-message-notice').textContent,/<img/);
+  h.thread.messages[0].steerStatus='cancelled';h.thread.messages[0].steerNotice='<img src=x onerror=alert(1)> stopped';await h.run("loadChat('bot_atlas')");assert.equal(h.query('.direction-status').textContent,'Update cancelled');assert.equal(h.query('.direction-message-notice img'),null);assert.match(h.query('.direction-message-notice').textContent,/<img/);
   assert.equal(h.requests.filter(item=>item.options.method==='POST').length,1,'No second task is started.');
 });
 
@@ -53,4 +53,26 @@ test('logout, navigation and a newer run invalidate pending direction without cl
 
 test('empty, oversized and multibyte-overflow guidance is refused locally with no request or draft loss',async t=>{
   const h=fixture(t);await tick();for(const text of ['   ','x'.repeat(4001),'界'.repeat(3000)]){await h.send(text);assert.equal(h.query('#message-input').value,text);assert.match(h.query('.direction-result').textContent,/4000 characters and 8 KB/);}assert.equal(h.requests.some(item=>item.route.endsWith('/steer')),false);
+});
+
+
+test('Enter submits the visible task update once, preserves Shift+Enter and IME, and blocks while sending',async t=>{
+  const pending=defer(),h=fixture(t,{steer:()=>pending.promise});await tick();
+  const field=h.query('#message-input'),button=h.query('[data-action="send-direction"]');field.value='Use a short summary.';
+  const press=options=>field.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true,...options}));
+  press({shiftKey:true});press({isComposing:true});assert.equal(h.requests.filter(item=>item.route.endsWith('/steer')).length,0);
+  press({});await tick();assert.equal(button.textContent,'Sending…');assert.equal(button.disabled,true);
+  press({});await tick();assert.equal(h.requests.filter(item=>item.route.endsWith('/steer')).length,1);
+  pending.resolve({accepted:true,update:{status:'queued'}});await tick();assert.equal(field.value,'');assert.equal(button.textContent,'Update task');
+  h.thread.run.status='waiting_for_input';await h.run("loadChat('bot_atlas')");field.value='Wait for my answer';press({});await tick();
+  assert.match(h.query('.direction-hint').textContent,/Answer the question/);assert.equal(h.requests.filter(item=>item.route.endsWith('/steer')).length,1);
+  h.thread.run.status='stopping';await h.run("loadChat('bot_atlas')");assert.match(h.query('.direction-hint').textContent,/task is stopping/);
+  h.thread.run.status='completed';await h.run("loadChat('bot_atlas')");assert.equal(h.query('.direction-hint').hidden,true);assert.equal(field.placeholder,'Message Atlas…');
+});
+
+test('a task that starts waiting while an update is sent keeps its update button disabled',async t=>{
+  const pending=defer(),h=fixture(t,{steer:()=>pending.promise});await tick();const sending=h.send('Use a short summary.');await tick();
+  h.thread.run.status='waiting_for_approval';await h.run("loadChat('bot_atlas')");
+  pending.resolve({accepted:true,update:{status:'queued'}});await sending;await tick();
+  assert.equal(h.query('[data-action="send-direction"]').disabled,true);
 });

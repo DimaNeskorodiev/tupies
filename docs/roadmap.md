@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Chat composer follow-up (29 October 2026, source only)
+
+Implemented: dismiss the phone/touch keyboard after confirmed message/task-update receipt, retain focus for failures and newer drafts, and replace **Add direction** with an explained **Update task** action and a full-width phone text field. Keyboard shortcuts follow the visible action. See [chat controls](chat-controls.md) and [verification](verification.md). Remaining: physical iPhone keyboard acceptance and separately authorized deployment to operational engines/apps.
+
 ## Skills catalog (29 October 2026, source only)
 
 Implemented in mutable source: Skills is the first Settings item, ahead of Models. Its default Installed library has search/category/assignment filters, per-skill **Assign to bots** sheets with immediately saved per-bot changes, and **Files & options** for inspection, copy, portable export and confirmed removal. Catalog and skill Settings remain adjacent tabs, with per-bot Ask/Trusted installation preferences and Strict review preserved. The catalog contains sixteen reviewed offline playbooks (ten original workflows and six attributed [Grok Bot public-profile adaptations](grok-bot-skills.md)); a common inspected SKILL.md/folder/ZIP/HTTPS/GitHub import pipeline; Grok Bot/OpenBot exported skill folders; conservative Hermes requirements diagnostics; immutable versions, explicit per-bot catalog rollback and sync integrity gates; and bounded `skills_search`/`skills_inspect`/`skills_install`. Tool permissions and installation defaults are unchanged. See [skills](skills.md) and [verification](verification.md). Operational engines and installed apps remain separate deployment work.

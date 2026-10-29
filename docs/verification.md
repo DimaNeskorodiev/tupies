@@ -1,5 +1,14 @@
 # Verification — Tupies Engine 0.5
 
+
+## Chat keyboard dismissal and task-update clarity (29 October 2026, isolated source)
+
+- **1037/1037** full regressions pass on **Node 22.23.1** with four concurrent test files; **106** modules pass syntax checks. Six added regressions cover successful bot/room focus handling, failure/new-draft/navigation/session focus protection, tablet touch focus, uncancelled touch pointer events, active-task Enter routing and a task becoming blocked during an update. Existing draft, exact run identity, attachment, IME and cancellation checks remain intact.
+- Actual disposable **Chromium and WebKit**, each at **375×812** and **1280×900**, verify successful bot/room sends, failed sends with retained draft/focus, newer text typed before a delayed receipt, task updates using the visible action’s shortcut, one update request without starting another task, retained selected attachments, a minimum **44px** update button and no horizontal overflow or application script errors. Attachments are selected before a task starts in another tab; the existing engine refusal to upload during active work remains intact.
+- Additional actual WebKit **touch taps** at **320×1000** and **820×1000** reproduce the earlier swallowed-tap behavior, then verify the fix: preserving focus only on `mousedown` leaves the native touch-generated click intact. Send and Update task both reach the engine and release focus after receipt; a rejected update retains its draft/focus, with a 44px-or-larger action and no overflow. The final targeted chat/mobile suites pass **44/44**.
+- An initial full-suite run used symlinked dependencies and failed document/image worker checks because their filesystem allowlist requires checkout-local dependency paths. A local dependency copy fixes the test setup; the final complete run above passes. Browser acceptance uses disposable account/provider/store fixtures only. It establishes focus and layout behavior, not a physical iPhone/iPad software-keyboard animation, dictation accuracy or live-model quality.
+- The **23-page guide** is rebuilt and `git diff --check` passes. These source changes do not deploy engines, replace signed apps or modify profiles/pairings.
+
 ## Search and rich-chat PR conflict resolution (29 October 2026)
 
 - PR #7 is validated with `main` at `351e1d5`, after merging Skills PR #6 and notification PR #5. Only additive documentation and the generated guide conflicted; both sides' feature history and the latest operational deployment record are retained. Application code merges without manual changes.
