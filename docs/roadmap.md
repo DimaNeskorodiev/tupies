@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Chat composer follow-up (29 October 2026, source only)
+
+Implemented: dismiss the phone/touch keyboard after confirmed message/task-update receipt, retain focus for failures and newer drafts, and replace **Add direction** with an explained **Update task** action and a full-width phone text field. Keyboard shortcuts follow the visible action. See [chat controls](chat-controls.md) and [verification](verification.md). Remaining: physical iPhone keyboard acceptance and separately authorized deployment to operational engines/apps.
+
 ## Compact sidebar (29 October 2026, source only)
 
 Implemented: **My Tupies** replaces the desktop roster's Team label, with a smaller brand area, tighter navigation/section spacing and compact bot rows. The roster uses remaining vertical space and scrolls above fixed Settings. One blue dot marks an unread final bot reply; availability dots are removed. Existing attended read receipts clear the exact reply, with durable latest-read metadata and background updates that retain drafts/focus/scroll. Browser checks cover the desktop layout and retained phone navigation; evidence is in [verification](verification.md). Operational deployment and physical-device acceptance remain separate.

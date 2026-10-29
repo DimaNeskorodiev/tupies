@@ -10,10 +10,10 @@ const appSource=(await readFile(new URL('../public/app.js',import.meta.url),'utf
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const composerMarkup=(id='bot_one',room=false)=>`<button class="chat-back" type="button">Back</button><div class="chat-thread"></div><form class="chat-composer" id="${room?'room-message-form':'message-form'}" data-id="${id}"><textarea id="${room?'room-message-input':'message-input'}" name="text"></textarea><button class="send" type="submit">Send</button></form>`;
 
-function harness({phone=true,reduced=false,app=false}={}) {
+function harness({phone=true,touch=phone,reduced=false,app=false}={}) {
   const dom=new JSDOM('<div id="app"><main id="main-content"></main></div><div id="dialog-root"></div><div id="toasts"></div>',{url:'https://studio.test/#/bot/bot_one'});
   const {window}=dom,frames=new Map();let frameId=0,scrollY=0;
-  window.matchMedia=query=>({matches:query.includes('reduced-motion')?reduced:phone,addEventListener(){}});
+  window.matchMedia=query=>({matches:query.includes('reduced-motion')?reduced:query==='(pointer: coarse)'?touch:phone,addEventListener(){}});
   Object.defineProperty(window,'innerHeight',{value:852,writable:true});
   Object.defineProperty(window,'scrollY',{get:()=>scrollY});
   window.scrollTo=(position,y)=>{scrollY=typeof position==='object'?position.top:y;};
@@ -275,4 +275,63 @@ test('resizing to desktop releases the phone composer height without changing it
     h.window.matchMedia=phoneMedia;h.window.dispatchEvent(new h.window.Event('resize'));h.flushFrames();
     assert.notEqual(field.style.height,'');assert.equal(field.value,'Keep this draft across resizing');
   } finally {h.close();}
+});
+
+
+test('confirmed bot and room sends dismiss phone keyboards, but desktop focus stays ready for typing',async()=>{
+  for(const phone of [true,false])for(const room of [false,true]){
+    const h=harness({phone,app:true});let accept;
+    try{
+      h.context.fixtureApi=()=>new Promise(resolve=>{accept=resolve;});
+      h.run("api=fixtureApi;sendMessage=(id,body)=>fixtureApi(`/api/bots/${id}/messages`,{method:'POST',body});loadChat=async()=>{};loadRoomChat=async()=>{};renderThread=()=>{};renderRoomThread=()=>{};refreshComposerAttachments=()=>{};");
+      const field=h.render(room?'room_one':'bot_one',room);field.value='Send this';field.focus();h.event(field,'input');
+      h.event(field.closest('form'),'submit');assert.equal(h.window.document.activeElement,field,'keep focus until confirmed');
+      accept({accepted:true});await tick();assert.equal(field.value,'');
+      assert.equal(h.window.document.activeElement===field,!phone);
+    }finally{h.close();}
+  }
+});
+
+test('a failed send, newer draft, another chat, revisited chat or reset cannot lose keyboard focus to a receipt',async()=>{
+  for(const scenario of ['failure','draft','another','revisit','reset']){
+    const h=harness({app:true});let accept,reject;
+    try{
+      h.context.fixtureApi=()=>new Promise((resolve,fail)=>{accept=resolve;reject=fail;});
+      h.run("api=fixtureApi;sendMessage=(id,body)=>fixtureApi(`/api/bots/${id}/messages`,{method:'POST',body});loadChat=async()=>{};renderThread=()=>{};refreshComposerAttachments=()=>{};");
+      let field=h.render();field.value='First message';field.focus();h.event(field,'input');h.event(field.closest('form'),'submit');
+      if(scenario==='draft'){field.value='Next message';h.event(field,'input');}
+      if(scenario==='another')field=h.render('bot_two');
+      if(scenario==='revisit'){h.render('bot_two');field=h.render();}
+      if(scenario==='reset'){h.mobile.reset();field=h.render();}
+      field.focus();
+      if(scenario==='failure')reject(new Error('Fixture refused'));else accept({accepted:true});
+      await tick();assert.equal(h.window.document.activeElement,field,scenario);
+      if(scenario==='failure')assert.equal(field.value,'First message');
+      if(scenario==='draft')assert.equal(field.value,'Next message');
+    }finally{h.close();}
+  }
+});
+
+
+test('a tablet-size touch composer keeps focus while sending and dismisses it on confirmation',()=>{
+  const h=harness({phone:false,touch:true});
+  try{
+    const field=h.render();field.value='Tablet message';field.focus();
+    const press=h.event(h.query('.send'),'mousedown');assert.equal(press.defaultPrevented,true);
+    h.mobile.sent(field.closest('form'),field.value);assert.notEqual(h.window.document.activeElement,field);
+  }finally{h.close();}
+});
+
+
+test('touch pointerdown is never cancelled on Send or Update task, preserving the WebKit click',()=>{
+  const h=harness();
+  try{
+    const field=h.render();field.focus();const form=field.closest('form');
+    const update=h.window.document.createElement('button');update.className='direction-send';update.type='button';form.append(update);
+    for(const button of [h.query('.send'),update]){
+      assert.equal(h.event(button,'pointerdown',{pointerType:'touch'}).defaultPrevented,false);
+      assert.equal(h.event(button,'mousedown').defaultPrevented,true);
+      assert.equal(h.window.document.activeElement,field);
+    }
+  }finally{h.close();}
 });

@@ -356,11 +356,11 @@ test('the keyboard is detected while a field is focused and released when it hid
     // WKWebView shrinks innerHeight together with the visual viewport.
     h.window.innerHeight=471;await resize(h,{height:471});
     assert.deepEqual(vars(h),['open','471px','0px']);
-    // Pressing Send keeps the keyboard: the press does not move focus off the draft.
-    const press=new h.window.Event('pointerdown',{bubbles:true,cancelable:true});h.query('#message-form .send').dispatchEvent(press);
+    // Pressing Send keeps focus until its receipt; confirmation dismisses the keyboard.
+    const press=new h.window.Event('mousedown',{bubbles:true,cancelable:true});h.query('#message-form .send').dispatchEvent(press);
     assert.equal(press.defaultPrevented,true);
     // Focus leaves while WebKit still reports a 2.17 scale and the keyboard-height viewport.
-    field.blur();await resize(h,{scale:2.17,height:471});
+    h.mobile.sent(field.closest('form'),field.value);await resize(h,{scale:2.17,height:471});
     assert.deepEqual(vars(h),['closed','',''],'nothing is left half-height');
     // Real pinch zoom (narrower visual viewport) still leaves the page geometry alone.
     h.window.innerHeight=844;await resize(h,{scale:1,height:844});field.focus();await resize(h,{height:471});
