@@ -7,6 +7,10 @@ Tupies 0.4.0 can read attached documents, display structured answers and create 
 - “Create an Excel budget with a totals formula, then read it back to check it.”
 - “Show this data as a line chart and save a PDF report.”
 
+## Rich reply appearance
+
+Rich replies use blue and violet surfaces, alternating blue table rows, tinted quotes and violet inline code. Fenced code has a midnight background in both appearances, with cyan function names, mint strings, lilac keywords and warm numeric values. Tables and code scroll within their own cards on small screens. Phone appearance follows the system unless the host requests light or dark; desktop keeps the existing appearance policy. Increased Contrast adds stronger table edges, and Reduce Transparency uses solid reply surfaces. Copy code and rich-content validation are unchanged.
+
 ## Attach files to a task
 
 Use the **+** button beside a bot's message box. Selected files appear as chips; remove a chip to leave that file out of the task. You can send up to five files with a combined size of 20 MB (20,000,000 bytes), with or without a text message. Composer attachments are available in individual bot chats.
