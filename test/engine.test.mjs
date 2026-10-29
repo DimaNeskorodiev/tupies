@@ -15,7 +15,7 @@ const call=(id,name,arguments_)=>({id,name,arguments:arguments_});
 async function fixture(t,complete,options={}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'studio-native-engine-')),store=await new Store(directory).init(),requests=[];
   await store.mutate(state=>{state.connections.push({id:'native-provider',type:'openai',name:'Fixture',model:'test-model',secret:store.seal('fixture-private-key')});for(const bot of state.bots){bot.connectionId='native-provider';bot.tools=['workspace','memory','skills','web','delegation'];bot.collaborators=[];bot.approvalPolicy='strict';}});
-  const engine=new NativeEngine(store,{runTimeout:10_000,providers:{async complete(connection,request){requests.push(request);return complete(request,requests.length,connection);}},...options});
+  const engine=new NativeEngine(store,{runTimeout:10_000,providers:{async complete(connection,request){requests.push(request);return complete(request,requests.length,connection);},...(options.reviewMemory?{reviewMemory:options.reviewMemory}:{})},...options});
   await engine.recover();
   t.after(async()=>{await engine.close();await fs.rm(directory,{recursive:true,force:true});});
   return {store,engine,requests,directory};
@@ -24,7 +24,7 @@ const current=(store,botId='bot_atlas')=>store.state.runs[botId];
 const decision=run=>({runId:run.id,remoteRunId:run.remoteRunId,request_id:run.pending_controls[0].prompt_id,execution_generation:run.execution_generation});
 
 test('independent engine runs its own model/tool loop and persists private memory/history',async t=>{
-  const {engine,store,requests}=await fixture(t,async request=>request.messages.at(-1).role==='user' ? {text:'',toolCalls:[call('remember','memory_set',{key:'preferred-format',value:'Short plain paragraphs.'})],providerItems:[{type:'reasoning',id:'reasoning-fixture',summary:[]}]} : {text:'I remembered your writing preference.',toolCalls:[],usage:{input_tokens:10,output_tokens:8}});
+  const {engine,store,requests}=await fixture(t,async request=>request.messages.at(-1).role==='user' ? {text:'',toolCalls:[call('remember','memory_set',{key:'preferred-format',value:'Short plain paragraphs.'})],providerItems:[{type:'reasoning',id:'reasoning-fixture',summary:[]}]} : {text:'I remembered your writing preference.',toolCalls:[],usage:{input_tokens:10,output_tokens:8}},{reviewMemory:async()=>({toolCalls:[call('review','memory_review_result',{changes:[],claims:[{text:'I remembered your writing preference.',key:'preferred-format',value:'Short plain paragraphs.'}],reason:'Already saved.'})]})});
   const run=await engine.start('bot_atlas','Remember my writing preference.');
   await waitFor(()=>current(store)?.status==='completed');
   assert.equal(current(store).engine,'studio-native');assert.equal(current(store).remoteRunId,run.id);

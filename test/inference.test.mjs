@@ -12,6 +12,8 @@ const answer=text=>({id:'response-inference-fixture',status:'completed',output:[
 const toolResult=()=>({id:'response-inference-tool',status:'completed',output:[{type:'function_call',call_id:'inference-memory',name:'memory_search',arguments:'{"query":""}'}]});
 const reasoningModel=(id,efforts=['low','medium','high'])=>({id,name:`Fixture ${id}`,supported_reasoning_levels:efforts.map(effort=>({effort,description:`Fixture ${effort}`})),default_reasoning_level:efforts[0]});
 const gate=()=>{let release;const promise=new Promise(resolve=>{release=resolve;});return {promise,release};};
+const isReview=body=>(body?.tools || []).some(tool=>tool.name==='memory_review_result' || tool.function?.name==='memory_review_result' || tool.tools?.some(item=>item.name==='memory_review_result'));
+const emptyReview={changes:[],claims:[],reason:'No durable fixture facts.'};
 async function until(read,timeout=5000){const end=Date.now()+timeout;while(Date.now()<end){const value=read();if(value)return value;await new Promise(resolve=>setTimeout(resolve,5));}throw new Error('Inference fixture timed out.');}
 
 async function fixture(t,options={}){
@@ -28,6 +30,10 @@ async function fixture(t,options={}){
         res.writeHead(remote.modelStatus);res.end(JSON.stringify(remote.models));return;
       }
       if(['/v1/responses','/v1/chat/completions','/v1/messages'].includes(req.url)){
+        if(isReview(body)) {
+          const result=req.url==='/v1/responses'?{status:'completed',output:[{type:'function_call',call_id:'fixture-review',name:'memory_review_result',arguments:JSON.stringify(emptyReview)}]}:req.url==='/v1/messages'?{content:[{type:'tool_use',id:'fixture-review',name:'memory_review_result',input:emptyReview}],stop_reason:'tool_use'}:{choices:[{message:{role:'assistant',tool_calls:[{id:'fixture-review',type:'function',function:{name:'memory_review_result',arguments:JSON.stringify(emptyReview)}}]},finish_reason:'tool_calls'}]};
+          res.end(JSON.stringify(result));return;
+        }
         const result=await remote.handler(body,req.url,remote);res.end(JSON.stringify(result));return;
       }
       res.writeHead(404);res.end(JSON.stringify({error:{message:'Unknown fixture endpoint'}}));
@@ -49,9 +55,21 @@ async function fixture(t,options={}){
   return {app,directory,remote,request,connect,provider};
 }
 const inference='/api/bots/bot_atlas/inference';
-const modelRequests=remote=>remote.requests.filter(request=>request.method==='POST');
+const modelRequests=remote=>remote.requests.filter(request=>request.method==='POST' && !isReview(request.body));
 const savedBot=f=>f.app.store.state.bots.find(bot=>bot.id==='bot_atlas');
 async function waitRun(f,run){await until(()=>['completed','failed','cancelled','interrupted'].includes(f.app.store.state.runs.bot_atlas?.status));return f.app.store.state.runs.bot_atlas;}
+
+test('automatic memory review uses real provider adapters with isolated bounded context across protocols',async t=>{
+  for(const type of ['openai','anthropic','custom'])await t.test(type,async t=>{
+    const f=await fixture(t);await f.connect(type);
+    f.remote.handler=()=>type==='anthropic'?{content:[{type:'text',text:'Hello, fixture owner.'}],stop_reason:'end_turn'}:type==='custom'?{choices:[{message:{role:'assistant',content:'Hello, fixture owner.'},finish_reason:'stop'}]}:answer('Hello, fixture owner.');
+    await f.app.store.mutate(state=>{state.messages.bot_atlas=[{id:'old_private_fixture',role:'user',runId:'old_run',sessionId:'bot_atlas--telegram-private',content:'PRIVATE-REVIEW-CANARY'}];});
+    const response=await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text:'My name is Fixture.'}});assert.equal(response.status,202);
+    const finished=await waitRun(f,response.body.run);assert.equal(finished.status,'completed');assert.equal(finished.memoryReview.status,'reviewed');
+    const review=f.remote.requests.find(request=>isReview(request.body));assert.ok(review);assert.ok(!JSON.stringify(review.body).includes('PRIVATE-REVIEW-CANARY'));
+    assert.equal(review.body.max_output_tokens ?? review.body.max_tokens,1536);assert.equal(review.body.model,'reasoning-a');assert.equal(modelRequests(f.remote).length,1);
+  });
+});
 
 test('inference catalog exposes only explicit safe reasoning metadata and never infers model-name capabilities',async t=>{
   const f=await fixture(t);await f.connect();

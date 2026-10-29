@@ -15,15 +15,21 @@ const provider = http.createServer(async (req,res) => {
   if (req.url !== '/v1/responses') {res.writeHead(404);return res.end('{}');}
   try {
     const chunks=[]; for await (const chunk of req) chunks.push(chunk);
-    const input=JSON.parse(Buffer.concat(chunks).toString()).input || [];
+    const body=JSON.parse(Buffer.concat(chunks).toString()),input=body.input || [];
+    if((body.tools || []).some(tool=>tool.name==='memory_review_result')) {
+      const review=JSON.parse(input.find(item=>item.role==='user').content),matches=/E2E memory/i.test(review.ownerMessage),saved='I have saved your name to long-term memory.';
+      return res.end(JSON.stringify(call('memory_review_result',{changes:matches && !review.facts.some(fact=>fact.key==='qa-name')?[{key:'qa-name',value:'Owner name is Cedar.',evidence:'My name is Cedar.'}]:[],claims:review.assistantAnswer.includes(saved)?[{text:saved,key:'qa-name',value:'Owner name is Cedar.'}]:[],reason:'The owner stated a durable name in this synthetic fixture.'})));
+    }
     const text=item=>typeof item.content==='string'?item.content:(item.content || []).map(part=>part.text || '').join('\n');
     const taskIndex=input.findLastIndex(item=>item.role==='user' && /E2E /i.test(text(item)) && !text(item).includes('<turn_context>'));
     const task=taskIndex<0?'':text(input[taskIndex]);
     const results=input.slice(taskIndex+1).filter(item=>item.type==='function_call_output');
     const guidance=input.slice(taskIndex+1).filter(item=>item.role==='user' && text(item).startsWith('Additional owner guidance for this same task:')).map(text).join('\n');
     let result;
-    if (/E2E fail/i.test(task)) {res.writeHead(503);return res.end(JSON.stringify({error:{message:'Deliberate QA provider outage.'}}));}
-    if (/E2E steer/i.test(task)) {
+    if (/E2E memory/i.test(task)) result=answer('I have saved your name to long-term memory.');
+    else if (/E2E recall/i.test(task)) result=answer(body.instructions.includes('Owner name is Cedar.')?'Your stored name is Cedar.':'No Cedar name fact is present in core memory.');
+    else if (/E2E fail/i.test(task)) {res.writeHead(503);return res.end(JSON.stringify({error:{message:'Deliberate QA provider outage.'}}));}
+    else if (/E2E steer/i.test(task)) {
       if(!guidance){await new Promise(resolve=>{const timer=setTimeout(resolve,15000);res.on('close',()=>{clearTimeout(timer);resolve();});});if(res.destroyed)return;}
       result=answer(guidance?`QA additional guidance applied to the same task.\n\n${guidance.split('\n\n')[0]}`:'The initial fixture response finished before any guidance.');
     }
@@ -67,4 +73,4 @@ for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>close().then(()=>
 process.on('SIGUSR1',()=>{fault=fault==='http'?'':'http';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGUSR2',()=>{fault=fault==='connection'?'':'connection';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGALRM',()=>{dropNextSubmission=true;console.log('QA transport: next accepted message acknowledgement will be dropped');});
-console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail']}));
+console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail']}));
