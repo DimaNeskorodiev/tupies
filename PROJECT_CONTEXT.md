@@ -2,6 +2,10 @@
 
 Last updated: 28 October 2026. Current application version: 0.5.0.
 
+## Tupies mascot branding (28 October 2026, deployed)
+
+The owner's cream cushion avatar now replaces the letter T across web and Apple branding: app icons, browser favicons/Apple touch icon, web loading/sign-in/sidebar/system-message marks and native onboarding/connection/pairing screens. The transparent master is `assets/brand/tupies-avatar.png`; `npm run brand:build` reproduces every export, including the native `TupiesAvatar` imageset. Graphite is the default icon background, with Pearl and Sky alternatives. The [brand source notes](assets/brand/README.md) retain the exact built-in ImageGen prompt. Existing bot companion selections and installation identities remain unchanged. The owner requested a commit/PR followed by installation: PR #2 contains the isolated branding change, both engines now serve the exact static branding exports without a restart, and the Mac/iPhone apps were updated in place with their compatible build-3 identity and pairings retained. Verification is in `docs/verification.md`; unrelated later engine/native migration work remains separate.
+
 ## iPhone polish, name check and full Tupies release (28 October 2026)
 
 The owner asked to make sure the Tupies name is used everywhere and to polish the mobile app to Apple standards: native gestures, animation, effects and UI. The owner then approved deploying **everything in the checkout** to both engines at 14:22 UTC: the rename, the pearl redesign, the 24 companions, this polish and the push-notification engine code, which stays inactive until an APNs key is configured. The owner also approved installing the apps. The iPhone 15 Pro now runs **Tupies 0.5.0 (3)** without the push entitlement, and `/Applications/Tupies.app` (build 3) replaces `Hermes Studio.app`. Release, backups and rollback are in `docs/local-workspace.md`.
@@ -22,7 +26,7 @@ The owner asked to make sure the Tupies name is used everywhere and to polish th
 
 ## Tupies name and repository preparation (28 October 2026)
 
-The owner renamed the product from Hermes Studio to **Tupies** and requested a new private GitHub repository. Package metadata, current product copy, document authorship, web marks, Apple app display/product names and the Xcode project/scheme use Tupies. The native sources are in `apps/apple/Tupies/`; open `apps/apple/Tupies.xcodeproj` with scheme `Tupies`. `assets/brand/tupies-mark.svg` and `npm run brand:build` reproduce the web mark and native icons.
+The owner renamed the product from Hermes Studio to **Tupies** and requested a new private GitHub repository. Package metadata, current product copy, document authorship, web marks, Apple app display/product names and the Xcode project/scheme use Tupies. The native sources are in `apps/apple/Tupies/`; open `apps/apple/Tupies.xcodeproj` with scheme `Tupies`. The later mascot branding uses `assets/brand/tupies-avatar.png` and `npm run brand:build` to reproduce the web mark and native icons.
 
 This is a source rename, not a live deployment or data migration. The existing checkout folder, local engine discovery path, installed Apple bundle/Keychain identities, web bridge, session cookie, pairing scheme, signature/key-derivation namespaces, engine wire identity and Docker data-volume name remain compatible. See `docs/development.md`. Historical design images and exact generation prompts retain their original provenance; machine-specific manifest paths are portable. Operational data, secrets, dependencies and local deployment notes remain excluded from Git.
 

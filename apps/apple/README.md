@@ -12,6 +12,8 @@ The app adds what a browser tab can't:
 
 The app loads the engine's web UI in a `WKWebView` after signing in with a single-use device ticket.
 
+**Mascot branding (28 October 2026, installed).** App icons and native onboarding/connection/pairing marks share the cream Tupies avatar. Run `npm run brand:build` at the repository root to regenerate `AppIcon.appiconset` and `TupiesAvatar.imageset` from `assets/brand/tupies-avatar.png`. The iOS icon has no alpha channel; macOS icons have transparent margins around a rounded Graphite tile. Pearl and Sky alternatives and the exact built-in ImageGen prompt are in the [brand source notes](../../assets/brand/README.md). The owner-requested signed branding refresh was installed in place on Mac and iPhone after PR #2 opened. It retains native 0.5.0 (3), the existing bundle/signing identity and pairings, and no push entitlement. Mac icon/resource hashes and both engine views were verified; iPhone installation/relaunch succeeded, while physical Home Screen appearance was not observed. This compatible branding release is separate from later native protocol changes.
+
 **iPhone navigation.** The web UI's phone layout is the iPhone app's interface: a floating tab bar (Dashboard, Bots, Team rooms, Routines), Settings in the top-right corner, and chats whose title switches bots. A small bridge connects it to the app:
 
 - At document start the app's script sets `<html data-studio-app="ios">` (`"macos"` on the Mac).
@@ -91,7 +93,7 @@ apps/apple/
 │   ├── Services/                 # PairingLink, SigningMessages, DeviceKeyStore, Keychain,
 │   │                             # EngineClient, ConnectionStore, LocalEngine (macOS)
 │   ├── Views/                    # Onboarding, Pairing, Main (switcher/sync), Settings, Web
-│   └── Assets.xcassets           # app icon (generated from the web favicon mark), accent color, launch background
+│   └── Assets.xcassets           # mascot app icon + TupiesAvatar mark, accent color, launch background
 ├── Config/                       # Info.plist (URL scheme, ATS) and macOS entitlements (not compiled)
 └── Tests/                        # standalone logic checks (see below)
 ```
