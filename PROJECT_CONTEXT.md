@@ -2,6 +2,14 @@
 
 Last updated: 29 October 2026. Current application version: 0.5.0.
 
+## Rich chat palette (29 October 2026, source only)
+
+Rich replies now use blue/violet surfaces and table headers, opaque alternating blue rows, tinted quotes/inline code and midnight code panels with cyan, mint and lilac highlighting. The shared `public/rich-chat.css` owns these presentation colors across desktop, phones and rich previews; duplicated phone-only syntax colors were removed from `pearl.css`. Appearance selection, contained scrolling, Copy code, sanitization and permissions keep their existing behavior. Increased Contrast and Reduce Transparency have dedicated treatments. See [rich chat](docs/rich-chat.md) and [verification](docs/verification.md). Mutable source/guide changes do not update operational engines or signed apps. The isolated search/rich-chat PR source passes **940/940** regressions on official **Node 22.23.4**, **99** syntax checks and exact-source desktop/375px browser acceptance; its **21-page guide** excludes unrelated shared-checkout feature work.
+
+## Unified sidebar search (29 October 2026, source only)
+
+The desktop sidebar has one rounded **Search** field. Typing retains local name filtering; Enter, the field's arrow button and Cmd/Ctrl+K open saved-message search with the same query. The separate **Search conversations** sidebar row is removed. Phone header search and scoped conversation-menu search remain available, with exact-message navigation and page-session drafts preserved. See [chat controls](docs/chat-controls.md) and [verification](docs/verification.md). This changes mutable source and the rebuilt guide; operational engines and installed apps require a separate update.
+
 ## Memory reliability follow-up (29 October 2026, source only)
 
 An owner-reported audit confirmed that durable memory is persisted and supplied to later requests, but a plain personal fact could be acknowledged without a write or Learning proposal. Current source adds a separate bounded post-answer owner-chat review (`lib/memory-review.mjs`) using the run's original provider/model/reasoning snapshot. It can only propose up to three source-linked core facts through existing Learning validation; it cannot execute tools, directly save inferred facts, delete, pin or extend permissions. It observes applied owner guidance, deduplicates pending/current facts and retains Strict review, rejection cooldown, exact revisions, source isolation, Stop and restart boundaries. One additional inference is bounded to 12 seconds/1536 requested output tokens, with at most one further attempt after intervening owner guidance; failed review remains explicitly unavailable.

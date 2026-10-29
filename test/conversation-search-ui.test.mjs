@@ -26,13 +26,15 @@ function fixture(t,{search=async()=>reply([result()]),phone=false}={}) {
   t.after(()=>win.close());return {win,doc,query,run,requests,scrolls,submit};
 }
 
-test('desktop has an explicit search entry; Cmd/Ctrl K and workspace Enter open it without losing the workspace filter or current draft',async t=>{
-  const h=fixture(t);await tick();assert.match(h.query('.sidebar-conversation-search').textContent,/Search conversations/);
+test('one sidebar search keeps name filtering and shares its query with message search through submit or Cmd/Ctrl K without losing drafts',async t=>{
+  const h=fixture(t);await tick();assert.equal(h.doc.querySelectorAll('.sidebar .searchbox').length,1);assert.equal(h.query('.sidebar-conversation-search'),null);assert.equal(h.query('#workspace-search').placeholder,'Search');
   const draft=h.query('#message-input');draft.value='Keep my unsent draft';
   for(const modifier of ['metaKey','ctrlKey']){h.doc.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'k',[modifier]:true,bubbles:true,cancelable:true}));assert.equal(h.doc.activeElement.id,'conversation-search-query');h.run('closeDialog()');}
   const filter=h.query('#workspace-search');filter.value='Atlas';filter.dispatchEvent(new h.win.Event('input',{bubbles:true}));assert.equal(h.run('search'),'Atlas');assert.equal(h.query('[data-nav="/bot/bot_nova"]').hidden,true);
-  filter.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));await tick();
+  h.query('.workspace-search-submit').click();await tick();
   assert.equal(h.query('#conversation-search-query').value,'Atlas');assert.equal(h.run('search'),'Atlas');assert.equal(h.query('#message-input'),draft);assert.equal(draft.value,'Keep my unsent draft');assert.equal(h.requests.filter(item=>item.route.startsWith('/api/conversations/search?')).length,1);
+  for(const modifier of ['metaKey','ctrlKey']){h.run('closeDialog()');h.doc.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'k',[modifier]:true,bubbles:true,cancelable:true}));await tick();assert.equal(h.query('#conversation-search-query').value,'Atlas');assert.equal(h.doc.activeElement.id,'conversation-search-query');}
+  assert.equal(draft.value,'Keep my unsent draft');assert.equal(h.requests.filter(item=>item.route.startsWith('/api/conversations/search?')).length,3);
 });
 
 test('search escapes names/excerpts, exposes bounded coverage and sends scope without any model operation',async t=>{
