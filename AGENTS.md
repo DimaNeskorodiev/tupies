@@ -26,6 +26,7 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 | Atomic state, sealed credentials, redaction | `lib/store.mjs` |
 | Provider protocols, OAuth, credentialed transport | `lib/providers.mjs`, `lib/oauth.mjs`, `lib/provider-net.mjs` |
 | Tools, memory, workspaces, skills and approved processes | `lib/agent-tools.mjs`; long-term notes in `lib/brain.mjs` |
+| Browser actions, private sign-in handoff and files | `lib/browser.mjs`, `lib/browser-control.mjs`, `lib/browser-files.mjs`, `public/browser-control.js` + `.css`; see `docs/browser.md`. Retained per-bot profiles are engine-local, outside workspace sync. |
 | Documents and bounded worker/archive processing | `lib/documents.mjs`, `lib/document-worker.mjs`, `lib/document-spec.mjs`, `lib/document-zip.mjs` |
 | Rooms, integrations and Telegram | `lib/rooms.mjs`, `lib/integrations.mjs`, `lib/channels.mjs` |
 | Native push delivery | `lib/notifications.mjs` (engine-local registrations, event classification and outbox), `lib/apns.mjs` (operator-configured Apple transport); see `docs/notifications.md` |
