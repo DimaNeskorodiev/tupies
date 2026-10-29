@@ -264,6 +264,12 @@ export async function createStudioServer(options={}) {
           const bot=await store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
           return json(res,bot,201);
         }
+        const browserControlMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/browser\/(view|action|resume)$/);
+        if(browserControlMatch && method==='POST') {
+          const [,botId,action]=browserControlMatch;ensure(store.state.bots.some(bot=>bot.id===botId),404,'Bot not found.');
+          res.setHeader('Cache-Control','no-store');
+          return json(res,await runtime.browserControl[action](botId,await body(req,32_000)));
+        }
         let match=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)(?:\/(messages|run|runs|stop|approval|answer|steer|capabilities|skills|compact))?$/);
         if(match) {
           const [,botId,action]=match,bot=store.state.bots.find(b=>b.id===botId);ensure(bot,404,'Bot not found.');

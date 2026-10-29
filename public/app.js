@@ -135,7 +135,7 @@ function botStatus(bot) {
   if(conn.type==='legacy-hermes')return {text:'Choose a provider',className:''};
   if(conn.status==='error')return {text:'Connection issue',className:'error'};
   const run=botAvatarRun(bot);
-  if(run && !terminal.has(run.status))return run.status==='waiting_for_approval'?{text:'Needs approval',className:'working attention'}:run.status==='waiting_for_input'?{text:'Needs your answer',className:'working attention'}:{text:'Working',className:'working'};
+  if(run && !terminal.has(run.status))return run.status==='waiting_for_approval'?{text:'Needs approval',className:'working attention'}:run.status==='waiting_for_input'?{text:run.pending_controls?.some(item=>item.kind==='browser')?'Needs browser help':'Needs your answer',className:'working attention'}:{text:'Working',className:'working'};
   const elsewhere=bot.id===activeBot&&chat.elsewhere?chat.elsewhere.name:data.sync?.busy?.[bot.id];
   if(elsewhere)return {text:`Working on ${elsewhere}`,className:'working'};
   if((conn.status==='connected' || conn.authenticated===true)&&(bot.model||conn.defaultModel))return {text:'Ready',className:'ready'};
@@ -280,6 +280,8 @@ async function start(){
   }catch(error){if(!current())return;bootPending=false;tellApp({type:'chrome',ownsChrome:false});$('#app').innerHTML=`<main class="loading-screen">${brandMark()}<p>${esc(errorText(error))}</p><button class="secondary-button" data-action="retry">Try again</button></main>`;}
 }
 function renderAuth(){
+  if(document.querySelector('.browser-control-panel'))closeDialog();
+  window.StudioBrowser?.reset();
   bootPending=false;sendSessionGeneration++;window.StudioSkills?.reset();pendingSends.clear();pendingSearchMessage=null;conversationSearchRequest++;conversationRouteResolution=null;
   clearPendingDirections();clearSearchAnchor?.();
   dismissConversationSearch();
@@ -740,6 +742,7 @@ function thinkingMarkup(bot,run,{key,compact=false,phase=thinkingPhase(bot,run),
 function renderThread(bot){
   if(!bot||route().id!==bot.id)return;const container=$('#chat-thread');if(!container)return;
   const nearBottom=container.scrollTop+container.clientHeight>=container.scrollHeight-80,messages=chat.messages||[],run=chat.run,timelineOpen=taskDetailsOpen(container,run);
+  window.StudioBrowser?.observeRun(bot.id,run);
   data.runs ||= {};if(run)data.runs[bot.id]=run;else delete data.runs[bot.id];
   const headerStatus=$('.chat-header .status-pill');if(headerStatus)headerStatus.outerHTML=statusPill(bot);const switcherLine=$('.chat-switcher-status');if(switcherLine)switcherLine.outerHTML=switcherStatus(bot);syncBotAvatarMotion(bot);
   let html=messages.length?messages.map(m=>messageMarkup(m,bot,'thread-'+messageKey(m))).join(''):chat.loadError?'':`<div class="chat-welcome">${avatar(bot,'large','thread-welcome')}<h2>Say hello to ${esc(bot.name)}</h2><p>${esc(bot.description||'Your next great idea starts with a conversation.')}<br>${bot.connectionId?'What should we work on?':'Connect a model in Settings › Models to get started.'}</p><div class="starter-prompts">${prompts(bot).map(text=>`<button class="starter-prompt" data-action="starter" data-text="${esc(text)}">${icon('chat')}${esc(text)}</button>`).join('')}</div>${!bot.connectionId?`<button class="text-button" data-action="edit-bot" data-id="${esc(bot.id)}">Connect ${esc(bot.name)}${icon('arrow')}</button>`:''}</div>`;
@@ -753,7 +756,7 @@ function renderThread(bot){
       const identity={runId:run.id,remoteRunId:run.remoteRunId||run.id,request_id:requestId,...(Number.isInteger(run.execution_generation)?{execution_generation:run.execution_generation}:{})},canApprove=!!(requestId&&run.id);
       const rawDetail=control?.preview||control?.description||control?.prompt||control?.command||control?.arguments,detail=typeof rawDetail==='string'?rawDetail:rawDetail?JSON.stringify(rawDetail,null,2):'The engine paused before an action. Review the current task details before continuing.';
       html+=`<div class="approval-card"><h3>${icon('shield')} Your approval is needed${control?.tool?` · ${esc(control.tool)}`:''}</h3><p>${esc(detail)}</p><div class="approval-actions"><button class="secondary-button" data-action="approve" data-choice="deny" data-id="${esc(bot.id)}" data-approval="${esc(JSON.stringify(identity))}" ${canApprove?'':'disabled'}>Deny</button><button class="primary-button" data-action="approve" data-choice="once" data-id="${esc(bot.id)}" data-approval="${esc(JSON.stringify(identity))}" ${canApprove?'':'disabled'}>Allow once</button><button class="text-button" data-action="stop-run" data-id="${esc(bot.id)}" data-run="${stopData}">Stop task</button></div></div>`;
-    }else if(run.status==='waiting_for_input')html+=questionCard(bot,run);
+    }else if(run.status==='waiting_for_input')html+=(window.StudioBrowser?.renderCard(bot,run)||questionCard(bot,run));
     else html+=thinkingMarkup(bot,run,{key:run.id,compact:!!partial,prompt:messages.findLast?.(message=>message.role==='user'&&message.runId===run.id&&!message.kind)?.content||'',stop:`<button class="thinking-stop" data-action="stop-run" data-id="${esc(bot.id)}" data-run="${stopData}" ${run.status==='stopping'?'disabled':''}>${icon('stop')}Stop</button>`});
   }else if(run&&terminal.has(run.status)&&run.status!=='completed'){const detail=run.status==='cancelled'?'Task stopped. Any available partial response is shown above.':run.error?.message||run.error||run.message||`This task ${run.status}. Open task details and check the provider settings before trying again.`;html+=`<div class="run-status ${run.status==='cancelled'?'':'run-error'}">${icon('info')}<span>${esc(typeof detail==='string'?detail:JSON.stringify(detail))}</span></div>`;}
   if(run?.pollError)html+=`<div class="run-status run-error">${icon('info')}<span>${esc(run.pollError)}</span></div>`;
@@ -771,6 +774,7 @@ async function loadChat(id,{poll=false}={}){
   catch(error){if(!currentThread())return;chat.loadError=conversationLoadError(error,chat.loaded);renderThread(botById(id));}
 }
 function openDialog(title,body,{wide=false}={}){
+  window.StudioBrowser?.reset();
   if(loginPollTimer){clearInterval(loginPollTimer);loginPollTimer=null;}
   const root=$('#dialog-root');window.StudioRich?.dispose(root);
   root.innerHTML=`<dialog class="modal ${wide?'wide':''}" aria-label="${esc(title)}"><button type="button" class="sheet-grabber" data-action="close-dialog" aria-label="Dismiss sheet"><span></span></button><div class="modal-head"><h2 tabindex="-1" ${phoneLayout()?'autofocus':''}>${esc(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Close dialog">${icon('close')}</button></div><div class="modal-body">${body}</div></dialog>`;
@@ -781,6 +785,7 @@ function openDialog(title,body,{wide=false}={}){
   document.body.classList.add('scroll-lock');
 }
 function closeDialog(){
+  window.StudioBrowser?.reset();
   if(loginPollTimer){clearInterval(loginPollTimer);loginPollTimer=null;}
   const dialog=$('dialog');if(!dialog)return;
   if(window.StudioMobile?.closeSheet(dialog,()=>dialog.close()))return;
@@ -854,7 +859,7 @@ function botDialog(id){
   const bot=botById(id)||{connectionId:data.settings.defaultConnectionId||'',model:''};
   const storedIcon=bot.icon||(id?'':'companion:blue');
   const color=({sage:'mint',lilac:'lavender'}[bot.color]||bot.color)||'slate';
-  const toolGroups=[['workspace','Files','Read and write this bot’s private workspace.'],['memory','Memory','Remember useful facts between conversations.'],['skills','Skills','Read playbooks and save reusable workflows after approval.'],['web','Web','Fetch public pages for research.'],['integrations','Integrations','Use the connected tools selected below.'],['delegation','Bot collaboration','Talk with teammates: ask questions and hand off work.'],['automation','Routines','Create and manage this bot’s recurring work after approval.'],['terminal','Terminal','Run commands only after your approval.'],['browser','Browser',`Read web pages in a real browser: no sign-ins, typing or downloads.${data.browser&&!data.browser.available?' Not available on this engine yet: install Chrome or Chromium.':''}`]];
+  const toolGroups=[['workspace','Files','Read and write this bot’s private workspace.'],['memory','Memory','Remember useful facts between conversations.'],['skills','Skills','Read playbooks and save reusable workflows after approval.'],['web','Web','Fetch public pages for research.'],['integrations','Integrations','Use the connected tools selected below.'],['delegation','Bot collaboration','Talk with teammates: ask questions and hand off work.'],['automation','Routines','Create and manage this bot’s recurring work after approval.'],['terminal','Terminal','Run commands only after your approval.'],['browser','Browser',`Browse, type and fill forms with exact action approval. Take over for sign-in, verification codes and CAPTCHA.${data.browser&&!data.browser.available?' Not available on this engine yet: install Chrome or Chromium.':''}`]];
   const selectedCompanion=window.StudioAvatars?.describe({...bot,icon:storedIcon}).variant||'blue';
   const companionChoices=window.StudioAvatars?.shapes||[{id:'companion:blue',label:'Blue'},{id:'companion:coral',label:'Coral'},{id:'companion:jade',label:'Jade'},{id:'companion:honey',label:'Honey'}];
   const enabledTools=bot.tools||['workspace','memory','skills','web','integrations','delegation','automation'];
@@ -1146,6 +1151,10 @@ document.addEventListener('click',async event=>{
       case 'process-output-more':if(managedOutputView&&managedOutputView.nextOffset!==null)await loadProcessOutput(managedOutputView,managedOutputView.nextOffset,true);break;
       case 'stop-process':el.disabled=true;try{await stopManagedProcess(JSON.parse(el.dataset.process||'{}'));}finally{if(el.isConnected)el.disabled=false;}break;
       case 'stop-run':el.disabled=true;await api(`/api/bots/${encodeURIComponent(id)}/stop`,{method:'POST',body:JSON.parse(el.dataset.run||'{}')});await loadChat(id);toast('Stop requested.');break;
+      case 'browser-handoff':{
+        const generation=sendSessionGeneration,identity=JSON.parse(el.dataset.browserIdentity||'{}');
+        window.StudioBrowser?.open({api,openDialog,closeDialog,loadChat,toast,valid:()=>generation===sendSessionGeneration&&auth?.authenticated&&route().view==='bot'&&route().id===id},id,identity);break;
+      }
       case 'answer-question':case 'skip-question':{
         const card=el.closest('.question-card'),skip=el.dataset.action==='skip-question';
         const answers=skip?null:[...card.querySelectorAll('.question-item')].map(item=>({questionId:item.dataset.questionId,optionIds:[...item.querySelectorAll('input:checked')].map(input=>input.value),text:item.querySelector('.question-text')?.value.trim()||''}));
@@ -1229,7 +1238,7 @@ document.addEventListener('keydown',event=>{
 });
 // A new screen starts at the top; switching tabs inside one screen (a bot profile's sections) keeps the place.
 let screenKey=`${route().view}/${route().id||''}`;
-window.addEventListener('hashchange',()=>{conversationRouteResolution=null;clearSearchAnchor?.();directionNavigationGeneration++;clearPendingDirections();conversationSearchNavigation++;const target=pendingSearchMessage,current=route();if(target&&(target.navigation!==conversationSearchNavigation||target.scope!==current.view||target.id!==current.id))pendingSearchMessage=null;dismissConversationSearch();cleanupSpeech();search='';const next=`${current.view}/${current.id||''}`;if(next!==screenKey){screenKey=next;if(!window.StudioMobile||!phoneLayout())window.scrollTo?.(0,0);}renderApp();});
+window.addEventListener('hashchange',()=>{if(document.querySelector('.browser-control-panel'))closeDialog();window.StudioBrowser?.reset();conversationRouteResolution=null;clearSearchAnchor?.();directionNavigationGeneration++;clearPendingDirections();conversationSearchNavigation++;const target=pendingSearchMessage,current=route();if(target&&(target.navigation!==conversationSearchNavigation||target.scope!==current.view||target.id!==current.id))pendingSearchMessage=null;dismissConversationSearch();cleanupSpeech();search='';const next=`${current.view}/${current.id||''}`;if(next!==screenKey){screenKey=next;if(!window.StudioMobile||!phoneLayout())window.scrollTo?.(0,0);}renderApp();});
 window.addEventListener('scroll',updateTopbarScroll,{passive:true});
 let menuWidth=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth!==menuWidth){menuWidth=window.innerWidth;closeMenu();}});
 window.visualViewport?.addEventListener('resize',()=>$('.menu-layer')?.reposition?.());

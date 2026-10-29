@@ -2,6 +2,12 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Browser use and automatic skill learning (29 October 2026)
+
+The owner requested these as two separate workstreams, starting with browser use. Interactive browser work is implemented in current source: approved typing/forms, tabs, frames, dialogs, bounded uploads/downloads, a live owner handoff for sign-in/2FA/CAPTCHA and optional per-bot sign-in persistence on the executing engine. See [Browser use](browser.md). Operational rollout and real-site/physical-device acceptance remain distinct from source fixture verification. No blanket competitor-equivalence claim is made.
+
+The second workstream is automatic skill learning. Existing skill creation, reviewed updates and model-selected reuse remain in place; the automatic workflow-learning cycle is not implemented by the browser change. Next: review actual completed tool receipts, distinguish verified procedures from hypotheses and failures, propose a deduplicated new skill or exact revision, retrieve relevant accepted skills for later tasks, and measure reuse/improvement across repeat tasks. Keep imported package revisions immutable, source evidence and approval boundaries intact, and human-entered browser secrets out of learned instructions.
+
 ## Skills catalog (29 October 2026, source only)
 
 Implemented in mutable source: Skills is the first Settings item, ahead of Models. Its default Installed library has search/category/assignment filters, per-skill **Assign to bots** sheets with immediately saved per-bot changes, and **Files & options** for inspection, copy, portable export and confirmed removal. Catalog and skill Settings remain adjacent tabs, with per-bot Ask/Trusted installation preferences and Strict review preserved. The catalog contains sixteen reviewed offline playbooks (ten original workflows and six attributed [Grok Bot public-profile adaptations](grok-bot-skills.md)); a common inspected SKILL.md/folder/ZIP/HTTPS/GitHub import pipeline; Grok Bot/OpenBot exported skill folders; conservative Hermes requirements diagnostics; immutable versions, explicit per-bot catalog rollback and sync integrity gates; and bounded `skills_search`/`skills_inspect`/`skills_install`. Tool permissions and installation defaults are unchanged. See [skills](skills.md) and [verification](verification.md). Operational engines and installed apps remain separate deployment work.
