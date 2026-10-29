@@ -20,7 +20,7 @@ const screens={
 };
 const routes={'#/bots':['bots',screens.bots],'#/rooms':['rooms',screens.rooms],'#/bots/bot_nova':['bots',screens.profile,'bot_nova'],'#/bot/bot_nova':['bot',screens.chat,'bot_nova']};
 
-function harness({reduced=false}={}) {
+function harness({reduced=false,manualFrames=false}={}) {
   const dom=new JSDOM('<div id="app"></div><div id="dialog-root"></div><div id="toasts"></div>',{url:'https://studio.test/#/bots',pretendToBeVisual:true});
   const {window}=dom;let scrollY=0;
   window.matchMedia=query=>({matches:query.includes('reduced-motion')?reduced:true,addEventListener(){}});
@@ -30,9 +30,11 @@ function harness({reduced=false}={}) {
   const scrolls=[];window.scrollTo=(position,y)=>{scrollY=typeof position==='object'?position.top:y;scrolls.push(position);};
   // Tabs sit 90px apart so the lens has somewhere to glide.
   Object.defineProperty(window.HTMLElement.prototype,'offsetLeft',{configurable:true,get(){return this.matches('.tab')?[...this.parentElement.querySelectorAll('.tab')].indexOf(this)*90:0;}});
+  const frames=new Map();let frameId=0;
+  if(manualFrames){window.requestAnimationFrame=callback=>{frames.set(++frameId,callback);return frameId;};window.cancelAnimationFrame=id=>frames.delete(id);}
   const animations=[],posted=[],copied=[];
   window.Element.prototype.animate=function(frames,options){
-    let resolve;const record={element:this,frames,options,cancelled:false,finished:new Promise(done=>{resolve=done;})};record.finish=()=>resolve(record);
+    let resolve,reject;const record={element:this,frames,options,cancelled:false,finished:new Promise((done,fail)=>{resolve=done;reject=fail;})};record.finish=()=>resolve(record);record.interrupt=()=>reject(new Error('Animation interrupted'));
     animations.push(record);
     return {finished:record.finished,cancel(){record.cancelled=true;},effect:{getTiming:()=>({duration:options?.duration||0})}};
   };
@@ -56,11 +58,95 @@ function harness({reduced=false}={}) {
   }
   const haptics=()=>posted.filter(message=>message.type==='haptic').map(message=>message.style);
   const settleAll=async()=>{for(const animation of animations)animation.finish();await tick();};
-  return {window,mobile,query,go,touch,animations,haptics,copied,scrolls,settleAll,viewport,setScroll:value=>{scrollY=value;},close:()=>dom.window.close()};
+  const flushFrames=()=>{const pending=[...frames.values()];frames.clear();for(const callback of pending)callback(window.performance.now());};
+  return {window,mobile,query,go,touch,animations,haptics,copied,scrolls,settleAll,viewport,frames,flushFrames,setScroll:value=>{scrollY=value;},close:()=>dom.window.close()};
 }
 // Keyframes come from the page's realm; copy them into plain arrays before comparing.
 const transformOf=frames=>Array.from(frames,frame=>frame.transform);
 const opacityOf=frames=>Array.from(frames,frame=>frame.opacity);
+
+test('an interrupted navigation animation immediately restores the live screen',async()=>{
+  const h=harness();
+  try{
+    h.go('#/bots');h.go('#/bot/bot_nova');
+    h.animations.find(animation=>animation.element===h.query('#app .content')).interrupt();await tick();
+    assert.equal(h.query('.motion-layer'),null);
+    assert.equal(h.query('#app .content').style.willChange,'');
+    assert.equal(h.query('#app .app-shell').style.zIndex,'');
+  }finally{h.close();}
+});
+
+test('backgrounding or rotating during an edge drag restores the screen without navigating',async()=>{
+  for(const event of ['visibilitychange','resize','studio:visible']){
+    const h=harness();
+    try{
+      h.go('#/bots');h.go('#/bot/bot_nova');await h.settleAll();
+      const content=h.query('#app .content');let backs=0;
+      h.query('.chat-back').addEventListener('click',()=>backs++);
+      h.touch(content,'touchstart',5,300,0);h.touch(content,'touchmove',80,302,30);
+      assert.ok(content.style.transform);
+      if(event==='visibilitychange')Object.defineProperty(h.window.document,'hidden',{value:true,configurable:true});
+      (event==='visibilitychange'?h.window.document:h.window).dispatchEvent(new h.window.Event(event));
+      assert.equal(content.style.transform,'',event);
+      assert.equal(h.query('.motion-layer'),null,event);
+      h.touch(content,'touchend',80,302,50);assert.equal(backs,0);
+    }finally{h.close();}
+  }
+});
+
+test('streaming coalesces scroll frames and yields immediately to the owner',async()=>{
+  const h=harness({manualFrames:true});
+  try{
+    h.go('#/bot/bot_nova');const thread=h.query('.chat-thread');let height=1000;
+    Object.defineProperty(thread,'scrollHeight',{get:()=>height});Object.defineProperty(thread,'clientHeight',{value:400});
+    thread.innerHTML='<article class="chat-message">History</article>';thread.scrollTop=600;await tick();h.flushFrames();
+    for(let index=0;index<8;index++){
+      height+=40;const node=h.window.document.createElement('article');node.className='partial-message';thread.append(node);
+      thread.scrollTop=height-400;await tick();
+      assert.equal(h.frames.size,1,'only one scroll frame waits, even when several updates arrive before a repaint');
+      assert.ok(height-thread.clientHeight-thread.scrollTop<=64,'bursts stay inside the renderer’s follow threshold');
+    }
+    thread.dispatchEvent(new h.window.Event('wheel',{bubbles:true}));thread.scrollTop=150;
+    assert.equal(h.frames.size,0,'touch/wheel cancels the scheduled scroll immediately');h.flushFrames();
+    assert.equal(thread.scrollTop,150);
+    height+=40;thread.append(h.window.document.createElement('article'));await tick();h.flushFrames();
+    assert.equal(thread.scrollTop,150,'later updates leave the reading position alone');
+  }finally{h.close();}
+});
+
+test('finishing an old transition cannot remove a newer screen transition',async()=>{
+  const h=harness();
+  try{
+    h.go('#/bots');h.go('#/bot/bot_nova');const old=[...h.animations];
+    h.go('#/bots');const layer=h.query('.motion-layer');assert.ok(layer);
+    for(const animation of old)animation.finish();await tick();
+    assert.equal(h.query('.motion-layer'),layer);
+    await h.settleAll();assert.equal(h.query('.motion-layer'),null);
+  }finally{h.close();}
+});
+
+test('a backgrounded chat settles its pending scroll once and leaves no frame loop',async()=>{
+  const h=harness({manualFrames:true});
+  try{
+    h.go('#/bot/bot_nova');const thread=h.query('.chat-thread');let height=1000;
+    Object.defineProperty(thread,'scrollHeight',{get:()=>height});Object.defineProperty(thread,'clientHeight',{value:400});
+    thread.innerHTML='<article class="chat-message">History</article>';thread.scrollTop=600;await tick();h.flushFrames();
+    height=1080;thread.append(h.window.document.createElement('article'));thread.scrollTop=680;await tick();
+    Object.defineProperty(h.window.document,'hidden',{value:true,configurable:true});h.window.document.dispatchEvent(new h.window.Event('visibilitychange'));
+    assert.equal(thread.scrollTop,680);h.flushFrames();assert.equal(h.frames.size,0);
+  }finally{h.close();}
+});
+
+test('cancelled composer resizing cannot keep pinning the transcript',async()=>{
+  const h=harness({manualFrames:true});
+  try{
+    h.go('#/bot/bot_nova');const field=h.query('textarea'),thread=h.query('.chat-thread');
+    Object.defineProperty(thread,'scrollHeight',{value:900});Object.defineProperty(thread,'clientHeight',{value:400});thread.scrollTop=500;
+    field.focus();h.flushFrames();Object.defineProperty(field,'scrollHeight',{value:80});h.mobile.sizeComposer(field);
+    const animation=h.animations.find(animation=>animation.element===field);assert.ok(animation);animation.interrupt();await tick();
+    thread.scrollTop=100;h.flushFrames();assert.equal(thread.scrollTop,100);assert.equal(h.frames.size,0);
+  }finally{h.close();}
+});
 
 test('pushes slide in over a parallaxing screen, pops reverse it and tabs only crossfade',async()=>{
   const h=harness();
