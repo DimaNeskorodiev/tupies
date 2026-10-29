@@ -2,6 +2,11 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+
+## Mac-local coding orchestration (29 October 2026)
+
+Installed in the isolated Mac engine: conversation-led project/agent discovery, optional exact-approved Claude Code delegation, separate committed working copies, progress/cancellation, independent checks and Azure draft-PR publication. See [Coding on this Mac](local-coding.md). Real account/task and signed Mac UI acceptance remain open. Next: Codex adapter with equivalent command approvals, easier Azure Entra sign-in, richer scoped project discovery and job-history management. iPhone and Home-server dispatch are explicitly deferred; they require a separate authenticated Mac worker boundary.
+
 ## Skills catalog (29 October 2026, source only)
 
 Implemented in mutable source: Skills is the first Settings item, ahead of Models. Its default Installed library has search/category/assignment filters, per-skill **Assign to bots** sheets with immediately saved per-bot changes, and **Files & options** for inspection, copy, portable export and confirmed removal. Catalog and skill Settings remain adjacent tabs, with per-bot Ask/Trusted installation preferences and Strict review preserved. The catalog contains sixteen reviewed offline playbooks (ten original workflows and six attributed [Grok Bot public-profile adaptations](grok-bot-skills.md)); a common inspected SKILL.md/folder/ZIP/HTTPS/GitHub import pipeline; Grok Bot/OpenBot exported skill folders; conservative Hermes requirements diagnostics; immutable versions, explicit per-bot catalog rollback and sync integrity gates; and bounded `skills_search`/`skills_inspect`/`skills_install`. Tool permissions and installation defaults are unchanged. See [skills](skills.md) and [verification](verification.md). Operational engines and installed apps remain separate deployment work.
