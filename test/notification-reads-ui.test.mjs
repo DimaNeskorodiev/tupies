@@ -44,3 +44,13 @@ test('native shells require a fresh independent active-window hint and fail clos
   data.studioAttended='true';data.studioAttendedAt='1700';await f.reader.tick();f.advance(700);await f.reader.tick();assert.equal(f.calls.length,1);
   f.context.generation++;f.advance(2501);await f.reader.tick();f.advance(700);await f.reader.tick();assert.equal(f.calls.length,1);
 });
+
+test('successful exact reads notify the sidebar only in the same sign-in generation',async t=>{
+  const f=fixture(t),reads=[];f.context.onRead=receipt=>reads.push(receipt);
+  await f.reader.tick();f.advance(700);await f.reader.tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(reads)),[{view:'bot',id:'bot_atlas',botId:'bot_atlas',messageIds:['reply']}]);
+  f.context.generation++;let resolve;f.context.api=()=>new Promise(done=>{resolve=done;});
+  await f.reader.tick();f.advance(700);const pending=f.reader.tick();
+  f.context.generation++;resolve({acknowledged:true});await pending;
+  assert.equal(reads.length,1,'a response after sign-out cannot update the new session');
+});
