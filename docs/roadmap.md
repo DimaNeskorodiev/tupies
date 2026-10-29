@@ -2,6 +2,12 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Browser use and automatic skill learning (29 October 2026)
+
+The owner requested these as two separate workstreams, starting with browser use. Interactive browser work is implemented in current source: approved typing/forms, tabs, frames, dialogs, bounded uploads/downloads, a live owner handoff for sign-in/2FA/CAPTCHA and optional per-bot sign-in persistence on the executing engine. See [Browser use](browser.md). Operational rollout and real-site/physical-device acceptance remain distinct from source fixture verification. No blanket competitor-equivalence claim is made.
+
+The second workstream is automatic skill learning. Existing skill creation, reviewed updates and model-selected reuse remain in place; the automatic workflow-learning cycle is not implemented by the browser change. Next: review actual completed tool receipts, distinguish verified procedures from hypotheses and failures, propose a deduplicated new skill or exact revision, retrieve relevant accepted skills for later tasks, and measure reuse/improvement across repeat tasks. Keep imported package revisions immutable, source evidence and approval boundaries intact, and human-entered browser secrets out of learned instructions.
+
 ## Chat composer follow-up (29 October 2026, source only)
 
 Implemented: dismiss the phone/touch keyboard after confirmed message/task-update receipt, retain focus for failures and newer drafts, and replace **Add direction** with an explained **Update task** action and a full-width phone text field. Keyboard shortcuts follow the visible action. See [chat controls](chat-controls.md) and [verification](verification.md). Remaining: physical iPhone keyboard acceptance and separately authorized deployment to operational engines/apps.
