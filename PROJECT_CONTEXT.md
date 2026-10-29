@@ -2,6 +2,18 @@
 
 Last updated: 29 October 2026. Current application version: 0.5.0.
 
+## Search and rich-chat PR integration (29 October 2026, source only)
+
+PR #7 combines unified Search and the rich-chat palette with `main` after Skills PR #6 and notification PR #5. Documentation conflicts retain every feature history and the current deployment record; the generated guide includes all 23 pages. The combined source passes **1031/1031** full regressions on **Node 22.23.1**, **106** syntax checks and the browser-asset rebuild. Actual disposable Chrome verifies Enter/Cmd+K query reuse, exact-message navigation, the unchanged unsent draft, the light table/midnight code palette and retained Skills assignments. Operational engines, installed Apple artifacts and the original shared checkout are unchanged. Earlier isolated/shared-checkout counts below remain historical.
+
+## Rich chat palette (29 October 2026, source only)
+
+Rich replies now use blue/violet surfaces and table headers, opaque alternating blue rows, tinted quotes/inline code and midnight code panels with cyan, mint and lilac highlighting. The shared `public/rich-chat.css` owns these presentation colors across desktop, phones and rich previews; duplicated phone-only syntax colors were removed from `pearl.css`. Appearance selection, contained scrolling, Copy code, sanitization and permissions keep their existing behavior. Increased Contrast and Reduce Transparency have dedicated treatments. See [rich chat](docs/rich-chat.md) and [verification](docs/verification.md). Mutable source/guide changes do not update operational engines or signed apps. The isolated search/rich-chat PR source passes **940/940** regressions on official **Node 22.23.4**, **99** syntax checks and exact-source desktop/375px browser acceptance; its **21-page guide** excludes unrelated shared-checkout feature work.
+
+## Unified sidebar search (29 October 2026, source only)
+
+The desktop sidebar has one rounded **Search** field. Typing retains local name filtering; Enter, the field's arrow button and Cmd/Ctrl+K open saved-message search with the same query. The separate **Search conversations** sidebar row is removed. Phone header search and scoped conversation-menu search remain available, with exact-message navigation and page-session drafts preserved. See [chat controls](docs/chat-controls.md) and [verification](docs/verification.md). This changes mutable source and the rebuilt guide; operational engines and installed apps require a separate update.
+
 ## Skills PR integration (29 October 2026, source only)
 
 PR #6 combines the isolated Skills marketplace with current `main`, including the previously merged notification source. Additive handoff conflicts retain both feature histories and the latest v10/Mac7/iPhone7 deployment record; the guide is regenerated from the resolved documents. Integration verification passes **1031/1031** full regressions on **Node 22.23.1** and **106** syntax checks. Actual disposable Chrome verifies Skills before Models, the default Installed view, Researchy installation, independent Roki/Nova assignments and persistence after reload. Operational engines, installed Apple artifacts and the original shared checkout are unchanged. Earlier isolated/shared-checkout counts below remain historical.
