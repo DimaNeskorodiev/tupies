@@ -9,6 +9,14 @@ import { reconcileWork } from '../lib/work-quality.mjs';
 
 const start=(toolCallId,tool,args={})=>({type:'tool.started',toolCallId,tool,arguments:args});
 
+test('browser input and navigation interrupted after dispatch retain an unknown outcome',()=>{
+  const actions=['browser_open','browser_click','browser_fill','browser_type','browser_select','browser_check','browser_key','browser_back','browser_scroll','browser_drag','browser_dialog'];
+  const run={events:[...actions.map((name,index)=>start(`action-${index}`,name)),start('read','browser_snapshot')]};
+  reconcileWork(run);
+  assert.ok(run.workRecords.slice(0,-1).every(record=>record.outcome==='unknown'));
+  assert.equal(run.workRecords.at(-1).outcome,'not_applied');
+});
+
 test('interruption receipts preserve successes and artifacts while distinguishing reads, dispatch and exact pending approval',()=>{
   const success={callId:'saved',tool:'documents_create',status:'succeeded',path:'report.txt',sha256:'a'.repeat(64)},artifact={path:'report.txt',size:12};
   const run={events:[start('saved','documents_create',{path:'report.txt'}),start('read','workspace_read',{path:'source.txt'}),start('remote','integration_call',{tool:'publish'}),start('approval','shell_run',{executable:'echo',args:['fixture']})],workRecords:[success],artifacts:[artifact],pending_controls:[{kind:'approval',prompt_id:'approval_exact',tool:'shell_run',arguments:{args:['fixture'],executable:'echo'}}],approval:{request_id:'approval_exact'}};
