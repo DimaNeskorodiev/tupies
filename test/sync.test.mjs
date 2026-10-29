@@ -300,7 +300,7 @@ test('concurrent edits keep the newest version and a conflict copy for files', a
   await eventually(() => replica.app.store.state.bots.find(bot => bot.id === 'bot_nova').title === 'Edited later on the server', 'newest bot edit on the Mac');
   assert.equal(hub.app.store.state.bots.find(bot => bot.id === 'bot_nova').title, 'Edited later on the server');
   await eventually(async () => (await fs.readFile(note(replica), 'utf8')) === 'later server edit\n', 'newest note on the Mac');
-  const conflictIn = async target => (await fs.readdir(path.dirname(note(target)))).filter(name => name.includes('conflict'));
+  const conflictIn = async target => (await fs.readdir(path.dirname(note(target)))).filter(name => /^ideas \(conflict .+\)\.md$/.test(name));
   const copies = await eventually(async () => { const names = await conflictIn(hub); return names.length === 1 && (await conflictIn(replica)).length === 1 && names; }, 'one conflict copy on both engines');
   assert.equal(await fs.readFile(path.join(path.dirname(note(hub)), copies[0]), 'utf8'), 'offline Mac edit\n');
   assert.match(copies[0], /^ideas \(conflict Tupies Mac .+\)\.md$/);

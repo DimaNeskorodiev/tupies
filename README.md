@@ -6,7 +6,7 @@ For coding-agent handoff, read [AGENTS.md](AGENTS.md) and [PROJECT_CONTEXT.md](P
 
 A self-hosted AI product with its own **Tupies Engine**, a bots-first glass interface, and direct model-provider connections. Tupies owns the agent loop, conversations, memory, skills, workspaces, approvals, schedules, integrations and delegation. Hermes Agent is not installed, started or contacted.
 
-The app opens on a **Dashboard** with your teammates, recent outputs and work that needs you. **Bots** opens conversations directly; each bot's profile contains its long-term notes (Brain), core facts (Memory) and private files. The pearl-white glass interface uses distinct cushion companions. Technical bot controls stay under **Advanced settings**. **Settings** starts with Models, Devices & sync and Help; Skills, Integrations, Messaging and Activity are under **More settings**.
+The app opens on a **Dashboard** with your teammates, recent outputs and work that needs you. **Bots** opens conversations directly; each bot's profile contains its long-term notes (Brain), core facts (Memory) and private files. The pearl-white glass interface uses distinct cushion companions. Technical bot controls stay under **Advanced settings**. **Settings** starts with Skills, Models, Devices & sync and Help. Skills opens the installed library, bot assignments, catalog and installation preferences; Integrations, Messaging and Activity are under **More settings**.
 
 Give each bot a role and model, then work with it in a persistent conversation. Chat supports formatted Markdown, tables, highlighted code, mathematics, diagrams, interactive charts and infographic cards. Bots can read and create PDF, Word, PowerPoint, Excel, Markdown, CSV, text and JSON files, remember useful facts, learn approved reusable skills, schedule routines, perform approved API actions and delegate real work to permitted teammates.
 
@@ -76,6 +76,8 @@ For phone access from anywhere and engine sync, give the server an HTTPS address
 - [Coding tools, plans and execution](docs/tool-use.md)
 - [Architecture and future device clients](docs/architecture.md)
 - [Providers, subscription login, integrations and skills](docs/hermes-setup.md)
+- [Skills catalog, portable imports and bot installation](docs/skills.md)
+- [Six Grok Bot marketplace adaptations](docs/grok-bot-skills.md)
 - [Operations, backups and upgrades](docs/operations.md)
 - [Mac/VPS deployment](docs/deployment.md)
 - [Engines, devices and sync](docs/sync.md)
