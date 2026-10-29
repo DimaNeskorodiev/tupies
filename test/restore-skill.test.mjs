@@ -22,3 +22,17 @@ test('skill export restores identical native resources, refuses traversal and ex
   await assert.rejects(fs.access(path.join(directory,'unsafe')));
   await assert.rejects(fs.access(path.join(directory,'escape')));
 });
+
+test('exported Grok skills restore their original human-readable name, CRLF instructions and complete resources',async t=>{
+  const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-grok-export-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const source=path.join(directory,'grok-research.skill.json'),target=path.join(directory,'restored');
+  const name='Quarterly Research & Evidence Review / Follow-up';
+  const content=Buffer.from(`---\r\nname: ${JSON.stringify(name)}\r\ndescription: "Research a topic and retain the evidence."\r\nmetadata:\r\n  author: "Original Grok workflow"\r\n---\r\n\r\n# Дослідження\r\nRead references/source.txt and use assets/template.bin.\r\n`);
+  const resources=[{path:'SKILL.md',data:content},{path:'references/source.txt',data:Buffer.from('Original source: café\r\n')},{path:'assets/template.bin',data:Buffer.from([0,255,128,4,10])}];
+  await fs.writeFile(source,JSON.stringify({files:resources.map(({path,data})=>({path,contentBase64:data.toString('base64')}))}));
+  const restored=await restoreSkill(source,target);
+  assert.equal(restored.name,name);assert.equal(restored.fileCount,resources.length);
+  for(const {path:relative,data}of resources)assert.deepEqual(await fs.readFile(path.join(target,relative)),data,`${relative} must survive the export/restore roundtrip unchanged.`);
+  await assert.rejects(restoreSkill(source,target),/already exists/);
+});
