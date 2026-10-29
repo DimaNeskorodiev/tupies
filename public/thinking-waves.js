@@ -11,6 +11,8 @@
   const mix=(a,b,k)=>a.map((v,i)=>Math.round(v+(b[i]-v)*k));
   const rgba=(c,a)=>`rgba(${c.map(Math.round).join(',')},${clamp(a,0,1).toFixed(3)})`;
   function hash(value){let n=2166136261;for(const c of String(value))n=Math.imul(n^c.charCodeAt(0),16777619);return n>>>0;}
+  // Local, decorative glyphs only. Event text is always assigned as textContent.
+  const glyphs={input:'M5 7h14M5 12h10M5 17h6',source:'M21 21l-5-5M18 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0',transform:'M12 3v4m0 10v4M3 12h4m10 0h4M6 6l3 3m6 6 3 3M6 18l3-3m6-6 3-3',agent:'M9 18H4v-2a4 4 0 0 1 4-4m8 0a4 4 0 0 1 4 4v2h-5M8 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6m8 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6',output:'M7 3h7l4 4v14H7zM14 3v5h4M10 12h5m-5 4h5',fact:'M5 18v-5m7 5V6m7 12V3'};
   function palette(value){
     const parse=hex=>{const m=/^#([0-9a-f]{6})$/i.exec(hex.trim());if(!m)return null;const n=Number.parseInt(m[1],16);return[n>>16&255,n>>8&255,n&255];};
     const colors=String(value||'').split(',').slice(0,4).map(parse).filter(Boolean);
@@ -45,6 +47,10 @@
     function listen(target,name,handler,options,bucket=s.listeners){if(!target?.addEventListener)return;target.addEventListener(name,handler,options);bucket.push(()=>target.removeEventListener?.(name,handler,options));}
     function clear(bucket){for(const remove of bucket.splice(0))remove();}
     function el(tag,className){const node=doc?.createElement?.(tag);if(node&&className)node.className=className;return node;}
+    function fragmentIcon(kind){
+      const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg'),path=doc.createElementNS('http://www.w3.org/2000/svg','path');
+      svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');path.setAttribute('d',glyphs[kind]||glyphs.transform);svg.appendChild(path);return svg;
+    }
     function compact(){return !!s.card?.closest?.('.thinking-message.is-compact');}
     function attach(){
       const card=canvas.closest?.('[data-thinking-card]')||canvas.parentElement;if(!card)return null;
@@ -99,8 +105,15 @@
       return [...new Map([...keep,...selected].map(edge=>[edge.id,edge])).values()].slice(0,count);
     }
     function packetFor(button){return s.packets.find(packet=>packet.button===button);}
-    function measure(packet){packet.width=packet.button.offsetWidth||Math.min(140,packet.edge.text.length*6+18);packet.height=packet.button.offsetHeight||28;}
-    function hold(button,focus){const packet=packetFor(button);if(!packet)return;if(focus)s.focused=packet.edge.id;if(s.held?.id!==packet.edge.id)s.held={id:packet.edge.id,u:progress(packet.index),point:curve(packet.edge,progress(packet.index))};s.hover=packet.edge.id;wake();}
+    function measure(packet){
+      // A collision-hidden card still needs its real wrapped dimensions before
+      // it can return to the flow. Never substitute a one-line estimate for it.
+      const button=packet.button,hidden=button.hidden,visibility=button.style.visibility;
+      if(hidden){button.style.visibility='hidden';button.hidden=false;}
+      packet.width=button.offsetWidth||Math.min(180,packet.edge.text.length*6+56);packet.height=button.offsetHeight||56;
+      if(hidden){button.hidden=true;button.style.visibility=visibility;}
+    }
+    function hold(button,focus){const packet=packetFor(button);if(!packet)return;if(focus)s.focused=packet.edge.id;if(s.held?.id!==packet.edge.id)s.held={id:packet.edge.id,u:progress(packet.index),point:packet.point||curve(packet.edge,progress(packet.index))};s.hover=packet.edge.id;wake();}
     function release(button,focus){const packet=packetFor(button);if(!packet)return;if(focus&&s.focused===packet.edge.id)s.focused=null;if(s.selected===packet.edge.id||s.focused===packet.edge.id)return;if(s.held?.id===packet.edge.id)s.held=null;s.hover=null;wake();}
     function renderPackets(){
       if(!s.layer||!s.graph)return;const existing=new Map(s.packets.map(packet=>[packet.edge.id,packet])),chosen=selection(),ids=new Set(chosen.map(edge=>edge.id));
@@ -108,12 +121,17 @@
       s.packets=chosen.map((edge,index)=>{
         let packet=existing.get(edge.id);
         if(!packet){
-          const button=el('button','thinking-flow-fragment'),listeners=[];button.type='button';button.setAttribute('aria-pressed','false');packet={button,edge,index,width:100,height:28,born:s.packetTime,listeners};
+          const button=el('button','thinking-flow-fragment'),icon=el('span','thinking-flow-icon'),copy=el('span','thinking-flow-copy'),title=el('span','thinking-flow-title'),listeners=[];
+          button.type='button';button.setAttribute('aria-pressed','false');copy.appendChild(title);button.appendChild(icon);button.appendChild(copy);packet={button,icon,copy,title,edge,index,width:160,height:56,born:s.packetTime,listeners};
           listen(button,'pointerenter',()=>hold(button,false),undefined,listeners);listen(button,'pointerleave',()=>release(button,false),undefined,listeners);
           listen(button,'focus',()=>hold(button,true),undefined,listeners);listen(button,'blur',()=>release(button,true),undefined,listeners);
           listen(button,'click',event=>{event.stopPropagation?.();const current=packetFor(button);if(!current)return;hold(button,false);s.selected=current.edge.id;inspectEdge(current.edge);syncPressed();wake();},undefined,listeners);
         }
-        packet.edge=edge;packet.index=index;packet.button.textContent=edge.text;packet.button.setAttribute('aria-label',`Inspect ${edge.text}`);packet.button.setAttribute('aria-pressed',String(s.selected===edge.id));if(packet.button.parentElement!==s.layer)s.layer.appendChild(packet.button);measure(packet);return packet;
+        const a=s.pool.get(edge.from),b=s.pool.get(edge.to),kind=a?.kind==='input'&&b?.id==='core'?'input':b?.kind||'transform',plan=b?.id.startsWith('plan-');
+        const label=plan?'Plan':({input:'Request',source:'Source',transform:'Action',agent:'Teammate',output:'Result',fact:'Observed'})[kind]||'Activity';
+        if(packet.kind!==kind){packet.icon.replaceChildren(fragmentIcon(kind));packet.kind=kind;}
+        packet.edge=edge;packet.index=index;packet.copy.dataset.label=label;packet.title.textContent=edge.text;packet.button.dataset.kind=kind;
+        packet.button.setAttribute('aria-label',`Inspect ${label.toLowerCase()}: ${edge.text}`);packet.button.setAttribute('aria-pressed',String(s.selected===edge.id));if(packet.button.parentElement!==s.layer)s.layer.appendChild(packet.button);measure(packet);return packet;
       });
       if(s.selected){const edge=edgeById(s.selected);if(edge)inspectEdge(edge);}
     }
@@ -129,7 +147,7 @@
     function inspectNode(node){showInspection(node.label||'Activity data',node.detail,node.value);}
     function closeInspection(restore){const selected=s.selected;s.selected=null;s.held=null;s.hover=null;if(s.inspection)s.inspection.hidden=true;syncPressed();if(restore)s.packets.find(packet=>packet.edge.id===selected)?.button.focus?.({preventScroll:true});wake();}
     function position(node){
-      const time=reduced()?4:s.clock,seed=hash(node.id)%1000,margin=s.width<380?11:18,vertical=s.height<120?14:22;
+      const time=reduced()?4:s.clock,seed=hash(node.id)%1000,margin=s.width<380?16:28,vertical=s.height<120?18:32;
       let x=margin+node.x*Math.max(1,s.width-margin*2)+Math.sin(time*.37+seed)*2.4,y=vertical+node.y*Math.max(1,s.height-vertical*2)+Math.cos(time*.32+seed)*Math.min(3,s.height*.018);
       if(s.pointer&&!reduced()){const dx=x-s.pointer.x,dy=y-s.pointer.y,d=Math.hypot(dx,dy);if(d>1&&d<82){const shift=(1-d/82)*7;x+=dx/d*shift;y+=dy/d*shift;}}return{x,y};
     }
@@ -152,22 +170,40 @@
     }
     function glow(x,y,r,color,alpha){const gradient=ctx.createRadialGradient(x,y,0,x,y,r);gradient.addColorStop(0,rgba(color,alpha));gradient.addColorStop(1,rgba(color,0));ctx.fillStyle=gradient;ctx.fillRect(x-r,y-r,r*2,r*2);}
     function draw(){
-      resize();ctx.clearRect(0,0,s.width,s.height);const [,mid,deep]=s.colors,colors=[mid,mix(mid,deep,.42),s.peer?s.peer[1]:mix(mid,s.colors[0],.3)],traced=lineage(s.hover);
+      resize();ctx.clearRect(0,0,s.width,s.height);
+      const ink=String(s.labelInk).match(/[\d.]+/g)?.slice(0,3).map(Number),dark=ink?.length===3&&ink.reduce((sum,n)=>sum+n,0)>480;
+      const [light,mid,deep]=s.colors,colors=[mix(mid,dark?light:deep,dark?.48:.28),mix(mid,dark?light:deep,dark?.3:.52),s.peer?mix(s.peer[1],s.peer[dark?0:2],dark?.48:.22):mix(mid,dark?light:deep,dark?.6:.15)],traced=lineage(s.hover);
+      // Broad pools of light belong to observed junctions, not a background panel.
+      for(const node of s.pool.values())if(node.major){const p=position(node);glow(p.x,p.y,compact()?35:65,colors[node.kind==='agent'?2:0],node.alpha*.1);}
       for(const edge of s.graph?.edges||[]){
         const a=s.pool.get(edge.from),b=s.pool.get(edge.to);if(!a||!b)continue;const alpha=Math.min(a.alpha,b.alpha),focus=traced?.has(edge.from)&&traced?.has(edge.to),color=colors[edge.color];
-        for(let strand=0;strand<3;strand++){ctx.beginPath();for(let i=0;i<=32;i++){const u=i/32,p=curve(edge,u),off=(strand-1)*Math.sin(u*Math.PI)*Math.min(2.2,s.height*.016);i?ctx.lineTo(p.x+off,p.y+off*.3):ctx.moveTo(p.x,p.y);}ctx.strokeStyle=rgba(color,alpha*(focus?.62:.24)*(strand===1?1:.4));ctx.lineWidth=focus?1.1:.55+Math.min(1.3,edge.weight*.2);ctx.stroke();}
+        for(let strand=0;strand<3;strand++){
+          ctx.beginPath();for(let i=0;i<=32;i++){const u=i/32,p=curve(edge,u),off=(strand-1)*Math.sin(u*Math.PI)*(compact()?3:6);i?ctx.lineTo(p.x,p.y+off):ctx.moveTo(p.x,p.y);}
+          ctx.strokeStyle=rgba(color,alpha*(focus?.7:.38)*(strand===1?1:.22));ctx.lineWidth=strand===1?(focus?1.6:1):.7;ctx.stroke();
+        }
       }
       if(!reduced()&&s.graph?.edges.length){
-        const edges=s.graph.edges,count=compact()?52:s.width<380?68:112,maximum=Math.max(1,...edges.map(edge=>edge.weight));
-        for(let i=0;i<count;i++){const edge=edges[(i*7+Math.floor(i/edges.length))%edges.length],a=s.pool.get(edge.from),b=s.pool.get(edge.to);if(!a||!b)continue;const alpha=Math.min(a.alpha,b.alpha),u=(i*.6180339+s.clock*(.075+edge.weight/maximum*.04))%1,p=curve(edge,u),tail=curve(edge,Math.max(0,u-.034)),color=colors[edge.color];ctx.strokeStyle=rgba(color,alpha*(.3+.4*Math.sin(u*Math.PI)));ctx.lineWidth=i%5===0?1.25:.7;ctx.beginPath();ctx.moveTo(tail.x,tail.y);ctx.lineTo(p.x,p.y);ctx.stroke();if(i%6===0){glow(p.x,p.y,5,color,.1*alpha);ctx.beginPath();ctx.arc(p.x,p.y,.9,0,TAU);ctx.fillStyle=rgba(color,.75*alpha);ctx.fill();}}
+        const edges=s.graph.edges,count=compact()?16:s.width<380?24:38,maximum=Math.max(1,...edges.map(edge=>edge.weight));
+        for(let i=0;i<count;i++){
+          const edge=edges[(i*7+Math.floor(i/edges.length))%edges.length],a=s.pool.get(edge.from),b=s.pool.get(edge.to);if(!a||!b)continue;
+          const alpha=Math.min(a.alpha,b.alpha),u=(i*.6180339+s.clock*(.065+edge.weight/maximum*.035))%1,p=curve(edge,u),color=colors[edge.color],light=alpha*Math.sin(u*Math.PI);
+          // A short graduated comet carries motion without a swarm of dots.
+          for(let j=0;j<4;j++){const end=curve(edge,Math.max(0,u-j*.014)),tail=curve(edge,Math.max(0,u-(j+1)*.014));ctx.strokeStyle=rgba(color,light*(.8-j*.18));ctx.lineWidth=1.5-j*.25;ctx.beginPath();ctx.moveTo(tail.x,tail.y);ctx.lineTo(end.x,end.y);ctx.stroke();}
+          if(i%3===0){glow(p.x,p.y,8,color,.2*light);ctx.beginPath();ctx.arc(p.x,p.y,1.5,0,TAU);ctx.fillStyle=rgba(color,.9*light);ctx.fill();}
+        }
       }
-      const occupied=placePackets();let labels=0;
-      for(const node of [...s.pool.values()].sort((a,b)=>Number(b.kind==='output')-Number(a.kind==='output'))){
-        if(node.alpha<.02)continue;const p=position(node),color=colors[node.kind==='output'||node.kind==='agent'?2:node.kind==='source'?1:0],radius=node.major?2.8:1.5;
-        glow(p.x,p.y,node.major?16:7,color,node.alpha*(node.major?.16:.07));ctx.beginPath();ctx.arc(p.x,p.y,radius,0,TAU);ctx.fillStyle=rgba(color,node.alpha*.8);ctx.fill();
-        if(node.targetAlpha===1&&node.major&&node.label&&node.alpha>.65&&labels<(compact()?1:s.width<380?2:4)){
-          const label=node.label.length>18?`${node.label.slice(0,17)}…`:node.label,y=clamp(p.y+16,12,s.height-2);ctx.font='10px -apple-system, BlinkMacSystemFont, sans-serif';
-          const width=num(ctx.measureText?.(label)?.width,label.length*5.6),align=p.x<s.width*.15?'left':p.x>s.width*.85?'right':'center',rect={x:p.x-(align==='right'?width:align==='center'?width/2:0)-1,y:y-10,width:width+2,height:13};
+      const occupied=placePackets(),represented=new Set((s.graph?.edges||[]).flatMap(edge=>[edge.from,edge.to]));let labels=0;
+      for(const node of s.pool.values()){
+        if(node.alpha<.02)continue;const p=position(node),color=colors[node.kind==='output'||node.kind==='agent'?2:node.kind==='source'?1:0],hub=node.major&&node.kind==='agent',radius=hub?7:node.major?3.5:1.8;
+        glow(p.x,p.y,hub?30:node.major?18:8,color,node.alpha*(hub?.24:.12));
+        if(node.major){ctx.beginPath();ctx.arc(p.x,p.y,radius+5,0,TAU);ctx.strokeStyle=rgba(color,node.alpha*.2);ctx.lineWidth=.75;ctx.stroke();}
+        ctx.beginPath();ctx.arc(p.x,p.y,radius,0,TAU);ctx.fillStyle=rgba(color,node.alpha*.82);ctx.fill();
+        if(hub){ctx.beginPath();ctx.arc(p.x-1.5,p.y-2,2.1,0,TAU);ctx.fillStyle=rgba([255,255,255],node.alpha*.8);ctx.fill();}
+        // Connections are named by the reading cards. Only isolated nodes may
+        // add a caption, so a cycling card never leaves a duplicate label behind.
+        if(!represented.has(node.id)&&node.targetAlpha===1&&node.major&&node.label&&node.alpha>.65&&labels<(compact()?0:s.width<380?1:3)){
+          const label=node.label.length>20?`${node.label.slice(0,19)}…`:node.label,y=clamp(p.y+22,12,s.height-4);ctx.font='11px -apple-system, BlinkMacSystemFont, sans-serif';
+          const width=num(ctx.measureText?.(label)?.width,label.length*6),align=p.x<s.width*.15?'left':p.x>s.width*.85?'right':'center',rect={x:p.x-(align==='right'?width:align==='center'?width/2:0)-1,y:y-11,width:width+2,height:14};
           if(rect.x<1||rect.x+rect.width>s.width-1||occupied.some(other=>rect.x<other.x+other.width+4&&rect.x+rect.width+4>other.x&&rect.y<other.y+other.height+4&&rect.y+rect.height+4>other.y))continue;
           ctx.textAlign=align;ctx.fillStyle=s.labelInk;ctx.fillText(label,p.x,y);occupied.push(rect);labels++;
         }
@@ -177,11 +213,27 @@
       const occupied=[],order=s.packets.slice().sort((a,b)=>Number(b.edge.id===s.held?.id)-Number(a.edge.id===s.held?.id));
       for(const packet of order){
         const a=s.pool.get(packet.edge.from),b=s.pool.get(packet.edge.to);if(!a||!b)continue;const held=s.held?.id===packet.edge.id;
-        let p=held?s.held.point:curve(packet.edge,reduced()?.25+packet.index*.25:progress(packet.index)),x=clamp(p.x-packet.width/2,1,Math.max(1,s.width-packet.width-1)),y=clamp(p.y-packet.height/2,1,Math.max(1,s.height-packet.height-1));
-        const overlaps=()=>occupied.some(r=>x<r.x+r.width+6&&x+packet.width+6>r.x&&y<r.y+r.height+8&&y+packet.height+8>r.y);
-        if(overlaps()&&!held){p=curve(packet.edge,.18+packet.index*.23);x=clamp(p.x-packet.width/2,1,Math.max(1,s.width-packet.width-1));y=clamp(p.y-packet.height/2,1,Math.max(1,s.height-packet.height-1));}
-        const fading=reduced()||pinned(packet.edge.id)?1:clamp((s.packetTime-packet.born)/.65,0,1);
-        packet.button.hidden=!held&&(overlaps()||Math.min(a.alpha,b.alpha)<.25);packet.button.style.transform=`translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0)`;packet.button.style.opacity=String(held?1:clamp(Math.min(a.alpha,b.alpha)*.93,.3,1)*fading);if(!packet.button.hidden)occupied.push({x,y,width:packet.width,height:packet.height});
+        const p=held?s.held.point:curve(packet.edge,reduced()?.25+packet.index*.25:progress(packet.index)),inset=5;
+        const fit=(x,y)=>({x:clamp(x,inset,Math.max(inset,s.width-packet.width-inset)),y:clamp(y,inset,Math.max(inset,s.height-packet.height-inset))});
+        const overlaps=r=>occupied.some(other=>r.x<other.x+other.width+10&&r.x+packet.width+10>other.x&&r.y<other.y+other.height+10&&r.y+packet.height+10>other.y);
+        const home=fit(p.x-packet.width/2,p.y-packet.height/2),gap=packet.height+14;
+        // Search nearby reading positions before omitting any card. The fine
+        // tether keeps a displaced card attached to its actual recorded edge.
+        const candidates=[home,...[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1]].map(([y,x])=>fit(home.x+x*(packet.width+14),home.y+y*gap))];
+        const spot=held?home:candidates.find(candidate=>!overlaps(candidate)),target=spot||home;
+        if(!packet.placed||held||reduced())packet.placed={...target};
+        else {packet.placed.x+=(target.x-packet.placed.x)*.18;packet.placed.y+=(target.y-packet.placed.y)*.18;}
+        // Resize and compact transitions must fit on their first paint, even
+        // while a card is easing from its previous, larger canvas coordinates.
+        packet.placed=fit(packet.placed.x,packet.placed.y);
+        const {x,y}=packet.placed,fading=reduced()||pinned(packet.edge.id)?1:clamp((s.packetTime-packet.born)/.65,0,1);
+        packet.button.hidden=!held&&(!spot||overlaps({x,y})||Math.min(a.alpha,b.alpha)<.25);
+        packet.point={x:x+packet.width/2,y:y+packet.height/2};
+        packet.button.style.transform=`translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0)`;packet.button.style.opacity=String(held?1:clamp(Math.min(a.alpha,b.alpha),.3,1)*fading);
+        if(!packet.button.hidden){
+          occupied.push({x,y,width:packet.width,height:packet.height});
+          if(!held&&Math.hypot(packet.point.x-p.x,packet.point.y-p.y)>packet.height/2){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(packet.point.x,packet.point.y);ctx.strokeStyle=rgba(s.colors[1],.2*Math.min(a.alpha,b.alpha));ctx.lineWidth=.75;ctx.stroke();}
+        }
       }
       return occupied;
     }
