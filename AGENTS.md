@@ -25,7 +25,7 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 | Agent loop, approvals, snapshots, cancellation, delegation | `lib/engine.mjs`; `lib/runtime.mjs` is its compatibility entrypoint |
 | Atomic state, sealed credentials, redaction | `lib/store.mjs` |
 | Provider protocols, OAuth, credentialed transport | `lib/providers.mjs`, `lib/oauth.mjs`, `lib/provider-net.mjs` |
-| Tools, memory, workspaces, skills and approved processes | `lib/agent-tools.mjs`; long-term notes in `lib/brain.mjs` |
+| Tools, memory, workspaces, skills and approved processes | `lib/agent-tools.mjs`; long-term notes in `lib/brain.mjs`; Manage Tupies (bots set up bots, skills and routines from chat) in `lib/setup-tools.mjs` |
 | Documents and bounded worker/archive processing | `lib/documents.mjs`, `lib/document-worker.mjs`, `lib/document-spec.mjs`, `lib/document-zip.mjs` |
 | Rooms, integrations and Telegram | `lib/rooms.mjs`, `lib/integrations.mjs`, `lib/channels.mjs` |
 | Native push delivery | `lib/notifications.mjs` (engine-local registrations, event classification and outbox), `lib/apns.mjs` (operator-configured Apple transport); see `docs/notifications.md` |
