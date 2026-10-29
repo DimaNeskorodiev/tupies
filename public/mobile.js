@@ -96,7 +96,13 @@
   /* ---------- Drafts, composer and keyboard ---------- */
   const composer = () => query('#app .chat-composer textarea');
   const draftKey = field => `${field?.closest('form')?.id}/${field?.closest('form')?.dataset.id}`;
-  let composerMotion = null;
+  let composerMotion = null, composerPinFrame = 0;
+  function stopComposerMotion() {
+    const animation = composerMotion;
+    composerMotion = null;
+    window.cancelAnimationFrame(composerPinFrame); composerPinFrame = 0;
+    animation?.cancel();
+  }
   function rememberDraft() {
     const field = composer();
     if (!field) return;
@@ -109,7 +115,7 @@
     if (!phone() || !field) return;
     const thread = query('#app .chat-thread');
     const atBottom = thread && !thread.__searchAnchor && thread.scrollHeight - thread.scrollTop - thread.clientHeight < 90;
-    composerMotion?.cancel(); composerMotion = null;
+    stopComposerMotion();
     const before = parseFloat(field.style.height) || 0;
     field.style.height = '0px';
     const limit = Math.max(52, Math.min(180, (window.visualViewport?.height || window.innerHeight) * .28));
@@ -120,10 +126,20 @@
     // A new line grows the composer smoothly; the transcript stays pinned to the latest message meanwhile.
     if (before && Math.abs(before - height) >= 6 && !reduced() && field === document.activeElement) {
       composerMotion = play(field, [{height:`${before}px`}, {height:`${height}px`}], {duration:150, easing:EASE_OUT});
-      if (composerMotion && atBottom) {
-        const motion = composerMotion, pin = () => {if (composerMotion !== motion) return; thread.scrollTop = thread.scrollHeight; window.requestAnimationFrame(pin);};
-        window.requestAnimationFrame(pin);
-        motion.finished.then(() => {if (composerMotion === motion) {composerMotion = null; thread.scrollTop = thread.scrollHeight;}}, () => {});
+      if (composerMotion) {
+        const motion = composerMotion, pin = () => {
+          composerPinFrame = 0;
+          if (composerMotion !== motion || !thread?.isConnected || thread.__searchAnchor) return;
+          thread.scrollTop = thread.scrollHeight;
+          composerPinFrame = window.requestAnimationFrame(pin);
+        };
+        if (atBottom) composerPinFrame = window.requestAnimationFrame(pin);
+        const finish = completed => {
+          if (composerMotion !== motion) return;
+          stopComposerMotion();
+          if (completed && atBottom && thread.isConnected && !thread.__searchAnchor) thread.scrollTop = thread.scrollHeight;
+        };
+        motion.finished.then(() => finish(true), () => finish(false));
       }
     }
   }
@@ -141,6 +157,8 @@
     viewportFrame = 0;
     const view = window.visualViewport;
     if (!phone()) {
+      root.style.removeProperty('--studio-viewport-height'); root.style.removeProperty('--studio-viewport-top');
+      root.dataset.keyboard = 'closed';
       const field = composer();
       field?.style.removeProperty('height'); field?.style.removeProperty('overflow-y');
       return;
@@ -277,7 +295,8 @@
     const record = {animations:animations.filter(Boolean), done:() => {if (!finished) {finished = true; cleanup();}}};
     if (!record.animations.length) {record.done(); return;}
     active = record;
-    Promise.all(record.animations.map(animation => animation.finished)).then(() => {if (active === record) settle();}, () => {});
+    const finish = () => {if (active === record) settle();};
+    Promise.all(record.animations.map(animation => animation.finished)).then(finish, finish);
     // If the page stops producing frames (hidden, backgrounded), the screen still ends up in place.
     record.timer = window.setTimeout(() => {if (active === record) settle();}, longest(record.animations) + 600);
   }
@@ -293,11 +312,11 @@
       if (parts.tabbar) over.dataset.hideTabbar = 'true';
       over.append(shot); document.body.append(over); placeSnapshot(snapshot);
       raise(session, parts, 2);
-      animations.push(play(shot, [{opacity:interactive?.opacity ?? 1}, {opacity:0}], {duration:kind === 'fade' && !reduced() ? 180 : 220, easing:'ease-out', fill:'forwards'}));
+      animations.push(play(shot, [{opacity:interactive?.opacity ?? 1}, {opacity:0}], {duration:150, easing:'ease-out', fill:'forwards'}));
       run(animations, finish(over));
       return;
     }
-    const dim = part('motion-dim'), shot = frame(snapshot), timing = {duration:340, easing:spring('nav'), fill:'forwards'};
+    const dim = part('motion-dim'), shot = frame(snapshot), timing = {duration:280, easing:spring('nav'), fill:'forwards'};
     raise(session, parts, 2);
     session.set(parts.content, 'will-change', 'transform');
     if (kind === 'push') {
@@ -446,6 +465,7 @@
   /* ---------- Render hooks ---------- */
   function beforeRender() {
     rememberDraft();
+    stopComposerMotion(); stopGlide(threadWatch); stopLens();
     // A menu that is still animating away is finished first, so no screen copy keeps its hidden source.
     closeMenu(true);
     for (const finish of [...closing]) finish();
@@ -486,6 +506,7 @@
     current = key;
   }
   function reset() {
+    interruptMotion();
     generation++;
     current = ''; positions.clear(); drafts.clear(); snapshots.clear(); stack = [];
     closeMenu(true); for (const finish of [...closing]) finish(); settle();
@@ -646,8 +667,18 @@
 
   /* ---------- Tab bar lens ---------- */
   // The selected tab sits in a glass lens that glides (and briefly stretches) to the next selection.
-  let lensFrom = null;
+  let lensFrom = null, lensAnimations = [];
+  function stopLens() {
+    // A quick second tap continues from the visible lens, not its previous destination.
+    const lens = query('#app .tab-lens');
+    if (lens && lensAnimations.length && window.DOMMatrixReadOnly) {
+      try {lensFrom = new window.DOMMatrixReadOnly(getComputedStyle(lens).transform).m41;} catch {}
+    }
+    for (const animation of lensAnimations) animation.cancel();
+    lensAnimations = []; lens?.style.removeProperty('will-change');
+  }
   function mountLens(animate) {
+    stopLens();
     const bar = query('#app .tabbar');
     if (!bar || !shown(bar)) return;
     const tabs = [...bar.querySelectorAll('.tab')], tab = tabs.find(item => item.classList.contains('active'));
@@ -663,9 +694,11 @@
     Object.assign(lens.style, {width:`${tab.offsetWidth}px`, height:`${tab.offsetHeight}px`, top:`${tab.offsetTop}px`, transform:`translate3d(${x}px,0,0)`});
     if (animate && lensFrom !== null && lensFrom !== x && !reduced()) {
       lens.style.willChange = 'transform';
-      const glide = play(lens, [{transform:`translate3d(${lensFrom}px,0,0)`}, {transform:`translate3d(${x}px,0,0)`}], {duration:500, easing:spring('bouncy')});
-      play(lens.firstElementChild, [{transform:'scale(1,1)'}, {transform:'scale(1.16,.9)', offset:.3}, {transform:'scale(1,1)'}], {duration:440, easing:'ease-in-out'});
-      glide?.finished.then(() => lens.style.removeProperty('will-change'), () => {});
+      const glide = play(lens, [{transform:`translate3d(${lensFrom}px,0,0)`}, {transform:`translate3d(${x}px,0,0)`}], {duration:280, easing:spring('nav')});
+      const stretch = play(lens.firstElementChild, [{transform:'scale(1,1)'}, {transform:'scale(1.04,.98)', offset:.3}, {transform:'scale(1,1)'}], {duration:240, easing:'ease-in-out'});
+      lensAnimations = [glide, stretch].filter(Boolean);
+      const finish = () => lens.style.removeProperty('will-change');
+      glide?.finished.then(finish, finish);
     }
     lensFrom = x;
   }
@@ -727,11 +760,12 @@
   const KINDS = ['thinking-message','partial-message','approval-card','question-card','run-status','run-timeline'];
   const kindOf = node => KINDS.find(name => node.classList?.contains(name)) || '';
   function watchThread() {
+    stopGlide(threadWatch);
     threadWatch?.observer?.disconnect();
     threadWatch = null;
     const thread = query('#app .chat-thread');
     if (!thread || !window.MutationObserver) return;
-    const state = {thread, filled:false, nodes:new Set(thread.children), height:thread.scrollHeight, atBottom:true, button:null, glide:null, offset:0};
+    const state = {thread, filled:false, nodes:new Set(thread.children), height:thread.scrollHeight, atBottom:true, button:null, glide:null, offset:0, frame:0, timer:0};
     state.observer = new window.MutationObserver(records => threadChanged(state, records));
     state.observer.observe(thread, {childList:true});
     const wrap = query('#app .chat-composer-wrap');
@@ -752,11 +786,11 @@
     state.nodes = children;
     const height = thread.scrollHeight, delta = height - state.height, bottom = height - thread.clientHeight;
     state.height = height;
-    if (thread.__searchAnchor) {state.glide = null; state.atBottom = false;}
+    if (thread.__searchAnchor) {stopGlide(state); state.atBottom = false;}
     const atBottom = !thread.__searchAnchor && bottom - thread.scrollTop < 6, gliding = !!state.glide, following = gliding || state.atBottom && atBottom;
     state.atBottom = atBottom;
     if (!state.filled) {state.filled = true; return;}
-    if (!phone()) return;
+    if (!phone() || document.hidden) {stopGlide(state, true); return;}
     const quiet = reduced(), entering = new Set();
     for (const node of fresh) {
       const kind = kindOf(node);
@@ -770,34 +804,44 @@
       const user = node.matches('.user');
       node.style.transformOrigin = user ? '100% 100%' : '0 100%';
       if (quiet) play(node, [{opacity:0}, {opacity:1}], {duration:200, easing:'ease-out'});
-      else play(node, [{opacity:0, transform:`translate3d(0,${user ? 16 : 10}px,0) scale(${user ? .96 : .98})`}, {opacity:1, offset:.35}, {opacity:1, transform:'translate3d(0,0,0) scale(1)'}], {duration:460, easing:spring('sheet')});
+      else play(node, [{opacity:0, transform:`translate3d(0,${user ? 8 : 6}px,0)`}, {opacity:1, transform:'translate3d(0,0,0)'}], {duration:240, easing:EASE_OUT});
     }
   }
   // A critically damped spring (the navigation curve) drives the scroll position toward the live bottom.
   const settleCurve = progress => {const w = 2 * Math.PI / .27, t = progress * .34; return progress >= 1 ? 1 : 1 - Math.exp(-w * t) * (1 + w * t);};
+  function stopGlide(state, finish = false) {
+    if (!state) return;
+    window.cancelAnimationFrame(state.frame); window.clearTimeout(state.timer);
+    state.frame = 0; state.timer = 0;
+    if (finish && state.glide && state.thread.isConnected && !state.thread.__searchAnchor) state.thread.scrollTop = state.thread.scrollHeight - state.thread.clientHeight;
+    state.glide = null; state.offset = 0;
+  }
   function glide(state, offset) {
     const {thread} = state;
-    state.glide = {start:now(), from:offset};
+    stopGlide(state);
+    // Stay inside app.js's near-bottom range. Bursts must not pull the transcript backwards
+    // by an entire reply or start another frame loop for every streaming update.
+    offset = clamp(offset, 0, Math.min(64, thread.clientHeight * .2));
+    const current = state.glide = {start:now(), from:offset};
     state.offset = offset;
     thread.scrollTop = thread.scrollHeight - thread.clientHeight - offset;
     const step = () => {
-      const current = state.glide;
-      if (!current || threadWatch !== state || !thread.isConnected) return;
-      if (thread.__searchAnchor) {state.glide = null; state.atBottom = false; return;}
-      const progress = clamp((now() - current.start) / 340, 0, 1);
+      state.frame = 0;
+      if (state.glide !== current || threadWatch !== state || !thread.isConnected) return;
+      if (thread.__searchAnchor) {stopGlide(state); state.atBottom = false; return;}
+      const progress = clamp((now() - current.start) / 240, 0, 1);
       state.offset = current.from * (1 - settleCurve(progress));
       thread.scrollTop = thread.scrollHeight - thread.clientHeight - state.offset;
-      if (progress < 1) window.requestAnimationFrame(step);
-      else {state.glide = null; state.offset = 0; state.atBottom = true;}
+      if (progress < 1) state.frame = window.requestAnimationFrame(step);
+      else {stopGlide(state); state.atBottom = true; scheduleBars();}
     };
-    window.requestAnimationFrame(step);
+    state.frame = window.requestAnimationFrame(step);
     // Without frames (a backgrounded page) the transcript still lands on the latest message.
-    const current = state.glide;
-    window.setTimeout(() => {if (state.glide === current) step();}, 400);
+    state.timer = window.setTimeout(() => {if (state.glide === current) {stopGlide(state, true); state.atBottom = true; scheduleBars();}}, 320);
   }
   // The owner's own scrolling always wins over a glide in progress.
   for (const name of ['touchstart','wheel']) document.addEventListener(name, event => {
-    if (threadWatch?.glide && threadWatch.thread.contains(event.target)) {threadWatch.glide = null; threadWatch.offset = 0;}
+    if (threadWatch?.thread.contains(event.target)) {stopGlide(threadWatch); stopComposerMotion();}
   }, {passive:true, capture:true});
 
   /* ---------- Long-press context menus ---------- */
@@ -1065,7 +1109,20 @@
     const send = event.target.closest?.('#app .chat-composer .send'), field = send?.closest('form')?.querySelector('textarea');
     if (field && !send.disabled && document.activeElement === field) event.preventDefault();
   });
-  for (const name of ['resize','orientationchange','studio:text-size']) window.addEventListener(name, scheduleViewport);
+  // Native view switching/rotation can interrupt a gesture without delivering touchend.
+  // Restore the live screen synchronously, without activating Back or replaying a gesture.
+  function interruptMotion() {
+    clearPress(); releasePressed(true); closeMenu(true);
+    for (const finish of [...closing]) finish();
+    if (edge) {teardownEdge(edge); edge = null;}
+    if (pendingPop) {teardownEdge(pendingPop.gesture); pendingPop = null;}
+    window.clearTimeout(pendingTimer); pendingTimer = 0;
+    settle(); stopComposerMotion(); stopGlide(threadWatch, true); stopLens();
+    swallowTouch = false; swallowUntil = 0; swallowSource = null;
+  }
+  document.addEventListener('visibilitychange', () => {if (document.hidden) interruptMotion();});
+  window.addEventListener('pagehide', interruptMotion);
+  for (const name of ['resize','orientationchange','studio:text-size','studio:visible']) window.addEventListener(name, () => {interruptMotion(); scheduleViewport();});
   // Layout changes (rotation, Dynamic Type, a resized window) re-measure the lens without animating it.
   for (const name of ['resize','studio:text-size']) window.addEventListener(name, () => {closeMenu(true); scheduleBars(); window.requestAnimationFrame(() => phone() && mountLens(false));});
   window.visualViewport?.addEventListener('resize', scheduleViewport);
