@@ -180,6 +180,7 @@ function taskEvidence(item,v){
   const diagnostics=item.diagnostics,diagnosticRows=[];
   if(diagnostics?.context){const c=diagnostics.context;diagnosticRows.push(`${Number(c.tokens)||0} estimated context tokens${Number.isFinite(c.effective)?` of ${c.effective.toLocaleString()} available`:''}.`);}
   if(diagnostics?.memory){const m=diagnostics.memory;diagnosticRows.push(`Memory: ${Number(m.selected)||0} of ${Number(m.total)||0} facts selected; ${Number(m.omitted)||0} omitted. ${Number(m.refreshes)||0} recall passes.`);if(m.omittedPins?.length)diagnosticRows.push(`${m.omittedPins.length} pinned facts did not fit.`);if(m.truncated?.length)diagnosticRows.push(`${m.truncated.length} fact excerpts were shortened; full values remain in Memory.`);}
+  if(diagnostics?.memoryReview){const m=diagnostics.memoryReview;diagnosticRows.push(`Memory review: ${m.status==='reviewed'?'checked':m.status==='capacity'?'suggestion limit reached':'unavailable'}; ${plural(Number(m.proposed)||0,'fact')} suggested for Learning.${m.guarded?' An unverified memory confirmation was corrected.':''}`);}
   if(diagnostics?.compaction){const c=diagnostics.compaction;diagnosticRows.push(`Summary coverage: ${c.coverage?.complete===true?'complete within the selected sources':'partial; read original sources for missing details'}. ${Number(c.coverage?.summaryCalls)||0} summary calls.`);if(c.coverage?.mergeFailed)diagnosticRows.push('Summary merge failed; the handoff retains partial coverage.');}
   const diagnosticHTML=diagnosticRows.length?`<p class="bp-task-body"><small><strong>Context and memory coverage</strong></small>${diagnosticRows.map(row=>`<small>${esc(row)}</small>`).join('')}</p>`:'';
   if(!checks.length&&!records.length&&!diagnosticRows.length)return checked;
@@ -392,7 +393,7 @@ function learningPanel(bot,v){
   const working=busy(bot)&&pending.length?`<div class="bp-notice">${icon('clock')}<p>${esc(bot.name)} is working on a task. You can read its suggestions now and accept them when it finishes.</p></div>`:'';
   const list=pending.length?`<div class="bp-proposals">${pending.map(item=>proposalCard(bot,v,item)).join('')}</div>`:empty('spark','Nothing to review',`When ${esc(bot.name)} suggests a memory update or a skill change, it appears here for you to accept or decline.`);
   const history=reviewed.length?`<section class="bp-proposal-history"><h3>Reviewed</h3><div class="bp-proposals">${reviewed.map(item=>proposalCard(bot,v,item)).join('')}</div></section>`:'';
-  return `${working}<p class="bp-hint">${esc(bot.name)} can suggest changes to its core memory and skills. Nothing changes until you accept, and you can undo an accepted change as long as nothing newer has changed it.</p>${reviewRoutine(bot)}<p class="bp-form-error" role="alert">${esc(v.proposalNotice)}</p>${list}${history}`;
+  return `${working}<p class="bp-hint">With Memory tools on, ${esc(bot.name)} checks your chats for lasting facts and preferences and suggests them here. Suggestions change nothing until you accept. You can also review skill suggestions and undo accepted changes while nothing newer has changed them.</p>${reviewRoutine(bot)}<p class="bp-form-error" role="alert">${esc(v.proposalNotice)}</p>${list}${history}`;
 }
 
 /* Files */

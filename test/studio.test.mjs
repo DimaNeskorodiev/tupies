@@ -131,7 +131,7 @@ test('Tupies owns the actual model/tool loop and supplies memory, skills, and pe
   assert.ok(run.events.some(event=>event.type==='tool.completed'));
   f.remote.handler=()=>answer('The earlier task is in my native history.');
   await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text:'Continue from the earlier task.'}});await f.wait();
-  const last=f.remote.requests.filter(r=>r.url.endsWith('/responses')).at(-1).input;
+  const last=f.remote.requests.filter(r=>r.url.endsWith('/responses') && !r.input?.tools?.some(tool=>tool.name==='memory_review_result')).at(-1).input;
   assert.ok(last.input.some(item=>item.role==='user'&&item.content.includes('Read the assigned skill')));
   assert.equal((await f.request('/api/bots/bot_atlas/messages')).body.messages.filter(m=>m.role==='assistant').length,2);
 });
