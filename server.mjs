@@ -248,7 +248,7 @@ export async function createStudioServer(options={}) {
         if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access}))return;
         if(await notificationsApi(req,res,url,{session,notifications,body,json}))return;
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
-        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),sync:sync.summary(),browser:runtime.browsers.status()});
+        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
         if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
@@ -263,6 +263,12 @@ export async function createStudioServer(options={}) {
           const input=await body(req);
           const bot=await store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
           return json(res,bot,201);
+        }
+        const browserControlMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/browser\/(view|action|resume)$/);
+        if(browserControlMatch && method==='POST') {
+          const [,botId,action]=browserControlMatch;ensure(store.state.bots.some(bot=>bot.id===botId),404,'Bot not found.');
+          res.setHeader('Cache-Control','no-store');
+          return json(res,await runtime.browserControl[action](botId,await body(req,32_000)));
         }
         let match=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)(?:\/(messages|run|runs|stop|approval|answer|steer|capabilities|skills|compact))?$/);
         if(match) {
