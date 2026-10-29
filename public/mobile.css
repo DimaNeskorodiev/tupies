@@ -934,3 +934,12 @@
   body.pearl-studio .chat-thread:empty::before,body.pearl-studio .chat-thread:empty::after,body.pearl-studio :is(.dash-skeleton span,.rich-loading){animation:none}
   body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]{transition:none}
 }
+
+/* Routine cards on a phone: the name and task get the row beside the avatar and the controls move underneath,
+   so a routine with a long task (such as one a bot wrote from chat) stays readable. */
+@media(max-width:760px), (max-height:500px) and (pointer:coarse){
+  .routine-card{flex-wrap:wrap;align-items:flex-start}
+  .routine-info{flex:1 1 calc(100% - 68px)}
+  .routine-info p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+  .routine-actions{flex:1 1 100%;justify-content:flex-start;margin-left:68px}
+}
