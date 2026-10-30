@@ -9,7 +9,7 @@ Control-C stops the server and cancels active Tupies tasks. Approved external ac
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | STUDIO_HOST | 127.0.0.1 | Listener bind. Compose uses 0.0.0.0 inside the container. |
-| STUDIO_PORT | 4310 | HTTP and local OAuth callback port. Use the same port at both tunnel ends. |
+| STUDIO_PORT | 4310 | HTTP and local OAuth callback port. Use the same port at both tunnel ends. With `STUDIO_TLS=engine` the ChatGPT callback instead uses 127.0.0.1:1455 while signing in. |
 | STUDIO_DATA_DIR | data/ beside server.mjs | State, vault, skills and private bot workspaces. Prefer an absolute service path. |
 | STUDIO_PUBLIC_URL | unset | Exact allowed external HTTPS origin; no path, query or credentials. |
 | STUDIO_SECURE_COOKIE | false locally; on with public origin | Require HTTPS transport for login cookies. |

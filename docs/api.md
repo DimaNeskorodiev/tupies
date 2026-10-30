@@ -36,7 +36,7 @@ A connection uses `{name,type,baseUrl?,apiKey?,defaultModel?,maxOutputTokens?,co
 | GET /api/connections/{id}/login | Poll safe pending/connected/error/signed-out status. |
 | DELETE /api/connections/{id}/login | Cancel a pending attempt. |
 | POST /api/connections/{id}/logout | Sign out and clear local OAuth credentials. |
-| GET /auth/callback | Public loopback OAuth callback; state, code, issued-client identity and signed token are validated internally. |
+| GET /auth/callback | Public loopback OAuth callback; state, code, issued-client identity and signed token are validated internally. With `STUDIO_TLS=engine`, a separate 127.0.0.1-only listener serves it (port 1455, or a free port) while a sign-in is pending. |
 
 ## OpenRouter voice
 

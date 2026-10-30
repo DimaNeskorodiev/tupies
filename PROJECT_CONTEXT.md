@@ -1,6 +1,14 @@
 # Tupies — project context
 
-Last updated: 29 October 2026. Current application version: 0.5.0.
+Last updated: 30 October 2026. Current application version: 0.5.0.
+
+## ChatGPT sign-in on engines serving their own certificate (30 October 2026, source only)
+
+Found while writing the Mac/iPhone setup guide: **Continue with ChatGPT** could not finish on an engine started with `STUDIO_TLS=engine`. OpenAI returns to plain HTTP on `127.0.0.1`, and the redirect URI used the engine's own port, which in that mode speaks only TLS. The browser's callback failed with a socket error and the attempt stayed pending until it expired. Reproduced on a disposable TLS engine with the local OAuth issuer fixture.
+
+- `lib/oauth-callback.mjs`: in TLS mode a pending sign-in opens a second listener bound to `127.0.0.1` alone. It uses port 1455 (OpenAI's documented example; OpenAI allows the port to vary between sign-ins) or any free port when 1455 is taken. It answers only `GET /auth/callback` for its exact Host and Origin and closes after the callback, cancellation, sign-out or expiry. State, PKCE, nonce and ID-token checks are unchanged, and the engine port still refuses plain HTTP. Engines without their own TLS keep the same-port callback.
+- The sign-in message names the port to forward. On a VPS: `ssh -N -L 1455:127.0.0.1:1455`. An iPhone cannot finish ChatGPT sign-in, because the redirect goes to the phone's own loopback address. A container with `STUDIO_TLS=engine` still cannot either: its callback listener is on the container's loopback, which published ports don't reach. Native services work.
+- Not deployed to either engine. Real ChatGPT consent through the new listener has not been exercised.
 
 ## Manage Tupies from chat (29 October 2026)
 
