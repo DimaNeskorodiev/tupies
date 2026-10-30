@@ -9,6 +9,7 @@ The app adds what a browser tab can't:
 - **Several engines, one-click switching.** Each engine keeps its own live web view, so switching is instant and preserves page state. On the Mac you can also use ⌘1…⌘9.
 - **Status at a glance.** A status dot per engine and a sync indicator (`GET /api/sync/status`). On the iPhone they live in the app's Settings (see below).
 - **Local engine management on the Mac.** A complete app includes its own engine and Node.js runtime. It prefers an already-running engine, shows the log, and stops an engine on quit only when the app started it. Explicit saved developer paths remain supported.
+- **Keeps running when the Mac window closes.** Closing the window (close button or ⌘W) leaves the app, each engine's live web view and an engine the app started running, as Mail and Messages do. The Dock icon or a pairing link reopens the window on the same page without reloading; **Quit** (⌘Q) quits. Installed on the owner's Mac as signed build 8 on 30 October 2026 (build 7 plus only this change); not yet checked by hand in the installed app.
 
 The app loads the engine's web UI in a `WKWebView` after signing in with a single-use device ticket.
 
