@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Manage Tupies from chat (29 October 2026, deployed)
+
+Implemented and deployed to both engines: bots create routines, bots and skill assignments from chat after exact approval, with readable approval summaries and a one-time upgrade that gives bots on the old default tool set Routines and Manage Tupies. See [capabilities](capabilities.md). Next: confirm in real use that the owner's bots pick these tools for plain requests. Possible later steps: an owner-controlled option to skip approval for low-risk setup in the owner's own chat, model/provider choice in `bots_create`, and room creation.
+
 ## Mac-local coding orchestration (29 October 2026)
 
 Installed in the isolated Mac engine: conversation-led project/agent discovery, optional exact-approved Claude Code delegation, separate committed working copies, progress/cancellation, independent checks and Azure draft-PR publication. See [Coding on this Mac](local-coding.md). Real account/task and signed Mac UI acceptance remain open. Next: Codex adapter with equivalent command approvals, easier Azure Entra sign-in, richer scoped project discovery and job-history management. iPhone and Home-server dispatch are explicitly deferred; they require a separate authenticated Mac worker boundary.
