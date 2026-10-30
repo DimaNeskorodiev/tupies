@@ -105,7 +105,9 @@ The engine advertises assigned names/descriptions, then gives the bot `skills_re
 
 `skills_create` can save a new reusable workflow after exact approval and assign it only to the creating bot. Learning proposals remain available for new skills or reviewed changes to existing learned/local skills. Managed imported/catalog package revisions are immutable; create a separate new skill to customize one. Explicit catalog-version changes retain older installed revisions for rollback. See [Skills](skills.md#versions-customization-and-sync).
 
-With the automation tool group enabled, a bot can list its own routines, propose a schedule through **routines_create**, or remove its own schedule. Creating/removing a schedule always requires exact approval and can spend future model usage while the engine is online.
+With the automation tool group (**Routines**) enabled, a bot can list its own routines, schedule one through **routines_create** (for example when asked to “check the bitcoin price every 10 minutes”), change, pause or resume one with **routines_update**, or remove one. Creating, changing or removing a schedule always requires exact approval and can spend future model usage while the engine is online.
+
+With **Manage Tupies** (the `setup` group, on by default) a bot can also set up the workspace from chat: `bots_list` shows the team, models and installed skills; `bots_create` adds a new bot; `bots_update` changes another bot's name, role, instructions, tool groups or availability; `skills_assign` gives an installed skill to another bot; and the routine tools work for any bot. Every change shows the owner an approval card with a plain summary and the exact arguments. A bot cannot change its own settings, turn on Terminal, Browser or Coding, assign integrations or loosen an approval policy; those stay in Settings.
 
 **Download package** saves a portable `.skill.json` export. Restore its exact directory/resource bytes without executing them:
 

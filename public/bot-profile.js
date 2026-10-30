@@ -1,8 +1,8 @@
 /* Bot profile (#/bots/<botId>): Overview, Brain (long-term notes), Memory (core facts), Learning (suggested changes to review) and Files. app.js calls render(), sets the HTML, then mount(). */
 (()=>{
 const TABS=[['overview','Overview','grid'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder']];
-const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',terminal:'Terminal',browser:'Browser'};
-const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation'];
+const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser'};
+const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
 const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
 const PALETTE=['#829f96','#9590b5','#81a0bd','#d0a47b','#bf92aa','#b7b17e'];
 const ACTIVITY={run:'play',memory:'pin',file:'file',bot:'bots',skill:'spark',learning:'spark',routine:'routine',integration:'globe',channel:'chat',process:'stop',room:'team'};

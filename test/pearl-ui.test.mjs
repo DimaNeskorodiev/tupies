@@ -73,7 +73,7 @@ test('a closed new-bot editor keeps inherited provider, safe tools and enabled v
   assert.equal(form.querySelector('.bot-advanced').open,false);
   assert.equal(data.get('connectionId'),'provider');assert.equal(data.get('model'),'');
   assert.equal(data.get('approvalPolicy'),'balanced');assert.equal(data.get('teamMode'),'all');
-  assert.deepEqual(data.getAll('tool'),['workspace','memory','skills','web','integrations','delegation','automation']);
+  assert.deepEqual(data.getAll('tool'),['workspace','memory','skills','web','integrations','delegation','automation','setup']);
   assert.equal(data.has('enabled'),true);assert.equal(data.has('hidden'),false);assert.equal(data.get('icon'),'companion:blue');
 });
 
