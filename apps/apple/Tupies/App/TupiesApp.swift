@@ -55,6 +55,10 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Closing the window keeps the app running, as Mail and Messages do: each engine's live web view and an engine
+    /// this app started stay up. The Dock icon or a pairing link reopens the window; Quit (⌘Q) quits.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
     func applicationWillTerminate(_ notification: Notification) {
         // Only stops an engine this app started; never one launched elsewhere.
         AppLifecycle.localEngine?.terminateIfOwned()
