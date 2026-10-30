@@ -315,6 +315,15 @@ test('notification routes require the current paired iOS bearer and preserve bro
   const setup = await request('/api/setup', {method:'POST', data:{token:app.bootstrapToken, password:'notification-fixture-password'}});
   const cookie = setup.response.headers.get('set-cookie').split(';')[0], csrf = setup.body.csrf;
   assert.equal((await request('/api/device/notifications')).status, 401);
+  assert.equal((await request('/api/notifications/unread')).status,401);
+  assert.deepEqual((await request('/api/notifications/unread',{cookie})).body,{unreadBots:{}});
+  await app.store.mutate(state=>{state.messages.bot_atlas=[{id:'inbox_user',role:'user',source:'chat',runId:'inbox_run',content:'Private request'},{id:'inbox_reply',role:'assistant',runId:'inbox_run',content:'Private reply'}];});
+  assert.deepEqual((await request('/api/notifications/unread',{cookie})).body,{unreadBots:{bot_atlas:'inbox_reply'}});
+  assert.deepEqual((await request('/api/state',{cookie})).body.unreadBots,{bot_atlas:'inbox_reply'});
+  assert.equal((await request('/api/notifications/unread',{method:'POST',cookie,csrf,data:{}})).status,405);
+  assert.equal((await request('/api/notifications/unread',{cookie,headers:{Origin:'https://attacker.test'}})).status,403);
+  await request('/api/notifications/read',{method:'POST',cookie,csrf,data:{botId:'bot_atlas',messageIds:['inbox_reply']}});
+  assert.deepEqual((await request('/api/notifications/unread',{cookie})).body,{unreadBots:{}});
   assert.equal((await request('/api/notifications/read', {method:'POST', data:{botId:'bot_atlas',messageIds:[]}})).status,401);
   assert.equal((await request('/api/notifications/read', {method:'POST',cookie,data:{botId:'bot_atlas',messageIds:[]}})).status,403);
   assert.equal((await request('/api/notifications/read', {cookie})).status,405);
@@ -343,6 +352,7 @@ test('notification routes require the current paired iOS bearer and preserve bro
   await app.sync.security.add(engineDevice);await app.store.mutate(state => state.devices.push(engineDevice));
   app.sync.devices.sessions.set(engineToken, {deviceId:'dev_engine', expires:Date.now()+60000});
   assert.equal((await request('/api/device/notifications', {bearer:engineToken})).status, 403);
+  assert.equal((await request('/api/notifications/unread', {bearer:engineToken})).status,403);
   assert.equal((await request('/api/notifications/read', {method:'POST',bearer:engineToken,data:{botId:'bot_atlas',messageIds:[]}})).status,403);
   await app.sync.devices.revoke(deviceId);
   assert.equal((await request('/api/device/notifications', {bearer})).status, 401);
@@ -377,6 +387,45 @@ test('read receipts suppress only an actually read final reply during the grace 
   await f.notifications.close();
   const resumed = await new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE+16000}).init();
   t.after(() => resumed.close()); await resumed.flush(); assert.equal(f.sent.length, 1, 'restart cannot replay the read reply');
+});
+
+test('unread bot summaries use final owner-visible replies and exact reads without requiring push setup', async t => {
+  const f = await fixture(t, {available:false});
+  assert.deepEqual(f.notifications.unreadBots(), {});
+  await f.reply('first');
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_first'});
+  for (const [id, options] of [['partial',{partial:true}], ['private',{source:'telegram',sessionId:'private_chat'}], ['delegated',{source:'delegation',fromBotId:'bot_nova'}], ['orphan',{user:false}]]) await f.reply(id, options);
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_first'});
+  await f.notifications.acknowledge({botId:'bot_nova',messageIds:['message_first']});
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_first'});
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_first']});
+  assert.deepEqual(f.notifications.unreadBots(), {});
+  await f.reply('second');
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_first']});
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_second'}, 'reading an older reply cannot clear a newer one');
+  await f.reply('routine_unread', {source:'routine',routineId:'routine_unread'});
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_routine_unread'});
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_routine_unread']});
+  assert.deepEqual(f.notifications.unreadBots(), {});
+});
+
+test('the latest bot read survives pruning, receipt pressure and a restart without keeping an unbounded history', async t => {
+  const f = await fixture(t, {available:false});
+  await f.reply('retained');
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_retained']});
+  const [readId] = Object.keys(f.notifications.state.read);
+  f.advance(2 * 24 * 60 * 60_000);
+  for(let index=0;index<10001;index++)f.notifications.state.read[index.toString(16).padStart(32,'0')]=f.notifications.now();
+  await f.notifications.flush();
+  assert.equal(Object.keys(f.notifications.state.read).length,10000);
+  assert.ok(Object.hasOwn(f.notifications.state.read,readId));
+  assert.deepEqual(f.notifications.unreadBots(),{});
+  await f.notifications.close();
+  const resumed=await new Notifications(f.store,{sync:f.sync,transport:f.transport,now:f.notifications.now}).init();t.after(()=>resumed.close());
+  assert.deepEqual(resumed.unreadBots(),{});
+  await f.store.mutate(state=>state.messages.bot_atlas.push({id:'next_user',role:'user',source:'chat',runId:'next_run'},{id:'next_reply',role:'assistant',runId:'next_run'}));
+  await resumed.flush();assert.deepEqual(resumed.unreadBots(),{bot_atlas:'next_reply'});
+  assert.ok(!Object.hasOwn(resumed.state.read,readId),'a superseded old receipt can expire');
 });
 
 test('reads arriving before synced replies suppress the exact event and cannot approve or cancel work', async t => {
