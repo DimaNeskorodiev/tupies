@@ -8,7 +8,7 @@
   - An engine without TLS keeps the same-port callback and opens nothing else.
   - The listener prefers 1455 and falls back from a taken port. It stays open while an attempt is still being registered, even with nothing pending, and closes on its expiry timer with no further request.
 - The first regression fails on the unfixed source: the redirect points at the TLS port.
-- On Node 22.23.1, syntax checks cover 119 modules. On the final tree the complete suite ran **1201/1202**. The one failure was the bundled TypeScript language-server diagnostics test (a real `tsserver` under load, seen before), which passed three isolated reruns and is outside this change. An earlier full run, before the last listener change, passed 1202/1202.
+- After integrating main `8e8c598` (PR #16), **1202/1202** complete regressions pass on **Node 22.23.1** with `npm test`, zero failures/skips/cancellations, in **179.332 seconds**. All **119** JavaScript modules pass syntax checks; the **25-page guide** is regenerated from the resolved documents, preserving both TLS sign-in and Mac window-close behavior. `git diff --check` passes. The conflicts were limited to `PROJECT_CONTEXT.md` and the generated guide; runtime code merged without conflicts. The preceding PR snapshot had one bundled TypeScript language-server diagnostics failure under load (**1201/1202**), with three passing isolated reruns; that test passes in this complete integration run.
 - Not verified: real ChatGPT consent through the new listener, an SSH-tunnelled VPS sign-in, and the Mac app opening the sign-in page. Not deployed to either engine.
 
 ## Manage Tupies from chat (29 October 2026)
