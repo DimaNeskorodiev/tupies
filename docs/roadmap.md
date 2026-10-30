@@ -103,6 +103,7 @@ The deployed v9 candidate passes **918/918** JavaScript tests on official **Node
 
 ## Engines, sync and native apps
 
+- **ChatGPT sign-in with the engine's own certificate, source only (30 October):** an engine started with `STUDIO_TLS=engine` now finishes Continue with ChatGPT through a temporary callback listener on 127.0.0.1:1455 instead of its TLS-only port. Not deployed yet; signing in from an iPhone remains impossible because OpenAI's callback is loopback-only.
 - **Shared Dashboard activity, deployed to both engines 28 October:** terminal task and room outcomes travel with synced messages, so switching engines shows the same finished-task timeline after propagation. Retained historical evidence is backfilled; the raw Settings activity log stays engine-local. Deployment and verification status are in `verification.md`.
 
 Shipped in 0.5: home-server sync between engines, device pairing with P-256 keys, short-lived device sessions, revocation, paired-apps-only sign-in from the internet with proxy-aware limits, shell pairing (`npm run pair`), HTTPS with the engine's own certificate pinned through the pairing QR code (no domain needed), and the Apple app shell in `apps/apple/`. Next:

@@ -28,7 +28,7 @@ From your Mac:
 ssh -N -L 4310:127.0.0.1:4310 user@your-vps
 ```
 
-Open `http://127.0.0.1:4310`. The same-port tunnel also carries the ChatGPT loopback callback at `/auth/callback`. Obtain the first-start setup token through the private console/journal. Keep the Node control port off the public network.
+Open `http://127.0.0.1:4310`. The same-port tunnel also carries the ChatGPT loopback callback at `/auth/callback`. An engine serving its own certificate takes that callback on port 1455 while signing in; forward `1455:127.0.0.1:1455` instead (see [providers](hermes-setup.md#with-the-engines-own-certificate)). Obtain the first-start setup token through the private console/journal. Keep the Node control port off the public network.
 
 ## Container
 
@@ -69,7 +69,7 @@ STUDIO_ENGINE_NAME="Home server"
 STUDIO_PUBLISH=443
 ```
 
-Run natively, Tupies needs `STUDIO_HOST=0.0.0.0` and `STUDIO_PORT=443` (with permission to bind it, for example systemd's `AmbientCapabilities=CAP_NET_BIND_SERVICE`) or another open port in `STUDIO_PUBLIC_URL`. An engine serving its own certificate speaks TLS 1.3 only and trusts no proxy for client addresses. Behind a domain and Caddy instead, set `STUDIO_PUBLIC_URL=https://studio.example.com` and leave `STUDIO_TLS` unset.
+Run natively, Tupies needs `STUDIO_HOST=0.0.0.0` and `STUDIO_PORT=443` (with permission to bind it, for example systemd's `AmbientCapabilities=CAP_NET_BIND_SERVICE`) or another open port in `STUDIO_PUBLIC_URL`. An engine serving its own certificate speaks TLS 1.3 only and trusts no proxy for client addresses. For ChatGPT sign-in it opens a temporary callback listener on the server's 127.0.0.1:1455, which never faces the internet; reach it through `ssh -N -L 1455:127.0.0.1:1455`. Behind a domain and Caddy instead, set `STUDIO_PUBLIC_URL=https://studio.example.com` and leave `STUDIO_TLS` unset.
 
 From the internet only paired apps can sign in. The workspace password works on private routes: the server itself, an SSH tunnel, your LAN or Tailscale. Pair from the server's shell instead of a browser:
 
