@@ -1,6 +1,12 @@
 # Tupies — project context
 
-Last updated: 29 October 2026. Current application version: 0.5.0.
+Last updated: 30 October 2026. Current application version: 0.5.0.
+
+## Mac app keeps running when its window closes (30 October 2026, installed on the Mac as build 8)
+
+The owner asked that closing the Mac app's window no longer quit it. The app delegate now returns `false` from `applicationShouldTerminateAfterLastWindowClosed` (`apps/apple/Tupies/App/TupiesApp.swift`). Closing the window (close button or ⌘W) keeps the app, each engine's live web view and an engine the app started running; the Dock icon or a pairing link reopens the window on the same page without reloading. Quit (⌘Q) still quits and stops only an engine the app started. A wrapper around SwiftUI's window delegate (hide instead of close) was tried and rejected: SwiftUI routes pairing links through that delegate, and links stopped arriving.
+
+Verified with a disposable SwiftUI app in the same scene layout (no real app, data or engine touched): close button, Dock reopen, link while closed, quit and relaunch, and a long-lived web view that kept running while closed and was not reloaded. The unsigned macOS build of the project passes. Not verified: the real Tupies app and ⌘W pressed by hand. Signed **Mac8** is installed in place at `/Applications/Tupies.app` with the owner's go-ahead: Mac7's exact native source plus only this method, with Mac7's bundled v10 engine, runtime and embedded profile bytes, the same certificate, entitlements and Keychain group, and no profile action. Mac7 is preserved for rollback, the Transfer app and pairings are unchanged, and the app was not launched by the installer. iPhone7 is unchanged. Not yet observed: the owner's first launch of Mac8 and its close/Dock/link behavior by hand. Details are in ignored `docs/local-workspace.md`.
 
 ## Manage Tupies from chat (29 October 2026)
 
