@@ -1,5 +1,16 @@
 # Verification — Tupies Engine 0.5
 
+## ChatGPT sign-in with the engine's own certificate (30 October 2026, source only)
+
+- Reproduced before the fix on a disposable engine: temporary data directory, `tls:'engine'`, the local OAuth issuer fixture, no real account. Login returned `redirect_uri=http://127.0.0.1:<engine port>/auth/callback`. The browser-style plain-HTTP callback failed with `UND_ERR_SOCKET` and the attempt stayed `pending`. After the fix, the same script got `http://127.0.0.1:1455/auth/callback`, the page "ChatGPT is connected." and status `connected`.
+- `test/tls.test.mjs` adds three regressions:
+  - A TLS engine. No callback listener exists before sign-in. The redirect uses its own port, not the engine's, and the sign-in message names it. The engine port still refuses plain HTTP. `/`, `/api/state`, `/guide.css`, POST, a rebound Host and a foreign Origin all get 404. A forged state gets 400, with no code exchange, and the attempt stays pending. The real callback connects, and the code exchange repeats the exact redirect URI. The page links nothing the listener does not serve. The listener closes after success and after cancellation.
+  - An engine without TLS keeps the same-port callback and opens nothing else.
+  - The listener prefers 1455 and falls back from a taken port. It stays open while an attempt is still being registered, even with nothing pending, and closes on its expiry timer with no further request.
+- The first regression fails on the unfixed source: the redirect points at the TLS port.
+- After integrating main `8e8c598` (PR #16), **1202/1202** complete regressions pass on **Node 22.23.1** with `npm test`, zero failures/skips/cancellations, in **179.332 seconds**. All **119** JavaScript modules pass syntax checks; the **25-page guide** is regenerated from the resolved documents, preserving both TLS sign-in and Mac window-close behavior. `git diff --check` passes. The conflicts were limited to `PROJECT_CONTEXT.md` and the generated guide; runtime code merged without conflicts. The preceding PR snapshot had one bundled TypeScript language-server diagnostics failure under load (**1201/1202**), with three passing isolated reruns; that test passes in this complete integration run.
+- Not verified: real ChatGPT consent through the new listener, an SSH-tunnelled VPS sign-in, and the Mac app opening the sign-in page. Not deployed to either engine.
+
 ## Manage Tupies from chat (29 October 2026)
 
 - On this branch (based on main `82d4896`): complete suite on **Node 22.23.1** passes **1041/1041**, zero failures/skips/cancellations, with `node --test --test-concurrency=4 --test-timeout=180000 test/*.test.mjs`. Syntax checks pass for **107 modules**; `npm run build` rebuilds the **23-page guide**. (A run with a symlinked `node_modules` failed 42 document/image tests on this branch and on unmodified main alike; a real copy passes them.)

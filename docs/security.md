@@ -72,7 +72,7 @@ Offsets are durable before dispatch; reply intentions are durable before sending
 
 ## OAuth and operation
 
-ChatGPT sign-in verifies state, PKCE, nonce and a JWKS-signed ID token against issuer, audience, expiry and selected identity. Tokens are retained server-side. Refreshes are serialized and frozen after ambiguous renewal so rotating refresh tokens are not replayed. Hosted/paid plan integration requires OpenAI onboarding beyond local OSS registration.
+ChatGPT sign-in verifies state, PKCE, nonce and a JWKS-signed ID token against issuer, audience, expiry and selected identity. OpenAI returns to plain HTTP on 127.0.0.1. With `STUDIO_TLS=engine` the engine's port stays TLS-only. A pending sign-in instead opens a second listener bound to 127.0.0.1 alone (port 1455, or a free port when that is taken). It answers only `GET /auth/callback` for its exact loopback Host and Origin, and it closes once no attempt is pending, so it never adds a public listener. Tokens are retained server-side. Refreshes are serialized and frozen after ambiguous renewal so rotating refresh tokens are not replayed. Hosted/paid plan integration requires OpenAI onboarding beyond local OSS registration.
 
 Operate one Tupies process per data directory. There is no cross-process storage lease, RBAC, SSO, MFA, security certification or public account-recovery endpoint. Keep a complete encrypted backup and apply operating-system/runtime patches. Desktop/mobile device actions are future work and are not silently enabled by provider sign-in.
 
