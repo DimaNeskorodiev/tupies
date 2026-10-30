@@ -76,3 +76,7 @@ Keep tests alongside the behavior they protect. See `architecture.md` for compon
 Build and verify first. Releases include source, package/lock, built public assets, fonts, notices and docs. Exclude dependencies, runtime/account data, private files, environment settings, backups and scratch output. A release can install production libraries with `npm ci --omit=dev`; rebuilding source assets needs development dependencies.
 
 `docker compose up --build -d` builds the independent service. The container uses `TUPIES_BUILD_WEB_ONLY=1` for its asset build, so a web engine does not need the Apple icon directory; native signing/build outputs and private development state stay outside its build context. The Compose named volume is separate from a native `data/` directory; do not assume it imports the Mac account. Follow `deployment.md` and `operations.md` for ports, TLS, backups and deliberate data migration.
+
+## Local coding verification
+
+Use `node --test test/coding-*.test.mjs test/local-coding*.test.mjs test/azure-devops.test.mjs` for focused deterministic acceptance, then the complete suite. The optional `TUPIES_CLAUDE_ACCEPTANCE` absolute executable path enables installed-Claude tests against a local fake Anthropic endpoint inside an OS network sandbox; no real accounts or inference are used. Source implementation, isolated release checks and live account/task acceptance must be reported separately. See [local coding](local-coding.md).
