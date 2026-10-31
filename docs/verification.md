@@ -1,5 +1,13 @@
 # Verification — Tupies Engine 0.5
 
+## GitHub source consolidation — 31 October 2026
+
+The combined candidate reconciles the unpublished runtime/UI/docs work with GitHub main `02aaf2e`. Exact verification passes **1367/1367 tests**, zero failures/skips/cancellations, in **184.486 seconds**, using `node --test --test-concurrency=4 test/*.test.mjs` on official **Node22.23.4**. Syntax checks cover **125 JavaScript modules**. The full build passes, including local brand/companion/notification assets, browser bundles, **26 guide pages** and dependency notices for **399 packages**. Final handoff documentation is rebuilt and syntax-checked afterward.
+
+Merge reconciliation preserves main’s TLS loopback OAuth callback and associated security regressions, confirmed-send phone keyboard handling, Enter/IME behavior and pending-guidance guards alongside the latest compact composer, autonomous recovery and stable teammate repair. The focused steering/mobile/pearl UI suite passes **47/47**. Existing steering assertions are updated for the current compact label and tooltip; the keyboard and pending-request regressions remain. Notification extension entitlements retain GitHub main’s containing-app/extension boundary; only the previously installed native build10 defaults are carried forward.
+
+Actual disposable Chrome checks verify login, the model picker’s unsupported-reasoning fallback, draft preservation and Escape focus, Enter-to-send guidance with an applied result in the same task, consolidated bot Settings, and catalog details exposing all four Tupies product-guide files. These use a synthetic local provider/store with scheduling disabled. The tab and fixture engine were closed and the temporary data removed. No physical iPhone, real-provider quality, live sign-in consent, new native build/install or operational deployment is claimed. Private runtime/account data and local signing scratch output are excluded from the published project changes.
+
 ## Tupies product guide skill — 31 October 2026, source only
 
 Added a portable four-file `tupies-product` package, offline catalog entry and native source-staging support. Regressions verify English/Ukrainian discovery, exact installation and resource reads through bot tools, portable export/import integrity, unchanged tools/accounts/routines, unchanged original sixteen catalog identities/digests, and a staged catalog that loads its Markdown resources while excluding unrelated/private files and refusing symlinks. The focused combined suite passes **36/36**; the final package/staging subset passes **7/7**. The skill-creator validator accepts the frontmatter/name/body, and the final portable export parses through the normal import reader with matching four-file digest.

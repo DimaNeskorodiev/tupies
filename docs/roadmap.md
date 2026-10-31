@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## GitHub source consolidation (31 October 2026)
+
+Reconciled the unpublished autonomous execution/recovery, required teammate repair, reasoning/composer, bot Settings, setup-guide and product-skill work with current GitHub main, retaining its TLS sign-in and chat-input safeguards. Combined verification passes1367 tests,125 syntax checks, the full build and26 guide pages on Node22.23.4, plus disposable Chrome acceptance. Publishing source does not install an operational/native release; remaining physical-device and real-provider acceptance below retains its original scope.
+
 ## Tupies product guide skill (31 October 2026, source only)
 
 Added a discoverable native product skill with portable references for product operation, evidence-based troubleshooting and operator handoff. It uses existing tools and approval gates without assigning itself, enabling tools or deploying fixes. The original sixteen catalog packages remain unchanged. Next: observe representative owner requests with real models, including missing tools, provider failures, uncertain effects and partial teammate repairs; source/package verification does not establish autonomous repair quality or operational installation. See [skills](skills.md).
