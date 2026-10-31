@@ -139,6 +139,23 @@ Compaction rewrites only the model history. The display transcript keeps every m
 
 Code: `lib/history.mjs`.
 
+## Proposed: smaller working context with retrievable evidence
+
+This is a proposal, **not implemented or deployed**. A large input alone does not prove worse answers. The current inefficiency is observable in [`compactConversation`](../lib/engine.mjs): outputs from earlier tasks remain in each request until the total context exceeds its compaction point. For example, an old web research task can keep contributing long page extracts to later unrelated questions while the model still has room.
+
+The next context policy should separate the model's hard capacity from the evidence needed for the current task:
+
+- Give **older tool results their own working-context budget**, instead of waiting for the whole model window to fill. Keep the current task's tool call/result pairs and unresolved outcomes intact. Replace older bulky results with concise observed-result records and source references; a summary is not proof of success.
+- **Add durable, scoped result retrieval before pruning earlier.** `session_search` and `session_read` currently read user/assistant display messages, not raw tool results; retained `tool_result_read` copies belong to the active task. An archive needs bounded retention, private paths, bot/lane access checks and explicit expiry/coverage. Recovering a past observation must not require replaying a write or treating a remembered approval as permission.
+- Build a **smaller relevant working packet** from the current goal, exact constraints, recent turns, task-relevant memory and selected evidence. Keep the full display transcript. Search/read original sources when an exact detail is missing, and preserve uncertainty and source identity through summaries. Evaluate target sizes with matched real tasks before choosing a new default; this proposal sets no new numeric threshold.
+- Show a **context breakdown** in the UI: conversation, tool results, memory, tool schemas and summary coverage. This would explain why a request is large and whether material was omitted, rather than implying that a larger window guarantees a better answer.
+
+These are input-selection changes, not task-duration limits. They must preserve work-until-done execution, active inference snapshots, Stop, exact action approvals and the prohibition on replaying uncertain effects. Verification should compare input tokens, latency, task completion and exact-requirement retention; token savings alone are insufficient.
+
+Existing owner controls already offer a conservative manual option: choose **Bot settings → Context limit → 128K** for earlier cleanup, or use **Chat options → Summarize older messages / Start a new topic** while the bot is idle. Both summary actions preserve the display transcript; Start a new topic retains a background summary. No automatic change to existing conversations follows from this proposal.
+
+Grok Bot's [official memory documentation](https://docs.x.ai/grok-bot/bots), reviewed 30 October 2026, describes persistent facts, preferences and work summaries without replaying every prior message. Its [design account](https://x.ai/news/designing-grok-bot) describes memory belonging to a bot's role and group chats supplying shared project context. These support the product direction above; neither source discloses Grok's exact retrieval algorithm, compaction thresholds or working-context size. The [packaged-client comparison](research/grok-bot-0.77.0-followup.md) retains the same backend-evidence boundary.
+
 ## Not yet included
 
 The roadmap plans server-side compaction where providers support it, background memory review and a summary prepared ahead.

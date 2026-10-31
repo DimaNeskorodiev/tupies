@@ -20,7 +20,8 @@ async function fixture(t,handler,{type='openai',timeout=1000}={}){
   const providers=new Providers(store,{requestTimeout:timeout,allowTestOAuth:true}),connection={id:'fixture',type,name:'Fixture',baseUrl:`http://127.0.0.1:${server.address().port}/v1`,defaultModel:'fixture-model',secret:store.seal(SECRET)};
   if(type==='chatgpt')providers.headers=async()=>({Authorization:`Bearer ${SECRET}`});
   await store.mutate(state=>{state.connections.push(connection);for(const bot of state.bots){bot.connectionId=connection.id;bot.tools=['workspace'];bot.approvalPolicy='balanced';}});
-  const engine=new NativeEngine(store,{providers});
+  // These fixtures assert terminal failure metadata; autonomous retry behavior has separate integration coverage.
+  const engine=new NativeEngine(store,{providers,executionMode:'bounded'});
   t.after(async()=>{await engine.close();await providers.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await fs.rm(directory,{recursive:true,force:true});});
   const run=async()=>{const started=await engine.start('bot_atlas','Complete the synthetic fixture.');await engine.tasks.get(started.id);return store.state.runs.bot_atlas;};
   return {directory,store,providers,connection,engine,requests,run};
@@ -32,7 +33,7 @@ test('real provider failures persist only static metadata in the active run and 
     ['authentication',(_req,res)=>json(res,{error:{message:SECRET}},403),metadata('authentication',401,403)],
     ['rate_limit',(_req,res)=>json(res,{error:{message:SECRET}},429),metadata('rate_limit',502,429)],
     ['upstream_unavailable',(_req,res)=>json(res,{error:{message:SECRET}},503),metadata('upstream_unavailable',502,503)],
-    ['timeout',()=>{},metadata('timeout',504),{timeout:30}],
+    ['timeout',()=>{},{...metadata('timeout',504),timeoutPhase:'total'},{timeout:30}],
     ['response_failed',(_req,res)=>sse(res,[{type:'response.failed',error:{message:SECRET,code:SECRET,status:SECRET,account:SECRET,failure:{origin:'provider',code:SECRET}}}]),metadata('response_failed',502,200)],
     ['stream_interrupted',(_req,res)=>sse(res,[{type:'response.created',response:{id:SECRET}}]),metadata('stream_interrupted',502,200)],
     ['empty_response',(_req,res)=>json(res,{status:'completed',output:[{type:'reasoning',encrypted_content:SECRET}]}),metadata('empty_response',502,200)],

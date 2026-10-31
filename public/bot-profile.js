@@ -1,6 +1,6 @@
 /* Bot profile (#/bots/<botId>): Overview, Brain (long-term notes), Memory (core facts), Learning (suggested changes to review) and Files. app.js calls render(), sets the HTML, then mount(). */
 (()=>{
-const TABS=[['overview','Overview','grid'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder']];
+const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder']];
 const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser'};
 const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
 const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
@@ -44,7 +44,7 @@ function view(botId){
   let v=views.get(botId);
   if(v){views.delete(botId);views.set(botId,v);return v;}
   v={id:botId,tab:'overview',tickets:{},loading:{},scroll:{},focus:null,brain:null,byPath:null,brainAt:0,brainError:'',layout:null,graphShown:false,noteTarget:'',note:null,noteHTML:'',noteAt:0,noteError:'',noteLoading:false,revealReader:false,query:'',folder:'',tag:'',sort:'recent',shown:LIST_PAGE,
-    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false};
+    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false,settingsDraft:null};
   views.set(botId,v);while(views.size>8)views.delete(views.keys().next().value);
   return v;
 }
@@ -146,13 +146,14 @@ function mount(context,botId,root){
 }
 function hero(bot){
   const intro=bot.description?esc(bot.description):`Ready to help with your next task. Add a short description in Bot settings.`;
-  return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button></div></header>`;
+  return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="secondary-button" data-profile-action="tab" data-tab="settings">${icon('sliders')}Settings</button><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button></div></header>`;
 }
 function tabs(bot,v){
   const counts={brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length};
   return `<div class="segmented bp-tabs" id="bp-tabs" role="tablist" aria-label="${esc(bot.name)} profile">${TABS.map(([key,label,ico])=>`<button class="segment${v.tab===key?' active':''}" role="tab" id="bp-tab-${key}" aria-selected="${v.tab===key}" aria-controls="bp-panel" tabindex="${v.tab===key?0:-1}" data-profile-action="tab" data-tab="${key}">${icon(ico)}${label}${counts[key]?`<span>${counts[key]}</span>`:''}</button>`).join('')}</div>`;
 }
-function panel(bot,v){return v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):overviewPanel(bot,v);}
+function panel(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):overviewPanel(bot,v);}
+function settingsPanel(bot){return ctx.botSettingsForm?.(bot.id,{embedded:true})||'<p class="bp-muted">Bot settings are unavailable. Reload this page to try again.</p>';}
 
 /* Overview */
 // The activity log titles name the bot ("Atlas: completed"); on its own profile the sentence reads better without it.
@@ -217,9 +218,9 @@ function overviewPanel(bot,v){
   const abilities=`<section class="glass-card bp-card"><h2>${icon('spark')}What it can use</h2>${chips(Object.keys(GROUPS).filter(key=>groups.includes(key)).map(key=>`<span class="bp-chip">${esc(GROUPS[key])}</span>`))||''}${groups.length?'':'<p class="bp-muted">No tools enabled. It can still chat.</p>'}<a class="text-button" href="#/skills/${esc(bot.id)}">${icon('spark')}Find skills</a>${skills.length?`<h3>Skills</h3>${chips(skills.map(name=>`<span class="bp-chip">${icon('spark')}${esc(name)}</span>`))}`:''}${integrations.length?`<h3>Integrations</h3>${chips(integrations.map(name=>`<span class="bp-chip">${icon('globe')}${esc(name)}</span>`))}`:''}</section>`;
   const team=mates.length||rooms.length||routines.length?`<section class="glass-card bp-card"><h2>${icon('team')}Team and routines</h2>${mates.length?`<h3>${bot.teamMode==='selected'?'Talks with selected teammates':'Talks with the whole team'}</h3><div class="bp-people">${mates.map(mate=>`<button class="bp-person" data-nav="/bots/${esc(mate.id)}">${ctx.avatar(mate,'tiny')}<span>${esc(mate.name)}</span></button>`).join('')}</div>`:''}${rooms.length?`<h3>Rooms</h3>${chips(rooms.map(room=>`<button class="bp-chip" data-nav="/room/${esc(room.id)}">${icon('team')}${esc(room.name||'Team room')}</button>`))}`:''}${routines.length?`<h3>Routines</h3><ul class="bp-plain-list">${routines.map(item=>`<li>${icon('routine')}<span>${esc(item.name||'Routine')}</span><small>${item.enabled===false?'Paused':esc(ctx.scheduleLabel?ctx.scheduleLabel(item):every(Number(item.intervalMinutes)||1440))}</small></li>`).join('')}</ul>`:''}</section>`:'';
   const activity=`<section class="glass-card bp-card"><h2>${icon('activity')}Recent activity</h2>${events.length?`<ul class="bp-events">${events.slice(0,6).map(item=>`<li>${icon(ACTIVITY[String(item.type||'').split('.')[0]]||'activity')}<span>${esc(eventText(item,bot))}</span><time>${esc(ctx.relative(item.createdAt||item.timestamp))}</time></li>`).join('')}</ul>`:`<p class="bp-muted">Nothing yet. When ${esc(bot.name)} gets to work, the important moments appear here.</p>`}</section>`;
-  const controls=`<div class="bp-settings-actions"><button type="button" class="secondary-button" data-action="edit-bot" data-id="${esc(bot.id)}">${icon('edit')}Edit bot</button><button type="button" class="text-button" data-action="toggle-bot-hidden" data-id="${esc(bot.id)}">${icon(bot.hidden?'eye':'eyeOff')}${bot.hidden?'Show in team':'Hide from team'}</button></div>`;
+  const controls=`<div class="bp-settings-actions"><button type="button" class="secondary-button" data-profile-action="tab" data-tab="settings">${icon('sliders')}Open settings</button></div>`;
   const waiting=v.proposals?.filter(item=>item.status==='pending').length,review=waiting?`<div class="bp-notice">${icon('spark')}<p>${esc(bot.name)} has ${plural(waiting,'suggestion')} for its memory and skills. Nothing changes until you accept.</p><button class="secondary-button" data-profile-action="tab" data-tab="learning">Review</button></div>`:'';
-  return `<div class="bp-overview"><div class="bp-col bp-primary-column">${review}${stats}${tasksCard(bot,v)}${activity}</div><details class="pearl-advanced bp-settings-disclosure" data-profile-disclosure="settings"${v.settingsOpen?' open':''}><summary><span><strong>Bot settings</strong><small>Model, permissions and teamwork</small></span>${icon('chevron')}</summary><div class="bp-advanced-content">${controls}${setup}${abilities}${team}</div></details></div>`;
+  return `<div class="bp-overview"><div class="bp-col bp-primary-column">${review}${stats}${tasksCard(bot,v)}${activity}</div><details class="pearl-advanced bp-settings-disclosure" data-profile-disclosure="settings"${v.settingsOpen?' open':''}><summary><span><strong>Configuration summary</strong><small>Model, permissions and teamwork</small></span>${icon('chevron')}</summary><div class="bp-advanced-content">${controls}${setup}${abilities}${team}</div></details></div>`;
 }
 
 /* Brain */
@@ -436,16 +437,29 @@ async function upload(bot,v,input){
 /* Rendering in place: keep focus, caret and inner scroll across app.js re-renders and data refreshes. */
 function capture(v){
   const page=document.querySelector('.bot-profile');if(page?.dataset.profileBot!==v.id)return;
+  const form=page.querySelector('#bot-form[data-embedded]');
+  if(form?.dataset.settingsDirty==='true')v.settingsDraft={fields:[...form.elements].filter(element=>element.name).map(element=>({name:element.name,type:element.type,value:element.value,checked:element.checked})),error:form.querySelector('.form-error')?.textContent||'',disclosures:[...form.querySelectorAll('details')].map(element=>element.open)};
   const settings=page.querySelector('[data-profile-disclosure="settings"]');if(settings)v.settingsOpen=settings.open;
   v.taskDetails=new Set([...page.querySelectorAll('details[data-task-evidence]')].filter(element=>element.open).map(element=>element.dataset.taskEvidence));
   const active=document.activeElement;
-  if(page.contains(active)&&active.dataset?.profileInput)v.focus={key:active.dataset.profileInput,start:active.selectionStart,end:active.selectionEnd};
+  if(form?.contains(active)&&active.name)v.focus={settings:true,name:active.name,value:active.value,start:active.selectionStart,end:active.selectionEnd};
+  else if(page.contains(active)&&active.dataset?.profileInput)v.focus={key:active.dataset.profileInput,start:active.selectionStart,end:active.selectionEnd};
   else if(active?.matches?.('[data-profile-disclosure] > summary'))v.focus={disclosure:active.parentElement.dataset.profileDisclosure};
   for(const element of page.querySelectorAll('[data-profile-scroll]'))v.scroll[element.dataset.profileScroll]=element.scrollTop;
 }
 function after(root,v){
+  const form=root.querySelector('#bot-form[data-embedded]');
+  if(form&&v.settingsDraft){
+    for(const field of v.settingsDraft.fields){const element=[...form.elements].find(element=>element.name===field.name&&element.type===field.type&&(!['checkbox','radio'].includes(field.type)||element.value===field.value));if(!element)continue;if(['checkbox','radio'].includes(field.type))element.checked=field.checked;else element.value=field.value;}
+    [...form.querySelectorAll('details')].forEach((element,index)=>{element.open=v.settingsDraft.disclosures[index]||false;});
+    form.dataset.settingsDirty='true';form.querySelector('.form-error').textContent=v.settingsDraft.error;
+    form.querySelector('[data-settings-status]').textContent='Unsaved changes';
+    const bot=ctx.botById(v.id),preview=form.querySelector('#bot-avatar-preview');if(preview)preview.innerHTML=ctx.avatar({...bot,icon:form.elements.icon.value,color:form.elements.color.value},'large');
+    for(const button of form.querySelectorAll('.companion-choice'))button.setAttribute('aria-pressed',String(`companion:${button.dataset.variant}`===form.elements.icon.value));
+    const team=form.querySelector('.team-checklist');if(team)team.hidden=form.elements.teamMode.value!=='selected';
+  }
   for(const element of root.querySelectorAll('[data-profile-scroll]')){const top=v.scroll[element.dataset.profileScroll];if(top)element.scrollTop=top;}
-  if(v.focus){const element=v.focus.disclosure?root.querySelector(`[data-profile-disclosure="${v.focus.disclosure}"] > summary`):root.querySelector(`[data-profile-input="${v.focus.key}"]`);if(element&&document.activeElement!==element){element.focus({preventScroll:true});try{if(typeof v.focus.start==='number')element.setSelectionRange(v.focus.start,v.focus.end);}catch{}}v.focus=null;}
+  if(v.focus){const element=v.focus.settings?[...(form?.elements||[])].find(element=>element.name===v.focus.name&&(!['checkbox','radio'].includes(element.type)||element.value===v.focus.value)):v.focus.disclosure?root.querySelector(`[data-profile-disclosure="${v.focus.disclosure}"] > summary`):root.querySelector(`[data-profile-input="${v.focus.key}"]`);if(element&&document.activeElement!==element){element.focus({preventScroll:true});try{if(typeof v.focus.start==='number')element.setSelectionRange(v.focus.start,v.focus.end);}catch{}}v.focus=null;}
   const body=root.querySelector('.bp-note-body');if(body&&window.StudioRich?.hydrate)window.StudioRich.hydrate(body).catch(()=>{});
   const map=root.querySelector('.bp-graph');if(map&&!v.graphShown){v.graphShown=true;map.classList.add('bp-graph-enter');}
   if(v.revealReader&&!v.noteLoading){v.revealReader=false;const reader=root.querySelector('#bp-reader');if(reader&&window.matchMedia?.('(max-width: 1100px)').matches)reader.scrollIntoView?.({block:'start'});}
@@ -454,7 +468,7 @@ function refresh(botId){
   const page=document.querySelector('.bot-profile'),bot=ctx&&page?.dataset.profileBot===botId?ctx.botById(botId):null;if(!bot)return;
   const v=view(botId),panelNode=page.querySelector('#bp-panel');capture(v);
   page.querySelector('#bp-tabs')?.replaceWith(Object.assign(document.createElement('template'),{innerHTML:tabs(bot,v)}).content);
-  if(panelNode){panelNode.setAttribute('aria-labelledby',`bp-tab-${v.tab}`);panelNode.innerHTML=panel(bot,v);}
+  if(panelNode){panelNode.setAttribute('aria-labelledby',`bp-tab-${v.tab}`);if(!(v.tab==='settings'&&panelNode.querySelector('#bot-form[data-embedded]')))panelNode.innerHTML=panel(bot,v);}
   after(page,v);
 }
 function patch(bot,v,selector,html){const page=document.querySelector('.bot-profile'),target=page?.querySelector(selector);if(!target)return refresh(bot.id);capture(v);target.innerHTML=html;after(page,v);}
@@ -478,6 +492,8 @@ async function act(element){
   const v=view(bot.id),action=element.dataset.profileAction,id=element.dataset.id,fact=id&&v.memory?.find(entry=>entry.id===id);
   switch(action){
     case 'tab':setTab(bot,v,element.dataset.tab,element.getAttribute('role')==='tab');break;
+    case 'settings-section':{const heading=page.querySelector(`#bot-section-${element.dataset.section}`);heading?.scrollIntoView?.({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});heading?.focus({preventScroll:true});break;}
+    case 'discard-settings':settingsSaved(bot.id);page.querySelector('#bp-panel').innerHTML=settingsPanel(bot,v);break;
     case 'retry':load(bot,v,true);refresh(bot.id);break;
     case 'open-note':openNote(bot,v,element.dataset.path);break;
     case 'open-link':openNote(bot,v,element.dataset.path||element.dataset.target);break;
@@ -527,6 +543,7 @@ document.addEventListener('keydown',event=>{
   }
 });
 document.addEventListener('input',event=>{
+  markSettingsDirty(event.target);
   const element=event.target,key=element.dataset?.profileInput,page=key&&element.closest('.bot-profile'),bot=page&&ctx?.botById(page.dataset.profileBot);if(!bot||element.tagName==='SELECT')return;
   const v=view(bot.id);
   if(key==='brain-query'&&v.brain){v.query=element.value;v.shown=LIST_PAGE;patch(bot,v,'#bp-brain-results',brainResults(bot,v));}
@@ -535,6 +552,7 @@ document.addEventListener('input',event=>{
   if(key==='fact-value')v.draft.value=element.value;
 });
 document.addEventListener('change',event=>{
+  markSettingsDirty(event.target);
   const element=event.target,page=element.closest?.('.bot-profile'),bot=page&&ctx?.botById(page.dataset.profileBot);if(!bot)return;
   const v=view(bot.id),key=element.dataset.profileInput;
   if(key==='brain-folder'&&v.brain){v.folder=element.value;v.shown=LIST_PAGE;patch(bot,v,'#bp-brain-results',brainResults(bot,v));}
@@ -554,5 +572,11 @@ document.addEventListener('scroll',event=>{
   const element=event.target;if(!element?.dataset?.profileScroll)return;const page=element.closest('.bot-profile');if(page)view(page.dataset.profileBot).scroll[element.dataset.profileScroll]=element.scrollTop;
 },true);
 
-window.StudioBotProfile={render,mount};
+function markSettingsDirty(element){
+  const form=element.closest?.('#bot-form[data-embedded]');if(!form)return;
+  form.dataset.settingsDirty='true';form.querySelector('[data-settings-status]').textContent='Unsaved changes';
+  const page=form.closest('.bot-profile');if(page)capture(view(page.dataset.profileBot));
+}
+function settingsSaved(botId){const v=views.get(botId);if(v)v.settingsDraft=null;const form=document.querySelector('#bot-form[data-embedded]');if(form?.dataset.id===botId)delete form.dataset.settingsDirty;}
+window.StudioBotProfile={render,mount,settingsSaved};
 })();

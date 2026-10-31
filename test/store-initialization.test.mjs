@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { Store } from '../lib/store.mjs';
+import { Store, botReasoningPreference } from '../lib/store.mjs';
+import { listDocuments, writeDocument } from '../lib/sync/docs.mjs';
 
 test('fresh workspaces start with Roki and reopening preserves the owner’s existing bots',async t=>{
   const directory=await fs.mkdtemp(path.join(tmpdir(),'studio-roki-seed-'));
@@ -46,4 +47,34 @@ test('a missing state file cannot bootstrap over retained runtime data, while a 
   await assert.rejects(fs.stat(store.file),error=>error.code==='ENOENT');assert.deepEqual(await fs.readFile(path.join(directory,'vault.key')),key);
   const fresh=path.join(directory,'interrupted-first-start');await fs.mkdir(fresh);await fs.writeFile(path.join(fresh,'vault.key'),key);
   assert.equal((await new Store(fresh).init()).created,true);
+});
+
+test('High defaults migrate legacy blank preferences once and preserve explicit provider defaults across sync and restart',async t=>{
+  const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-reasoning-default-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const store=await new Store(directory).init();
+  assert.ok(store.state.bots.every(bot=>bot.reasoningEffort==='auto' && bot.reasoningEffortVersion===1));
+  await store.mutate(state=>{
+    delete state.bots[0].reasoningEffortVersion;state.bots[0].reasoningEffort='';
+    delete state.bots[1].reasoningEffortVersion;state.bots[1].reasoningEffort='low';
+    state.bots[2].reasoningEffort='';
+  });
+  const migrated=await new Store(directory).init();
+  assert.deepEqual(migrated.state.bots.map(bot=>bot.reasoningEffort),['auto','low','']);
+  const wire=structuredClone(listDocuments(migrated.state,migrated,'wire').get('bot:bot_scout'));
+  assert.equal(wire.reasoningEffortVersion,1);assert.equal(wire.reasoningEffort,'');
+  await migrated.mutate(state=>{state.bots[2].reasoningEffort='auto';assert.equal(writeDocument(state,'bot:bot_scout',wire,migrated),true);});
+  const reopened=await new Store(directory).init();
+  assert.deepEqual(reopened.state.bots.map(bot=>bot.reasoningEffort),['auto','low','']);
+});
+
+
+test('legacy sync preferences resolve to automatic High without changing replicated bytes',async t=>{
+  const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-legacy-reasoning-sync-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const store=await new Store(directory).init(),wire=structuredClone(store.state.bots[0]);
+  wire.reasoningEffort='';delete wire.reasoningEffortVersion;
+  const bytes=JSON.stringify(wire);assert.equal(writeDocument(store.state,`bot:${wire.id}`,wire,store),true);
+  assert.equal(botReasoningPreference(store.state.bots[0]),'auto');
+  assert.equal(JSON.stringify(wire),bytes);assert.equal(JSON.stringify(listDocuments(store.state,store,'wire').get(`bot:${wire.id}`)),bytes);
 });

@@ -147,7 +147,13 @@ test('bundled TypeScript LSP provides real navigation and fresh diagnostics with
   const references=await query(session.id,'references',{line:1,character:17,includeDeclaration:true});assert.ok(references.locations.length>=2);
   const hover=await query(session.id,'hover',{line:3,character:16});assert.match(hover.content,/double.*number/s);
   const symbols=await query(session.id,'document_symbols');assert.ok(symbols.symbols.some(item=>item.name==='double'));
-  const diagnostics=await query(session.id,'diagnostics');assert.equal(diagnostics.received,true);assert.ok(diagnostics.diagnostics.some(item=>String(item.code)==='2322'));
+  let diagnostics=await query(session.id,'diagnostics');
+  // TypeScript may publish an empty syntax report before its semantic diagnostics.
+  const semanticDeadline=Date.now()+8000;
+  while(!diagnostics.diagnostics.some(item=>String(item.code)==='2322') && Date.now()<semanticDeadline) {
+    await new Promise(resolve=>setTimeout(resolve,20));diagnostics=await query(session.id,'diagnostics');
+  }
+  assert.equal(diagnostics.received,true);assert.ok(diagnostics.diagnostics.some(item=>String(item.code)==='2322'));
   await writeWorkspace(store,owner.botId,'main.ts',source.replace('const wrong: string = 42;','const wrong: string = "fixed";'));
   const fixed=await query(session.id,'diagnostics');assert.equal(fixed.received,true);assert.ok(!fixed.diagnostics.some(item=>String(item.code)==='2322'));
   const navigation='export interface Counter { count(): number; }\nexport class LiveCounter implements Counter { count(): number { return 1; } }\nexport function readCounter(counter: Counter): number { return counter.count(); }\nconst counter = new LiveCounter();\nreadCounter(counter);\n';

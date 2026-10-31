@@ -122,7 +122,7 @@ test('chat has one universal action menu and keeps everyday resources reachable'
   // Menus need a real page to open; capture their items instead.
   h.run('openMenu=(anchor,items)=>{globalThis.menuItems=items;}');
   h.run('chatMenu({},"bot_nova")');const menu=h.run('menuItems');
-  for(const [label,attrs] of [['Chat options','data-action="chat-options" data-id="bot_nova"'],['Memory','data-action="bot-memory" data-id="bot_nova"'],['Files','data-action="bot-files" data-id="bot_nova"'],['Quick details','data-action="toggle-inspector" data-id="bot_nova"'],['Bot profile','data-nav="/bots/bot_nova"'],['Edit bot','data-action="edit-bot" data-id="bot_nova"']])
+  for(const [label,attrs] of [['Chat options','data-action="chat-options" data-id="bot_nova"'],['Memory','data-action="bot-memory" data-id="bot_nova"'],['Files','data-action="bot-files" data-id="bot_nova"'],['Quick details','data-action="toggle-inspector" data-id="bot_nova"'],['Bot profile','data-nav="/bots/bot_nova"'],['Bot settings','data-action="edit-bot" data-id="bot_nova"']])
     assert.match(menu,new RegExp(`${attrs.replace(/[/]/g,'\\/')}><span class="menu-text"><span>${label}<\/span>`),label);
   assert.ok(!menu.includes('fixture-model'),'provider metadata is inside Chat options');
   h.run('botSwitcherMenu({},"bot_nova")');const switcher=h.run('menuItems');

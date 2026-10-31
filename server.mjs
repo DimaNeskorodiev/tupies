@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual, createHash, scrypt as scryptCallback } from 'node:crypto';
 import { brotliCompress, gzip, constants as zlib } from 'node:zlib';
 import { promisify } from 'node:util';
-import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage, DEFAULT_BOT_TOOLS, TOOL_GROUPS_VERSION } from './lib/store.mjs';
+import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage, DEFAULT_BOT_TOOLS, TOOL_GROUPS_VERSION, upgradeReasoningPreference } from './lib/store.mjs';
 import { Runtime, isActive } from './lib/runtime.mjs';
 import { CONTEXT_LIMITS } from './lib/context-budget.mjs';
 import { removeBotSessions } from './lib/sessions.mjs';
@@ -87,8 +87,8 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'searchFallbackIntegrationId')){ensure(typeof input.searchFallbackIntegrationId==='string' && (!input.searchFallbackIntegrationId || /^[a-zA-Z0-9_-]{1,100}$/.test(input.searchFallbackIntegrationId)),400,'Choose a valid search fallback integration.');bot.searchFallbackIntegrationId=input.searchFallbackIntegrationId;}
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
-  if(bot.connectionId!==previous.connectionId || bot.model!==previous.model)bot.reasoningEffort='';
-  return {description:'',instructions:'',model:'',reasoningEffort:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
+  upgradeReasoningPreference(bot);
+  return {description:'',instructions:'',model:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
 }
 function validateBinding(bot,state,integrations) {
   if(bot.connectionId)ensure(state.connections.some(c=>c.id===bot.connectionId && c.type!=='legacy-hermes'),400,'Choose a model provider. Replace legacy gateway connections in Providers.');
@@ -142,6 +142,7 @@ export async function createStudioServer(options={}) {
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
   const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport}).init();
+  await runtime.recoverAutonomous();
   sync.onNotificationReads = ids => notifications.markRead(ids);
   const bootstrapToken=options.bootstrapToken || randomBytes(24).toString('base64url');
   const sessions=new Map(), attempts=new WindowCounter(),skillImports=new Map();
@@ -419,18 +420,19 @@ export async function createStudioServer(options={}) {
         if(pathname==='/api/routines' && method==='POST') {
           const input=await body(req),routine=validateRoutine(input,{id:id('routine'),createdAt:now()},{timeZone:store.state.settings.timezone});
           ensure(store.state.bots.some(b=>b.id===routine.botId),400,'Choose an existing bot.');
-          if(routine.enabled)runtime.connection(store.state.bots.find(b=>b.id===routine.botId));
+          if(routine.enabled && routine.workflow?.mode!=='report')runtime.connection(store.state.bots.find(b=>b.id===routine.botId));
           // The owner's chosen zone becomes the default for routines bots create.
           await store.mutate(state=>{ensure(state.routines.length<200,400,'Workspace supports up to 200 routines.');state.routines.push(routine);if(input.timezone)state.settings.timezone=routine.timezone;store.audit('routine.created',`${routine.name} routine created`,routine.botId);});return json(res,routine,201);
         }
-        match=pathname.match(/^\/api\/routines\/([a-zA-Z0-9_-]+)(?:\/(run|runs))?$/);
+        match=pathname.match(/^\/api\/routines\/([a-zA-Z0-9_-]+)(?:\/(run|runs|resume))?$/);
         if(match) {
           const [,routineId,action]=match,routine=store.state.routines.find(r=>r.id===routineId);ensure(routine,404,'Routine not found.');
           if(action==='run' && method==='POST'){await body(req);return json(res,{run:await runtime.runRoutine(routineId)},202);}
+          if(action==='resume' && method==='POST'){const input=await body(req);ensure(input && Object.keys(input).every(key=>['runId','checkpointId'].includes(key)),400,'Give only the exact runId and checkpointId.');return json(res,{run:await runtime.resumeRoutine(routineId,input)},202);}
           if(action==='runs' && method==='GET')return json(res,{data:routineRuns(store.state,routine),missedRuns:routine.missedRuns || 0,...(routine.lastMissedAt?{lastMissedAt:routine.lastMissedAt}:{})});
           if(!action && method==='PATCH') {
             const input=await body(req),updated=validateRoutine(input,routine,{timeZone:store.state.settings.timezone});ensure(store.state.bots.some(b=>b.id===updated.botId),400,'Choose an existing bot.');
-            if(updated.enabled)runtime.connection(store.state.bots.find(b=>b.id===updated.botId));
+            if(updated.enabled && updated.workflow?.mode!=='report')runtime.connection(store.state.bots.find(b=>b.id===updated.botId));
             await store.mutate(state=>{state.routines[state.routines.findIndex(r=>r.id===routineId)]=updated;if(input.timezone)state.settings.timezone=updated.timezone;store.audit('routine.updated',`${updated.name} routine updated`,updated.botId);});return json(res,updated);
           }
           if(!action && method==='DELETE'){await store.mutate(state=>{state.routines=state.routines.filter(r=>r.id!==routineId);store.audit('routine.deleted',`${routine.name} routine removed`,routine.botId);});return json(res,{deleted:true});}

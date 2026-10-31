@@ -305,7 +305,7 @@ test('long-press offers the bot’s existing actions, swallows the opening touch
     h.touch(main,'touchstart',100,200,1000);await wait(560);
     const menu=h.query('.context-menu-layer [role=menu]');
     assert.deepEqual([...menu.querySelectorAll('.menu-item')].map(item=>[item.textContent,item.dataset.nav||`${item.dataset.action}:${item.dataset.id}`]),
-      [['Chat','/bot/bot_nova'],['Bot profile','/bots/bot_nova'],['Memory','bot-memory:bot_nova'],['Files','bot-files:bot_nova'],['Edit bot','edit-bot:bot_nova']]);
+      [['Chat','/bot/bot_nova'],['Bot profile','/bots/bot_nova'],['Memory','bot-memory:bot_nova'],['Files','bot-files:bot_nova'],['Bot settings','edit-bot:bot_nova']]);
     assert.ok(row.classList.contains('context-menu-source'));assert.deepEqual(h.haptics(),['medium']);
     assert.equal(h.touch(main,'touchend',100,200,1600).defaultPrevented,true,'the opening touch does not also open the chat');
     h.window.document.dispatchEvent(new h.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
@@ -452,4 +452,9 @@ test('a chat copy keeps only messages near the screen and carries no ids',async(
     assert.equal(h.query('.motion-layer [id]'),null);assert.equal(h.window.document.querySelectorAll('#chat-thread').length,0);
     assert.ok(h.query('.motion-layer [data-motion-id="main-content"]'));
   } finally {h.close();}
+});
+
+
+test('picker haptics use the native preference gate and accepted styles only',()=>{
+  const h=harness();try{h.mobile.haptic('selection');h.mobile.haptic('soft');h.mobile.haptic('not-a-style');assert.deepEqual(h.haptics(),['selection','soft']);h.window.document.documentElement.dataset.studioHaptics='false';h.mobile.haptic('selection');assert.deepEqual(h.haptics(),['selection','soft']);}finally{h.close();}
 });

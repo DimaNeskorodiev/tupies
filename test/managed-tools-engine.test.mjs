@@ -53,8 +53,8 @@ test('actual background command and bundled LSP execute through engine approvals
   assert.equal(f.engine.backgroundProcesses.hasActive(result.run.id),false);assert.equal(f.engine.languageServers.sessions.size,0);
 });
 
-test('final answers cannot silently abandon a running command or report its task successful',async t=>{
-  const f=await fixture(t,async(request,index)=>index===1?{text:'',toolCalls:[call('long','shell_start',{executable:process.execPath,args:['-e',"console.log('partial progress');setInterval(()=>{},1000)"],timeoutMs:10000})]}:{text:'An available partial answer.',toolCalls:[]});
+test('bounded final answers cannot silently abandon a running command or report its task successful',async t=>{
+  const f=await fixture(t,async(request,index)=>index===1?{text:'',toolCalls:[call('long','shell_start',{executable:process.execPath,args:['-e',"console.log('partial progress');setInterval(()=>{},1000)"],timeoutMs:10000})]}:{text:'An available partial answer.',toolCalls:[]},{executionMode:'bounded'});
   const result=await f.run();assert.equal(result.run.status,'failed');assert.match(result.run.error,/background commands were still running/);assert.equal(result.run.partialOutput,'An available partial answer.');
   assert.equal(f.engine.backgroundProcesses.hasActive(result.run.id),false);assert.notEqual(result.run.backgroundProcesses[0].status,'running');assert.equal(result.approvals,1);
 });

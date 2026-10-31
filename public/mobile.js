@@ -883,7 +883,7 @@
     const name = target.querySelector('strong')?.textContent.trim() || 'Bot', key = `data-id="${escape(id)}"`;
     return {label:`${name} options`, html:menuItem('Chat', 'chat', `data-nav="/bot/${escape(id)}"`) + menuItem('Bot profile', 'heart', `data-nav="/bots/${escape(id)}"`)
       + menuItem('Memory', 'book', `data-action="bot-memory" ${key}`) + menuItem('Files', 'file', `data-action="bot-files" ${key}`)
-      + '<hr>' + menuItem('Edit bot', 'edit', `data-action="edit-bot" ${key}`)};
+      + '<hr>' + menuItem('Bot settings', 'sliders', `data-action="edit-bot" ${key}`)};
   }
   async function copyText(text) {
     try {await window.navigator.clipboard.writeText(text); return true;} catch {}
@@ -1137,5 +1137,5 @@
   document.addEventListener('focusin', scheduleViewport);
   // The keyboard finishes hiding after focus leaves; measure again once it has.
   document.addEventListener('focusout', () => {scheduleViewport(); window.setTimeout(scheduleViewport, 350);});
-  window.StudioMobile = {beforeRender, afterRender, mountDialog, closeSheet, sent, reset, sizeComposer};
+  window.StudioMobile = {beforeRender, afterRender, mountDialog, closeSheet, sent, reset, sizeComposer, haptic};
 })();
