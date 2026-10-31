@@ -2,6 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSUserActivityTypes</key><array><string>INSendMessageIntent</string></array>
     <key>TupiesKeychainGroup</key><string>$(AppIdentifierPrefix)dev.tupies.app</string>
     <key>TupiesLegacyKeychainGroup</key><string>$(AppIdentifierPrefix)dev.hermesstudio.app</string>
     <key>TupiesRequiresLegacyTransfer</key><string>$(TUPIES_REQUIRE_TRANSFER)</string>

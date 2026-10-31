@@ -1,6 +1,10 @@
 # Tupies for iPhone, iPad and Mac
 
-A native SwiftUI shell around the Tupies Engine's web UI. One multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
+## Installed GitHub release — 30 October 2026
+
+Signed macOS and iPhone apps are **0.5.0 (10)**, built from pinned GitHub main `02aaf2e` with `CURRENT_PROJECT_VERSION=10`, unchanged bundle/team/Keychain identities, `TUPIES_REQUIRE_TRANSFER=YES` and existing embedded profiles. Mac profile bytes are unchanged. The Mac fallback Engine and both operational engines use the same commit. Both apps were installed in place and launched; saved connection identities and notification preferences were verified. Mutable project defaults now also use build 10. Native version describes the shell; the selected engine supplies the live UI, and its source commit must be recorded separately. This checkpoint supersedes older installed-build statements below. See `../../PROJECT_CONTEXT.md` for verification and boundaries, and ignored `../../docs/local-workspace.md` for rollback/ownership.
+
+A native SwiftUI shell around the Tupies Engine's web UI. The main multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+; an iOS-only `NotificationService` extension supplies local bot avatars through communication notifications. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
 
 The app adds what a browser tab can't:
 
@@ -9,6 +13,7 @@ The app adds what a browser tab can't:
 - **Several engines, one-click switching.** Each engine keeps its own live web view, so switching is instant and preserves page state. On the Mac you can also use ⌘1…⌘9.
 - **Status at a glance.** A status dot per engine and a sync indicator (`GET /api/sync/status`). On the iPhone they live in the app's Settings (see below).
 - **Local engine management on the Mac.** A complete app includes its own engine and Node.js runtime. It prefers an already-running engine, shows the log, and stops an engine on quit only when the app started it. Explicit saved developer paths remain supported.
+- **Keeps running when the Mac window closes.** Closing the window (close button or ⌘W) leaves the app, each engine's live web view and an engine the app started running, as Mail and Messages do. The Dock icon or a pairing link reopens the window on the same page without reloading; **Quit** (⌘Q) quits. Installed on the owner's Mac as signed build 8 on 30 October 2026 (build 7 plus only this change); not yet checked by hand in the installed app.
 
 The app loads the engine's web UI in a `WKWebView` after signing in with a single-use device ticket.
 
@@ -192,6 +197,12 @@ open -a "/Applications/Tupies.app" 'hermes-studio://pair?v=1&url=…'   # pair a
 **Native transport HTTP regression:** run `node apps/apple/Tests/transport-client.mjs` on macOS with Xcode. It compiles the real Swift client and sends generated pairing, session and push fixture values through two disposable localhost origins. Same-origin redirects work; off-origin redirects are refused before credentials or request bodies can be replayed. The regression failed against the earlier client (one foreign-origin request) and passes with the redirect boundary. It needs permission to listen on localhost and never reads operational accounts.
 
 **Native security HTTP regression:** run `node apps/apple/Tests/security-client.mjs`. It compiles the actual Swift client and uses generated keys plus two real disposable TLS engines. The engines' own emitted device links must include `tls=engine`. The test checks first-contact pinning, zero HTTP requests to a wrong-key TLS endpoint, upgrade-required handling before any proof is sent to an older engine, target-bound session signatures, cross-engine and same-engine replay refusal, and continued use of existing paired device keys. The pure logic harness also checks that a mandatory pin rejects a certificate that would otherwise pass certificate trust, using a per-test anchor without changing the device's trust store.
+
+## Rich notification source update (29 October 2026)
+
+The iOS app embeds `dev.tupies.app.NotificationService`, with Communication Notifications entitlement and `INSendMessageIntent` activity metadata. Enable that capability for the app and extension identifiers and refresh both signing profiles before installing. This adds no Keychain group, app group, engine access, background polling or URL fetch. The extension donates an incoming bot message and updates notification content with the sender’s bundled portrait. Timeout/donation failure falls back to the original alert with unchanged routing. iOS controls preview disclosure and Focus behavior; Settings now links directly to notification settings and explains **When Unlocked**.
+
+`node scripts/build-notification-assets.mjs` derives 24 PNG portraits from the shipped companion WebPs, matching the web identity-selection algorithm. It runs after companion generation in `npm run avatars:build`. The extension target/dependency/embed phase is filtered to iOS; the Mac app keeps building without it. Current source does not update installed Mac6/iPhone5 or immutable v9. See [notification behavior and verification](../../docs/notifications.md).
 
 ## Build 4 security and bundled-engine migration
 

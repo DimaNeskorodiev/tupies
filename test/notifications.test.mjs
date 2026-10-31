@@ -5,7 +5,7 @@ import path from 'node:path';
 import {tmpdir} from 'node:os';
 import {generateKeyPairSync, randomBytes, sign} from 'node:crypto';
 import {Store} from '../lib/store.mjs';
-import {Notifications, notificationPayload} from '../lib/notifications.mjs';
+import {Notifications, notificationPayload, notificationAvatar, previewText} from '../lib/notifications.mjs';
 import {listDocuments} from '../lib/sync/docs.mjs';
 import {createStudioServer} from '../server.mjs';
 import {PAIR_MESSAGE, SESSION_MESSAGE,fingerprint} from '../lib/sync/crypto.mjs';
@@ -15,7 +15,7 @@ const TOKEN = 'ab'.repeat(32), OTHER_TOKEN = 'cd'.repeat(32), BASE = Date.parse(
 const enrollment = overrides => ({token:TOKEN, environment:'sandbox', enabled:true, botReplies:true, routines:true, ...overrides});
 const iso = n => new Date(BASE + n).toISOString();
 
-async function fixture(t, {seed, available = true, role = 'hub', send} = {}) {
+async function fixture(t, {seed, available = true, role = 'hub', send, graceMs = 0} = {}) {
   const directory = await fs.mkdtemp(path.join(tmpdir(), 'studio-notifications-'));
   const store = await new Store(directory).init();
   const device = {id:'dev_phone', kind:'device', platform:'ios', name:'Private phone'};
@@ -24,7 +24,7 @@ async function fixture(t, {seed, available = true, role = 'hub', send} = {}) {
   const sent = [], results = [];
   const transport = {available, environment:'sandbox', async send(request) {sent.push(request); if (send) return send(request); const next = results.shift(); if (next instanceof Error) throw next; return next || {status:200};}, close(){}};
   const sync = {nodeId:'node_fixture', role:() => currentRole, devices:{find:id => store.state.devices.find(device => device.id === id && !device.revokedAt)}};
-  const notifications = await new Notifications(store, {sync, transport, now:() => time, intervalMs:1_000_000}).init();
+  const notifications = await new Notifications(store, {sync, transport, now:() => time, graceMs, intervalMs:1_000_000}).init();
   t.after(async () => {await notifications.close(); await fs.rm(directory, {recursive:true, force:true});});
   const reply = async (id, {source='chat', botId='bot_atlas', at=0, partial=false, routineId, sessionId, fromBotId, user=true} = {}) => {
     await store.mutate(state => {
@@ -54,10 +54,12 @@ test('first enrollment starts now, seals the token and never syncs notification 
   assert.ok(!JSON.stringify(docs).includes(TOKEN));
   assert.ok(![...listDocuments(f.store.state, f.store).keys()].some(key => /notification|push|outbox/.test(key)));
   const payload = f.sent[0].payload;
-  assert.equal(payload.aps.alert.title, 'Tupies');
+  assert.equal(payload.aps.alert.title, 'Roki');
+  assert.equal(payload.aps.alert.body, 'Secret assistant transcript');
+  assert.equal(payload.aps['mutable-content'], 1);
   assert.equal(payload.studio.kind, 'message');
-  assert.deepEqual(Object.keys(payload.studio).sort(), ['botId', 'engineId', 'eventId', 'kind', 'v']);
-  assert.ok(!JSON.stringify(payload).includes('Secret'));
+  assert.deepEqual(Object.keys(payload.studio).sort(), ['avatar', 'botId', 'engineId', 'eventId', 'kind', 'v']);
+  assert.equal(payload.studio.avatar, 'blue');
 });
 
 test('direct owner replies notify once; private lanes, delegation and partial output stay quiet', async t => {
@@ -119,8 +121,8 @@ test('owner-visible final room replies notify with a room route, without private
   });
   await f.notifications.flush(); await f.notifications.flush();
   assert.equal(f.sent.length, 1); assert.equal(f.sent[0].payload.studio.roomId, 'room_fixture');
-  assert.equal(f.sent[0].payload.aps['thread-id'], 'studio-room_fixture');
-  assert.ok(!JSON.stringify(f.sent[0].payload).includes('Private'));
+  assert.equal(f.sent[0].payload.aps['thread-id'], 'studio-node_fixture-room_fixture');
+  assert.equal(f.sent[0].payload.aps.alert.body, 'Private room reply');
 });
 
 test('routine completion, failure and admission error notify without duplicate result alerts', async t => {
@@ -214,7 +216,7 @@ test('ambiguous dispatch is not retried after an engine restart and token reject
   assert.equal(f.notifications.status(f.device).delivery.status, 'unknown');
   assert.equal(f.notifications.status(f.device).delivery.lastError, 'delivery_unknown');
   await f.notifications.close();
-  const resumed = await new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE, intervalMs:1_000_000}).init();
+  const resumed = await new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE, graceMs:0, intervalMs:1_000_000}).init();
   t.after(() => resumed.close()); await resumed.flush(); assert.equal(f.sent.length, 1);
   f.results.push({status:410, reason:'Unregistered'});
   await f.store.mutate(state => state.messages.bot_atlas.push({id:'new_user', role:'user', source:'chat', runId:'run_new', createdAt:iso(0)}, {id:'new_answer', role:'assistant', runId:'run_new', createdAt:iso(0)}));
@@ -227,7 +229,7 @@ test('a claimed-but-unconfirmed intention becomes unknown after restart instead 
   f.notifications.state.outbox.push({id:'claimed', deviceId:f.device.id, tokenHash:f.notifications.state.subscriptions[f.device.id].tokenHash, event:{id:'1'.repeat(32), kind:'message', botId:'bot_atlas'}, status:'claimed', attempts:1, createdAt:BASE, nextAttemptAt:BASE});
   await f.notifications.save(); await f.notifications.close();
   f.transport.available = true;
-  const resumed = await new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE, intervalMs:1_000_000}).init();
+  const resumed = await new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE, graceMs:0, intervalMs:1_000_000}).init();
   t.after(() => resumed.close()); await resumed.flush();
   assert.equal(f.sent.length, 0); assert.equal(resumed.state.outbox[0].status, 'unknown');
 });
@@ -251,7 +253,7 @@ test('current preferences, authority and environment are checked after a durable
 
 test('startup snapshots are serialized and a commit during metadata save is caught up', async t => {
   const f = await fixture(t); await f.notifications.register(f.device, enrollment()); await f.notifications.close();
-  const resumed = new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE, intervalMs:1_000_000});
+  const resumed = new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE, graceMs:0, intervalMs:1_000_000});
   t.after(() => resumed.close());
   const serialize = f.store.serialize.bind(f.store); let serialized = 0;
   f.store.serialize = fn => {serialized++; return serialize(fn);};
@@ -313,6 +315,19 @@ test('notification routes require the current paired iOS bearer and preserve bro
   const setup = await request('/api/setup', {method:'POST', data:{token:app.bootstrapToken, password:'notification-fixture-password'}});
   const cookie = setup.response.headers.get('set-cookie').split(';')[0], csrf = setup.body.csrf;
   assert.equal((await request('/api/device/notifications')).status, 401);
+  assert.equal((await request('/api/notifications/unread')).status,401);
+  assert.deepEqual((await request('/api/notifications/unread',{cookie})).body,{unreadBots:{}});
+  await app.store.mutate(state=>{state.messages.bot_atlas=[{id:'inbox_user',role:'user',source:'chat',runId:'inbox_run',content:'Private request'},{id:'inbox_reply',role:'assistant',runId:'inbox_run',content:'Private reply'}];});
+  assert.deepEqual((await request('/api/notifications/unread',{cookie})).body,{unreadBots:{bot_atlas:'inbox_reply'}});
+  assert.deepEqual((await request('/api/state',{cookie})).body.unreadBots,{bot_atlas:'inbox_reply'});
+  assert.equal((await request('/api/notifications/unread',{method:'POST',cookie,csrf,data:{}})).status,405);
+  assert.equal((await request('/api/notifications/unread',{cookie,headers:{Origin:'https://attacker.test'}})).status,403);
+  await request('/api/notifications/read',{method:'POST',cookie,csrf,data:{botId:'bot_atlas',messageIds:['inbox_reply']}});
+  assert.deepEqual((await request('/api/notifications/unread',{cookie})).body,{unreadBots:{}});
+  assert.equal((await request('/api/notifications/read', {method:'POST', data:{botId:'bot_atlas',messageIds:[]}})).status,401);
+  assert.equal((await request('/api/notifications/read', {method:'POST',cookie,data:{botId:'bot_atlas',messageIds:[]}})).status,403);
+  assert.equal((await request('/api/notifications/read', {cookie})).status,405);
+  assert.equal((await request('/api/notifications/read', {method:'POST',cookie,csrf,data:{botId:'bot_atlas',messageIds:[]}})).status,200);
   assert.equal((await request('/api/device/notifications', {cookie})).status, 403);
   assert.equal((await request('/api/device/notifications', {method:'PUT', cookie, csrf, data:enrollment()})).status, 403);
   const {privateKey, publicKey} = generateKeyPairSync('ec', {namedCurve:'prime256v1'});
@@ -337,6 +352,8 @@ test('notification routes require the current paired iOS bearer and preserve bro
   await app.sync.security.add(engineDevice);await app.store.mutate(state => state.devices.push(engineDevice));
   app.sync.devices.sessions.set(engineToken, {deviceId:'dev_engine', expires:Date.now()+60000});
   assert.equal((await request('/api/device/notifications', {bearer:engineToken})).status, 403);
+  assert.equal((await request('/api/notifications/unread', {bearer:engineToken})).status,403);
+  assert.equal((await request('/api/notifications/read', {method:'POST',bearer:engineToken,data:{botId:'bot_atlas',messageIds:[]}})).status,403);
   await app.sync.devices.revoke(deviceId);
   assert.equal((await request('/api/device/notifications', {bearer})).status, 401);
 });
@@ -356,4 +373,109 @@ test('a corrupt notification file does not prevent engine startup or normal work
   assert.equal(state.status, 200); assert.equal((await state.json()).engine.independent, true);
   assert.equal(app.notifications.readOnly, true);
   assert.equal(await fs.readFile(file, 'utf8'), original);
+});
+
+test('read receipts suppress only an actually read final reply during the grace period', async t => {
+  const f = await fixture(t, {graceMs:8000}); await f.notifications.register(f.device, enrollment());
+  await f.reply('read'); assert.equal(f.sent.length, 0);
+  await f.notifications.acknowledge({botId:'bot_atlas', messageIds:['message_read']});
+  f.advance(8000); await f.notifications.flush();
+  assert.equal(f.sent.length, 0); assert.equal(f.notifications.state.outbox[0].status, 'suppressed');
+  await f.reply('away'); f.advance(7999); await f.notifications.flush(); assert.equal(f.sent.length, 0);
+  f.advance(1); await f.notifications.flush(); assert.equal(f.sent.length, 1);
+  assert.equal(f.sent[0].payload.aps.alert.body, 'Secret assistant transcript');
+  await f.notifications.close();
+  const resumed = await new Notifications(f.store, {sync:f.sync, transport:f.transport, now:() => BASE+16000}).init();
+  t.after(() => resumed.close()); await resumed.flush(); assert.equal(f.sent.length, 1, 'restart cannot replay the read reply');
+});
+
+test('unread bot summaries use final owner-visible replies and exact reads without requiring push setup', async t => {
+  const f = await fixture(t, {available:false});
+  assert.deepEqual(f.notifications.unreadBots(), {});
+  await f.reply('first');
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_first'});
+  for (const [id, options] of [['partial',{partial:true}], ['private',{source:'telegram',sessionId:'private_chat'}], ['delegated',{source:'delegation',fromBotId:'bot_nova'}], ['orphan',{user:false}]]) await f.reply(id, options);
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_first'});
+  await f.notifications.acknowledge({botId:'bot_nova',messageIds:['message_first']});
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_first'});
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_first']});
+  assert.deepEqual(f.notifications.unreadBots(), {});
+  await f.reply('second');
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_first']});
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_second'}, 'reading an older reply cannot clear a newer one');
+  await f.reply('routine_unread', {source:'routine',routineId:'routine_unread'});
+  assert.deepEqual(f.notifications.unreadBots(), {bot_atlas:'message_routine_unread'});
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_routine_unread']});
+  assert.deepEqual(f.notifications.unreadBots(), {});
+});
+
+test('the latest bot read survives pruning, receipt pressure and a restart without keeping an unbounded history', async t => {
+  const f = await fixture(t, {available:false});
+  await f.reply('retained');
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_retained']});
+  const [readId] = Object.keys(f.notifications.state.read);
+  f.advance(2 * 24 * 60 * 60_000);
+  for(let index=0;index<10001;index++)f.notifications.state.read[index.toString(16).padStart(32,'0')]=f.notifications.now();
+  await f.notifications.flush();
+  assert.equal(Object.keys(f.notifications.state.read).length,10000);
+  assert.ok(Object.hasOwn(f.notifications.state.read,readId));
+  assert.deepEqual(f.notifications.unreadBots(),{});
+  await f.notifications.close();
+  const resumed=await new Notifications(f.store,{sync:f.sync,transport:f.transport,now:f.notifications.now}).init();t.after(()=>resumed.close());
+  assert.deepEqual(resumed.unreadBots(),{});
+  await f.store.mutate(state=>state.messages.bot_atlas.push({id:'next_user',role:'user',source:'chat',runId:'next_run'},{id:'next_reply',role:'assistant',runId:'next_run'}));
+  await resumed.flush();assert.deepEqual(resumed.unreadBots(),{bot_atlas:'next_reply'});
+  assert.ok(!Object.hasOwn(resumed.state.read,readId),'a superseded old receipt can expire');
+});
+
+test('reads arriving before synced replies suppress the exact event and cannot approve or cancel work', async t => {
+  const f = await fixture(t, {graceMs:8000}); await f.notifications.register(f.device, enrollment());
+  await f.reply('early');
+  const event = f.notifications.state.outbox[0].event;
+  f.notifications.state.outbox = [];
+  await f.notifications.markRead([event.id]);
+  f.notifications.add(event); assert.equal(f.notifications.state.outbox.length, 0);
+  const before = JSON.stringify(f.store.state);
+  await f.notifications.acknowledge({botId:'bot_nova', messageIds:['message_early']});
+  await f.notifications.acknowledge({botId:'bot_atlas', messageIds:['invented']});
+  assert.equal(JSON.stringify(f.store.state), before);
+  for (const bad of [{botId:['bot_atlas'],messageIds:[]},{botId:'bot_atlas',messageIds:[],token:TOKEN},{botId:'bot_atlas',messageIds:['../secret']},{botId:'bot_atlas',roomId:4,messageIds:[]}]) await assert.rejects(f.notifications.acknowledge(bad), {status:400});
+});
+
+test('room and routine reads use exact conversation and run identities; partial and private replies never mute', async t => {
+  const f = await fixture(t, {graceMs:8000}); await f.notifications.register(f.device, enrollment());
+  await f.store.mutate(state => {state.rooms.push({id:'room_read', name:'Team', botIds:['bot_atlas']});state.roomMessages.room_read=[{id:'room_final',botId:'bot_atlas',role:'assistant',content:'Done',createdAt:iso(0)}]; state.routines.push({id:'routine_read',name:'Daily briefing',botId:'bot_atlas'});});
+  await f.notifications.flush();
+  await f.notifications.acknowledge({botId:'bot_nova',roomId:'room_read',messageIds:['room_final']});
+  assert.equal(f.notifications.state.outbox[0].status, 'pending');
+  await f.notifications.acknowledge({botId:'bot_atlas',roomId:'room_read',messageIds:['room_final']});
+  await f.reply('routine_read', {source:'routine',routineId:'routine_read'});
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_routine_read']});
+  await f.reply('partial_read', {partial:true});
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:['message_partial_read']});
+  assert.equal(Object.keys(f.notifications.state.read).length, 2);
+  f.advance(8000); await f.notifications.flush(); assert.equal(f.sent.length,0);
+});
+
+test('rich previews use bounded redacted committed content and finite portraits without persisting names or text', async t => {
+  const f = await fixture(t, {graceMs:8000}); await f.notifications.register(f.device, enrollment());
+  await f.store.mutate(state => {state.bots[0].name='Preview bot';state.bots[0].icon='companion:cloud';state.routines.push({id:'routine_preview',name:'Morning briefing',botId:'bot_atlas'});});
+  await f.reply('preview', {source:'routine',routineId:'routine_preview'});
+  await f.store.mutate(state => {state.messages.bot_atlas.at(-1).content='**Ready** [report](https://private.example/token)\n```secret code```\n'+ '🦉'.repeat(300);});
+  f.advance(8000); await f.notifications.flush();
+  const payload = f.sent[0].payload;
+  assert.equal(payload.aps.alert.title,'Preview bot');assert.equal(payload.aps.alert.subtitle,'Routine · Morning briefing');assert.equal(payload.studio.avatar,'cloud');
+  assert.ok(payload.aps.alert.body.startsWith('Ready report [Code]'));assert.ok([...payload.aps.alert.body].length<=240);
+  assert.ok(Buffer.byteLength(JSON.stringify(payload))<4096);
+  assert.ok(!JSON.stringify(payload).includes('https:'));assert.ok(!JSON.stringify(payload).includes('secret code'));
+  const disk=await fs.readFile(f.notifications.file,'utf8');for(const value of ['Preview bot','Morning briefing','secret code','🦉'])assert.ok(!disk.includes(value));
+  assert.equal(notificationAvatar({id:'bot_atlas',name:'Different'}),'blue');assert.equal(notificationAvatar({id:'custom',icon:'companion:../../secret'}), notificationAvatar({id:'custom'}));
+  assert.equal(previewText('<b>Hello</b>\u202e\nworld',40),'Hello world');
+});
+
+test('a read arriving after the durable claim is rechecked before the Apple transport', async t => {
+  const f=await fixture(t);await f.notifications.register(f.device,enrollment());
+  const save=f.notifications.save.bind(f.notifications);
+  f.notifications.save=async()=>{await save();const item=f.notifications.state.outbox.find(row=>row.status==='claimed');if(item)f.notifications.state.read[item.event.id]=BASE;};
+  await f.reply('claimed_read');assert.equal(f.sent.length,0);assert.equal(f.notifications.state.outbox[0].status,'suppressed');
 });

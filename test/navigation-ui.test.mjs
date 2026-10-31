@@ -36,12 +36,13 @@ test('the header has no workspace breadcrumb, only a page name for phones',()=>{
   assert.match(header,/<span class="topbar-title">Bots<\/span>/);
 });
 
-test('Settings starts with essentials and keeps expert sections in a closed disclosure',()=>{
+test('Settings starts with Skills beside Models and keeps expert sections in a closed disclosure',()=>{
   const h=harness('#/settings');h.run('renderApp()');
   const page=h.app.innerHTML.match(/<section class="page settings-overview">[\s\S]*?<\/section>/)[0];
   const [essentials,advanced]=page.split('<details class="pearl-advanced" data-disclosure="settings-more">');
-  for(const view of ['connections','sync','help'])assert.match(essentials,new RegExp(`data-nav="/${view}"`));
-  for(const view of ['skills','integrations','channels','activity']){
+  assert.deepEqual([...essentials.matchAll(/class="pearl-resource-card" data-nav="\/([^\"]+)"/g)].map(match=>match[1]),['skills','connections','coding','sync','help']);
+  assert.match(essentials,/Manage installed skills and assign them to your bots\./);
+  for(const view of ['integrations','channels','activity']){
     assert.ok(!essentials.includes(`data-nav="/${view}"`));assert.match(advanced,new RegExp(`data-nav="/${view}"`));
   }
   assert.match(advanced,/<summary>More settings<\/summary>/);assert.match(page,/data-action="logout"/);
@@ -53,6 +54,8 @@ test('every settings section remains directly reachable with a collapsed section
     assert.match(h.app.innerHTML,/<h1>Settings<\/h1>/,view);
     assert.match(h.app.innerHTML,new RegExp(`class="settings-tab active" data-nav="/${tab}" aria-current="page"`),view);
     assert.match(h.app.innerHTML,/<details class="pearl-advanced settings-section-picker" data-disclosure="settings-sections">/,view);
+    const tabs=h.app.innerHTML.match(/<nav class="settings-tabs"[\s\S]*?<\/nav>/)[0];
+    assert.deepEqual([...tabs.matchAll(/data-nav="\/([^\"]+)"/g)].map(match=>match[1]),['skills','connections','integrations','coding','channels','sync','activity','help'],view);
     assert.match(h.app.innerHTML,/data-nav="\/settings">[\s\S]*All settings/,view);
     assert.match(h.app.innerHTML,/data-nav="\/settings" aria-current="page"/,view);
   }
@@ -119,7 +122,7 @@ test('chat has one universal action menu and keeps everyday resources reachable'
   // Menus need a real page to open; capture their items instead.
   h.run('openMenu=(anchor,items)=>{globalThis.menuItems=items;}');
   h.run('chatMenu({},"bot_nova")');const menu=h.run('menuItems');
-  for(const [label,attrs] of [['Chat options','data-action="chat-options" data-id="bot_nova"'],['Memory','data-action="bot-memory" data-id="bot_nova"'],['Files','data-action="bot-files" data-id="bot_nova"'],['Quick details','data-action="toggle-inspector" data-id="bot_nova"'],['Bot profile','data-nav="/bots/bot_nova"'],['Edit bot','data-action="edit-bot" data-id="bot_nova"']])
+  for(const [label,attrs] of [['Chat options','data-action="chat-options" data-id="bot_nova"'],['Memory','data-action="bot-memory" data-id="bot_nova"'],['Files','data-action="bot-files" data-id="bot_nova"'],['Quick details','data-action="toggle-inspector" data-id="bot_nova"'],['Bot profile','data-nav="/bots/bot_nova"'],['Bot settings','data-action="edit-bot" data-id="bot_nova"']])
     assert.match(menu,new RegExp(`${attrs.replace(/[/]/g,'\\/')}><span class="menu-text"><span>${label}<\/span>`),label);
   assert.ok(!menu.includes('fixture-model'),'provider metadata is inside Chat options');
   h.run('botSwitcherMenu({},"bot_nova")');const switcher=h.run('menuItems');

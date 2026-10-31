@@ -6,6 +6,7 @@ import {JSDOM} from 'jsdom';
 import {createSpeechController} from '../public/speech.mjs';
 
 const appSource=(await readFile(new URL('../public/app.js',import.meta.url),'utf8')).replace(/\nstart\(\);\s*$/,'\n');
+const profileSource=await readFile(new URL('../public/bot-profile.js',import.meta.url),'utf8');
 const avatarSource=await readFile(new URL('../public/creature-avatars.js',import.meta.url),'utf8');
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 const plain=value=>JSON.parse(JSON.stringify(value));
@@ -21,7 +22,7 @@ function ui(t,{phone=false,bot={},inferenceRequest,speechCatalog}={}) {
   win.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
   win.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new win.Event('close'));};
   const controller=createSpeechController(win);controller.setPreferences({engine:'browser'});win.StudioSpeech={controller};
-  const context=dom.getInternalVMContext();vm.runInContext(avatarSource,context);vm.runInContext(appSource,context);
+  const context=dom.getInternalVMContext();vm.runInContext(avatarSource,context);vm.runInContext(profileSource,context);vm.runInContext(appSource,context);
   const saved={id:'bot_atlas',name:'Atlas',title:'Chief of staff',description:'Plans useful work.',instructions:'Keep it concise.',icon:'roki',color:'coral',connectionId:'provider',model:'model-a',reasoningEffort:'high',approvalPolicy:'strict',contextLimit:'128k',tools:['workspace','memory','delegation','terminal'],skills:['skill_brief'],integrationIds:['integration_docs'],teamMode:'selected',collaborators:['bot_nova'],enabled:false,hidden:true,...bot};
   const fixture={settings:{defaultConnectionId:'provider'},bots:[saved,{id:'bot_nova',name:'Nova',title:'Research',connectionId:'provider'}],connections:[{id:'provider',name:'Fixture provider',type:'openai',status:'connected',defaultModel:'model-a',models:[{id:'model-a',name:'Model A'}]}],skills:[{id:'skill_brief',name:'Briefing'}],integrations:[{id:'integration_docs',name:'Docs',type:'mcp',enabled:true}],rooms:[],routines:[],activity:[],runs:{},roomDrives:{}};
   if(speechCatalog)fixture.connections.push({id:'router',name:'Speech fixture',type:'openrouter',hasKey:true});
@@ -52,7 +53,7 @@ test('closed advanced bot settings preserve the complete edited configuration on
   const form=h.doc.querySelector('#bot-form'),advanced=form.querySelector('.bot-advanced');
   assert.equal(advanced.open,false);assert.equal(form.querySelector('.bot-capabilities').open,false);
   const data=new h.win.FormData(form);
-  assert.deepEqual(data.getAll('tool'),h.saved.tools);
+  assert.deepEqual(data.getAll('tool').sort(),[...h.saved.tools].sort());
   assert.equal(data.get('connectionId'),'provider');assert.equal(data.get('model'),'model-a');
   assert.equal(data.get('approvalPolicy'),'strict');assert.equal(data.get('contextLimit'),'128k');
   assert.deepEqual(data.getAll('collaborator'),['bot_nova']);assert.equal(data.get('teamMode'),'selected');
@@ -64,7 +65,7 @@ test('closed advanced bot settings preserve the complete edited configuration on
   assert.equal(h.requests.length,1);const save=h.requests[0];
   assert.equal(save.path,'/api/bots/bot_atlas');assert.equal(save.method,'PATCH');
   for(const field of ['connectionId','model','approvalPolicy','contextLimit','icon','color','teamMode','enabled','hidden'])assert.equal(save.body[field],h.saved[field],`${field} survives the closed disclosure`);
-  for(const field of ['tools','skills','integrationIds','collaborators'])assert.deepEqual(save.body[field],h.saved[field],`${field} survives the closed disclosure`);
+  for(const field of ['tools','skills','integrationIds','collaborators'])assert.deepEqual([...save.body[field]].sort(),[...h.saved[field]].sort(),`${field} survives the closed disclosure`);
   assert.equal(save.body.description,'An updated introduction.');assert.equal(h.toasts.some(item=>item.error),false);
 });
 
@@ -73,21 +74,71 @@ test('a closed new-bot editor keeps inherited provider, safe tools and enabled v
   assert.equal(form.querySelector('.bot-advanced').open,false);
   assert.equal(data.get('connectionId'),'provider');assert.equal(data.get('model'),'');
   assert.equal(data.get('approvalPolicy'),'balanced');assert.equal(data.get('teamMode'),'all');
-  assert.deepEqual(data.getAll('tool'),['workspace','memory','skills','web','integrations','delegation','automation']);
+  assert.deepEqual(data.getAll('tool').sort(),['workspace','memory','skills','web','integrations','delegation','automation','setup'].sort());
   assert.equal(data.has('enabled'),true);assert.equal(data.has('hidden'),false);assert.equal(data.get('icon'),'companion:blue');
 });
 
-test('asynchronous chat options keep model and conversation controls collapsed and retain their form values',async t=>{
+function showBotSettings(h){
+  h.win.history.replaceState(null,'','#/bots/bot_atlas/settings');
+  h.doc.querySelector('#app').innerHTML=h.run("renderBotProfile('bot_atlas')");
+  h.run("window.StudioBotProfile.mount(studioContext(),'bot_atlas',document)");
+  return h.doc.querySelector('#bot-form');
+}
+
+test('bot Settings keeps memory controls visible and saves one complete configuration',async t=>{
+  const h=ui(t),before=plain(h.saved),form=showBotSettings(h);
+  assert.equal(h.doc.querySelector('[role=tab][aria-selected=true]').dataset.tab,'settings');
+  assert.deepEqual([...form.querySelectorAll('[data-bot-settings-section]')].map(section=>section.dataset.botSettingsSection),['instructions','memory','tools','model']);
+  const memory=form.querySelector('[name=tool][value=memory]'),episodes=form.querySelector('[name=episodicMemory]');
+  assert.equal(form.querySelectorAll('[name=tool][value=memory]').length,1);
+  assert.equal(memory.closest('details'),null);assert.equal(episodes.closest('details'),null);
+  assert.equal(h.requests.length,0,'opening Settings changes no data');
+  const instructions=form.querySelector('[name=instructions]');instructions.value='Prefer the browser for product comparisons.';instructions.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  episodes.checked=true;episodes.dispatchEvent(new h.win.Event('change',{bubbles:true}));
+  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  assert.equal(h.requests.length,1);const save=h.requests[0];
+  assert.equal(save.path,'/api/bots/bot_atlas');assert.equal(save.method,'PATCH');
+  assert.equal(save.body.instructions,instructions.value);assert.equal(save.body.episodicMemory,true);
+  for(const key of ['connectionId','model','approvalPolicy','contextLimit','teamMode','enabled','hidden'])assert.equal(save.body[key],before[key]);
+  for(const key of ['tools','skills','integrationIds','collaborators'])assert.deepEqual([...save.body[key]].sort(),[...before[key]].sort());
+  assert.equal(form.dataset.settingsDirty,undefined);
+  Object.assign(h.saved,save.body);const reopened=showBotSettings(h);
+  assert.equal(reopened.querySelector('[name=instructions]').value,save.body.instructions);assert.equal(reopened.querySelector('[name=episodicMemory]').checked,true);
+  h.run('openDialog("Quick details",`<button data-action="edit-bot" data-id="bot_atlas">Bot settings</button>`)');
+  h.doc.querySelector('dialog [data-action=edit-bot]').click();await tick();
+  assert.equal(h.win.location.hash,'#/bots/bot_atlas/settings');assert.equal(h.doc.querySelector('dialog'),null,'an old details dialog cannot cover Settings');
+});
+
+test('unsaved Settings survive profile refreshes, tab switches and refused saves',async t=>{
+  const h=ui(t);let form=showBotSettings(h),instructions=form.querySelector('[name=instructions]');
+  instructions.value='Keep this unsaved direction.';instructions.focus();instructions.setSelectionRange(5,9);instructions.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  form.querySelector('[name=episodicMemory]').checked=true;form.querySelector('[name=episodicMemory]').dispatchEvent(new h.win.Event('change',{bubbles:true}));
+  form=showBotSettings(h);instructions=form.querySelector('[name=instructions]');
+  assert.equal(instructions.value,'Keep this unsaved direction.');assert.equal(h.doc.activeElement,instructions);assert.equal(instructions.selectionStart,5);
+  h.doc.querySelector('[role=tab][data-tab=memory]').click();await tick();
+  h.doc.querySelector('[role=tab][data-tab=settings]').click();await tick();form=h.doc.querySelector('#bot-form');
+  assert.equal(form.querySelector('[name=instructions]').value,'Keep this unsaved direction.');assert.equal(form.querySelector('[name=episodicMemory]').checked,true);
+  assert.equal(h.requests.length,1,'switching to Memory makes its read request only');
+  h.run('api=async()=>{throw new Error("Fixture save refused.")}');
+  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  assert.match(form.querySelector('.form-error').textContent,/Fixture save refused/);
+  assert.equal(form.querySelector('[name=instructions]').value,'Keep this unsaved direction.');
+  assert.equal(h.saved.instructions,'Keep it concise.');
+  h.doc.querySelector('[data-profile-action=discard-settings]').click();
+  assert.equal(h.doc.querySelector('[name=instructions]').value,'Keep it concise.');assert.equal(h.doc.querySelector('[name=episodicMemory]').checked,false);
+});
+
+test('asynchronous chat options expose model and reasoning while retaining form values',async t=>{
   let finish;const pending=new Promise(resolve=>{finish=resolve;}),h=ui(t,{inferenceRequest:()=>pending});
   h.chat();h.doc.querySelector('#message-input').value='A draft stays in the composer.';
   const loading=h.run("chatOptionsDialog('bot_atlas')"),form=h.doc.querySelector('#chat-options-form');
-  assert.equal(form.dataset.inferenceReady,'false');assert.equal(form.querySelector('details').open,false);
+  assert.equal(form.dataset.inferenceReady,'false');assert.equal(form.querySelector('details').open,true);
   assert.equal(form.querySelector('#chat-model'),null);
   finish({model:'model-a',effectiveModel:'model-a',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A',reasoning:{supported:true,efforts:['low','high']}}],reasoning:{supported:true,efforts:['low','high']},conversation:{tokens:12000}});await loading;
   const model=form.querySelector('#chat-inference-options').closest('details'),history=form.querySelector('#chat-context-tools');
-  assert.equal(model.open,false);assert.equal(model.querySelector('summary').textContent,'Model & reasoning');
+  assert.equal(model.open,true);assert.equal(model.querySelector('summary').textContent,'Model & reasoning');
   assert.equal(history.open,false);assert.equal(history.querySelector('summary').textContent,'Conversation history');
-  assert.deepEqual([...form.querySelectorAll('details')].map(details=>[details.querySelector('summary').textContent,details.open]),[['Model & reasoning',false],['Conversation history',false],['Voice & dictation',false]]);
+  assert.deepEqual([...form.querySelectorAll('details')].map(details=>[details.querySelector('summary').textContent,details.open]),[['Model & reasoning',true],['Conversation history',false],['Voice & dictation',false]]);
   assert.equal(form.dataset.inferenceReady,'true');assert.match(history.textContent,/12K tokens/);
   const data=new h.win.FormData(form);assert.equal(data.get('model'),'model-a');assert.equal(data.get('reasoningEffort'),'high');
   assert.deepEqual([...history.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-topic',false]]);
@@ -99,11 +150,11 @@ test('asynchronous chat options keep model and conversation controls collapsed a
   assert.equal(h.toasts.some(item=>item.error),false);
 });
 
-test('saving voice preferences preserves an unavailable model override hidden in collapsed options',async t=>{
+test('saving voice preferences preserves an unavailable model override in visible options',async t=>{
   const h=ui(t,{bot:{model:'retired-model'},inferenceRequest:()=>({model:'retired-model',effectiveModel:'retired-model',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A'}],reasoning:{supported:false,efforts:[]}})});
   await h.run("chatOptionsDialog('bot_atlas')");const form=h.doc.querySelector('#chat-options-form');
   const model=form.querySelector('#chat-model');assert.equal(model.value,'retired-model');
-  assert.equal(model.closest('details').open,false);assert.equal(form.dataset.inferenceDirty,'false');
+  assert.equal(model.closest('details').open,true);assert.equal(form.dataset.inferenceDirty,'false');
   form.querySelector('#speech-language').value='uk-UA';form.querySelector('[name=autoRead]').checked=true;
   form.querySelector('#speech-language').dispatchEvent(new h.win.Event('change',{bubbles:true}));
   form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();

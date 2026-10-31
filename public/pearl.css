@@ -90,7 +90,7 @@ body.pearl-studio {
   width: var(--sidebar);
   height: calc(100dvh - 32px);
   min-height: 0;
-  padding: 23px 12px 14px;
+  padding: 12px;
   border: 1px solid var(--pearl-border);
   border-radius: 28px;
   background: var(--pearl-soft);
@@ -100,9 +100,10 @@ body.pearl-studio {
   transform: none;
 }
 .pearl-studio .content { grid-column: 2; min-width: 0; }
+.pearl-studio .sidebar > :not(.roster) { flex-shrink: 0; }
 .pearl-studio .sidebar .searchbox {
-  min-height: 42px;
-  margin: 0 5px 20px;
+  min-height: 40px;
+  margin: 0 5px 10px;
   padding: 8px 12px;
   border-color: var(--line);
   border-radius: 15px;
@@ -112,12 +113,12 @@ body.pearl-studio {
 .pearl-studio .searchbox input { font-size: 13px; color: var(--ink); }
 .pearl-studio .searchbox input::placeholder { color: var(--muted); opacity: .9; }
 .pearl-studio .kbd { color: var(--muted); font-size: 11px; }
-.pearl-studio .nav-list { gap: 6px; }
+.pearl-studio .nav-list { gap: 2px; }
 .pearl-studio .nav-item {
-  min-height: 48px;
-  padding: 10px 15px;
-  gap: 12px;
-  border-radius: 18px;
+  min-height: 40px;
+  padding: 8px 12px;
+  gap: 10px;
+  border-radius: 14px;
   color: var(--muted);
   font-size: 14px;
   font-weight: 400;
@@ -138,19 +139,22 @@ body.pearl-studio {
   background: rgba(111, 145, 191, .09);
   font-size: 11px;
 }
-.pearl-studio .sidebar-label { padding: 25px 15px 12px; color: var(--muted); font-size: 10px; letter-spacing: 1.3px; font-weight: 450; }
-.pearl-studio .sidebar-label button { display: grid; place-items: center; width: 32px; height: 32px; margin-right: -8px; color: var(--muted); }
+.pearl-studio .sidebar-label { padding: 12px 12px 4px; color: var(--muted); font-size: 12px; letter-spacing: 0; font-weight: 500; text-transform: none; }
+.pearl-studio .sidebar-label button { display: grid; place-items: center; width: 32px; height: 32px; margin-right: -6px; color: var(--muted); }
 .pearl-studio .sidebar-label button svg { width: 17px; height: 17px; }
-.pearl-studio .roster { gap: 6px; }
-.pearl-studio .roster-item { min-height: 68px; gap: 12px; padding: 9px 10px; border-radius: 20px; }
+.pearl-studio .sidebar .roster { flex: 1 1 0; align-content: start; gap: 4px; overscroll-behavior-y: contain; }
+.pearl-studio .roster-item { min-height: 60px; gap: 10px; padding: 8px 10px; border-radius: 16px; }
+.pearl-studio .roster-item > span:nth-child(2) { flex: 1; }
+.pearl-studio .roster-name, .pearl-studio .roster-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pearl-studio .roster-item:hover, .pearl-studio .roster-item.selected { background: var(--pearl-surface); border-color: var(--pearl-border); }
 .pearl-studio .roster-name { color: var(--ink); font-size: 14px; font-weight: 500; }
 .pearl-studio .roster-role { margin-top: 3px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
-.pearl-studio .roster-item .dot { width: 6px; height: 6px; background: #a5b0bf; }
-.pearl-studio .roster-item .dot.ready { background: #48956e; }
-.pearl-studio .sidebar-bottom { margin-top: auto; padding-top: 14px; border-color: var(--line); }
-.pearl-studio .roster-item .avatar { width: 44px; height: 44px; }
+.pearl-studio .roster-unread { flex: none; width: 7px; height: 7px; margin-left: auto; border-radius: 50%; background: var(--pearl-blue); }
+.pearl-studio .sidebar-bottom { margin-top: 8px; padding-top: 8px; border-color: var(--line); }
+.pearl-studio .roster-item .avatar { width: 40px; height: 40px; }
 .pearl-studio .brand, .pearl-studio .pearl-brand { display: flex; align-items: center; gap: 9px; min-height: 38px; margin: 0 10px 22px; padding: 0; color: var(--ink); font-size: 15px; letter-spacing: -.45px; }
+.pearl-studio .sidebar .brand { min-height: 32px; margin: 0 10px 10px; }
+.pearl-studio .sidebar .brand-mark { width: 32px; height: 32px; }
 .pearl-studio .pearl-brand strong { font-weight: 550; }
 .pearl-studio .brand-name { font-size: 15px; font-weight: 500; }
 
@@ -692,17 +696,6 @@ body.pearl-studio:is([data-theme=dark], [data-appearance=dark]) {
     --ios-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='18' fill='none' stroke='%23aab5c9' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7 6 3.5 9.5 7M2.5 11 6 14.5 9.5 11'/%3E%3C/svg%3E");
     background: radial-gradient(ellipse 70% 52% at 0% 4%, rgba(52,92,160,.24), transparent 78%), radial-gradient(ellipse 55% 50% at 100% 78%, rgba(170,104,46,.11), transparent 78%), var(--pearl-base);
   }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .hljs { color: #d6deeb; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #ff8c84; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-title, .hljs-title.class_, .hljs-title.function_) { color: #d7b4ff; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-variable, .hljs-section) { color: #8cc4ff; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-string, .hljs-regexp, .hljs-meta .hljs-string) { color: #b2dcff; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-built_in, .hljs-symbol, .hljs-bullet) { color: #ffb070; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-code, .hljs-comment, .hljs-formula) { color: #95a1b5; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag) { color: #8ee59f; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) :is(.hljs-subst, .hljs-emphasis, .hljs-strong) { color: #d6deeb; }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .hljs-addition { color: #8ee59f; background-color: rgba(46,160,67,.18); }
-  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .hljs-deletion { color: #ffaba5; background-color: rgba(248,81,73,.18); }
   html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .thinking-flow-fragment { color: var(--think-light, #c9d8ff); }
   html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .thinking-flow-fragment:is(:hover, [aria-pressed=true]) { color: #fff; }
   html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .thinking-flow-fragment::before { background: var(--think-light, #c9d8ff); }
@@ -742,17 +735,6 @@ body.pearl-studio:is([data-theme=dark], [data-appearance=dark]) {
     --ios-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='18' fill='none' stroke='%23aab5c9' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7 6 3.5 9.5 7M2.5 11 6 14.5 9.5 11'/%3E%3C/svg%3E");
     background: radial-gradient(ellipse 70% 52% at 0% 4%, rgba(52,92,160,.24), transparent 78%), radial-gradient(ellipse 55% 50% at 100% 78%, rgba(170,104,46,.11), transparent 78%), var(--pearl-base);
   }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .hljs { color: #d6deeb; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #ff8c84; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-title, .hljs-title.class_, .hljs-title.function_) { color: #d7b4ff; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-variable, .hljs-section) { color: #8cc4ff; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-string, .hljs-regexp, .hljs-meta .hljs-string) { color: #b2dcff; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-built_in, .hljs-symbol, .hljs-bullet) { color: #ffb070; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-code, .hljs-comment, .hljs-formula) { color: #95a1b5; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag) { color: #8ee59f; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) :is(.hljs-subst, .hljs-emphasis, .hljs-strong) { color: #d6deeb; }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .hljs-addition { color: #8ee59f; background-color: rgba(46,160,67,.18); }
-  :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .hljs-deletion { color: #ffaba5; background-color: rgba(248,81,73,.18); }
   :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .thinking-flow-fragment { color: var(--think-light, #c9d8ff); }
   :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .thinking-flow-fragment:is(:hover, [aria-pressed=true]) { color: #fff; }
   :is(:is(html[data-theme=dark], html[data-appearance=dark]) body.pearl-studio, body.pearl-studio:is([data-theme=dark], [data-appearance=dark])) .thinking-flow-fragment::before { background: var(--think-light, #c9d8ff); }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual, createHash, scrypt as scryptCallback } from 'node:crypto';
 import { brotliCompress, gzip, constants as zlib } from 'node:zlib';
 import { promisify } from 'node:util';
-import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage } from './lib/store.mjs';
+import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage, DEFAULT_BOT_TOOLS, TOOL_GROUPS_VERSION, upgradeReasoningPreference } from './lib/store.mjs';
 import { Runtime, isActive } from './lib/runtime.mjs';
 import { CONTEXT_LIMITS } from './lib/context-budget.mjs';
 import { removeBotSessions } from './lib/sessions.mjs';
@@ -27,6 +27,8 @@ import { Access, WindowCounter, addressBucket } from './lib/access.mjs';
 import { controlSocketPath, controlSocketLive, prepareControlDirectory } from './lib/control.mjs';
 import { APNs } from './lib/apns.mjs';
 import { Notifications, notificationsApi } from './lib/notifications.mjs';
+import { SkillsService, assertSkillIntegrity } from './lib/skills.mjs';
+import { prepareSkillImport } from './lib/skill-import.mjs';
 
 export { controlSocketPath, controlSocketLive };
 
@@ -74,8 +76,9 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'icon'))bot.icon=string(input.icon,'icon',40);
   if(Object.hasOwn(input,'connectionId'))bot.connectionId=string(input.connectionId,'connectionId',100,false);
   for(const key of ['tools','collaborators','integrationIds'])if(Object.hasOwn(input,key)){ensure(Array.isArray(input[key]) && input[key].length<=30 && input[key].every(item=>typeof item==='string' && /^[a-zA-Z0-9_-]{1,100}$/.test(item)),400,`Choose valid ${key}.`);bot[key]=[...new Set(input[key])];}
-  if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','terminal','browser'].includes(tool)),400,'Choose supported bot tools.');
+  if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','setup','terminal','browser','coding'].includes(tool)),400,'Choose supported bot tools.');
   if(Object.hasOwn(input,'approvalPolicy')){ensure(['balanced','strict'].includes(input.approvalPolicy),400,'Choose a supported action review policy.');bot.approvalPolicy=input.approvalPolicy;}
+  if(Object.hasOwn(input,'skillInstallPolicy')){ensure(['ask','trusted'].includes(input.skillInstallPolicy),400,'Choose ask or trusted for skill installation.');bot.skillInstallPolicy=input.skillInstallPolicy;}
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
   if(Object.hasOwn(input,'enabled')){ensure(typeof input.enabled==='boolean',400,'enabled must be true or false.');bot.enabled=input.enabled;}
   if(Object.hasOwn(input,'hidden')){ensure(typeof input.hidden==='boolean',400,'hidden must be true or false.');bot.hidden=input.hidden;}
@@ -83,8 +86,8 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'searchFallbackIntegrationId')){ensure(typeof input.searchFallbackIntegrationId==='string' && (!input.searchFallbackIntegrationId || /^[a-zA-Z0-9_-]{1,100}$/.test(input.searchFallbackIntegrationId)),400,'Choose a valid search fallback integration.');bot.searchFallbackIntegrationId=input.searchFallbackIntegrationId;}
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
-  if(bot.connectionId!==previous.connectionId || bot.model!==previous.model)bot.reasoningEffort='';
-  return {description:'',instructions:'',model:'',reasoningEffort:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:['workspace','memory','skills','web','integrations','delegation','automation'],collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
+  upgradeReasoningPreference(bot);
+  return {description:'',instructions:'',model:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:'balanced',enabled:true,hidden:false,...bot};
 }
 function validateBinding(bot,state,integrations) {
   if(bot.connectionId)ensure(state.connections.some(c=>c.id===bot.connectionId && c.type!=='legacy-hermes'),400,'Choose a model provider. Replace legacy gateway connections in Providers.');
@@ -92,6 +95,14 @@ function validateBinding(bot,state,integrations) {
   ensure((bot.integrationIds||[]).every(target=>state.integrations.some(i=>i.id===target)),400,'Choose existing integrations.');
   if(bot.searchFallbackIntegrationId)ensure((bot.integrationIds || []).includes(bot.searchFallbackIntegrationId),400,'Assign the search fallback integration to this bot before choosing it.');
   if(bot.searchFallbackIntegrationId)ensure(availableSearchFallbacks(integrations,{...bot,tools:['web','integrations']}).some(item=>item.id===bot.searchFallbackIntegrationId),400,'Choose a configured supported search integration for the fallback.');
+}
+async function validateSkillAssignments(store,state,bot) {
+  const catalogIds=new Set();
+  for(const skillId of bot.skills || []){
+    const skill=state.skills.find(item=>item.id===skillId);ensure(skill,400,'Unknown skill.');
+    if(skill.catalogId){ensure(!catalogIds.has(skill.catalogId),409,'Choose only one version of each catalog skill for a bot.');catalogIds.add(skill.catalogId);}
+    await assertSkillIntegrity(store,skill);
+  }
 }
 
 export async function createStudioServer(options={}) {
@@ -113,7 +124,14 @@ export async function createStudioServer(options={}) {
   if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}
   const speech=new Speech(store,options);
   const integrations=options.integrations || new Integrations(store,options);
-  const runtime=new Runtime(store,{...options,providers,integrations,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
+  const skills=new SkillsService(store,{...options.skills,busyElsewhere:botId=>sync.busyElsewhere(botId),assertAdmission:()=>sync.assertAdmission(),isBusy:botId=>runtime.starting.has(botId) || runtime.compactions.has(botId) || rooms.reserved(botId)});
+  // Bots that manage Tupies from chat (lib/setup-tools.mjs) create and change bots with the same checks as the bot API.
+  const botIdle=botId=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before changing it.');
+  const setup={
+    createBot:(input,{actor})=>store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);state.bots.push(bot);store.audit('bot.created',`${actor.name} added ${bot.name} to your team`,bot.id,{source:'agent',createdBy:actor.id});return structuredClone(bot);}),
+    updateBot:(botId,input,{actor})=>{botIdle(botId);return store.mutate(async state=>{botIdle(botId);const index=state.bots.findIndex(b=>b.id===botId);ensure(index>=0,404,'Bot not found.');const updated=validateBot(input,state.bots[index]);validateBinding(updated,state,integrations);await validateSkillAssignments(store,state,updated);botIdle(botId);state.bots[index]=updated;store.audit('bot.updated',`${actor.name} updated ${updated.name}`,botId,{source:'agent'});return structuredClone(updated);});},
+  };
+  const runtime=new Runtime(store,{...options,providers,integrations,skills,setup,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();
@@ -123,10 +141,12 @@ export async function createStudioServer(options={}) {
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
   const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport}).init();
+  await runtime.recoverAutonomous();
+  sync.onNotificationReads = ids => notifications.markRead(ids);
   const bootstrapToken=options.bootstrapToken || randomBytes(24).toString('base64url');
-  const sessions=new Map(), attempts=new WindowCounter();
+  const sessions=new Map(), attempts=new WindowCounter(),skillImports=new Map();
   const secureCookie=options.secureCookie ?? (tlsMode || process.env.STUDIO_SECURE_COOKIE==='true' || !!publicOrigin);
-  let closed=false,ticking=false,control=null,controlFile='';
+  let closed=false,ticking=false,control=null,controlFile='',skillImporting=0;
   function headers(res) {
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -234,10 +254,10 @@ export async function createStudioServer(options={}) {
         const requestOrigin=publicOrigin && req.headers.host===new URL(publicOrigin).host ? publicOrigin : `${scheme}://${req.headers.host}`;
         if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access}))return;
         if(await notificationsApi(req,res,url,{session,notifications,body,json}))return;
-        if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
-        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),sync:sync.summary(),browser:runtime.browsers.status()});
+        if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
+        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
-        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json}))return;
+        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
         const receiptMatch=method==='GET' && pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/submissions\/([A-Za-z0-9_-]{8,80})$/);
         if(receiptMatch) {
@@ -248,8 +268,14 @@ export async function createStudioServer(options={}) {
         }
         if(method==='POST' && pathname==='/api/bots') {
           const input=await body(req);
-          const bot=await store.mutate(state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);ensure(bot.skills.every(s=>state.skills.some(x=>x.id===s)),400,'Unknown skill.');state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
+          const bot=await store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
           return json(res,bot,201);
+        }
+        const browserControlMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/browser\/(view|action|resume)$/);
+        if(browserControlMatch && method==='POST') {
+          const [,botId,action]=browserControlMatch;ensure(store.state.bots.some(bot=>bot.id===botId),404,'Bot not found.');
+          res.setHeader('Cache-Control','no-store');
+          return json(res,await runtime.browserControl[action](botId,await body(req,32_000)));
         }
         let match=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)(?:\/(messages|run|runs|stop|approval|answer|steer|capabilities|skills|compact))?$/);
         if(match) {
@@ -265,7 +291,7 @@ export async function createStudioServer(options={}) {
             const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before editing it.');idle();
             const updated=validateBot(input,bot);
             if(updated.connectionId!==bot.connectionId)delete updated.sessionId;
-            await store.mutate(state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');validateBinding(updated,state,integrations);ensure(updated.skills.every(s=>state.skills.some(x=>x.id===s)),400,'Unknown skill.');state.bots[state.bots.findIndex(b=>b.id===botId)]=updated;store.audit('bot.updated',`${updated.name} was updated`,botId);});return json(res,updated);
+            await store.mutate(async state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');validateBinding(updated,state,integrations);await validateSkillAssignments(store,state,updated);idle();state.bots[state.bots.findIndex(b=>b.id===botId)]=updated;store.audit('bot.updated',`${updated.name} was updated`,botId);});return json(res,updated);
           }
           if(!action && method==='DELETE') {
             const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Stop the active run and room turn before removing this bot.');idle();
@@ -323,6 +349,45 @@ export async function createStudioServer(options={}) {
           if(action==='messages' && method==='POST'){const input=await body(req),result=await rooms.submit(roomId,string(input.text,'Message',20_000),{clientMessageId:input.clientMessageId});return json(res,result,result.duplicate?200:202);}
           if(action==='stop' && method==='POST'){const input=await body(req);return json(res,{drive:await rooms.stop(roomId,input)});}
         }
+        if(pathname==='/api/skills/catalog' && method==='GET')return json(res,await skills.search({query:url.searchParams.get('query') || '',category:url.searchParams.get('category') || '',botId:url.searchParams.get('botId') || undefined}));
+        if(pathname==='/api/skills/installed' && method==='GET')return json(res,await skills.installed({botId:url.searchParams.get('botId') || undefined}));
+        if(pathname==='/api/skills/inspect' && method==='POST')return json(res,await skills.inspect(await body(req)));
+        if(pathname==='/api/skills/install' && method==='POST'){
+          const input=await body(req);ensure(Object.keys(input).every(key=>['catalogId','version','digest','botId'].includes(key)),400,'Give only the exact catalog version, digest and bot.');
+          return json(res,await skills.install(input,{actor:'owner'}),201);
+        }
+        if(pathname==='/api/skills/assign' && method==='POST'){
+          const input=await body(req);ensure(Object.keys(input).every(key=>['skillId','botId','enabled'].includes(key)),400,'Choose one installed skill and bot.');
+          return json(res,await skills.assign(input));
+        }
+        if(pathname==='/api/skills/import/preview' && method==='POST'){
+          for(const [key,preview] of skillImports)if(preview.expires<=Date.now())skillImports.delete(key);
+          ensure(skillImports.size+skillImporting<4,429,'Finish an existing import or wait five minutes before previewing another.');skillImporting++;
+          try{
+          const input=await body(req,14_100_000);ensure(Object.keys(input).every(key=>['url','archiveBase64','files','content','skillPath','botId'].includes(key)),400,'Unknown skill import field.');
+          const botId=string(input.botId,'Bot id',100);ensure(store.state.bots.some(bot=>bot.id===botId),404,'Choose an existing bot.');
+          const controller=new AbortController(),abort=()=>{if(!res.writableEnded)controller.abort(new Error('Import preview request closed.'));};res.once('close',abort);
+          const importTimer=setTimeout(()=>controller.abort(new HttpError(504,'Skill import timed out. Try a smaller skill folder.')),45_000);importTimer.unref();
+          try{
+            const prepared=await prepareSkillImport(input,{signal:controller.signal,request:options.skillImportRequest});
+            if(controller.signal.aborted)throw controller.signal.reason;
+            const retainedBytes=prepared.packages.reduce((total,item)=>total+item.package.files.reduce((sum,file)=>sum+file.data.length,0),0);
+            const packages=await Promise.all(prepared.packages.map(async item=>({key:item.key,label:item.label,skill:{name:item.package.skill.name,description:item.package.skill.description},content:item.package.content,files:item.package.files.map(file=>file.path),provenance:item.provenance,compatibility:(await skills.inspectPrepared(item,{botId})).compatibility})));
+            ensure(!closed && auth(req).token===session.token,401,'Sign in again before previewing a skill.');
+            ensure(retainedBytes<=20_000_000 && [...skillImports.values()].reduce((sum,item)=>sum+(item.bytes || 0),0)+retainedBytes<=40_000_000,413,'Import previews exceed the temporary byte limit. Finish an existing import first.');
+            const importId=id('import');skillImports.set(importId,{owner:session.token,botId,packages:prepared.packages,bytes:retainedBytes,expires:Date.now()+300_000});
+            return json(res,{importId,packages,requiresSelection:packages.length>1});
+          }finally{clearTimeout(importTimer);res.off('close',abort);}
+          }finally{skillImporting--;}
+        }
+        if(pathname==='/api/skills/import' && method==='POST'){
+          const input=await body(req);ensure(Object.keys(input).every(key=>['importId','key','botId'].includes(key)),400,'Choose one exact previewed package and bot.');
+          const preview=skillImports.get(string(input.importId,'Import preview',100));
+          ensure(preview && preview.owner===session.token && preview.expires>Date.now(),409,'This import preview expired. Preview the package again.');
+          ensure(input.botId===preview.botId,409,'Preview the package for this bot before installing it.');
+          const prepared=preview.packages.find(item=>item.key===input.key);ensure(prepared,400,'Choose a skill from this import preview.');
+          const result=await skills.installPrepared(prepared,{botId:preview.botId,actor:'owner'});skillImports.delete(input.importId);return json(res,result,201);
+        }
         if(pathname==='/api/skills' && method==='POST') {
           const input=await body(req,7_100_000),{skill,files}=parseSkillPackage(input);
           const staging=path.join(store.directory,'skills',`.import-${id('stage')}`),target=path.join(store.directory,'skills',skill.id);
@@ -342,28 +407,29 @@ export async function createStudioServer(options={}) {
         match=pathname.match(/^\/api\/skills\/([a-z0-9][a-z0-9-]{0,63})(?:\/(export))?$/);
         if(match) {
           const skill=store.state.skills.find(s=>s.id===match[1]);ensure(skill,404,'Skill not found.');
-          if(method==='GET' && match[2]==='export'){const files=await Promise.all((skill.files || ['SKILL.md']).map(async filePath=>({path:filePath,contentBase64:(await fs.readFile(path.join(store.directory,'skills',skill.id,filePath))).toString('base64')})));return json(res,{files});}
-          if(method==='GET')return json(res,{...skill,content:await fs.readFile(path.join(store.directory,'skills',skill.id,'SKILL.md'),'utf8')});
+          if(method==='GET' && match[2]==='export'){const integrity=await assertSkillIntegrity(store,skill);const files=integrity.verified?[...integrity.files].map(([filePath,data])=>({path:filePath,contentBase64:data.toString('base64')})):await Promise.all((skill.files || ['SKILL.md']).map(async filePath=>({path:filePath,contentBase64:(await fs.readFile(path.join(store.directory,'skills',skill.id,filePath))).toString('base64')})));return json(res,{files});}
+          if(method==='GET'){const integrity=await assertSkillIntegrity(store,skill);return json(res,{...skill,content:integrity.verified?integrity.files.get('SKILL.md').toString('utf8'):await fs.readFile(path.join(store.directory,'skills',skill.id,'SKILL.md'),'utf8')});}
           if(method==='DELETE' && !match[2]) {
-            ensure(!store.state.bots.some(b=>b.skills.includes(skill.id) && isActive(store.state.runs[b.id])),409,'A bot is currently using this skill. Wait for it to finish.');
-            await store.mutate(async state=>{state.skills=state.skills.filter(s=>s.id!==skill.id);for(const bot of state.bots)bot.skills=bot.skills.filter(s=>s!==skill.id);await fs.rm(path.join(store.directory,'skills',skill.id),{recursive:true,force:true});store.audit('skill.deleted',`${skill.name} skill removed`);});return json(res,{deleted:true});
+            const idle=()=>ensure(!store.state.bots.some(b=>(b.skills || []).includes(skill.id) && (isActive(store.state.runs[b.id]) || runtime.starting.has(b.id) || runtime.compactions.has(b.id) || rooms.reserved(b.id) || sync.busyElsewhere(b.id))),409,'A bot is currently using this skill. Wait for it to finish.');idle();
+            await store.mutate(async state=>{idle();ensure(state.skills.some(s=>s.id===skill.id),404,'Skill not found.');state.skills=state.skills.filter(s=>s.id!==skill.id);for(const bot of state.bots)bot.skills=(bot.skills || []).filter(s=>s!==skill.id);await fs.rm(path.join(store.directory,'skills',skill.id),{recursive:true,force:true});store.audit('skill.deleted',`${skill.name} skill removed`);});return json(res,{deleted:true});
           }
         }
         if(pathname==='/api/routines' && method==='POST') {
           const input=await body(req),routine=validateRoutine(input,{id:id('routine'),createdAt:now()},{timeZone:store.state.settings.timezone});
           ensure(store.state.bots.some(b=>b.id===routine.botId),400,'Choose an existing bot.');
-          if(routine.enabled)runtime.connection(store.state.bots.find(b=>b.id===routine.botId));
+          if(routine.enabled && routine.workflow?.mode!=='report')runtime.connection(store.state.bots.find(b=>b.id===routine.botId));
           // The owner's chosen zone becomes the default for routines bots create.
           await store.mutate(state=>{ensure(state.routines.length<200,400,'Workspace supports up to 200 routines.');state.routines.push(routine);if(input.timezone)state.settings.timezone=routine.timezone;store.audit('routine.created',`${routine.name} routine created`,routine.botId);});return json(res,routine,201);
         }
-        match=pathname.match(/^\/api\/routines\/([a-zA-Z0-9_-]+)(?:\/(run|runs))?$/);
+        match=pathname.match(/^\/api\/routines\/([a-zA-Z0-9_-]+)(?:\/(run|runs|resume))?$/);
         if(match) {
           const [,routineId,action]=match,routine=store.state.routines.find(r=>r.id===routineId);ensure(routine,404,'Routine not found.');
           if(action==='run' && method==='POST'){await body(req);return json(res,{run:await runtime.runRoutine(routineId)},202);}
+          if(action==='resume' && method==='POST'){const input=await body(req);ensure(input && Object.keys(input).every(key=>['runId','checkpointId'].includes(key)),400,'Give only the exact runId and checkpointId.');return json(res,{run:await runtime.resumeRoutine(routineId,input)},202);}
           if(action==='runs' && method==='GET')return json(res,{data:routineRuns(store.state,routine),missedRuns:routine.missedRuns || 0,...(routine.lastMissedAt?{lastMissedAt:routine.lastMissedAt}:{})});
           if(!action && method==='PATCH') {
             const input=await body(req),updated=validateRoutine(input,routine,{timeZone:store.state.settings.timezone});ensure(store.state.bots.some(b=>b.id===updated.botId),400,'Choose an existing bot.');
-            if(updated.enabled)runtime.connection(store.state.bots.find(b=>b.id===updated.botId));
+            if(updated.enabled && updated.workflow?.mode!=='report')runtime.connection(store.state.bots.find(b=>b.id===updated.botId));
             await store.mutate(state=>{state.routines[state.routines.findIndex(r=>r.id===routineId)]=updated;if(input.timezone)state.settings.timezone=updated.timezone;store.audit('routine.updated',`${updated.name} routine updated`,updated.botId);});return json(res,updated);
           }
           if(!action && method==='DELETE'){await store.mutate(state=>{state.routines=state.routines.filter(r=>r.id!==routineId);store.audit('routine.deleted',`${routine.name} routine removed`,routine.botId);});return json(res,{deleted:true});}
@@ -417,7 +483,7 @@ export async function createStudioServer(options={}) {
     throw new HttpError(400,'Unknown command.');
   }
   return {
-    server,bootstrapToken,store,runtime,rooms,providers,integrations,channels,sync,access,notifications,
+    server,bootstrapToken,store,runtime,rooms,providers,integrations,channels,sync,access,notifications,skills,
     /** Shell commands of the same user (npm run pair) reach the engine through a socket inside the private data directory. */
     async openControl(file,localUrl) {
       await prepareControlDirectory(file);

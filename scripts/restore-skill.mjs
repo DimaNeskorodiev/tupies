@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
-import { parseSkillPackage } from '../lib/store.mjs';
+import { parsePortableSkillPackage } from '../lib/skill-import.mjs';
 
 /** Restore a Tupies skill export as a native SKILL.md directory, without executing it. */
 export async function restoreSkill(packagePath, destination) {
@@ -11,7 +11,7 @@ export async function restoreSkill(packagePath, destination) {
   if(!stat.isFile() || stat.size>7_100_000)throw new Error('Choose a Tupies skill JSON export under 7.1 MB.');
   const input=JSON.parse(await fs.readFile(source,'utf8'));
   if(!input || typeof input!=='object' || Array.isArray(input))throw new Error('The export must contain a files array.');
-  const {skill,files}=parseSkillPackage(input);
+  const {skill,files}=parsePortableSkillPackage(input);
   await fs.access(parent);
   try {await fs.lstat(target);throw new Error('Destination already exists. Choose a new directory.');}
   catch(error){if(error.code!=='ENOENT')throw error;}

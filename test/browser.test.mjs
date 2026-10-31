@@ -75,7 +75,23 @@ test('a bot reads a script-rendered page, follows a link, is refused stale or co
     return {text:'The team plan costs €24 per month.',toolCalls:[]};
   },{imageInput:'on'});
   await engine.start('bot_atlas','What does the team plan cost?');
-  await waitFor(()=>['completed','failed'].includes(current(store)?.status));
+  // Even links/buttons can cause site actions, so exercise exact approvals for the two valid clicks.
+  let approvals=0;
+  for(let attempts=0;attempts<1500 && !['completed','failed'].includes(current(store)?.status);attempts++) {
+    const run=current(store);
+    if(run?.status==='waiting_for_approval') {
+      assert.equal(run.pending_controls[0].tool,'browser_click');
+      try {
+        await engine.control('bot_atlas','approval',{runId:run.id,remoteRunId:run.remoteRunId,request_id:run.pending_controls[0].prompt_id,execution_generation:run.execution_generation,choice:'once'});
+        approvals++;
+      } catch(error) {
+        // A stale exact identity is correctly refused; poll the current prompt again.
+        assert.equal(error.status,409);assert.match(error.message,/This approval prompt changed/);
+      }
+    }
+    await delay(10);
+  }
+  assert.equal(approvals,2);
   assert.equal(current(store).status,'completed',current(store).error);
   const opened=JSON.parse(requests[1].messages.filter(message=>message.role==='tool').at(-1).content);
   assert.equal(opened.title,'Launch notes');assert.equal(opened.status,200);assert.match(opened.outline,/^# Launch notes/);

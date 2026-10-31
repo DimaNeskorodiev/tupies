@@ -51,6 +51,8 @@ Search, read and link exploration are read-only and can run in parallel with oth
 
 ## Seeing a bot's memory
 
+Configure memory in **bot profile → Settings → Memory**. The same section holds the Memory/Brain capability and opt-in task notes and explains the difference between facts, Brain notes and Learning suggestions. Its links open the content tabs below.
+
 Open a bot from **Bots** (or its name at the top of a chat) to reach its profile at `#/bots/<id>`:
 
 - **Brain** shows the long-term notes: a map of the 60 most connected notes coloured by folder, search, folder and tag filters, a list sorted by recent, most linked or name, and a reader. The reader renders the note through the same sanitized renderer as chat; `[[links]]`, `#tags` and backlinks open the next note, and missing link targets are marked. *Edit text* saves the raw file through the workspace editor, like an edit in Obsidian, so Tupies does not change the `updated` property; the save waits while the bot is working.
@@ -85,6 +87,6 @@ A "Second brain" bot template and model-written note consolidation remain future
 
 ## Optional task observations
 
-**Bot settings → Advanced settings → Save brief task notes** is off by default. With Memory tools and Balanced review, the engine adds bounded observations before task compaction and when your ordinary chat task finishes. A record includes actual task status, request excerpt, source message IDs and engine-recorded output paths. It distinguishes execution status from proof that every requested outcome is correct. There are no extra model requests and no inferred preferences are committed.
+**Bot profile → Settings → Memory → Save brief task notes** is off by default. With Memory tools and Balanced review, the engine adds bounded observations before task compaction and when your ordinary chat task finishes. A record includes actual task status, request excerpt, source message IDs and engine-recorded output paths. It distinguishes execution status from proof that every requested outcome is correct. There are no extra model requests and no inferred preferences are committed.
 
 The daily Markdown note deduplicates the same run/phase, caps records at 20 and total note content at about 40000 characters, and does not overwrite concurrent external edits. Other people's chats, rooms, routines and teammate work never enter this automatic note path. Strict review skips automatic note writes because each exact workspace change requires approval. Known secrets are redacted. The existing daily-review routine can read these observations and propose durable fact/skill changes through normal owner review.

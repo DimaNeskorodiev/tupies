@@ -26,6 +26,8 @@
   .motion-frame,.motion-backdrop{position:absolute;inset:0;contain:paint}
   .motion-scroller{position:absolute;inset:0;overflow:hidden}
   .motion-scroller>.app-shell{pointer-events:none}
+  /* A snapshot is a still frame. Do not run a second copy of mascot/status animations. */
+  .motion-scroller *,.motion-scroller *::before,.motion-scroller *::after{animation-play-state:paused!important;transition:none!important}
   .motion-dim{position:absolute;inset:0;background:rgba(8,12,22,.14);opacity:0}
   .motion-frame.is-leading,.motion-backdrop.is-leading{box-shadow:-12px 0 34px rgba(8,12,22,.12),-1px 0 0 rgba(8,12,22,.05)}
   .motion-layer[data-hide-tabbar] .tabbar{visibility:hidden}

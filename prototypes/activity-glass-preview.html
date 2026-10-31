@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Tupies · Activity in motion</title>
+  <link rel="stylesheet" href="../public/style.css">
+  <link rel="stylesheet" href="../public/buttons.css">
+  <link rel="stylesheet" href="../public/thinking-waves.css">
+  <link rel="stylesheet" href="../public/mobile.css">
+  <link rel="stylesheet" href="../public/pearl.css">
+  <style>
+    * { box-sizing: border-box; }
+    html { min-width: 320px; }
+    body.pearl-studio { margin: 0; min-height: 100vh; overflow: auto; }
+    .activity-preview { width: min(100%, 1000px); margin: auto; padding: 58px 36px 40px; }
+    .preview-masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .preview-wordmark { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: -.5px; }
+    .preview-wordmark img { width: 36px; height: 36px; object-fit: contain; }
+    .preview-badge { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; letter-spacing: .02em; }
+    .preview-intro { padding: 54px 0 26px; }
+    .preview-eyebrow { color: var(--pearl-blue); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+    .preview-intro h1 { margin: 10px 0 16px; color: var(--ink); font-size: clamp(34px, 6vw, 52px); font-weight: 400; line-height: 1.08; letter-spacing: -1.8px; }
+    .preview-intro p { max-width: 580px; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.75; }
+    .preview-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 17px 0 24px; }
+    .preview-control { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .preview-control select { min-height: 36px; max-width: 150px; border: 1px solid var(--line); border-radius: 12px; background: var(--pearl-surface); color: var(--ink); font: inherit; padding: 5px 26px 5px 10px; }
+    .preview-motion { margin-left: auto; color: var(--muted); font-size: 11px; }
+    .preview-scenario { padding: 26px 0 30px; border-top: 1px solid var(--line); }
+    .preview-scenario-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 22px; }
+    .preview-index { width: 20px; color: var(--pearl-blue); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .preview-scenario h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 500; letter-spacing: -.3px; }
+    .preview-scenario-head p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .preview-stage { width: 100%; max-width: 740px; margin: 0 auto; transition: max-width .25s ease; }
+    .activity-preview[data-width="phone"] .preview-stage { max-width: 320px; }
+    .preview-stage .thinking-message { display: flex; gap: 14px; margin: 0; }
+    .preview-stage .preview-avatar { width: 32px; height: 32px; flex: none; object-fit: contain; }
+    .preview-stage .message-content { width: 100%; }
+    .preview-stage .preview-bot-name { margin: 0 0 10px; color: var(--muted); font-size: 11px; font-weight: 500; }
+    .preview-footer { margin: 12px 0 0; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.8; }
+    @media (max-width: 760px) {
+      .activity-preview { padding: 24px 18px 32px; }
+      .preview-intro { padding-top: 38px; }
+      .preview-intro p { font-size: 14px; }
+      .preview-badge { font-size: 10px; }
+      .preview-toolbar { gap: 10px; }
+      .preview-motion { width: 100%; margin: 0; }
+      .preview-stage .thinking-message { gap: 8px; }
+      .preview-stage .preview-avatar { width: 28px; height: 28px; }
+      .preview-scenario { padding-top: 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .preview-stage { transition: none; } }
+  </style>
+</head>
+<body class="pearl-studio">
+  <main class="activity-preview" data-width="natural">
+    <header class="preview-masthead">
+      <div class="preview-wordmark"><img src="../public/assets/brand/favicon-64.png" alt="">Tupies</div>
+      <span class="preview-badge">Illustrative data · UI preview</span>
+    </header>
+    <div class="preview-intro">
+      <span class="preview-eyebrow">A little more alive</span>
+      <h1>Thoughtful work.<br>Beautifully in motion.</h1>
+      <p>A closer look at the activity inside a conversation. Follow the connections, hold a fragment to read it, or select it to see the details.</p>
+    </div>
+    <div class="preview-toolbar" aria-label="Preview appearance">
+      <label class="preview-control">Appearance <select id="preview-theme"><option value="system">System</option><option value="light" selected>Light</option><option value="dark">Dark</option></select></label>
+      <label class="preview-control">Width <select id="preview-width"><option value="natural">Responsive</option><option value="phone">Narrow · 320px</option></select></label>
+      <span class="preview-motion" id="preview-motion"></span>
+    </div>
+    <div id="preview-scenarios"></div>
+    <footer class="preview-footer">All tasks, tool results and teammate messages on this page are illustrative fixtures. No bot is running and no tool or service is connected. This page uses the production activity adapter and renderer directly; Reduce Motion follows your browser or system preference.</footer>
+  </main>
+  <script src="../public/activity-flow-model.js"></script>
+  <script src="../public/thinking-waves.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const bot = { id: 'preview-atlas', name: 'Atlas' };
+    const peer = { id: 'preview-nova', name: 'Nova' };
+    const palette = ['#b8ddff', '#6aafe5', '#3975b9', '#e1f1ff'];
+    const peerPalette = ['#f8d5b7', '#d99b6a', '#aa693e', '#fff0df'];
+    const createdAt = new Date(Date.now() - 36000).toISOString();
+    const start = (tool, args, id) => ({ type: 'tool.started', id: `start-${id}`, tool, arguments: args, toolCallId: id });
+    const finish = (tool, result, id) => ({ type: 'tool.completed', id: `finish-${id}`, tool, preview: typeof result === 'string' ? result : JSON.stringify(result), toolCallId: id });
+    const research = [
+      start('http_fetch', { url: 'https://example.test/research/design-systems' }, 'research'),
+      finish('http_fetch', { status: 200, text: JSON.stringify({ title: 'Design systems', sources: 8, themes: 3 }) }, 'research'),
+    ];
+    const scenarios = [
+      { id: 'research', title: 'Following a source', note: 'An action, its source and the values in a returned result.', prompt: 'Research thoughtful interface design.', events: research },
+      { id: 'plan', title: 'A plan takes shape', note: 'Visible steps retain their own pending, active and completed states.', prompt: 'Plan a small product launch.', events: [start('task_plan_set', {}, 'plan')], plan: { steps: [{ id: 'scope', title: 'Define the launch story', status: 'completed' }, { id: 'draft', title: 'Draft the product introduction', status: 'in_progress' }, { id: 'review', title: 'Review the final details', status: 'pending' }] } },
+      { id: 'team', title: 'Better together', note: 'A request and reply connect Atlas and Nova in their own colors.', prompt: 'Ask Nova to review the draft.', peer: true, events: [start('delegate_task', { botId: peer.id, task: 'Review the clarity of the product introduction.' }, 'team'), { type: 'delegation.started', targetBotId: peer.id }, { type: 'delegation.completed', targetBotId: peer.id, status: 'completed', outputPreview: 'The opening is clear. Give the next step a little more emphasis.' }] },
+      { id: 'fallback', title: 'A quiet moment', note: 'A graceful visual fallback when structured activity is unavailable.', fallback: true, events: [] },
+      { id: 'compact', title: 'Making room for the reply', note: 'The same activity becomes smaller as the answer is written.', prompt: 'Summarize the design research.', compact: true, partialOutput: 'Here are the main themes from the research.', events: research },
+      { id: 'long-result', title: 'Room for the details', note: 'Long values stay bounded. Select a fragment to inspect its retained text.', prompt: 'Review the interface research file.', events: [start('workspace_read', { path: 'research/interface-review.json' }, 'long-result'), finish('workspace_read', { title: 'A thoughtful comparison of conversational interfaces, navigation, motion and approachable glass surfaces', sections: 12, observations: 28, format: 'Structured research notes' }, 'long-result')] },
+    ];
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    const container = document.querySelector('#preview-scenarios');
+    scenarios.forEach((scenario, index) => {
+      const run = { id: `illustrative-${scenario.id}`, status: 'running', createdAt, events: scenario.events, plan: scenario.plan, partialOutput: scenario.partialOutput };
+      const graph = scenario.fallback ? null : StudioActivityModel.build(bot, run, { prompt: scenario.prompt, peers: [peer] });
+      const section = element('section', 'preview-scenario');
+      section.id = scenario.id;
+      section.dataset.scenario = scenario.id;
+      const head = element('div', 'preview-scenario-head');
+      const heading = element('div');
+      heading.append(element('h2', '', scenario.title), element('p', '', scenario.note));
+      head.append(element('span', 'preview-index', String(index + 1).padStart(2, '0')), heading);
+      const stage = element('div', 'preview-stage');
+      const article = element('article', `chat-message thinking-message${scenario.compact ? ' is-compact' : ''}`);
+      const avatar = element('img', 'preview-avatar avatar');
+      avatar.src = '../public/assets/companions/companion-ice-portrait-64.webp';
+      avatar.alt = '';
+      const content = element('div', 'message-content');
+      const card = element('div', 'thinking-card');
+      card.dataset.thinkingCard = '';
+      card.dataset.started = createdAt;
+      card.dataset.colors = palette.join(',');
+      card.dataset.energy = scenario.peer ? 'talk' : scenario.compact ? 'write' : 'think';
+      card.setAttribute('role', 'group');
+      card.setAttribute('aria-label', `Illustrative Atlas activity: ${graph?.caption || 'Thinking'}`);
+      ['light', 'mid', 'deep'].forEach((name, colorIndex) => card.style.setProperty(`--think-${name}`, palette[colorIndex]));
+      if (graph) { card.dataset.flow = JSON.stringify(graph); card.dataset.flowKind = graph.kind; }
+      if (scenario.peer) { card.dataset.peerColors = peerPalette.join(','); card.style.setProperty('--think-peer', peerPalette[1]); }
+      const canvas = element('canvas', 'thinking-canvas');
+      canvas.dataset.thinking = `preview-${scenario.id}`;
+      canvas.setAttribute('aria-hidden', 'true');
+      const caption = element('div', 'thinking-caption');
+      const copy = element('div', 'thinking-copy');
+      copy.append(element('span', 'thinking-phase', graph?.caption || 'Thinking'));
+      const elapsed = element('span', 'thinking-elapsed');
+      elapsed.dataset.thinkingElapsed = '';
+      caption.append(copy, elapsed);
+      const context = element('p', 'thinking-context');
+      context.dataset.thinkingContext = '';
+      card.append(canvas, caption, context);
+      content.append(element('p', 'preview-bot-name', 'Atlas · illustrative activity'), card);
+      article.append(avatar, content);
+      stage.append(article);
+      section.append(head, stage);
+      container.append(section);
+    });
+    const scheme = matchMedia('(prefers-color-scheme: dark)');
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const theme = document.querySelector('#preview-theme');
+    function applyTheme() {
+      document.documentElement.dataset.theme = theme.value === 'system' ? scheme.matches ? 'dark' : 'light' : theme.value;
+      StudioThinking.mount(document);
+    }
+    function showMotion() { document.querySelector('#preview-motion').textContent = motion.matches ? 'Reduce Motion is on · still composition' : 'Motion follows your system preference'; }
+    theme.addEventListener('change', applyTheme);
+    scheme.addEventListener('change', applyTheme);
+    motion.addEventListener('change', showMotion);
+    document.querySelector('#preview-width').addEventListener('change', event => { document.querySelector('.activity-preview').dataset.width = event.target.value; });
+    showMotion();
+    applyTheme();
+  })();
+  </script>
+</body>
+</html>

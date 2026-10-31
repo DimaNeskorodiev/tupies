@@ -46,7 +46,7 @@ Tupies serializes refreshes for each connection and stores replacement credentia
 
 Sign-out attempts remote revocation and clears local tokens. If remote revocation is unconfirmed, disconnect Tupies in ChatGPT Settings. A process restart loses pending browser attempts but retains established encrypted credentials. Tokens never belong in exported skill files, source control, browser storage or screenshots.
 
-## Read-only browser
+## Browser use
 
 A bot with **Browser** turned on (Bot settings › Advanced settings) can open public HTTPS pages in a real headless browser. That helps with pages that need JavaScript; `http_fetch` stays the simple choice for plain pages and APIs. Tupies drives a browser installed on the engine and never downloads one:
 
@@ -54,7 +54,7 @@ A bot with **Browser** turned on (Bot settings › Advanced settings) can open p
 - **Debian or Ubuntu server:** install Chromium as the owner, for example `sudo apt install chromium`, then restart the service. `STUDIO_BROWSER=/path/to/chrome` names any other location.
 - **Hardened services:** a systemd unit with `RestrictNamespaces=true` blocks Chromium's sandbox. Allow `user pid net` and raise `TasksMax` with a drop-in, as in `docs/deployment.md`. Otherwise Chromium's error appears in the bot's tool result. `STUDIO_BROWSER_NO_SANDBOX=true` runs without the sandbox, with weaker isolation.
 
-The bot editor says when this engine has no browser, and `GET /api/state` reports `browser.available`. Each task's browser starts on first use (about a second), has a fresh profile and closes when the task ends. A model that can see images can also take screenshots, saved under `browser/` in the bot's files.
+The bot editor says when this engine has no browser, and `GET /api/state` reports `browser.available`. The browser starts on first use and closes when the task ends. Current source adds approved typing, forms, tabs, frames, dialogs and bounded file transfers. An **Open browser** handoff lets the owner enter passwords, verification codes and CAPTCHA responses directly, then resume the bot. The owner may retain a bot-specific sign-in on that engine; temporary profiles are discarded. Models never receive the private handoff input directly. Screenshots for an image-capable model are saved under `browser/`, but are refused after private owner input in that task. See [Browser use](browser.md) for controls, permissions and limits. These source features do not update an operational release automatically.
 
 ## Third-party APIs and MCP
 
@@ -83,7 +83,9 @@ Bot tokens stay sealed on the server. Telegram’s API requires the token in its
 
 ## Portable skills
 
-Import a root `SKILL.md` or a full folder with resources. The root uses the familiar format:
+Open **Settings → Skills**, the first Settings item, to manage the **Installed** library. **Assign to bots** controls each bot’s assignment; **Files & options** contains instructions, export and removal. The skill **Settings** tab contains per-bot installation preferences. In **Catalog**, search by task and choose a bot; **Install** adds the exact reviewed version and assigns it to that bot in one action. The bundled catalog contains sixteen offline workflows: ten original Tupies playbooks and six attributed Grok Bot public-profile adaptations. It is not a live index of other agents’ marketplaces.
+
+**Import skill** accepts one `SKILL.md`, a complete folder, a ZIP export or a public HTTPS URL. GitHub folder/file links can use a branch or tag: the engine resolves it once and fetches only the resulting commit. Preview the original instructions, resource filenames and requirements before installing. A selected skill is limited to 100 regular files and 5 MB; ZIP input is limited to 10 MB. The compatible directory format is:
 
 ```markdown
 ---
@@ -95,13 +97,17 @@ description: Review priorities using the context and tools actually available.
 List commitments, blockers and next actions. Never invent calendar access.
 ```
 
-Assign the skill to a bot. The engine first advertises its name and description, then provides `skills_read` and `skills_file` tools for progressive access to instructions, scripts and references. Full folders are preserved as regular-file bytes, up to 100 files and 5 MB. Unsafe paths, symlinks and conflicting entries are refused. The parser accepts ordinary scalar/folded/literal descriptions and preserves the original document; it is not a complete YAML implementation.
+Original instruction/resource bytes stay intact. Hermes-style metadata is inspected conservatively; Grok Bot skill folders can be brought over through supported OpenBot ZIP exports. These are format/import capabilities, not a promise that foreign runtime modules, OAuth, browser actions or setup commands will work in Tupies. **Ready to use**, **Needs setup** and **Unavailable here** describe the executing engine and selected bot's declared requirements. Unknown requirements can still fail at use time. See [Skills](skills.md) for exact formats and boundaries.
 
-Unlike the earlier gateway version, resources are available to Tupies's own tools. `skills_run` can execute an assigned Node, Python or Bash script after approval of its exact path, interpreter and arguments. Use only reviewed scripts. Dependencies must exist in the service environment. Execution is trusted host execution under the Tupies account, not an OS sandbox; scripts can access that account's files and network.
+The engine advertises assigned names/descriptions, then gives the bot `skills_read` and `skills_file` for progressive access. `skills_search` and `skills_inspect` discover the reviewed catalog; `skills_install` adds an exact version. The default installation policy asks for approval. In **How [bot] adds skills**, the owner can allow automatic reviewed-catalog installs for a Balanced bot, with at most three new assignments per run. Strict still asks. No installation grants extra tools, credentials or execution permissions.
 
-A bot can also learn a workflow with **skills_create** after exact approval of its complete name, description and instruction document. The new skill is marked learned, assigned only to its creating bot, and immediately available to its run. It cannot overwrite an existing skill. Review learned playbooks like imported ones.
+`skills_run` executes an assigned Node, Python or Bash script only after approval of its exact path, interpreter and arguments. Dependencies must already exist on that engine. Execution is trusted host execution under the Tupies account, not an OS sandbox; scripts can access that account's files and network. Importing a package never executes its code or setup hooks.
 
-With the automation tool group enabled, a bot can list its own routines, propose an interval task using **routines_create**, or remove its own schedule. Creating/removing a schedule always requires exact approval. The first run is one interval after creation and can spend model usage while the server is online; future tools still follow their own approvals.
+`skills_create` can save a new reusable workflow after exact approval and assign it only to the creating bot. Learning proposals remain available for new skills or reviewed changes to existing learned/local skills. Managed imported/catalog package revisions are immutable; create a separate new skill to customize one. Explicit catalog-version changes retain older installed revisions for rollback. See [Skills](skills.md#versions-customization-and-sync).
+
+With the automation tool group (**Routines**) enabled, a bot can list its own routines, schedule one through **routines_create** (for example when asked to “check the bitcoin price every 10 minutes”), change, pause or resume one with **routines_update**, or remove one. Creating, changing or removing a schedule always requires exact approval and can spend future model usage while the engine is online.
+
+With **Manage Tupies** (the `setup` group, on by default) a bot can also set up the workspace from chat: `bots_list` shows the team, models and installed skills; `bots_create` adds a new bot; `bots_update` changes another bot's name, role, instructions, tool groups or availability; `skills_assign` gives an installed skill to another bot; and the routine tools work for any bot. Every change shows the owner an approval card with a plain summary and the exact arguments. A bot cannot change its own settings, turn on Terminal, Browser or Coding, assign integrations or loosen an approval policy; those stay in Settings.
 
 **Download package** saves a portable `.skill.json` export. Restore its exact directory/resource bytes without executing them:
 
@@ -109,7 +115,7 @@ With the automation tool group enabled, a bot can list its own routines, propose
 node scripts/restore-skill.mjs ~/Downloads/name.skill.json ./name
 ```
 
-The destination must be new and its parent must exist. Restored files are mode 0600 and folders 0700; executable bits and symlinks are not recreated. Tupies runs scripts through an explicit interpreter, so executable bits are not needed for that route. The restored SKILL.md/resources can also be used in a compatible skill system after review.
+The destination must be new and its parent must exist. Restored files are mode 0600 and folders 0700; executable bits and symlinks are not recreated. Tupies uses explicit interpreters for script execution. The restored SKILL.md/resources can be used in another compatible system after review.
 
 ## OpenRouter voice setup
 

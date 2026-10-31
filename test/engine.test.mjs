@@ -60,8 +60,8 @@ test('internal display text is bounded and validated before starting a provider 
   assert.equal(requests.length,0);assert.equal(store.state.runs.bot_atlas,undefined);assert.equal(store.state.messages.bot_atlas,undefined);
 });
 
-test('an incomplete model turn preserves its text but never executes accompanying tool calls',async t=>{
-  const {engine,store,requests}=await fixture(t,async()=>({text:'The available partial response.',toolCalls:[call('incomplete-memory','memory_set',{key:'must-not-exist',value:'Never committed.'}),call('incomplete-file','workspace_write',{path:'never-written.txt',content:'Never committed.'})],finishReason:'length'}));
+test('a bounded incomplete model turn preserves its text but never executes accompanying tool calls',async t=>{
+  const {engine,store,requests}=await fixture(t,async()=>({text:'The available partial response.',toolCalls:[call('incomplete-memory','memory_set',{key:'must-not-exist',value:'Never committed.'}),call('incomplete-file','workspace_write',{path:'never-written.txt',content:'Never committed.'})],finishReason:'length'}),{executionMode:'bounded'});
   await engine.start('bot_atlas','Handle an incomplete provider response safely.');
   await waitFor(()=>current(store)?.status==='failed');
   assert.equal(requests.length,1);assert.match(current(store).error,/incomplete/);
@@ -186,7 +186,7 @@ test('autonomous room consent scopes collaborators without changing global bot p
   assert.equal(current(store).events.filter(event=>event.type==='delegation.completed').length,1);
 });
 
-test('an incomplete delegated specialist stays marked partial in its room and an incomplete coordinator cannot complete the drive',async t=>{
+test('a bounded incomplete delegated specialist stays partial in its room and an incomplete coordinator cannot complete the drive',async t=>{
   let delegatedResult;
   const {engine,store,requests}=await fixture(t,async request=>{
     const coordinator=request.messages[0].content.startsWith(`You are ${store.state.bots.find(bot=>bot.id==='bot_atlas').name}`);
@@ -194,7 +194,7 @@ test('an incomplete delegated specialist stays marked partial in its room and an
     if(request.messages.at(-1).role==='user')return {text:'',toolCalls:[call('ask-specialist','delegate_task',{botId:'bot_scout',task:'Verify the source before we finish.'})]};
     delegatedResult=JSON.parse(request.messages.at(-1).content);
     return {text:'The specialist response is incomplete; the review is unfinished.',toolCalls:[],finishReason:'length'};
-  });
+  },{executionMode:'bounded'});
   const rooms=new Rooms(store,engine);engine.roomManager=rooms;
   await store.mutate(state=>{state.rooms.push({id:'partial-team',name:'Partial team',botIds:['bot_atlas','bot_scout'],autoCollaborate:true,maxRounds:2});});
   await rooms.start('partial-team','Coordinate a verified review with the specialist.');
@@ -222,8 +222,8 @@ test('an incomplete delegated specialist stays marked partial in its room and an
   assert.ok(!coordinator.events.some(event=>event.type==='run.completed'));
 });
 
-test('model output exhaustion and step limits do not report successful completion',async t=>{
-  const {engine,store}=await fixture(t,async()=>({text:'A partial answer.',toolCalls:[],finishReason:'length'}));
+test('bounded model output exhaustion does not report successful completion',async t=>{
+  const {engine,store}=await fixture(t,async()=>({text:'A partial answer.',toolCalls:[],finishReason:'length'}),{executionMode:'bounded'});
   await engine.start('bot_atlas','Answer a long task.');await waitFor(()=>current(store)?.status==='failed');
   assert.equal(current(store).output,'A partial answer.');assert.match(current(store).error,/incomplete/);
 });

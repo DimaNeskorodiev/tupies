@@ -93,7 +93,7 @@ test('a restart while waiting for an answer interrupts the task and records it o
 });
 
 test('run history keeps the latest fifty finished tasks, newest first, with usage and errors',async t=>{
-  const {engine,store}=await fixture(t,async(request,count)=>count===2?{text:'',finishReason:'length'}:{text:`Done ${count}.`,toolCalls:[],usage:{input_tokens:10,output_tokens:2}});
+  const {engine,store}=await fixture(t,async(request,count)=>count===2?{text:'',finishReason:'length'}:{text:`Done ${count}.`,toolCalls:[],usage:{input_tokens:10,output_tokens:2}},{executionMode:'bounded'});
   for(let index=0;index<3;index++){await engine.start('bot_atlas',`Task ${index}`);await waitFor(()=>!['queued','running'].includes(current(store)?.status));}
   const history=store.state.runHistory.bot_atlas;
   assert.deepEqual(history.map(item=>item.task),['Task 2','Task 1','Task 0']);

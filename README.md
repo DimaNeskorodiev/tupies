@@ -6,15 +6,19 @@ For coding-agent handoff, read [AGENTS.md](AGENTS.md) and [PROJECT_CONTEXT.md](P
 
 A self-hosted AI product with its own **Tupies Engine**, a bots-first glass interface, and direct model-provider connections. Tupies owns the agent loop, conversations, memory, skills, workspaces, approvals, schedules, integrations and delegation. Hermes Agent is not installed, started or contacted.
 
-The app opens on a **Dashboard** with your teammates, recent outputs and work that needs you. **Bots** opens conversations directly; each bot's profile contains its long-term notes (Brain), core facts (Memory) and private files. The pearl-white glass interface uses distinct cushion companions. Technical bot controls stay under **Advanced settings**. **Settings** starts with Models, Devices & sync and Help; Skills, Integrations, Messaging and Activity are under **More settings**.
+The app opens on a **Dashboard** with your teammates, recent outputs and work that needs you. **Bots** opens conversations directly; each bot's profile contains its long-term notes (Brain), core facts (Memory) and private files. The pearl-white glass interface uses distinct cushion companions. Technical bot controls stay under **Advanced settings**. **Settings** starts with Skills, Models, Devices & sync and Help. Skills opens the installed library, bot assignments, catalog and installation preferences; Integrations, Messaging and Activity are under **More settings**.
 
 Give each bot a role and model, then work with it in a persistent conversation. Chat supports formatted Markdown, tables, highlighted code, mathematics, diagrams, interactive charts and infographic cards. Bots can read and create PDF, Word, PowerPoint, Excel, Markdown, CSV, text and JSON files, remember useful facts, learn approved reusable skills, schedule routines, perform approved API actions and delegate real work to permitted teammates.
+
+Current source also includes [interactive browser use](docs/browser.md): approved form filling and navigation, file transfers and a live owner handoff for sign-in and human verification. Sign-ins can stay with one bot on one engine. Installed releases require a separate update to use these additions.
 
 For coding work, bots can discover and search private workspace files, read selected lines, make hash-checked exact edits and verify with approved commands. Managed background commands let a bot continue working while builds or tests run, with real output, status and Stop controls. An approved bundled TypeScript/JavaScript language server provides definitions, type definitions, implementations, references, hover text, document/workspace symbols, call hierarchy and diagnostics when advertised; other installed stdio servers can be launched through exact approval. Tupies also supports bounded parallel reads, durable task checklists and paged tool results. See [Tool use](docs/tool-use.md) for workflows, permissions and current limits.
 
 Enable **Workspace** and **Terminal** for a coding bot before asking it to launch code intelligence. Every command and language-server launch needs exact approval. They use the host account's permissions and are not an OS sandbox. Sessions belong to the current task and are cleaned up when it ends; a final answer with commands still running is reported incomplete. The pinned TypeScript server is included in Tupies's runtime dependencies and does not need a separate Claude Code, Codex or language-server installation.
 
 ## Start on your Mac
+
+**New here?** [Set up Tupies and sign in](docs/setup/README.md) has plain step-by-step guides: Mac and iPhone without a server, adding another Mac, and moving a Mac workspace to a server.
 
 Requires Node.js 22.16 or newer. The release includes the browser assets and fonts; install the pinned runtime libraries once.
 
@@ -67,6 +71,7 @@ For phone access from anywhere and engine sync, give the server an HTTPS address
 
 ## Documentation
 
+- [Set up Tupies and sign in (step-by-step)](docs/setup/README.md)
 - [Project context and handoff](PROJECT_CONTEXT.md)
 - [Development workflow](docs/development.md)
 - [Future product roadmap](docs/roadmap.md)
@@ -76,6 +81,8 @@ For phone access from anywhere and engine sync, give the server an HTTPS address
 - [Coding tools, plans and execution](docs/tool-use.md)
 - [Architecture and future device clients](docs/architecture.md)
 - [Providers, subscription login, integrations and skills](docs/hermes-setup.md)
+- [Skills catalog, portable imports and bot installation](docs/skills.md)
+- [Six Grok Bot marketplace adaptations](docs/grok-bot-skills.md)
 - [Operations, backups and upgrades](docs/operations.md)
 - [Mac/VPS deployment](docs/deployment.md)
 - [Engines, devices and sync](docs/sync.md)
