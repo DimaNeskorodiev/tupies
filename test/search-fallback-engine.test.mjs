@@ -6,7 +6,7 @@ import path from 'node:path';
 import { Store, HttpError } from '../lib/store.mjs';
 import { Integrations } from '../lib/integrations.mjs';
 import { NativeEngine } from '../lib/engine.mjs';
-import { delegatedSources, workReceipt } from '../lib/work-quality.mjs';
+import { delegatedSources, workReceipt, checkOutcomes } from '../lib/work-quality.mjs';
 
 const call=(id,name,args)=>({id,name,arguments:args});
 async function fixture(t,{read,complete}={}) {
@@ -71,7 +71,9 @@ test('Stop during primary search cancels it without attempting the configured fa
 
 test('HTTP error pages cannot satisfy a successful-source check',async t=>{
   const h=await fixture(t,{read:()=>({status:404,url:'https://example.com/missing',text:'Missing page.'}),complete:(_,index)=>index===1?{text:'',toolCalls:[call('fetch','http_fetch',{url:'https://example.com/missing'}),call('check','task_outcome_set',{checks:[{id:'source',kind:'source_read',callId:'fetch'}]})]}:{text:'Done.',toolCalls:[]}});
-  const result=await h.run();assert.equal(result.status,'failed');assert.equal(result.verification.passed,false);assert.equal(result.workRecords[0].httpStatus,404);assert.equal(result.workRecords[0].status,'failed');
+  const result=await h.run();assert.equal(result.verification.coverage,'not_declared');assert.equal(result.workRecords[0].httpStatus,404);assert.equal(result.workRecords[0].status,'failed');
+  assert.equal(result.workRecords.find(record=>record.callId==='check').status,'failed');assert.match(h.store.state.conversations.bot_atlas.find(message=>message.tool_call_id==='check').content,/source observation did not succeed/);
+  const legacy=await checkOutcomes({assertRunning(){},current:()=>({...result,outcomeChecks:[{id:'source',kind:'source_read',callId:'fetch'}]})},{});assert.equal(legacy.passed,false);
 });
 
 test('teammate sources derive from successful observed reads, never failed reads or model claims',()=>{
