@@ -943,3 +943,14 @@
   .routine-info p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
   .routine-actions{flex:1 1 100%;justify-content:flex-start;margin-left:68px}
 }
+
+/* The bot composer keeps a full-width draft above the compact action row. */
+@media(max-width:760px){
+  body.pearl-studio #message-form:has(.chat-inference-bar){grid-template-columns:44px minmax(0,1fr) 44px 44px 44px;grid-template-areas:"extra extra extra extra extra" "voice voice voice voice voice" "field field field field field" "attach space inference mic send" "model model model model model";padding:7px;border-radius:26px;gap:0 2px}
+  body.pearl-studio #message-form:has(.chat-inference-bar) textarea{padding:8px 10px 9px;min-height:44px}
+  body.pearl-studio #message-form .chat-inference-bar{grid-area:inference}
+  body.pearl-studio #message-form .composer-footer :is(.inference-trigger,.composer-mic-button){color:var(--ios-label-2)}
+  body.pearl-studio #message-form .composer-footer .composer-mic-button[aria-pressed=true]{color:var(--ios-red)}
+  body.pearl-studio #message-form .direction-send:not([hidden]){grid-column:1/-1;grid-row:auto;justify-self:end;margin:4px}
+  body.pearl-studio #message-form .direction-result:not(:empty){grid-column:1/-1}
+}

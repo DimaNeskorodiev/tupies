@@ -38,7 +38,7 @@ async function fixture(t){
 }
 
 test('the six requested public bot adaptations have exact attribution and self-contained portable resources',()=>{
-  const entries=selected();assert.equal(bundledSkills().length,16);assert.equal(entries.length,6);
+  const entries=selected();assert.equal(bundledSkills().length,17);assert.equal(entries.length,6);
   for(const [id,slug,title,author] of REQUESTED){
     const entry=entries.find(item=>item.catalogId===`tupies-grok-${id}`);assert.ok(entry,id);
     assert.deepEqual(entry.attribution,{title,author,url:SOURCE+slug,kind:'public-profile-adaptation',reviewedAt:'2026-10-29'});

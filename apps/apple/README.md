@@ -1,5 +1,9 @@
 # Tupies for iPhone, iPad and Mac
 
+## Installed GitHub release — 30 October 2026
+
+Signed macOS and iPhone apps are **0.5.0 (10)**, built from pinned GitHub main `02aaf2e` with `CURRENT_PROJECT_VERSION=10`, unchanged bundle/team/Keychain identities, `TUPIES_REQUIRE_TRANSFER=YES` and existing embedded profiles. Mac profile bytes are unchanged. The Mac fallback Engine and both operational engines use the same commit. Both apps were installed in place and launched; saved connection identities and notification preferences were verified. Mutable project defaults now also use build 10. Native version describes the shell; the selected engine supplies the live UI, and its source commit must be recorded separately. This checkpoint supersedes older installed-build statements below. See `../../PROJECT_CONTEXT.md` for verification and boundaries, and ignored `../../docs/local-workspace.md` for rollback/ownership.
+
 A native SwiftUI shell around the Tupies Engine's web UI. The main multiplatform target (`dev.tupies.app`) builds for iOS 17+ and macOS 14+; an iOS-only `NotificationService` extension supplies local bot avatars through communication notifications. Existing `dev.hermesstudio.app` installations use the passive transfer build described below; changing the identifier alone does not move settings or Keychain access.
 
 The app adds what a browser tab can't:

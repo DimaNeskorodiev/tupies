@@ -59,6 +59,19 @@ test('all eight upgraded families cover mandatory constraints, conflicts, stale 
   assert.equal(report.quality.falseSuccess.count,0);assert.equal(report.quality.exactConstraintRetention.rate,1);assert.equal(report.quality.sourceCorrectness.rate,1);assert.equal(report.quality.unauthorizedChanges.count,0);assert.equal(report.quality.duplicateEffects.count,0);
 });
 
+test('specialist-failure evaluation reads retained partial output without treating it as successful completion',async()=>{
+  const definition=CASES.find(item=>item.id==='teammate-partial'),criterion={id:'required_review',kind:'file_exists',path:'review.complete'};
+  const child={status:'failed',delegation:{rootRunId:'fixture-parent'},outcomeChecks:[criterion],verification:{passed:false,checks:[{...criterion,passed:false}]}};
+  const run={status:'failed',requiredDeliverables:[{status:'failed'}],partialOutput:'The specialist review failed and is incomplete. I cannot claim it passed.'};
+  const harness={run:async()=>run,store:{state:{runs:{bot_nova:child}}},check};
+  const result=await definition.execute(harness);
+  assert.equal(result.checks.find(item=>item.name==='parent preserves limitation').passed,true);
+  assert.equal(result.checks.find(item=>item.name==='required failure blocks parent success').passed,true);
+  assert.deepEqual(result.metadata.taskOutcome,{expected:'failed',actual:'failed'});
+  const falseClaim=await definition.execute({...harness,run:async()=>({...run,partialOutput:'The review passed.'})});
+  assert.equal(falseClaim.checks.find(item=>item.name==='parent preserves limitation').passed,false,'a partial field cannot hide a false success claim');
+});
+
 test('one case deadline also aborts compaction requests outside engine.run',async()=>{
   const options=evaluationOptions({maxMs:1000}),definition={script:async(request)=>new Promise((resolve,reject)=>{request.signal.addEventListener('abort',()=>reject(request.signal.reason),{once:true});})},harness=await createHarness(definition,options,new EvaluationBudget(options));
   try {

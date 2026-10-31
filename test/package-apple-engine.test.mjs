@@ -4,7 +4,9 @@ import {promises as fs} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
 import {PACKAGED_NODE_VERSION,PACKAGED_NODE_SHA256,runtimeIdentity,verifyNodeArchive,verifyMachOArchitecture,stageEngineSource,packageAppleEngine} from '../scripts/package-apple-engine.mjs';
+import {bundledSkills} from '../lib/skill-catalog.mjs';
 
 async function temporary(t) {const dir=await fs.mkdtemp(path.join(tmpdir(),'tupies-package-test-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));return dir;}
 test('Apple runtime packaging verifies exact pinned release, checksum and architecture before execution',async t=>{
@@ -33,5 +35,22 @@ test('Apple engine source staging includes runtime fonts and notices but exclude
   for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs'])assert.ok(await fs.stat(path.join(out,'scripts',name)));
   await assert.rejects(fs.lstat(path.join(out,'scripts','eval-private.mjs')),{code:'ENOENT'});
   await fs.symlink(path.join(repo,'.env'),path.join(repo,'public','leak.txt'));
+  await assert.rejects(stageEngineSource(repo,path.join(dir,'symlink-output')),/symlinks/);
+});
+
+test('Apple staging preserves the complete product guide and its loadable catalog without bundling unrelated files',async t=>{
+  const dir=await temporary(t),repo=path.join(dir,'repo'),out=path.join(dir,'output'),skillRoot='lib/skills/tupies-product';
+  for(const folder of ['public','assets/fonts','assets/licenses','scripts','lib/skills/other',`${skillRoot}/references`])await fs.mkdir(path.join(repo,folder),{recursive:true});
+  for(const [name,value] of Object.entries({'server.mjs':'// server','package.json':'{"name":"fixture","type":"module"}','package-lock.json':'{"packages":{}}','LICENSE':'MIT','lib/private.md':'PRIVATE','lib/skills/other/SKILL.md':'PRIVATE',[`${skillRoot}/.env`]:'PRIVATE',[`${skillRoot}/vault.key`]:'PRIVATE',[`${skillRoot}/private.json`]:'PRIVATE',[`${skillRoot}/private.txt`]:'PRIVATE'}))await fs.writeFile(path.join(repo,name),value);
+  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
+  for(const name of ['skill-catalog.mjs','skill-grok-catalog.mjs','skill-tupies-catalog.mjs'])await fs.copyFile(new URL(`../lib/${name}`,import.meta.url),path.join(repo,'lib',name));
+  const entry=bundledSkills().find(skill=>skill.catalogId==='tupies-product');
+  for(const file of entry.files)await fs.writeFile(path.join(repo,skillRoot,file.path),file.data);
+  await stageEngineSource(repo,out);
+  for(const file of entry.files)assert.deepEqual(await fs.readFile(path.join(out,skillRoot,file.path)),file.data);
+  for(const name of ['lib/private.md','lib/skills/other/SKILL.md',`${skillRoot}/.env`,`${skillRoot}/vault.key`,`${skillRoot}/private.json`,`${skillRoot}/private.txt`])await assert.rejects(fs.lstat(path.join(out,name)),{code:'ENOENT'});
+  const staged=await import(pathToFileURL(path.join(out,'lib/skill-catalog.mjs')).href);
+  assert.equal(staged.bundledSkills().find(skill=>skill.catalogId==='tupies-product').digest,entry.digest);
+  await fs.symlink(path.join(repo,skillRoot,'SKILL.md'),path.join(repo,skillRoot,'references','linked.md'));
   await assert.rejects(stageEngineSource(repo,path.join(dir,'symlink-output')),/symlinks/);
 });

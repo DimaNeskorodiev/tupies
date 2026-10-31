@@ -18,9 +18,9 @@ async function fixture(t) {
     if(request.url==='/frame')return response.end('<title>Embedded form</title><label>Embedded value<input name="embedded"></label><button onclick="document.body.insertAdjacentHTML(\'beforeend\',\'<p>Frame clicked</p>\')">Frame action</button>');
     response.end(`<title>Apartment search</title><h1>Search apartments</h1><form action="/done"><label>Destination<input name="city" placeholder="City"></label><label>Arrival<input name="arrival" type="date"></label><label>Guests<select name="guests"><option value="1">One</option><option value="2">Two</option></select></label><label><input name="flexible" type="checkbox">Flexible dates</label><label>Password<input type="password" name="password" value="fixture-secret-never-output"></label><label>Verification<input name="otp" autocomplete="one-time-code" value="123987"></label><button type="submit">Find apartments</button></form><a href="/account" target="_blank">Open account</a><button onclick="alert('Review this change')">Alert</button><button onclick="confirm('Submit this request?')">Confirm</button><button onclick="document.querySelector('button[type=submit]').textContent='Pay now'">Change target</button><iframe src="/frame" title="Embedded form"></iframe>`);
   });
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close());
-  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'tupies-browser-actions-'));t.after(()=>fs.rm(directory,{recursive:true,force:true}));
-  const browsers=new Browsers({directory},{executable,allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}]});await browsers.recover();t.after(()=>browsers.close());
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'tupies-browser-actions-'));
+  const browsers=new Browsers({directory},{executable,allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}]});await browsers.recover();t.after(async()=>{await browsers.close();await new Promise(resolve=>server.close(resolve));await fs.rm(directory,{recursive:true,force:true});});
   const context={bot:{id:'bot_test',tools:['browser']},runId:'run_test',signal:new AbortController().signal};
   const base=`http://127.0.0.1:${server.address().port}`;
   return {base,browsers,context,requests,directory};

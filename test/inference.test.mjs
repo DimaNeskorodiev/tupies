@@ -118,7 +118,7 @@ test('catalog selection cannot commit after its provider credentials or bot prov
   const f=await fixture(t),connection=await f.connect(),other=await f.connect('openai','Another fixture provider');
   let entered=false;const held=gate();f.remote.beforeModels=async()=>{entered=true;await held.promise;};
   const choosing=f.request(inference,{method:'PATCH',data:{model:'reasoning-b',reasoningEffort:'high'}});await until(()=>entered);
-  await f.app.store.mutate(state=>{state.connections.find(item=>item.id===connection.id).secret=f.app.store.seal('replacement-fixture-secret');});held.release();const changed=await choosing;assert.equal(changed.status,409,JSON.stringify(changed.body));assert.equal(savedBot(f).model,'');assert.equal(savedBot(f).reasoningEffort||'','');
+  await f.app.store.mutate(state=>{state.connections.find(item=>item.id===connection.id).secret=f.app.store.seal('replacement-fixture-secret');});held.release();const changed=await choosing;assert.equal(changed.status,409,JSON.stringify(changed.body));assert.equal(savedBot(f).model,'');assert.equal(savedBot(f).reasoningEffort,'auto');
   entered=false;const heldAgain=gate();f.remote.beforeModels=async()=>{entered=true;await heldAgain.promise;};
   const moving=f.request(inference,{method:'PATCH',data:{model:'reasoning-b',reasoningEffort:'high'}});await until(()=>entered);
   await f.app.store.mutate(state=>{state.bots.find(bot=>bot.id==='bot_atlas').connectionId=other.id;});heldAgain.release();const moved=await moving;assert.equal(moved.status,409,JSON.stringify(moved.body));assert.equal(savedBot(f).connectionId,other.id);assert.equal(savedBot(f).model,'');assert.equal(modelRequests(f.remote).length,0);
@@ -196,13 +196,63 @@ test('reasoning history survives same-model effort changes and becomes canonical
   assert.ok(f.app.store.state.conversations.bot_atlas.some(message=>message.providerItems?.some(item=>item.encrypted_content==='unmarked-legacy-opaque')),'Normalization should preserve the durable transcript rather than rewrite its opaque history.');
 });
 
-test('generic bot edits cannot bypass effort validation and model or workspace-default changes clear stale bot efforts',async t=>{
+test('generic bot edits cannot bypass effort validation and model or workspace-default changes preserve reasoning preferences',async t=>{
   const f=await fixture(t),connection=await f.connect();
   assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a',reasoningEffort:'high'}})).status,200);
   const bypass=await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{reasoningEffort:'ultra'}});assert.equal(bypass.status,400);assert.equal(savedBot(f).reasoningEffort,'high');
-  assert.equal((await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{model:'plain-model'}})).status,200);assert.equal(savedBot(f).model,'plain-model');assert.equal(savedBot(f).reasoningEffort,'');
+  assert.equal((await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{model:'plain-model'}})).status,200);assert.equal(savedBot(f).model,'plain-model');assert.equal(savedBot(f).reasoningEffort,'high');
+  assert.equal((await f.request(inference)).body.effectiveReasoningEffort,'');
   assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a',reasoningEffort:'low'}})).status,200);
-  const other=await f.connect('openai','Alternative fixture');assert.equal((await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{connectionId:other.id}})).status,200);assert.equal(savedBot(f).reasoningEffort,'');
+  const other=await f.connect('openai','Alternative fixture');assert.equal((await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{connectionId:other.id}})).status,200);assert.equal(savedBot(f).reasoningEffort,'low');
   assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a',reasoningEffort:'medium'}})).status,200);
-  const changed=await f.request(`/api/connections/${connection.id}/default-model`,{method:'POST',data:{model:'reasoning-b',applyToAllBots:true}});assert.equal(changed.status,200,JSON.stringify(changed.body));assert.equal(savedBot(f).model,'');assert.equal(savedBot(f).reasoningEffort,'');assert.equal(savedBot(f).connectionId,connection.id);
+  const changed=await f.request(`/api/connections/${connection.id}/default-model`,{method:'POST',data:{model:'reasoning-b',applyToAllBots:true}});assert.equal(changed.status,200,JSON.stringify(changed.body));assert.equal(savedBot(f).model,'');assert.equal(savedBot(f).reasoningEffort,'medium');assert.equal(savedBot(f).connectionId,connection.id);
+});
+
+test('automatic High is the default for new bots, follows model changes and keeps explicit provider default selectable',async t=>{
+  const f=await fixture(t),connection=await f.connect();
+  const created=await f.request('/api/bots',{method:'POST',data:{name:'Default reasoning',title:'Fixture helper',connectionId:connection.id}});
+  assert.equal(created.status,201);assert.equal(created.body.reasoningEffort,'auto');assert.equal(created.body.reasoningEffortVersion,1);
+  const current=await f.request(inference);assert.equal(current.body.reasoningEffort,'auto');assert.equal(current.body.effectiveReasoningEffort,'high');
+  async function run(text){const response=await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text}});assert.equal(response.status,202);const finished=await waitRun(f,response.body.run);assert.equal(finished.status,'completed',finished.error);return {body:modelRequests(f.remote).at(-1).body,run:finished};}
+  const automatic=await run('Use the default.');assert.deepEqual(automatic.body.reasoning,{effort:'high'});assert.equal(automatic.run.reasoningEffort,'high');
+  const plain=await f.request(inference,{method:'PATCH',data:{model:'plain-model'}});assert.equal(plain.status,200);assert.equal(plain.body.reasoningEffort,'auto');assert.equal(plain.body.effectiveReasoningEffort,'');
+  assert.equal((await run('Use an unsupported model.')).body.reasoning,undefined);
+  const switched=await f.request(inference,{method:'PATCH',data:{model:'reasoning-b'}});assert.equal(switched.status,200);assert.equal(switched.body.effectiveReasoningEffort,'high');
+  assert.deepEqual((await run('Use High again.')).body.reasoning,{effort:'high'});
+  const provider=await f.request(inference,{method:'PATCH',data:{reasoningEffort:''}});assert.equal(provider.status,200);assert.equal(provider.body.effectiveReasoningEffort,'');
+  assert.equal((await run('Use the explicit provider default.')).body.reasoning,undefined);
+  assert.equal((await new Store(f.directory).init()).state.bots.find(bot=>bot.id==='bot_atlas').reasoningEffort,'');
+  const reset=await f.request(inference,{method:'PATCH',data:{reasoningEffort:'auto'}});assert.equal(reset.status,200);assert.equal(reset.body.effectiveReasoningEffort,'high');
+  assert.deepEqual((await run('Restore automatic High.')).body.reasoning,{effort:'high'});
+});
+
+test('catalog refresh caches current reasoning metadata and retains configured models beyond the first 200',async t=>{
+  const f=await fixture(t),connection=await f.connect();
+  const unused=Array.from({length:205},(_,index)=>({id:`unused-${index}`}));
+  f.remote.models={data:[...unused,reasoningModel('reasoning-a'),reasoningModel('reasoning-b')]};
+  await f.app.store.mutate(state=>{state.bots.find(bot=>bot.id==='bot_nova').model='reasoning-b';});
+  const refreshed=await f.request(inference);assert.equal(refreshed.status,200);assert.equal(refreshed.body.effectiveReasoningEffort,'high');
+  let cached=f.app.store.state.connections.find(item=>item.id===connection.id).models;
+  assert.equal(cached.length,200);assert.equal(cached.find(model=>model.id==='reasoning-a').reasoning.supported,true);assert.equal(cached.find(model=>model.id==='reasoning-b').reasoning.supported,true);
+  const tested=await f.request(`/api/connections/${connection.id}/test`,{method:'POST',data:{}});assert.equal(tested.status,200);
+  cached=f.app.store.state.connections.find(item=>item.id===connection.id).models;
+  assert.ok(cached.some(model=>model.id==='reasoning-a'));assert.ok(cached.some(model=>model.id==='reasoning-b'));
+  const started=await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text:'Use the metadata shown in Chat options.'}});assert.equal(started.status,202);assert.equal((await waitRun(f,started.body.run)).status,'completed');
+  assert.deepEqual(modelRequests(f.remote).at(-1).body.reasoning,{effort:'high'});
+});
+
+test('legacy synced defaults resolve to High while an explicit new provider-default choice stays empty',async t=>{
+  const f=await fixture(t);await f.connect();
+  await f.app.store.mutate(state=>{const bot=state.bots.find(bot=>bot.id==='bot_atlas');bot.reasoningEffort='';delete bot.reasoningEffortVersion;});
+  const legacy=await f.request(inference);assert.equal(legacy.body.reasoningEffort,'auto');assert.equal(legacy.body.effectiveReasoningEffort,'high');
+  const selected=await f.request(inference,{method:'PATCH',data:{reasoningEffort:''}});assert.equal(selected.status,200);assert.equal(selected.body.reasoningEffort,'');assert.equal(selected.body.effectiveReasoningEffort,'');assert.equal(savedBot(f).reasoningEffortVersion,1);
+});
+
+test('changing the shared default retains metadata for unaffected bot overrides beyond the catalog prefix',async t=>{
+  const f=await fixture(t),connection=await f.connect();
+  f.remote.models={data:[...Array.from({length:205},(_,i)=>({id:`plain-${i}`})),reasoningModel('reasoning-a'),reasoningModel('reasoning-b')]};
+  await f.app.store.mutate(state=>{const bot=state.bots.find(bot=>bot.id==='bot_nova');bot.model='reasoning-b';});
+  const selected=await f.request(`/api/connections/${connection.id}/default-model`,{method:'POST',data:{model:'reasoning-a',applyToAllBots:false}});assert.equal(selected.status,200);
+  const cached=f.app.store.state.connections.find(item=>item.id===connection.id).models;
+  assert.ok(cached.some(item=>item.id==='reasoning-b'&&item.reasoning.efforts.includes('high')));
 });

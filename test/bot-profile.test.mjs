@@ -154,10 +154,10 @@ test('the overview shows a calm summary and keeps cached counts across app re-re
   assert.equal(h.text('.bp-hero h1'),'Atlas');assert.equal(h.text('.bp-intro'),'Plans & <priorities>.');
   assert.ok(h.$('.bp-hero [data-nav="/bot/bot_atlas"]'));assert.equal(h.$('.bp-hero [data-action="edit-bot"]'),null);
   const settings=h.$('.bp-settings-disclosure');assert.equal(settings.open,false);
-  assert.match(settings.querySelector('summary').textContent,/Bot settings/);
-  assert.ok(settings.querySelector('[data-action="edit-bot"][data-id="bot_atlas"]'));
-  assert.ok(settings.querySelector('[data-action="toggle-bot-hidden"][data-id="bot_atlas"]'));
-  assert.deepEqual(h.$$('[role=tab]').map(tab=>[tab.dataset.tab,tab.getAttribute('aria-selected')]),[['overview','true'],['brain','false'],['memory','false'],['learning','false'],['files','false']]);
+  assert.match(settings.querySelector('summary').textContent,/Configuration summary/);
+  assert.ok(settings.querySelector('[data-profile-action="tab"][data-tab="settings"]'));
+  assert.equal(settings.querySelector('[data-action="toggle-bot-hidden"]'),null);
+  assert.deepEqual(h.$$('[role=tab]').map(tab=>[tab.dataset.tab,tab.getAttribute('aria-selected')]),[['overview','true'],['settings','false'],['brain','false'],['memory','false'],['learning','false'],['files','false']]);
   assert.deepEqual(h.requests.map(item=>item.path).sort(),['/api/bots/bot_atlas/brain','/api/bots/bot_atlas/files?path=','/api/bots/bot_atlas/memory','/api/bots/bot_atlas/proposals','/api/bots/bot_atlas/runs']);
   assert.deepEqual(h.$$('.bp-stat strong').map(node=>node.textContent),['2','3','6','2h ago']);
   assert.match(h.text('.bp-stats'),/1 pinned/);

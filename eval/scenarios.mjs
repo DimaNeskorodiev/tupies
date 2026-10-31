@@ -9,7 +9,7 @@ export const CORPUS_VERSION='tupies-agent-quality-v4';
 const call=(name,args,id=name)=>({id,name,arguments:args});
 const respond=(text='',toolCalls=[])=>({text,toolCalls,usage:{input_tokens:200,output_tokens:30}});
 const lastTool=request=>{const message=[...request.messages].reverse().find(item=>item.role==='tool');try{return JSON.parse(message?.content || '{}');}catch{return {};}};
-const final=run=>String(run.output || '');
+const final=run=>String(run.output || run.partialOutput || '');
 const results=checks=>({checks});
 const step=h=>h.phase++;
 const date='2026-01-15T12:00:00.000Z';

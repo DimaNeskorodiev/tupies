@@ -22,6 +22,8 @@ An engine with no links is **standalone** and behaves exactly as before 0.5.
 
 ## Set it up
 
+For plain step-by-step versions, see the [setup guides](setup/README.md), including [moving an existing Mac workspace to a server](setup/move-to-a-server.md).
+
 1. Run Tupies on the server and give it an HTTPS address (see [Reaching your engines](#reaching-your-engines)). Set `STUDIO_PUBLIC_URL` to it.
 2. On the server's shell, run `npm run pair -- --engine` (or open **Settings › Devices & sync → Link another engine**). A single-use link appears, valid for ten minutes.
 3. On the Mac, open **Settings › Devices & sync → Connect to a home server** and paste it. Both engines verify each other, exchange the workspace key and start syncing.
@@ -43,6 +45,10 @@ When an existing Mac workspace links to a freshly installed server, the Mac's da
 | The owner's time zone (`settings.timezone`) | Bot/room message receipts (`submissions`, `roomSubmissions`) and run history (`runHistory`) |
 | Paired devices (public keys only) and revocations | |
 | Presence: which bots each engine is working with | |
+
+## Managed skill packages
+
+Managed skill packages carry a complete activation manifest in their synced skill metadata. Metadata and file blobs still arrive independently; assigning, reading, exporting or executing a package checks every listed file's size and SHA-256, so a partially received or changed revision remains unavailable. Immutable revisions do not overwrite the bytes used by another active bot; selecting a different catalog revision changes only the selected idle bot's assignment. Readiness is computed separately on each engine, and dependencies, process homes and import previews stay local. See [skills](skills.md).
 
 ## Dashboard activity across engines
 

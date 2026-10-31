@@ -96,7 +96,7 @@ test('stop drains all started reads, blocks later writes and settles every admit
 });
 
 test('parallel reads cannot exceed the per-task tool-call budget',async t=>{
-  const {engine,store}=await fixture(t,[],{providers:{async complete(){return {text:'',toolCalls:Array.from({length:8},(_,index)=>call(`read-${index}`,'memory_search',{query:''}))};}}});
+  const {engine,store}=await fixture(t,[],{executionMode:'bounded',maxToolCalls:60,providers:{async complete(){return {text:'',toolCalls:Array.from({length:8},(_,index)=>call(`read-${index}`,'memory_search',{query:''}))};}}});
   let executed=0;const execute=engine.tools.execute.bind(engine.tools);
   engine.tools.execute=async(...args)=>{executed++;return execute(...args);};
   await engine.start('bot_atlas','Keep reading until the bounded budget is reached.');await waitFor(()=>current(store)?.status==='failed');

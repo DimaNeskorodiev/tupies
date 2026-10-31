@@ -9,10 +9,10 @@ import { executeEngineTool, retainToolResult } from '../lib/task-tools.mjs';
 import { writeWorkspace, readWorkspace } from '../lib/agent-tools.mjs';
 
 const call=(id,name,args)=>({id,name,arguments:args});
-async function fixture(t,complete) {
+async function fixture(t,complete,options={}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'studio-task-tools-')),store=await new Store(directory).init();
   await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture-model'});for(const bot of state.bots){bot.connectionId='fixture';bot.tools=['workspace'];bot.approvalPolicy='balanced';}});
-  const requests=[],engine=new NativeEngine(store,{providers:{async complete(connection,request){requests.push(request);return complete(request,requests.length);}},runTimeout:10000});
+  const requests=[],engine=new NativeEngine(store,{providers:{async complete(connection,request){requests.push(request);return complete(request,requests.length);}},runTimeout:10000,...options});
   t.after(async()=>{await engine.close();await fs.rm(directory,{recursive:true,force:true});});
   const run=async()=>{const result=await engine.start('bot_atlas','Find the source, fix it and verify your work.');await engine.tasks.get(result.id);return store.state.runs.bot_atlas;};
   return {store,engine,requests,run,directory};
@@ -38,14 +38,14 @@ test('real engine discovers, reads, edits and verifies files while keeping a dur
   assert.equal(engine.capabilities().features.task_plans,true);
 });
 
-test('invalid and stale plan updates are recoverable and cannot change standing permissions or run status',async t=>{
+test('bounded invalid and stale plan updates remain recoverable without changing permissions or run status',async t=>{
   const {store,run}=await fixture(t,async(request,index)=>index===1?{text:'',toolCalls:[
     call('plan','task_plan_set',{steps:[step('real','in_progress')]}),
     call('stale','task_plan_set',{expectedVersion:0,steps:[step('fake','completed')]}),
     call('bad-active','task_plan_set',{steps:[step('a','in_progress'),step('b','in_progress')]}),
     call('bad-permission','task_plan_set',{steps:[step('x')],tools:['terminal']}),
     call('get','task_plan_get',{}),
-  ]}:{text:'The unfinished step remains in the plan.',toolCalls:[]});
+  ]}:{text:'The unfinished step remains in the plan.',toolCalls:[]},{executionMode:'bounded'});
   const before=structuredClone(store.state.bots[0]),result=await run();
   assert.equal(result.status,'failed');assert.match(result.error,/unfinished plan steps/);assert.equal(result.output,'The unfinished step remains in the plan.');
   assert.equal(result.plan.version,1);assert.equal(result.plan.steps[0].id,'real');assert.deepEqual(store.state.bots[0],before);

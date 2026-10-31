@@ -18,6 +18,8 @@ Enable **Workspace** and **Terminal** for a coding bot before asking it to launc
 
 ## Start on your Mac
 
+**New here?** [Set up Tupies and sign in](docs/setup/README.md) has plain step-by-step guides: Mac and iPhone without a server, adding another Mac, and moving a Mac workspace to a server.
+
 Requires Node.js 22.16 or newer. The release includes the browser assets and fonts; install the pinned runtime libraries once.
 
 ```sh
@@ -69,6 +71,7 @@ For phone access from anywhere and engine sync, give the server an HTTPS address
 
 ## Documentation
 
+- [Set up Tupies and sign in (step-by-step)](docs/setup/README.md)
 - [Project context and handoff](PROJECT_CONTEXT.md)
 - [Development workflow](docs/development.md)
 - [Future product roadmap](docs/roadmap.md)

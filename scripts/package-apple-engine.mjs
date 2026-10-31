@@ -75,6 +75,10 @@ export async function stageEngineSource(repo,destination) {
     await fs.copyFile(source,path.join(destination,'scripts',name));await fs.chmod(path.join(destination,'scripts',name),0o644);
   }
   await copyTree(path.join(repo,'lib'),path.join(destination,'lib'),name=>name.endsWith('.mjs'));
+  // This reviewed package is runtime input for the catalog loader. Do not widen
+  // the general lib allowlist to arbitrary Markdown or other local files.
+  const productSkill=path.join('lib','skills','tupies-product');
+  if(await exists(path.join(repo,productSkill)))await copyTree(path.join(repo,productSkill),path.join(destination,productSkill),name=>name.endsWith('.md'));
   await copyTree(path.join(repo,'public'),path.join(destination,'public'),name=>publicExtensions.has(path.extname(name))||/^(?:LICENSE|NOTICE)(?:_|$)/.test(name));
   await copyTree(path.join(repo,'assets','fonts'),path.join(destination,'assets','fonts'),name=>['.ttf','.woff','.woff2'].includes(path.extname(name))||/^(?:OFL|LICENSE|NOTICE)(?:\.|_|$)/.test(name));
   await fs.mkdir(path.join(destination,'assets','licenses'),{recursive:true,mode:0o755});

@@ -19,6 +19,7 @@ function harness(t,readState){
   const method=options.method||'GET';calls.push({route,method});assert.equal(method,'GET','Restored notification navigation must not dispatch a task.');
   if(route==='/api/state')return readState();
   if(route==='/api/providers')return response({providers:[],features:{}});
+  if(/^\/api\/bots\/bot_(existing|target)\/inference$/.test(route))return response({model:'fixture-model',effectiveModel:'fixture-model',defaultModel:'fixture-model',models:[{id:'fixture-model',name:'Fixture model',reasoning:{supported:false,efforts:[]}}],reasoning:{supported:false,efforts:[]}});
   if(/^\/api\/(bots\/bot_(existing|target)|rooms\/room_target)\/messages$/.test(route))return response({messages:[{id:'synthetic_message',role:'assistant',botId:route.includes('/rooms/')?'bot_existing':undefined,content:'SYNTHETIC_ROUTE_CONTENT'}],run:null,drive:null,elsewhere:null});
   assert.fail(`Unexpected synthetic route ${route}`);
  };

@@ -37,7 +37,8 @@ function provider() {
 }
 async function open() {
   const networkDisabled=async()=>{throw new Error('External transport is disabled in runtime verification.');};
-  app=await createStudioServer({dataDir:directory,scheduler:false,logErrors:false,publicUrl:'',tls:'off',secureCookie:false,providers:provider(),sync:{engineName:'Disposable verification engine',syncFetch:networkDisabled,fileScanInterval:600_000},notifications:{transport:{available:false,reason:'fixture_disabled',async send(){throw new Error('No APNs in fixtures.');},close(){}}}});
+  // This fixture measures bounded no-replay recovery; autonomous continuation has separate engine boundary tests.
+  app=await createStudioServer({dataDir:directory,scheduler:false,executionMode:'bounded',logErrors:false,publicUrl:'',tls:'off',secureCookie:false,providers:provider(),sync:{engineName:'Disposable verification engine',syncFetch:networkDisabled,fileScanInterval:600_000},notifications:{transport:{available:false,reason:'fixture_disabled',async send(){throw new Error('No APNs in fixtures.');},close(){}}}});
   const {url}=await app.listen(0,'127.0.0.1');await app.openControl(controlSocketPath(directory),url);return url;
 }
 try {
