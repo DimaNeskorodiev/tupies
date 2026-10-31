@@ -36,7 +36,7 @@ A connection uses `{name,type,baseUrl?,apiKey?,defaultModel?,maxOutputTokens?,co
 | GET /api/connections/{id}/login | Poll safe pending/connected/error/signed-out status. |
 | DELETE /api/connections/{id}/login | Cancel a pending attempt. |
 | POST /api/connections/{id}/logout | Sign out and clear local OAuth credentials. |
-| GET /auth/callback | Public loopback OAuth callback; state, code, issued-client identity and signed token are validated internally. |
+| GET /auth/callback | Public loopback OAuth callback; state, code, issued-client identity and signed token are validated internally. With `STUDIO_TLS=engine`, a separate 127.0.0.1-only listener serves it (port 1455, or a free port) while a sign-in is pending. |
 
 ## OpenRouter voice
 
@@ -159,6 +159,22 @@ All owner browser routes are authenticated POST requests under the normal CSRF, 
 
 Private text, screenshots and view identities remain outside persisted chat, activity and model inputs. Browser control errors do not echo supplied secret values. A retained profile is scoped to one bot on one engine, outside workspace/skill sync.
 
+## Browser control
+
+Current-source interactive browser capabilities are described in [Browser use](browser.md). The bot-facing tools are enabled by the Browser group; private file transfers also require Workspace. Inputs, clicks, tab changes, dialogs and transfers require exact engine approval. Saved profiles and sessions already operated by the owner require approval for subsequent `browser_open` navigation. Approval review includes the current page/control and the task's output destination when authenticated state is involved.
+
+`browser_handoff {reason}` pauses a direct owner chat with status `waiting_for_input`, an incremented `execution_generation` and `pending_controls: [{kind:"browser",prompt_id,reason}]`. It neither saves sign-in credentials in the chat nor grants approval to future model actions. Handoff expires after at most 30 minutes; Stop, restart and ownership changes invalidate its controls.
+
+All owner browser routes are authenticated POST requests under the normal CSRF, Origin and Host checks. Each requires `{runId,remoteRunId,request_id,execution_generation}` matching the exact active handoff:
+
+| Endpoint | Extra input and result |
+| --- | --- |
+| `/api/bots/{id}/browser/view` | Returns `{imageBase64,url,title,width,height,viewId,tabs,tabId,retained,dialog?}`. The view is transient, `no-store`, and never a file artifact. |
+| `/api/bots/{id}/browser/action` | Adds `{viewId,action}`. Supports bounded owner click, text, key, scroll, navigate, tab, drag and JavaScript-dialog actions. Consumes the view identity once and returns a fresh view. Overlapping/stale actions fail; uncertain inputs are never automatically retried. |
+| `/api/bots/{id}/browser/resume` | Adds `{keepSession:boolean,skip?:boolean}`. Owner-only profile retention is engine-local. Returns a resolution receipt, then the model verifies the page with a new snapshot. |
+
+Private text, screenshots and view identities remain outside persisted chat, activity and model inputs. Browser control errors do not echo supplied secret values. A retained profile is scoped to one bot on one engine, outside workspace/skill sync.
+
 ## Documents, attachments and rich replies
 
 Read/create formats are PDF, DOCX, PPTX, XLSX, Markdown (`.md`), UTF-8 text, CSV and JSON. PNG, JPEG and WebP can be attached and previewed by the user, and are shown to the bot's model when it can see images (see `docs/rich-chat.md`). Scanned PDFs without extractable text need an external OCR step. Legacy or macro-enabled Office formats and embedded executable objects are unsupported.
@@ -210,8 +226,6 @@ A channel uses `{name,type:telegram,botId,token,enabled:false,allowedChatIds:[nu
 Polling runs only for enabled, explicitly allowlisted channels. The engine receives allowed ordinary text and returns its actual result to that chat. Exact tool approvals remain in Tupies; incoming messages cannot approve them. Durable cursor/reply claims prevent automatic duplicate execution/delivery after uncertainty.
 
 ## Skills, rooms and routines
-
-The autonomous execution/recovery behavior described here is current source pending a separate operational rollout; installation receipts remain scoped to the earlier routine-reliability release.
 
 Reviewed public-profile adaptations also return `attribution {title,author,url,kind,reviewedAt}` and `capabilityNotes` in catalog/inspection responses and installed metadata. These identify the original public profile and the newly written Tupies implementation; optional-service notes do not grant or imply a connected account.
 

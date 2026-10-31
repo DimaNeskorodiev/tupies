@@ -123,6 +123,7 @@ The deployed v9 candidate passes **918/918** JavaScript tests on official **Node
 
 ## Engines, sync and native apps
 
+- **ChatGPT sign-in with the engine's own certificate, source only (30 October):** an engine started with `STUDIO_TLS=engine` now finishes Continue with ChatGPT through a temporary callback listener on 127.0.0.1:1455 instead of its TLS-only port. Not deployed yet; signing in from an iPhone remains impossible because OpenAI's callback is loopback-only.
 - **Shared Dashboard activity, deployed to both engines 28 October:** terminal task and room outcomes travel with synced messages, so switching engines shows the same finished-task timeline after propagation. Retained historical evidence is backfilled; the raw Settings activity log stays engine-local. Deployment and verification status are in `verification.md`.
 
 Shipped in 0.5: home-server sync between engines, device pairing with P-256 keys, short-lived device sessions, revocation, paired-apps-only sign-in from the internet with proxy-aware limits, shell pairing (`npm run pair`), HTTPS with the engine's own certificate pinned through the pairing QR code (no domain needed), and the Apple app shell in `apps/apple/`. Next:
@@ -159,3 +160,7 @@ Shipped in 0.5: home-server sync between engines, device pairing with P-256 keys
 - Perform broader deployment, dependency and security review before treating the app as a public hosted service. Commercial subscription-provider onboarding remains a separate operator responsibility.
 
 Prioritize coherent, tested user workflows. Preserve bots-first navigation, simple setup, skill compatibility and the glass visual direction as capabilities grow.
+
+## Chat composer follow-up (29 October 2026, source only)
+
+Implemented: dismiss the phone/touch keyboard after confirmed message/task-update receipt, retain focus for failures and newer drafts, and retain the compact **Add direction** action with a full-width phone draft, a sending state and exact pending-request safeguards. Keyboard shortcuts follow the visible action. See [chat controls](chat-controls.md) and [verification](verification.md). Remaining: physical iPhone keyboard acceptance and separately authorized deployment to operational engines/apps.

@@ -26,13 +26,27 @@ After authorization, Tupies immediately shows the signed-in account's model list
 
 ### Loopback callback on a VPS
 
-OpenAI's local flow returns to an HTTP callback on **127.0.0.1**, using Tupies's own port and `/auth/callback` path. Keep Tupies running while signing in. On your Mac, forward the same port as the VPS process:
+OpenAI's local flow returns to an HTTP callback on **127.0.0.1**, using Tupies's own port and `/auth/callback` path (an engine serving its own certificate uses port 1455; see below). Keep Tupies running while signing in. On your Mac, forward the same port as the VPS process:
 
 ```sh
 ssh -N -L 4310:127.0.0.1:4310 user@your-vps
 ```
 
 Open Tupies through that loopback address, then start sign-in. The OpenAI browser redirect reaches the local tunnel and returns to the same Tupies server. Do not change `127.0.0.1` to `localhost` or map a different local port. If Tupies uses another port, forward that same port at both ends. An expired/cancelled attempt must be started again; callback codes are not replayed.
+
+### With the engine's own certificate
+
+An engine started with `STUDIO_TLS=engine` speaks only HTTPS on its port, so it cannot receive OpenAI's plain-HTTP redirect there. While a sign-in is pending it opens a separate callback listener on **127.0.0.1** only, port **1455** (OpenAI's documented example port, or any free port when 1455 is taken). The sign-in dialog names the port. This listener answers only `/auth/callback` and closes when the sign-in finishes, is cancelled or expires after ten minutes.
+
+On the engine's own computer nothing else is needed: sign in from a browser or the Mac app there. On a VPS, forward the callback port before you approve in ChatGPT. Tupies itself can stay open at its usual `https://` address:
+
+```sh
+ssh -N -L 1455:127.0.0.1:1455 user@your-vps
+```
+
+In Docker the listener is on the container's own loopback address, which published ports cannot reach. Sign-in therefore cannot finish on a container that serves its own certificate; run that engine as a native service instead.
+
+The redirect always goes to 127.0.0.1 on the device whose browser approves the sign-in, so an iPhone cannot finish it. Start ChatGPT sign-in from the Mac running the engine, or from a computer with this tunnel. Afterwards the engine renews access by itself.
 
 ### Product and account eligibility
 

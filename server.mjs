@@ -18,6 +18,7 @@ import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
 import { nativeApi, oauthCallback } from './lib/api-native.mjs';
+import { LoopbackCallback } from './lib/oauth-callback.mjs';
 import { dashboard } from './lib/dashboard.mjs';
 import { Speech } from './lib/speech.mjs';
 import { Sync, validateEngineUrl } from './lib/sync/index.mjs';
@@ -154,6 +155,8 @@ export async function createStudioServer(options={}) {
     res.setHeader('Cache-Control','no-store');
     if(secureCookie)res.setHeader('Strict-Transport-Security','max-age=31536000');
   }
+  // An engine serving TLS itself has no plain-HTTP port for ChatGPT's 127.0.0.1 redirect, so a pending sign-in opens its own loopback listener.
+  const signInCallback=tlsMode && providers.oauth ? new LoopbackCallback({headers,port:options.oauthCallbackPort,handle:(req,res,url)=>oauthCallback(req,res,url,providers,{standalone:true}),pendingUntil:()=>Math.max(0,...[...providers.oauth.pending.values()].filter(attempt=>attempt.status==='pending').map(attempt=>attempt.expiresAt))}) : null;
   function json(res,data,status=200) {res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
   /** Chat polling: an unchanged transcript answers 304. Only the tag is remembered, keyed by the store's commit revision. */
   const pollTags=new Map();
@@ -257,7 +260,7 @@ export async function createStudioServer(options={}) {
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
         if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
-        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,clientAddress:access.client(req)}))return;
+        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
         const receiptMatch=method==='GET' && pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/submissions\/([A-Za-z0-9_-]{8,80})$/);
         if(receiptMatch) {
@@ -528,6 +531,7 @@ export async function createStudioServer(options={}) {
       const listenerClosed=new Promise(resolve=>server.close(resolve));server.closeIdleConnections();
       const force=setTimeout(()=>server.closeAllConnections(),2000);force.unref?.();
       await listenerClosed;clearTimeout(force);server.closeAllConnections();
+      await signInCallback?.close();
       await runtime.close();
       // Detached room admissions and scheduler work must settle before releasing data.
       while(runtime.starting.size || runtime.polling.size || rooms.working.size || ticking)await new Promise(resolve=>setTimeout(resolve,10));

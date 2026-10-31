@@ -523,7 +523,13 @@
     // revisited this chat. Preserve that newer draft instead of clearing it.
     const latest = visible && draftKey(visible) === key ? visible : field;
     if (latest?.value && latest.value !== submittedText) drafts.set(key, latest.value);
-    else {drafts.delete(key); if (latest) latest.value = '';}
+    else {
+      drafts.delete(key); if (latest) latest.value = '';
+      // Dismiss the software keyboard only for the composer that was sent. A late
+      // receipt must not blur a newly opened chat or interrupt a newer draft.
+      if ((phone() || window.matchMedia('(pointer: coarse)').matches) && latest === field &&
+          form.isConnected && document.activeElement === field) field.blur();
+    }
     sizeComposer(latest?.isConnected ? latest : composer());
     haptic('light');
   }
@@ -1102,11 +1108,12 @@
   document.addEventListener('input', event => {
     if (event.target.matches('.chat-composer textarea')) {rememberDraft(); sizeComposer(event.target);}
   });
-  // As in Messages, pressing Send keeps the keyboard up: the press does not take focus from the draft.
-  // The click (and so the submission) is unchanged.
-  for (const name of ['pointerdown','mousedown']) document.addEventListener(name, event => {
-    if (!phone()) return;
-    const send = event.target.closest?.('#app .chat-composer .send'), field = send?.closest('form')?.querySelector('textarea');
+  // Keep focus during the request so failures leave the draft ready to retry.
+  // Only cancel mousedown: cancelling touch pointerdown suppresses WebKit's click.
+  // sent() dismisses the software keyboard after confirmed receipt.
+  document.addEventListener('mousedown', event => {
+    if (!phone() && !window.matchMedia('(pointer: coarse)').matches) return;
+    const send = event.target.closest?.('#app .chat-composer :is(.send,.direction-send)'), field = send?.closest('form')?.querySelector('textarea');
     if (field && !send.disabled && document.activeElement === field) event.preventDefault();
   });
   // Native view switching/rotation can interrupt a gesture without delivering touchend.
