@@ -22,7 +22,7 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 | --- | --- |
 | HTTP, sessions, security headers, lifecycle | `server.mjs` |
 | Resource/provider/inference/document APIs | `lib/api-native.mjs` |
-| Agent loop, approvals, snapshots, cancellation, delegation | `lib/engine.mjs`; `lib/runtime.mjs` is its compatibility entrypoint |
+| Agent loop, approvals, snapshots, cancellation, delegation | `lib/engine.mjs`, `lib/delegation-jobs.mjs` (queued handoffs and collection), `lib/delegated-deliverables.mjs` (required-result identity/repair); `lib/runtime.mjs` is its compatibility entrypoint |
 | Atomic state, sealed credentials, redaction | `lib/store.mjs` |
 | Provider protocols, OAuth, credentialed transport | `lib/providers.mjs`, `lib/oauth.mjs`, `lib/provider-net.mjs` |
 | Tools, memory, workspaces, skills and approved processes | `lib/agent-tools.mjs`; long-term notes in `lib/brain.mjs`; Manage Tupies (bots set up bots, skills and routines from chat) in `lib/setup-tools.mjs` |
@@ -55,6 +55,8 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 Use temporary data directories and deterministic local fixtures for tests. Do not run duplicate schedulers against copies of the real account data. Do not delete user bots, chats or provider connections during testing.
 
 ## Verification and handoff
+
+**Team health-check source checkpoint (31 October 2026, source only):** Asynchronous delegation queues/status collection, cyclic-wait refusal, retained long-child waits and skill-source/repair evidence fixes pass1400/1400 tests across all140 test files on official Node22.23.4. Three timing-sensitive files run sequentially (44 tests); the other137 run at concurrency4 (1356 tests), without changing budgets/assertions or skipping tests. Syntax checks cover126 modules; the web assets/notices build and26-page guide pass. No live task was stopped, no source was deployed, and no operational/native/profile/pairing configuration changed. Keep immutable releases unchanged; see `docs/verification.md` and ignored `docs/local-workspace.md`.
 
 Run checks appropriate to the change and fix regressions. For provider, tool, persistence, authorization or lifecycle changes, run the complete suite. For visible UI changes, also exercise the actual browser; speech stubs do not prove microphone accuracy. Report actual evidence and remaining limits instead of claiming parity with another product. The latest recorded baseline is 918 passing tests and 98 syntax-checked modules on Node 22.23.4; consult `docs/verification.md` and rerun after changes.
 

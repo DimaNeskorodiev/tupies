@@ -5,9 +5,17 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Store } from '../lib/store.mjs';
 import { NativeEngine } from '../lib/engine.mjs';
-import { reconcileWork } from '../lib/work-quality.mjs';
+import { reconcileWork, SAFE_RETRY_READS } from '../lib/work-quality.mjs';
 
 const start=(toolCallId,tool,args={})=>({type:'tool.started',toolCallId,tool,arguments:args});
+
+test('interrupted delegation status reads do not become unknown mutations or automatic retries',()=>{
+  const job={id:'delegation_fixture',status:'running',childRunId:'child_fixture'};
+  const run={events:[start('status','delegation_status',{delegationId:job.id,waitMs:1000}),start('dispatch','delegate_task',{botId:'bot_scout',task:'Synthetic work.',wait:false})],delegationJobs:[structuredClone(job)]};
+  reconcileWork(run);
+  assert.deepEqual(run.workRecords.map(record=>[record.callId,record.status,record.outcome]),[['status','interrupted','not_applied'],['dispatch','interrupted','unknown']]);
+  assert.equal(SAFE_RETRY_READS.has('delegation_status'),false);assert.deepEqual(run.delegationJobs,[job]);
+});
 
 test('browser input and navigation interrupted after dispatch retain an unknown outcome',()=>{
   const actions=['browser_open','browser_click','browser_fill','browser_type','browser_select','browser_check','browser_key','browser_back','browser_scroll','browser_drag','browser_dialog'];
