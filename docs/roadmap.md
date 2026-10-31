@@ -2,6 +2,14 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Parallel team checks and usable evidence (31 October 2026, installed on the VPS)
+
+The observed imported-team health check exposed synchronous child dispatch and successful skill reads rejected as source evidence. Current source adds queued asynchronous handoffs with scoped job identities and real result collection under existing resource/permission limits, with cyclic-wait refusal and preserved long-running waits. It also admits successful skill/inventory observations, rejects invalid source-check declarations before they become immutable and retains original failed-read identities for targeted repair. Frozen-source verification passes1400 tests,126 syntax checks and the web build; see [verification](verification.md) for the complete file-set split and evidence. Commit `8f72095` / PR18 is installed as a targeted overlay on the existing VPS baseline, with50 Linux candidate regressions, an encrypted full stopped backup, one replacement launch and exact existing-data/identity checks. Next: verify representative real-provider team checks on the installed engine. Source fixtures do not prove live-model scheduling choices, credential readiness or external integration actions. Restricted bots remain restricted; self-reports alone cannot certify setup health. Existing VPS task history and failures remain intact without replay; this rollout includes no Mac/native/profile/pairing action.
+
+## Hermes profile interoperability (31 October 2026)
+
+An owner-operated transfer has populated the existing VPS through native authenticated APIs: twelve bots, indexed portable skill bundles, memories/notes and scoped sealed connections. Exact installed-byte/configuration checks passed; see [verification](verification.md). The original Hermes installation remains running, Telegram imports remain disabled, and legacy schedules remain inactive references. A general owner-facing profile importer, foreign script/dependency adaptations, external OAuth refresh, Hermes MOA/relay equivalents and image/Discord/device workflows remain future work. Configuration validation alone does not establish third-party action readiness; the imported Anthropic credential needs replacement or reauthorization.
+
 ## GitHub source consolidation (31 October 2026)
 
 Reconciled the unpublished autonomous execution/recovery, required teammate repair, reasoning/composer, bot Settings, setup-guide and product-skill work with current GitHub main, retaining its TLS sign-in and chat-input safeguards. Combined verification passes1367 tests,125 syntax checks, the full build and26 guide pages on Node22.23.4, plus disposable Chrome acceptance. Publishing source does not install an operational/native release; remaining physical-device and real-provider acceptance below retains its original scope.

@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { Store } from '../lib/store.mjs';
 import { NativeEngine } from '../lib/engine.mjs';
 import { writeWorkspace } from '../lib/agent-tools.mjs';
-import { prepareDeliverable, recordDeliverableAttempt, ensureDeliverableIds, hydrateLegacyDeliverables, deliverableRepairFeedback } from '../lib/delegated-deliverables.mjs';
+import { prepareDeliverable, recordDeliverableAttempt, ensureDeliverableIds, hydrateLegacyDeliverables, deliverableRepairFeedback, repairObservationGuidance } from '../lib/delegated-deliverables.mjs';
 import { checkOutcomes, callFingerprint } from '../lib/work-quality.mjs';
 
 const call=(id,name,args={})=>({id,name,arguments:args});
@@ -59,6 +59,71 @@ test('failed observational checks require the same observed action in a fresh ve
   assert.equal(changed.status,'partial');
   const exact=recordDeliverableAttempt(run,item.id,child('right-source',{declared:[{...check,callId:'new-read'}],records:[{...record,callId:'new-read',status:'succeeded'}]}),{callId:'right'});
   assert.equal(exact.status,'completed');
+});
+
+test('failed source repairs retain exact read requests and check identities without replaying successful reads',()=>{
+  const {run,item}=prepared(),read=call('skills-read','skills_read',{skillId:'assigned-skill'}),check={id:'original-source',kind:'source_read',callId:read.id};
+  const record={callId:read.id,tool:read.name,status:'succeeded',requestDigest:callFingerprint(read)};
+  const attempt={...child('original-child',{passed:false,declared:[check,{id:'already-read',kind:'source_read',callId:'passed-read'}],records:[record,{callId:'passed-read',tool:'workspace_read',status:'succeeded',requestDigest:'retained'}]}),events:[{type:'tool.started',toolCallId:read.id,tool:read.name,arguments:read.arguments}]};
+  attempt.verification.checks[1].passed=true;
+  recordDeliverableAttempt(run,item.id,attempt,{callId:'first'});
+  const guidance=repairObservationGuidance(run.requiredDeliverables[0],{});
+  assert.equal(guidance.length,1);assert.equal(guidance[0].id,check.id);assert.equal(guidance[0].originalCallId,read.id);
+  assert.deepEqual(guidance[0].readRequest,{tool:read.name,arguments:read.arguments});
+  assert.match(guidance[0].notice,/fresh call ID/);
+  assert.equal(run.requiredDeliverables[0].attempts[0].status,'partial');
+});
+
+test('repair guidance never offers mismatched, ambiguous or mutating calls as repeatable reads',()=>{
+  for(const mode of ['mismatch','duplicate','mutation','denied','unknown']) {
+    const {run,item}=prepared(),read=call('observed',mode==='mutation'?'workspace_write':'skills_list',{}),record={callId:read.id,tool:read.name,status:'failed',requestDigest:mode==='mismatch'?'wrong':callFingerprint(read)};
+    const event={type:'tool.started',toolCallId:read.id,tool:read.name,arguments:read.arguments};
+    if(mode==='denied')record.errorCode='denied';
+    if(mode==='unknown')record.outcome='unknown';
+    recordDeliverableAttempt(run,item.id,{...child('child',{passed:false,declared:[{id:'source',kind:'source_read',callId:read.id}],records:[record]}),events:mode==='duplicate'?[event,event]:[event]},{callId:'first'});
+    const [guidance]=repairObservationGuidance(run.requiredDeliverables[0],{});
+    assert.equal(guidance.readRequest,undefined);assert.match(guidance.notice,/unavailable/);
+  }
+});
+
+test('historical read guidance requires the exact child run, unique canonical call and matching receipt digest',()=>{
+  const read=call('old-read','skills_read',{skillId:'retained-skill'}),record={callId:read.id,tool:read.name,status:'succeeded',requestDigest:callFingerprint(read)},check={id:'source',kind:'source_read',callId:read.id};
+  for(const mode of ['exact','wrong-run','different-request','duplicate']) {
+    const {run,item}=prepared(),old=child('old-child',{passed:false,declared:[check],records:[record]});
+    recordDeliverableAttempt(run,item.id,old,{callId:'first'});
+    const baseline=run.requiredDeliverables[0].baselineChecks[0];delete baseline.request;delete baseline.runId;
+    const canonicalCall={id:read.id,type:'function',function:{name:read.name,arguments:JSON.stringify(mode==='different-request'?{skillId:'another-skill'}:read.arguments)}};
+    const state={runHistory:{scout:[old]},conversations:{scout:[{role:'assistant',runId:mode==='wrong-run'?'another-child':old.id,tool_calls:mode==='duplicate'?[canonicalCall,canonicalCall]:[canonicalCall]}]}};
+    const [guidance]=repairObservationGuidance(run.requiredDeliverables[0],state);
+    assert.equal(Boolean(guidance.readRequest),mode==='exact');
+    if(mode==='exact')assert.deepEqual(guidance.readRequest,{tool:read.name,arguments:read.arguments});
+  }
+});
+
+test('accepted nested teammate checks retain engine-owned evidence for final parent rechecks',()=>{
+  const {run,item}=prepared(),nested={id:'nested-job',botId:'scout',callId:'nested-call',status:'completed',childRunId:'nested-child',result:{botId:'scout',runId:'nested-child',status:'completed',output:'Do not duplicate full private replies in accepted evidence.',deliverable:{id:'nested-requirement',status:'completed'}}};
+  const result=recordDeliverableAttempt(run,item.id,{...child('child',{declared:[{id:'nested',kind:'teammate_completed',delegationId:nested.id}]}),delegationJobs:[nested,{id:'unreferenced'}],requiredDeliverables:[{id:'nested-requirement',status:'completed'},{id:'unreferenced'}]},{callId:'first'});
+  assert.equal(result.accepted.delegationJobs.length,1);assert.equal(result.accepted.delegationJobs[0].id,nested.id);
+  assert.equal(result.accepted.delegationJobs[0].result.output,undefined);
+  assert.deepEqual(result.accepted.requiredDeliverables,[{id:'nested-requirement',status:'completed'}]);
+});
+
+test('retained async teammate checks keep their exact intermediate attempt through repair-history pruning',async()=>{
+  const {run,item}=prepared();
+  for(let index=0;index<22;index++) {
+    const callId=`attempt-${index}`,runId=`child-${index}`;
+    recordDeliverableAttempt(run,item.id,child(runId,{declared:[]}),{callId});
+    if(index===1) {
+      run.delegationJobs=[{id:'pinned-job',botId:'scout',callId,status:'completed',childRunId:runId,result:{botId:'scout',runId,status:'completed',deliverable:{id:item.id,status:'partial'}}}];
+      run.outcomeChecks=[{id:'pinned',kind:'teammate_completed',delegationId:'pinned-job'}];
+    }
+  }
+  recordDeliverableAttempt(run,item.id,child('final-child'),{callId:'final-call'});
+  assert.ok(run.requiredDeliverables[0].attempts.some(attempt=>attempt.callId==='attempt-1'));
+  assert.ok(run.requiredDeliverables[0].attempts.length<22);
+  const engine={assertRunning(){},current:()=>run,store:{redact:String}};
+  assert.equal((await checkOutcomes(engine,{})).passed,true);
+  assert.equal(run.delegationJobs[0].result.deliverable.status,'partial');
 });
 
 test('denied and uncertain exact actions remain bound to the same requirement across repairs',()=>{
