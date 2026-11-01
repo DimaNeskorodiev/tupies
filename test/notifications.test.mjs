@@ -15,6 +15,63 @@ const TOKEN = 'ab'.repeat(32), OTHER_TOKEN = 'cd'.repeat(32), BASE = Date.parse(
 const enrollment = overrides => ({token:TOKEN, environment:'sandbox', enabled:true, botReplies:true, routines:true, ...overrides});
 const iso = n => new Date(BASE + n).toISOString();
 
+const questionRun = (overrides = {}) => ({id:'run_question',botId:'bot_atlas',source:'chat',status:'waiting_for_input',createdAt:iso(0),updatedAt:iso(0),pending_controls:[{kind:'question',prompt_id:'question_first',createdAt:iso(0),questions:[{prompt:'Private question text'}]}],...overrides});
+
+test('a live direct-chat question notifies once using the existing reply preference and chat route', async t => {
+  const f = await fixture(t);await f.notifications.register(f.device,enrollment());
+  await f.store.mutate(state => {state.runs.bot_atlas = questionRun();});await f.notifications.flush();await f.notifications.flush();
+  assert.equal(f.sent.length,1);assert.equal(f.sent[0].payload.studio.botId,'bot_atlas');assert.equal(f.sent[0].payload.studio.kind,'message');
+  assert.equal(f.sent[0].payload.aps.alert.body,'Needs your answer. Open the chat to respond.');
+  assert.ok(!(await fs.readFile(f.notifications.file,'utf8')).includes('Private question text'));
+  await f.store.mutate(state => {state.runs.bot_atlas.pending_controls[0].prompt_id='question_second';});await f.notifications.flush();
+  assert.equal(f.sent.length,2);assert.notEqual(f.sent[0].eventId,f.sent[1].eventId);
+  await f.notifications.register(f.device,enrollment({botReplies:false}));
+  await f.store.mutate(state => {state.runs.bot_atlas.pending_controls[0].prompt_id='question_disabled';});await f.notifications.flush();
+  assert.equal(f.sent.length,2);
+});
+
+test('questions answered, skipped or stopped during the delivery grace period no longer alert', async t => {
+  const f = await fixture(t,{graceMs:8000});await f.notifications.register(f.device,enrollment());
+  for(const status of ['running','stopping','cancelled','interrupted']) {
+    await f.store.mutate(state => {state.runs.bot_atlas=questionRun({id:`run_${status}`});});await f.notifications.flush();
+    await f.store.mutate(state => {state.runs.bot_atlas.status=status;state.runs.bot_atlas.pending_controls=[];});
+    f.advance(8001);await f.notifications.flush();
+  }
+  assert.equal(f.sent.length,0);assert.ok(f.notifications.state.outbox.every(item=>item.status==='cancelled'));
+});
+
+test('only the exact current question can be marked read; final replies retain their separate event', async t => {
+  const f = await fixture(t,{graceMs:8000});await f.notifications.register(f.device,enrollment());
+  await f.store.mutate(state=>{state.runs.bot_atlas=questionRun();});await f.notifications.flush();
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:[],questionId:'question_stale'});
+  assert.equal(f.notifications.state.outbox[0].status,'pending');
+  await f.notifications.acknowledge({botId:'bot_atlas',messageIds:[],questionId:'question_first'});
+  assert.equal(f.notifications.state.outbox[0].status,'suppressed');
+  f.advance(8001);await f.notifications.flush();assert.equal(f.sent.length,0);
+  await f.reply('after_question',{at:8001});f.advance(8001);await f.notifications.flush();assert.equal(f.sent.length,1);
+});
+
+test('baseline questions, browser handoffs, non-chat lanes and progress messages stay quiet', async t => {
+  const f=await fixture(t,{seed:state=>{state.runs.bot_atlas=questionRun();}});await f.notifications.register(f.device,enrollment());await f.notifications.flush();
+  for(const overrides of [{source:'delegation'},{source:'routine'},{sessionId:'bot_atlas--telegram-private'},{stopRequested:true},{pending_controls:[{kind:'browser',prompt_id:'browser_first'}]}]) {
+    await f.store.mutate(state=>{state.runs.bot_atlas=questionRun({id:`run_case_${f.notifications.state.sequence}`, ...overrides});});await f.notifications.flush();
+  }
+  await f.store.mutate(state=>{state.messages.bot_atlas=[{id:'owner_progress',role:'user',source:'chat',runId:'run_progress',createdAt:iso(0)},{id:'message_progress',role:'assistant',kind:'progress',runId:'run_progress',createdAt:iso(0),content:'Checking.'}];});await f.notifications.flush();
+  assert.equal(f.sent.length,0);assert.deepEqual(f.notifications.unreadBots(),{});
+});
+
+test('answer and direction records cannot hide the originating chat request from final-reply alerts',async t=>{
+  const f=await fixture(t);await f.notifications.register(f.device,enrollment());
+  await f.store.mutate(state=>{state.messages.bot_atlas=[
+    {id:'original_request',role:'user',source:'chat',runId:'run_answered',createdAt:iso(0)},
+    {id:'question_answer',role:'user',kind:'answer',runId:'run_answered',createdAt:iso(0)},
+    {id:'direction',role:'user',kind:'steer',runId:'run_answered',createdAt:iso(0)},
+    {id:'final_answer',role:'assistant',runId:'run_answered',content:'Final after the question.',createdAt:iso(0)},
+  ];});await f.notifications.flush();
+  assert.equal(f.sent.length,1);assert.equal(f.sent[0].payload.aps.alert.body,'Final after the question.');
+  assert.deepEqual(f.notifications.unreadBots(),{bot_atlas:'final_answer'});
+});
+
 async function fixture(t, {seed, available = true, role = 'hub', send, graceMs = 0} = {}) {
   const directory = await fs.mkdtemp(path.join(tmpdir(), 'studio-notifications-'));
   const store = await new Store(directory).init();

@@ -55,6 +55,30 @@ test('transient provider recovery continues the same task without confirmation o
   assert.equal(await fs.readFile(path.join(await getWorkspaceRoot(f.store,BOT),'retained.txt'),'utf8'),'Completed tool evidence.');
 });
 
+test('text already shown from an interrupted provider attempt remains a labelled update after recovery',async t=>{
+  const f=await fixture(t,async(request,count)=>{
+    if(count===1){await request.onDelta('The available first part.');throw timeout();}
+    return answer('The recovered final result.');
+  });
+  const done=await settle(f.engine,f.store,await f.engine.start(BOT,'Complete the task despite a transient outage.'));
+  assert.equal(done.status,'completed');
+  const replies=f.store.state.messages[BOT].filter(message=>message.role==='assistant');
+  assert.deepEqual(replies.map(message=>message.content),['The available first part.','The recovered final result.']);
+  assert.equal(replies[0].kind,'progress');assert.equal(replies[0].incomplete,true);assert.equal(replies[1].kind,undefined);
+});
+
+test('an output-limited model turn retains its visible text without admitting incomplete actions',async t=>{
+  const next=deferred(),finish=deferred();let incompleteActions=0;
+  const f=await fixture(t,async(request,count)=>{
+    if(count===1){await request.onDelta('The draft reached the output limit.');return {text:'The draft reached the output limit.',finishReason:'length',toolCalls:[call('unfinished','workspace_write',{path:'unfinished.txt',content:'Never admitted.'})]};}
+    next.resolve();await finish.promise;return answer('The complete final result.');
+  });
+  const execute=f.engine.tools.execute.bind(f.engine.tools);f.engine.tools.execute=async(...args)=>{if(args[1]==='workspace_write')incompleteActions++;return execute(...args);};
+  const started=await f.engine.start(BOT,'Finish the report despite the output limit.');
+  try {await next.promise;assert.equal(current(f.store).status,'running');const update=f.store.state.messages[BOT].find(message=>message.kind==='progress');assert.equal(update.content,'The draft reached the output limit.');assert.equal(update.incomplete,true);assert.equal(incompleteActions,0);} finally {finish.resolve();}
+  const done=await settle(f.engine,f.store,started);assert.equal(done.status,'completed');assert.deepEqual(f.store.state.messages[BOT].filter(message=>message.role==='assistant').map(message=>message.content),['The draft reached the output limit.','The complete final result.']);assert.equal(incompleteActions,0);
+});
+
 test('autonomous work finishes beyond both former model-turn and tool-call cutoffs when observations keep changing',async t=>{
   let nextFile=0,reads=0;
   const f=await fixture(t,async(_request,count)=>{
@@ -84,7 +108,7 @@ test('changing final-response wording cannot evade the unchanged unfinished-plan
   const f=await fixture(t,async(_request,count)=>count===1?{text:'',toolCalls:[call('plan','task_plan_set',{steps:[planStep('in_progress')]})]}:answer(`A different final claim ${count}, without completing the required save.`));
   const done=await settle(f.engine,f.store,await f.engine.start(BOT,'Complete and save the report before finishing.'));
   assert.equal(done.status,'failed');assert.match(done.error,/no progress/i);assert.equal(done.plan.steps[0].status,'in_progress');
-  assert.ok(f.requests.length>=4 && f.requests.length<=10);assert.ok(!f.store.state.messages[BOT].some(message=>message.role==='assistant' && !message.partial && /different final claim/.test(message.content)));
+  assert.ok(f.requests.length>=4 && f.requests.length<=10);assert.ok(!f.store.state.messages[BOT].some(message=>message.role==='assistant' && !message.partial && message.kind!=='progress' && /different final claim/.test(message.content)));
 });
 
 test('repeated successful reads of unchanged data stop for observed no progress rather than a time or step quota',async t=>{

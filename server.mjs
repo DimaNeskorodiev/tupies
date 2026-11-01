@@ -85,6 +85,7 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
   if(Object.hasOwn(input,'enabled')){ensure(typeof input.enabled==='boolean',400,'enabled must be true or false.');bot.enabled=input.enabled;}
   if(Object.hasOwn(input,'hidden')){ensure(typeof input.hidden==='boolean',400,'hidden must be true or false.');bot.hidden=input.hidden;}
+  if(Object.hasOwn(input,'favorite')){ensure(typeof input.favorite==='boolean',400,'favorite must be true or false.');bot.favorite=input.favorite;}
   if(Object.hasOwn(input,'episodicMemory')){ensure(typeof input.episodicMemory==='boolean',400,'episodicMemory must be true or false.');bot.episodicMemory=input.episodicMemory;}
   if(Object.hasOwn(input,'searchFallbackIntegrationId')){ensure(typeof input.searchFallbackIntegrationId==='string' && (!input.searchFallbackIntegrationId || /^[a-zA-Z0-9_-]{1,100}$/.test(input.searchFallbackIntegrationId)),400,'Choose a valid search fallback integration.');bot.searchFallbackIntegrationId=input.searchFallbackIntegrationId;}
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
@@ -287,10 +288,10 @@ export async function createStudioServer(options={}) {
           const [,botId,action]=match,bot=store.state.bots.find(b=>b.id===botId);ensure(bot,404,'Bot not found.');
           if(!action && method==='PATCH') {
             const input=await body(req);
-            // Hiding only changes where a bot is listed, so it never waits for the bot's work.
-            if(input && typeof input==='object' && Object.keys(input).length===1 && Object.hasOwn(input,'hidden')) {
-              ensure(typeof input.hidden==='boolean',400,'hidden must be true or false.');
-              const updated=await store.mutate(state=>{const target=state.bots.find(b=>b.id===botId);ensure(target,404,'Bot not found.');target.hidden=input.hidden;store.audit('bot.updated',`${target.name} was ${input.hidden?'hidden':'shown again'}`,botId);return structuredClone(target);});
+            // List preferences never alter the bot's execution settings or wait for its work.
+            if(input && typeof input==='object' && !Array.isArray(input) && Object.keys(input).length===1 && ['hidden','favorite'].some(key=>Object.hasOwn(input,key))) {
+              const key=Object.keys(input)[0];ensure(typeof input[key]==='boolean',400,`${key} must be true or false.`);
+              const updated=await store.mutate(state=>{const target=state.bots.find(b=>b.id===botId);ensure(target,404,'Bot not found.');target[key]=input[key];store.audit('bot.updated',`${target.name} list preferences updated`,botId);return structuredClone(target);});
               return json(res,updated);
             }
             const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before editing it.');idle();
@@ -302,7 +303,7 @@ export async function createStudioServer(options={}) {
             const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Stop the active run and room turn before removing this bot.');idle();
             await store.mutate(state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');state.bots=state.bots.filter(b=>b.id!==botId);state.routines=state.routines.filter(r=>r.botId!==botId);delete state.messages[botId];removeBotSessions(state,botId);delete state.memory[botId];delete state.runs[botId];delete state.runHistory?.[botId];delete state.submissions?.[botId];state.proposals=(state.proposals || []).filter(item=>item.botId!==botId);for(const b of state.bots)b.collaborators=(b.collaborators||[]).filter(id=>id!==botId);for(const room of state.rooms)room.botIds=room.botIds.filter(id=>id!==botId);for(const channel of state.channels)if(channel.botId===botId){channel.enabled=false;channel.error='The assigned bot was removed.';}store.audit('bot.deleted',`${bot.name} removed from this workspace`);});return json(res,{deleted:true});
           }
-          if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);return pollReply(req,res,`bot:${botId}`,elsewhere,()=>({messages:store.state.messages[botId] || [],run:store.state.runs[botId] || null,elsewhere}));}
+          if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);return pollReply(req,res,`bot:${botId}`,elsewhere,()=>({messages:store.state.messages[botId] || [],run:store.state.runs[botId] || null,lastMessageAt:store.lastBotMessageAt(botId),elsewhere}));}
           if(action==='compact' && method==='POST'){
             const input=await body(req);ensure(input && typeof input==='object' && Object.keys(input).every(key=>key==='topic') && (input.topic===undefined || typeof input.topic==='boolean'),400,'Send {topic?: boolean}.');
             return json(res,await runtime.compactChat(botId,{topic:input.topic===true}));

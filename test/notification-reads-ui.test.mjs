@@ -19,6 +19,20 @@ test('a focused, rendered final reply needs dwell time and sends one exact recei
   const f=fixture(t);await f.reader.tick();assert.equal(f.calls.length,0);f.advance(700);await f.reader.tick();await f.reader.tick();assert.equal(f.calls.length,1);
   assert.equal(f.calls[0][0],'/api/notifications/read');assert.deepEqual(JSON.parse(JSON.stringify(f.calls[0][1].body)),{botId:'bot_atlas',messageIds:['reply']});
 });
+
+test('a question is acknowledged only while its exact card is visible in an attended chat',async t=>{
+  const f=fixture(t);f.context.messages=[];
+  f.context.run={status:'waiting_for_input',pending_controls:[{kind:'question',prompt_id:'question_current'}]};
+  const node=f.win.document.querySelector('article');node.removeAttribute('data-search-message-id');node.dataset.notificationQuestionId='question_current';
+  await f.reader.tick();f.advance(700);f.hide(true);await f.reader.tick();assert.equal(f.calls.length,0);
+  f.hide(false);await f.reader.tick();f.advance(700);await f.reader.tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(f.calls[0][1].body)),{botId:'bot_atlas',messageIds:[],questionId:'question_current'});
+  f.context.run.pending_controls=[{kind:'question',prompt_id:'question_new'}];f.advance(700);await f.reader.tick();assert.equal(f.calls.length,1,'an obsolete card cannot acknowledge a newer question');
+});
+
+test('progress text cannot acknowledge a final-reply notification',async t=>{
+  const f=fixture(t);f.context.messages[0].kind='progress';await f.reader.tick();f.advance(700);await f.reader.tick();assert.equal(f.calls.length,0);
+});
 test('hidden, unfocused, idle, covered, partial, offscreen and mismatched chats cannot acknowledge replies',async t=>{
   for(const kind of ['hidden','blur','idle','dialog','partial','offscreen','wrong-chat','signed-out']){
     const f=fixture(t);await f.reader.tick();f.advance(700);
