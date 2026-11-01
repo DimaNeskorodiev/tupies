@@ -37,12 +37,12 @@ export function verifierDiagnosticLog(text,passed){
   if(passed)return text.slice(-4096);
   const failure=text.search(/^\s*not ok /m);return failure<0?text.slice(-4096):(text.slice(failure,failure+3400)+'\n… final summary …\n'+text.slice(-600)).slice(0,4096);
 }
-async function command(name,exe,args){
+async function command(name,exe,args,{cwd=WORK,timeoutMs=600000}={}){
   const started=Date.now();return new Promise(resolve=>{
-    const child=spawn(exe,args,{cwd:WORK,env:{PATH:'/usr/local/bin:/usr/bin:/bin',TUPIES_BUILD_WEB_ONLY:'1',TMPDIR:'/tmp',LANG:'C.UTF-8'},shell:false,detached:true,stdio:['ignore','pipe','pipe']});
+    const child=spawn(exe,args,{cwd,env:{PATH:'/usr/local/bin:/usr/bin:/bin',TUPIES_BUILD_WEB_ONLY:'1',TMPDIR:'/tmp',LANG:'C.UTF-8'},shell:false,detached:true,stdio:['ignore','pipe','pipe']});
     let text='',bytes=0,failure=false;
     const kill=()=>{failure=true;try{process.kill(-child.pid,'SIGKILL');}catch{}};
-    const timer=setTimeout(kill,600000);
+    const timer=setTimeout(kill,timeoutMs);
     for(const stream of [child.stdout,child.stderr])stream.on('data',chunk=>{bytes+=chunk.length;if(bytes>4000000)kill();else text+=chunk.toString('utf8');});
     child.once('error',()=>{failure=true;});
     child.once('close',code=>{clearTimeout(timer);const result={name,exitCode:Number.isInteger(code)?code:1,passed:code===0&&!failure,durationMs:Date.now()-started,log:''};
@@ -63,8 +63,9 @@ export async function verifierMain(){
     const candidate=await verifyEngineCandidate(bundle.proposal.candidate.request,{root:BASE});
     if(candidate.patch!==bundle.proposal.patch||workshopDigest(candidate.base)!==workshopDigest(bundle.proposal.candidate.base))throw new Error('Exported edits or base hashes do not match the immutable image.');
     const {BrowserSession}=await import(pathToFileURL(BASE+'/lib/browser.mjs'));
-    const browser=await BrowserSession.start({executable:'/usr/bin/chromium',profileRoot:'/tmp/verifier-browser-probe',noSandbox:false});
-    await browser.close();await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
+    try{const browser=await BrowserSession.start({executable:'/usr/bin/chromium',profileRoot:'/tmp/verifier-browser-probe',noSandbox:false});await browser.close();}
+    catch(error){const diagnostic=await command('browser-diagnostic','/usr/bin/chromium',['--headless=new','--no-first-run','--disable-background-networking','--disable-extensions','--user-data-dir=/tmp/verifier-browser-diagnostic','--dump-dom','about:blank'],{cwd:'/tmp',timeoutMs:15000});throw new Error(error.message+' '+diagnostic.log.slice(-400));}
+    await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
     await fs.cp(BASE,WORK,{recursive:true,verbatimSymlinks:true,errorOnExist:true,force:false});
     for(const change of candidate.request.changes)await fs.writeFile(path.join(WORK,change.path),candidate.files[change.path]);
     const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-control.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
