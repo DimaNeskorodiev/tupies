@@ -37,9 +37,10 @@ export function verifierDiagnosticLog(text,passed){
   if(passed)return text.slice(-4096);
   const failure=text.search(/^\s*not ok /m);return failure<0?text.slice(-4096):(text.slice(failure,failure+3400)+'\n… final summary …\n'+text.slice(-600)).slice(0,4096);
 }
-async function command(name,exe,args,{cwd=WORK,timeoutMs=600000}={}){
+async function command(name,exe,args,{cwd=WORK,timeoutMs=600000,input}={}){
   const started=Date.now();return new Promise(resolve=>{
-    const child=spawn(exe,args,{cwd,env:{PATH:'/usr/local/bin:/usr/bin:/bin',TUPIES_BUILD_WEB_ONLY:'1',TMPDIR:'/tmp',LANG:'C.UTF-8'},shell:false,detached:true,stdio:['ignore','pipe','pipe']});
+    const child=spawn(exe,args,{cwd,env:{PATH:'/usr/local/bin:/usr/bin:/bin',TUPIES_BUILD_WEB_ONLY:'1',TMPDIR:'/tmp',LANG:'C.UTF-8'},shell:false,detached:true,stdio:['pipe','pipe','pipe']});
+    child.stdin.on('error',()=>{});child.stdin.end(input);
     let text='',bytes=0,failure=false;
     const kill=()=>{failure=true;try{process.kill(-child.pid,'SIGKILL');}catch{}};
     const timer=setTimeout(kill,timeoutMs);
@@ -68,6 +69,11 @@ export async function verifierMain(){
     await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
     await fs.cp(BASE,WORK,{recursive:true,verbatimSymlinks:true,errorOnExist:true,force:false});
     for(const change of candidate.request.changes){const target=path.join(WORK,change.path);await fs.mkdir(path.dirname(target),{recursive:true});await fs.writeFile(target,candidate.files[change.path]);}
+    // Exercise the real restricted worker before the suite, retaining its startup cause.
+    const {default:sharp}=await import(pathToFileURL(BASE+'/node_modules/sharp/lib/index.js'));
+    const pixel=await sharp({create:{width:16,height:16,channels:3,background:'#e02020'}}).png().toBuffer();
+    const worker=await command('document-worker-preflight',process.execPath,['--max-old-space-size=256','--experimental-permission','--allow-addons',...['lib','node_modules','assets/fonts','package.json'].map(name=>'--allow-fs-read='+path.join(WORK,name)),path.join(WORK,'lib/document-worker.mjs')],{input:JSON.stringify({operation:'image',data:pixel.toString('base64')})});
+    if(!worker.passed)throw new Error('Restricted document worker: '+worker.log.replace(/^.*ExperimentalWarning.*$/gm,'').replace(/^.*Use `node.*$/gm,'').trim().slice(0,460));
     const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-control.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
     const rest=(await collectVerifierTests(WORK)).filter(name=>!sequential.some(file=>name==='test/'+file));
     const checks=[['syntax',process.execPath,['scripts/check.mjs']],['tests-sequential',process.execPath,['--test','--test-reporter=tap','--test-concurrency=1',...sequential.map(name=>'test/'+name)]],['tests-concurrent',process.execPath,['--test','--test-reporter=tap','--test-concurrency=4',...rest]],['build','/usr/local/bin/npm',['run','build']]];
