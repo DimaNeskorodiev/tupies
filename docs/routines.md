@@ -76,7 +76,15 @@ In `mode:"report"`, the engine renders `report`, such as `"New records: {{fresh}
 
 Seen-item markers commit only after the entire task succeeds, including an optional report save. Failed analysis or saving does not consume the candidates. Items beyond `select.limit` remain eligible for later runs. The engine keeps up to 2000 recent key hashes per select step; this bounded cursor is not a permanent archive. Changing the saved workflow invalidates its cursor.
 
-Workflows allow up to 16 steps, 1000 source items and 100 selected items per select step, with 64 KiB of combined results. Oversize or truncated data fails instead of silently losing items. Saved steps do not run shell, JavaScript, arbitrary scripts or source-selected tools. Open-ended research, changing page layouts, authentication and CAPTCHA still need the appropriate agent/browser workflow; the saved procedure does not solve them automatically.
+Workflows allow up to 16 steps, 1000 source items and 100 selected items per select step, with 64 KiB of combined results. Oversize or truncated data fails instead of silently losing items. Fetch/read steps cannot select executable code or tools from source content. Open-ended research, changing page layouts, authentication and CAPTCHA still need the appropriate agent/browser workflow.
+
+## Reuse a registered script
+
+The bot profile's **Scripts → Use in routine** opens an unsaved, paused routine preset for that exact registered revision. Review the literal argument list and save the routine. The saved step is `{ "id":"script", "op":"script", "scriptId":"summarize-expenses", "digest":"<exact 64-character digest from Scripts>", "args":[], "timeoutMs":120000 }`. The digest above is a placeholder; use the inspected actual version. A changed or incomplete source package is refused before dispatch and needs review and registration before updating the routine.
+
+Each occurrence calls `scripts_run` through the same task, tool-capability and exact owner-approval path. Saving a schedule does not grant unattended recurring code execution. The bot needs Files and Terminal; missing access is not enabled automatically. The result includes the real process status, exit code, redacted `stdout` and `stderr`, timeout and truncation flags. Only successful, complete output can feed later JSON/select steps or an agent/model-free report. Refer to `{{script.stdout}}` for just the text output. Failed, stopped, timed-out or truncated execution does not become a successful preparation result.
+
+The existing checkpoint rules retain successful preparation steps for that task. Recovery never blindly repeats an uncertain command; a later scheduled occurrence is a new run and needs its own approval. See [Workspaces and scripts](workspaces.md) for package naming, source manifests, dependency and sync boundaries.
 
 ## Research behind the design
 

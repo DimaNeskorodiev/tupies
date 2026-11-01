@@ -129,6 +129,45 @@ test('result aggregation and template expansion refuse size overflow without cli
   await assert.rejects(prepareRoutineWorkflow({version:1,mode:'report',steps:[{id:'a',op:'read',path:'a.txt'}],report:'{{a.content}}{{a.content}}'},{callTool:async()=>({content,truncated:false})}),/Rendered output exceeds/);
 });
 
+const scriptStep=(extra={})=>({id:'collect',op:'script',scriptId:'collect-fixture',digest:'a'.repeat(64),args:['literal input'],...extra});
+const scriptResult=(extra={})=>({scriptId:'collect-fixture',digest:'a'.repeat(64),status:'completed',exitCode:0,stdout:'{"count":3}',stderr:'',timedOut:false,truncated:false,...extra});
+
+test('routine script references pin one revision and literal arguments without granting arbitrary commands',()=>{
+  const source={version:1,steps:[scriptStep()]},spec=validateRoutineWorkflow(source);
+  assert.deepEqual(spec.steps[0],scriptStep({timeoutMs:120000}));
+  source.steps[0].args.push('changed');assert.deepEqual(spec.steps[0].args,['literal input']);
+  assert.ok(Object.isFrozen(spec.steps[0].args));
+  for(const change of [{scriptId:'../escape'},{scriptId:'UPPER'},{scriptId:'1name'},{scriptId:'name--gap'},{digest:'latest'},{digest:'b'.repeat(63)},{args:['{{earlier.stdout}}']},{args:['bad\0argument']},{args:[1]},{args:Array(31).fill('literal')},{timeoutMs:99},{timeoutMs:1800001},{executable:'python3'},{env:{TOKEN:'fixture'}},{cwd:'scripts/other'}])assert.throws(()=>validateRoutineWorkflow({version:1,steps:[scriptStep(change)]}));
+});
+
+test('routine scripts use the admitted execution tool and successful stdout feeds deterministic JSON reports',async()=>{
+  const calls=[],checkpoints=[],spec={version:1,mode:'report',steps:[scriptStep(),{id:'parsed',op:'json',from:'collect',path:'stdout'}],report:'Count: {{parsed.count}}'};
+  const result=await prepareRoutineWorkflow(spec,{callTool:async(name,args)=>{calls.push({name,args});return scriptResult();},checkpoint:entry=>checkpoints.push(entry)});
+  assert.deepEqual(calls,[{name:'scripts_run',args:{scriptId:'collect-fixture',digest:'a'.repeat(64),args:['literal input'],timeoutMs:120000}}]);
+  assert.equal(result.output,'Count: 3');assert.deepEqual(checkpoints.map(entry=>entry.op),['script','json']);
+  assert.deepEqual(result.state.seen,{});
+});
+
+test('routine script failures never checkpoint a successful prefix or consume selection state',async()=>{
+  const spec={version:1,steps:[scriptStep()]};
+  for(const change of [{exitCode:7},{timedOut:true},{truncated:true},{status:'running'},{status:'interrupted'},{stdout:undefined},{scriptId:'another-script'},{digest:'b'.repeat(64)},{error:'Execution denied',outcome:'not_started'}]) {
+    const checkpoints=[],result=scriptResult(change);if(Object.hasOwn(change,'stdout') && change.stdout===undefined)delete result.stdout;
+    await assert.rejects(prepareRoutineWorkflow(spec,{callTool:async()=>result,checkpoint:entry=>checkpoints.push(entry)}),/complete successful result/);
+    assert.deepEqual(checkpoints,[]);
+  }
+});
+
+test('a completed routine script prefix reuses only its exact revision evidence without replaying execution',async()=>{
+  const spec={version:1,mode:'report',steps:[scriptStep(),{id:'parsed',op:'json',from:'collect',path:'stdout'}],report:'Count: {{parsed.count}}'};
+  const checkpoints=[];
+  const resumed=await prepareRoutineWorkflow(spec,{results:{collect:scriptResult()},callTool:()=>assert.fail('completed execution must never be replayed'),checkpoint:entry=>checkpoints.push(entry.stepId)});
+  assert.equal(resumed.output,'Count: 3');assert.deepEqual(checkpoints,['parsed']);
+  await assert.rejects(prepareRoutineWorkflow(spec,{results:{collect:scriptResult({digest:'b'.repeat(64)})},callTool:()=>assert.fail('mismatched evidence must not run')}),/exact revision/);
+  const controller=new AbortController(),saved=[];
+  await assert.rejects(prepareRoutineWorkflow(spec,{signal:controller.signal,callTool:async()=>{controller.abort(new Error('stopped after execution'));return scriptResult();},checkpoint:entry=>saved.push(entry)}),/stopped after execution/);
+  assert.deepEqual(saved,[]);
+});
+
 test('saved cursor accepts only bounded engine-owned digests for known select steps',async()=>{
   const spec=feed(),state={version:1,workflowDigest:workflowDigest(spec),seen:{fresh:['not-a-digest']}};
   await assert.rejects(prepareRoutineWorkflow(spec,{callTool:adapter(items),previousState:state}),/Saved seen state/);

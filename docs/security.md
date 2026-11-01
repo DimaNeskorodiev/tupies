@@ -127,3 +127,11 @@ Only one engine runs routines and messaging channels, and only the home server r
 ## Local coding connections
 
 Mac coding workers are optional trusted host processes with exact nested tool approvals. Restricted Claude startup disables project/user hooks, plugins and MCP setup. Existing account mode is explicit and references configuration without copying credentials; Azure credentials stay sealed and never enter the worker environment. Local-only setup uses proxy-aware client addresses. Publication intent is recorded before a push/PR and uncertain outcomes are never replayed. See [local coding](local-coding.md).
+
+## Material learning storage
+
+Native study intake uses engine-owned `study-staging/` and `study-jobs/` under the runtime data directory, outside bot workspaces and workspace sync. Source parsers run in bounded inert workers; their filesystem permission boundary excludes account state and workspaces. Image/PDF rendering uses bundled dependencies. The study model receives bounded source segments without action tools. Source statements, citations, learned notes and skill proposals cannot grant permissions.
+
+Complete verified studies remove temporary originals and full extracts by default. Failed, stopped and incomplete studies have a seven-day recovery deadline; cleanup runs on the next engine tick or startup after that deadline. The engine removes only its verified owned staging, preserving saved knowledge and owner files. An explicit Keep a local source copy choice opts that job out of temporary expiry. These engine-local bytes and retained Brain notes are plaintext local data, covered by the same independent backup protection as other workspace content. Stopped source intake is cancellable.
+
+Managed Brain knowledge is eligible for retrieval only when its active manifest matches the bot, note identity and actual note hash. Ordinary file/document tools cannot write its control manifest. Corrections and rollback publish concrete hash-bound revisions and preserve newer edits. Imported or edited Markdown alone cannot activate a managed revision. A source-derived Skill remains a pending proposal; acceptance rechecks the source knowledge revision and never enables Terminal or executes scripts.

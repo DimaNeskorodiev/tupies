@@ -111,7 +111,7 @@ const overview={folder:'brain',total:3,indexed:3,skipped:0,truncated:false,links
 const acmeNote={path:'projects/acme.md',workspacePath:'brain/projects/acme.md',title:'Acme <img src=x onerror=alert(1)>',folder:'projects',type:'project',tags:['project/acme','launch'],aliases:[],created:'2026-10-01T10:00:00Z',updated:time,size:90,content:'Ship it with [[Ada Lovelace|Ada]] and [[Missing note]]. #launch <script>window.hacked=1</script>\n\n`[[code]]`',truncated:false,links:[{target:'Ada Lovelace',path:'people/Ada Lovelace.md'},{target:'Missing note',path:null}],backlinks:['people/Ada Lovelace.md'],indexed:true};
 const adaNote={...acmeNote,path:'people/Ada Lovelace.md',workspacePath:'brain/people/Ada Lovelace.md',title:'Ada Lovelace',folder:'people',type:undefined,tags:[],content:'Leads [[acme]].',links:[{target:'acme',path:'projects/acme.md'}],backlinks:['daily/2026-10-26.md','projects/acme.md']};
 
-function ui(t,{hash='#/bots/bot_atlas',tools,rich=false,brain=overview}={}){
+function ui(t,{hash='#/bots/bot_atlas',tools,rich=false,brain=overview,workspace=null,scripts=[]}={}){
   const dom=new JSDOM('<!doctype html><main id="main-content"></main><div id="dialog-root"></div>',{url:`http://studio.local/${hash}`,runScripts:'outside-only'});
   const win=dom.window,doc=win.document,context=dom.getInternalVMContext(),requests=[],toasts=[],calls=[],state={memoryStatus:200};
   if(rich)vm.runInContext(richSource,context,{filename:'rich-content.js'});
@@ -133,14 +133,21 @@ function ui(t,{hash='#/bots/bot_atlas',tools,rich=false,brain=overview}={}){
     if(route==='/api/bots/bot_atlas/proposals')return {proposals:structuredClone(state.proposals||[]),pending:(state.proposals||[]).filter(item=>item.status==='pending').length};
     if(url.pathname.startsWith('/api/bots/bot_atlas/proposals/')&&options.method==='POST'){if(state.decideError)throw state.decideError;const [,,,,,proposalId,decision]=url.pathname.split('/');const item=state.proposals.find(entry=>entry.id===proposalId);Object.assign(item,{status:{accept:'accepted',reject:'rejected',undo:'undone'}[decision],decidedAt:time,undoable:decision==='accept'});return {proposal:structuredClone(item)};}
     if(route==='/api/bots/bot_atlas/brain')return structuredClone(brain);
+    if(route==='/api/bots/bot_atlas/workspace'){
+      if(!workspace)throw Object.assign(new Error('Workspace categories unavailable.'),{status:404});
+      if(options.method==='POST'){if(state.workspaceStatus===409)throw Object.assign(new Error('Wait for this bot and its team task before changing its workspace.'),{status:409});workspace={...workspace,folders:workspace.folders.map(folder=>({...folder,status:folder.status==='missing'?'ready':folder.status}))};}
+      return structuredClone(workspace);
+    }
+    if(route==='/api/bots/bot_atlas/scripts')return {scripts:structuredClone(state.scripts||scripts),truncated:Boolean(state.scriptsTruncated)};
+    if(url.pathname.startsWith('/api/bots/bot_atlas/scripts/')){if(state.scriptError)throw new Error(state.scriptError);const found=(state.scripts||scripts).find(script=>script.id===decodeURIComponent(url.pathname.split('/').at(-1)));if(!found)throw new Error('Script not found.');return structuredClone(found);}
     if(url.pathname==='/api/bots/bot_atlas/brain/note'){const target=url.searchParams.get('path');if(['projects/acme.md','projects/acme'].includes(target))return structuredClone(acmeNote);if(['people/Ada Lovelace.md','Ada'].includes(target))return structuredClone(adaNote);throw Object.assign(new Error('Note not found.'),{status:404});}
-    if(url.pathname==='/api/bots/bot_atlas/files'){const folder=url.searchParams.get('path');return folder?{path:folder,files:[{name:'file_0123456789abcdef01-brief.pdf',path:'uploads/file_0123456789abcdef01-brief.pdf',kind:'file',size:2048,updatedAt:time}]}:{path:'',files:[{name:'.studio-temp.tmp',path:'.studio-temp.tmp',kind:'file',size:1,updatedAt:time},{name:'brain',path:'brain',kind:'directory',updatedAt:time},{name:'uploads',path:'uploads',kind:'directory',updatedAt:time},{name:'report.pdf',path:'report.pdf',kind:'file',size:120000,updatedAt:time},{name:'notes.txt',path:'notes.txt',kind:'file',size:12,updatedAt:time},{name:'data.bin',path:'data.bin',kind:'file',size:3,updatedAt:time},{name:'loop',path:'loop',kind:'blocked-symlink',updatedAt:time}]};}
+    if(url.pathname==='/api/bots/bot_atlas/files'){const folder=url.searchParams.get('path');if(state.fileLists&&Object.hasOwn(state.fileLists,folder))return {path:folder,files:structuredClone(state.fileLists[folder])};return folder?{path:folder,files:[{name:'file_0123456789abcdef01-brief.pdf',path:'uploads/file_0123456789abcdef01-brief.pdf',kind:'file',size:2048,updatedAt:time}]}:{path:'',files:[{name:'.studio-temp.tmp',path:'.studio-temp.tmp',kind:'file',size:1,updatedAt:time},{name:'brain',path:'brain',kind:'directory',updatedAt:time},{name:'uploads',path:'uploads',kind:'directory',updatedAt:time},{name:'report.pdf',path:'report.pdf',kind:'file',size:120000,updatedAt:time},{name:'notes.txt',path:'notes.txt',kind:'file',size:12,updatedAt:time},{name:'data.bin',path:'data.bin',kind:'file',size:3,updatedAt:time},{name:'loop',path:'loop',kind:'blocked-symlink',updatedAt:time}]};}
     throw new Error(`Unexpected request ${route}`);
   };
   const botById=id=>data.bots.find(bot=>bot.id===id);
   const ctx={data,api,esc:escape,icon:name=>`<svg data-icon="${name}"></svg>`,avatar:(bot,size)=>`<span class="avatar ${size}" data-avatar="${escape(bot.id)}"></span>`,botById,botStatus:()=>state.status||{text:'Ready',className:'ready'},statusPill:()=>'<span class="status-pill ready">Ready</span>',
     relative:()=>'2h ago',timeLabel:()=>'10:00',shortDate:()=>'Oct 1',toast:(message,error)=>toasts.push([message,Boolean(error)]),errorText:error=>error?.message||'Something went wrong.',openDialog(){},closeDialog(){},
-    documentPreview:async(...args)=>{calls.push(['preview',...args]);},fileEditor:async(...args)=>{calls.push(['editor',...args]);},previewFormats:/\.(?:pdf|docx|pptx|xlsx|csv|md|markdown|png|jpe?g|webp)$/i,navigate(){},route:()=>({view:'bots',id:'bot_atlas'})};
+    documentPreview:async(...args)=>{calls.push(['preview',...args]);},fileEditor:async(...args)=>{calls.push(['editor',...args]);},openBotDraft:(...args)=>calls.push(['draft',...args]),routineDialog:(...args)=>calls.push(['routine',...args]),previewFormats:/\.(?:pdf|docx|pptx|xlsx|csv|md|markdown|png|jpe?g|webp)$/i,navigate(){},route:()=>({view:'bots',id:'bot_atlas'})};
   const root=doc.querySelector('#main-content');
   const show=async()=>{root.innerHTML=win.StudioBotProfile.render(ctx,'bot_atlas');win.StudioBotProfile.mount(ctx,'bot_atlas',root);await settled();};
   const click=async element=>{assert.ok(element,'missing element');element.dispatchEvent(new win.MouseEvent('click',{bubbles:true,cancelable:true}));await settled();};
@@ -157,7 +164,7 @@ test('the overview shows a calm summary and keeps cached counts across app re-re
   assert.match(settings.querySelector('summary').textContent,/Configuration summary/);
   assert.ok(settings.querySelector('[data-profile-action="tab"][data-tab="settings"]'));
   assert.equal(settings.querySelector('[data-action="toggle-bot-hidden"]'),null);
-  assert.deepEqual(h.$$('[role=tab]').map(tab=>[tab.dataset.tab,tab.getAttribute('aria-selected')]),[['overview','true'],['settings','false'],['brain','false'],['memory','false'],['learning','false'],['files','false']]);
+  assert.deepEqual(h.$$('[role=tab]').map(tab=>[tab.dataset.tab,tab.getAttribute('aria-selected')]),[['overview','true'],['settings','false'],['brain','false'],['memory','false'],['learning','false'],['files','false'],['scripts','false']]);
   assert.deepEqual(h.requests.map(item=>item.path).sort(),['/api/bots/bot_atlas/brain','/api/bots/bot_atlas/files?path=','/api/bots/bot_atlas/memory','/api/bots/bot_atlas/proposals','/api/bots/bot_atlas/runs']);
   assert.deepEqual(h.$$('.bp-stat strong').map(node=>node.textContent),['2','3','6','2h ago']);
   assert.match(h.text('.bp-stats'),/1 pinned/);
@@ -292,6 +299,59 @@ test('files browse folders, hide dotfiles, route previews and point the notes fo
   await h.click(h.$('[data-profile-action=new-file]'));assert.deepEqual(h.calls.at(-1),['editor','bot_atlas','uploads',true]);
   await h.click(h.$('.bp-crumbs [data-profile-action=folder][data-path=""]'));
   await h.click(h.$('.bp-file.is-brain'));assert.equal(h.win.location.hash,'#/bots/bot_atlas/brain');assert.ok(h.$('.bp-graph'));
+});
+
+const workspaceFixture={version:1,memory:{kind:'collection',label:'Memory'},folders:[
+  {path:'brain',label:'Brain',description:'Linked long-term knowledge.',status:'ready'},
+  {path:'documents',label:'Documents',description:'Original source documents.',status:'ready'},
+  {path:'scripts',label:'Scripts',description:'Reusable script packages.',status:'missing'},
+  {path:'notes',label:'Notes',description:'Working notes.',status:'blocked'},
+  {path:'.tmp',label:'Temporary',description:'Temporary files.',status:'missing'},
+]};
+const scriptFixture={id:'research-brief',title:'Research <img src=x onerror=bad()> brief',purpose:'Collect source notes & prepare a reusable brief.',interpreter:'python3',entrypoint:'scripts/research-brief/main.py',digest:'a'.repeat(64),manifestSha256:'b'.repeat(64),status:'registered',runtimeAvailable:true,dependencies:['python3'],inputs:[{name:'source',type:'path',description:'A local source document'}],outputs:['outputs/brief.md'],files:[{path:'scripts/research-brief/main.py',relativePath:'main.py',sha256:'c'.repeat(64),size:250}]};
+
+test('workspace categories keep Memory native and existing document paths accessible; initialization handles busy refusals',async t=>{
+  const h=ui(t,{hash:'#/bots/bot_atlas/files',workspace:structuredClone(workspaceFixture)});
+  h.state.fileLists={'':[{name:'brain',path:'brain',kind:'directory'},{name:'documents',path:'documents',kind:'directory'},{name:'legacy-project',path:'legacy-project',kind:'directory'},{name:'notes',path:'notes',kind:'file',size:12}],documents:[{name:'original-strategy.pdf',path:'documents/original-strategy.pdf',kind:'file',size:2048}]};
+  await h.show();
+  assert.equal(h.$$('.bp-workspace-card').length,5,'Memory is a virtual native card, while the hidden temporary folder stays hidden');
+  const memory=h.$('.bp-workspace-card[data-tab=memory]');assert.match(memory.textContent,/Core memory/);assert.equal(memory.hasAttribute('data-path'),false);
+  assert.equal(h.$('.bp-workspace-card[data-path=notes]').disabled,true);assert.match(h.text('.bp-limit'),/existing file or link/);
+  assert.ok(h.$('.bp-files [data-path="legacy-project"]'),'custom existing folders stay available');
+  assert.ok(h.$('.bp-files a[href$="path=notes"]'),'a file colliding with a category remains downloadable');
+  h.state.workspaceStatus=409;await h.click(h.$('[data-profile-action=initialize-workspace]'));
+  assert.match(h.text('[role=status]'),/working on a task/);assert.equal(h.$('[data-profile-action=initialize-workspace]').disabled,false);
+  h.state.workspaceStatus=200;await h.click(h.$('[data-profile-action=initialize-workspace]'));
+  assert.match(h.text('#bp-panel'),/Existing files were kept in place/);
+  assert.deepEqual(h.requests.filter(request=>request.method==='POST').map(request=>request.path),['/api/bots/bot_atlas/workspace','/api/bots/bot_atlas/workspace']);
+  await h.click(h.$('.bp-workspace-card[data-path=documents]'));
+  assert.ok(h.requests.some(request=>request.path==='/api/bots/bot_atlas/files?path=documents'));
+  assert.equal(h.$('.bp-files a[download]').getAttribute('href'),'/api/bots/bot_atlas/files/download?path=documents%2Foriginal-strategy.pdf');
+  await h.click(h.$('.bp-crumbs [data-path=""]'));await h.click(h.$('.bp-workspace-card[data-tab=memory]'));
+  assert.equal(h.win.location.hash,'#/bots/bot_atlas/memory');assert.ok(h.$('.bp-fact'));
+  assert.ok(!h.requests.some(request=>/files\?path=memory/.test(request.path)));
+});
+
+test('Scripts inspects escaped purpose and files, validates literal arguments and only prepares owner chat/routine drafts',async t=>{
+  const h=ui(t,{hash:'#/bots/bot_atlas/scripts',tools:['workspace','terminal'],scripts:[structuredClone(scriptFixture)]});await h.show();
+  assert.equal(h.$('#bp-tab-scripts').getAttribute('aria-selected'),'true');assert.match(h.text('.bp-script-list'),/Collect source notes & prepare/);assert.equal(h.doc.querySelector('img'),null);
+  await h.click(h.$('[data-profile-action=inspect-script]'));
+  assert.equal(h.requests.at(-1).path,'/api/bots/bot_atlas/scripts/research-brief');
+  assert.match(h.text('.bp-script-detail'),/A local source document/);assert.match(h.text('.bp-script-detail'),/outputs\/brief.md/);
+  await h.click(h.$('[data-profile-action=script-file]'));assert.deepEqual(h.calls.at(-1),['editor','bot_atlas','scripts/research-brief/main.py']);
+  h.$('#bp-script-args').value='[42]';await h.click(h.$('[data-profile-action=script-chat]'));assert.match(h.text('.bp-form-error'),/literal string arguments/);assert.ok(!h.calls.some(call=>call[0]==='draft'));
+  const field=h.$('#bp-script-args');field.value='["--source", "data/facts.csv"]';field.dispatchEvent(new h.win.Event('input',{bubbles:true}));await h.show();assert.equal(h.$('#bp-script-args').value,'["--source", "data/facts.csv"]');
+  await h.click(h.$('[data-profile-action=script-chat]'));const draft=h.calls.at(-1);assert.equal(draft[0],'draft');assert.equal(draft[1],'bot_atlas');assert.match(draft[2],/scripts_run/);assert.ok(draft[2].includes(scriptFixture.digest));assert.ok(draft[2].includes('data/facts.csv'));
+  await h.click(h.$('[data-profile-action=script-routine]'));const preset=h.calls.at(-1);assert.equal(preset[0],'routine');assert.equal(preset[2],'bot_atlas');assert.equal(preset[3].enabled,false);assert.deepEqual(JSON.parse(JSON.stringify(preset[3].workflow.steps)),[{id:'script',op:'script',scriptId:'research-brief',digest:scriptFixture.digest,args:['--source','data/facts.csv'],timeoutMs:120000}]);assert.equal(preset[3].workflow.mode,'agent');
+  assert.ok(h.requests.every(request=>request.method==='GET'),'inspection and drafting do not dispatch a run or create a routine');
+});
+
+test('Scripts preserves restricted tool sets and blocks unregistered, changed or unavailable packages',async t=>{
+  const restricted=ui(t,{hash:'#/bots/bot_atlas/scripts',tools:[],scripts:[structuredClone(scriptFixture)]});await restricted.show();await restricted.click(restricted.$('[data-profile-action=inspect-script]'));
+  assert.match(restricted.text('.bp-script-detail'),/requires Files and Terminal/);assert.equal(restricted.$('[data-profile-action=script-chat]').disabled,true);assert.equal(restricted.$('[data-profile-action=script-routine]').disabled,true);assert.deepEqual(restricted.data.bots[0].tools,[]);
+  const changed=ui(t,{hash:'#/bots/bot_atlas/scripts',tools:['workspace','terminal'],scripts:[{...structuredClone(scriptFixture),status:'changed',error:'Source <script>changed</script>.'}]});await changed.show();await changed.click(changed.$('[data-profile-action=inspect-script]'));
+  assert.match(changed.text('.bp-script-detail'),/Files changed/);assert.equal(changed.$('[data-profile-action=script-chat]').disabled,true);assert.equal(changed.doc.querySelector('script'),null);
+  changed.state.scriptError='Inspection unavailable.';await changed.click(changed.$('[data-profile-action=inspect-script]'));assert.match(changed.text('.bp-script-detail'),/Inspection unavailable/);assert.ok(changed.$('[data-profile-action=retry-script]'));
 });
 
 /* Learning */
