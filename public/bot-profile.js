@@ -161,7 +161,7 @@ function mount(context,botId,root){
   const v=view(botId);after(page,v);load(bot,v);
 }
 function hero(bot){
-  const intro=bot.description?esc(bot.description):'Ready to help with your next task.';
+  const intro=bot.description?esc(bot.description):'Here to help with your next task.';
   return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button><button class="secondary-button bp-configure" data-profile-action="tab" data-tab="settings" aria-label="Bot settings" title="Bot settings">${icon('sliders')}<span>Settings</span></button></div></header>`;
 }
 function tabs(bot,v){
@@ -235,7 +235,7 @@ function overviewPanel(bot,v){
   const pinned=v.memory?.filter(entry=>entry.pinned).length||0,linkCount=v.brain?.notes.reduce((sum,note)=>sum+note.links.length,0)||0,newest=visible?.map(item=>item.updatedAt).filter(Boolean).sort().at(-1);
   const status=ctx.botStatus(bot),runWords={completed:'Finished its last task',failed:'Last task failed',cancelled:'Last task was stopped',interrupted:'Last task was interrupted'}[run?.status];
   const tile=(ico,label,value,detail,tab)=>`<${tab?`button type="button" data-profile-action="tab" data-tab="${tab}"`:'div'} class="glass-card bp-stat">${icon(ico)}<span>${label}</span><strong>${value}</strong><small>${detail}</small></${tab?'button':'div'}>`;
-  const stats=`<div class="bp-stats">${tile('pin','Memory',v.memory?v.memory.length:'…',v.memory?(pinned?`${pinned} pinned`:'Core facts'):v.memoryError?'Unavailable':'Loading','memory')}${tile('brain','Notes',v.brain?v.brain.total:'…',v.brain?plural(linkCount,'link'):v.brainError?'Unavailable':'Loading','brain')}${tile('folder','Files',visible?visible.length:'…',visible?(newest?`Updated ${esc(ctx.relative(newest))}`:'In its workspace'):v.files.get('')?.error?'Unavailable':'Loading','files')}${tile('clock','Last active',last?esc(ctx.relative(last)):'Not yet',esc(status.className.startsWith('working')?status.text:runWords||'Ready when you are'))}</div>`;
+  const stats=`<div class="bp-stats">${tile('pin','Memory',v.memory?v.memory.length:'…',v.memory?(pinned?`${pinned} pinned`:'Core facts'):v.memoryError?'Unavailable':'Loading','memory')}${tile('brain','Notes',v.brain?v.brain.total:'…',v.brain?plural(linkCount,'link'):v.brainError?'Unavailable':'Loading','brain')}${tile('folder','Files',visible?visible.length:'…',visible?(newest?`Updated ${esc(ctx.relative(newest))}`:'In its workspace'):v.files.get('')?.error?'Unavailable':'Loading','files')}${tile('clock','Last active',last?esc(ctx.relative(last)):'Not yet',esc(status.className.startsWith('working')?status.text:runWords||'Start a conversation'))}</div>`;
   const row=(label,value)=>`<div class="bp-row"><dt>${label}</dt><dd>${value}</dd></div>`;
   const strict=bot.approvalPolicy==='strict',groups=groupsOf(bot),chips=items=>`<div class="bp-chips">${items.join('')}</div>`;
   const skills=(bot.skills||[]).map(id=>(data.skills||[]).find(skill=>skill.id===id)?.name||id),integrations=(bot.integrationIds||[]).map(id=>(data.integrations||[]).find(item=>item.id===id)?.name).filter(Boolean);

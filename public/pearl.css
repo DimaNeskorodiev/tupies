@@ -223,6 +223,10 @@ body.pearl-studio {
 .pearl-studio .segment.active > span { color: var(--ink); background: rgba(111, 145, 191, .1); }
 .pearl-studio .status-pill { color: var(--muted); background: var(--pearl-soft); border-color: var(--pearl-border); font-size: 11px; padding: 5px 10px; font-weight: 450; }
 .pearl-studio .status-pill.ready { color: #337451; background: rgba(231, 246, 236, .82); }
+.pearl-studio .bot-favorite { flex: 0 0 44px; width: 44px; height: 44px; color: var(--text-muted, #737984); }
+.pearl-studio .bot-favorite.is-favorite { color: var(--ios-blue, #2860c2); }
+.pearl-studio .bot-favorite.is-favorite svg { fill: currentColor; }
+.pearl-studio .bot-favorite:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
 .pearl-studio :is(.status-pill.working, .status-pill.attention) { color: #91521c; background: rgba(255, 231, 196, .65); }
 .pearl-studio .status-pill.error { color: #a3443d; background: rgba(255, 229, 226, .8); }
 
