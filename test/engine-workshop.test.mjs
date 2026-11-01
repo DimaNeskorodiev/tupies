@@ -123,3 +123,13 @@ test('custom runtime directories inside the source tree and nested node_modules 
   await assert.rejects(tools.execute(bot,'engine_candidate_build',{title:'Blocked',summary:'Must not read runtime files',changes:[{path:'lib/runtime/new.mjs',sha256:null,oldText:'',newText:'export const value=1;'}],dependencies:[],tests:[]}),/Runtime data/);
   await store.queue;
 });
+
+test('new nested candidates preserve absent live directories and refuse linked or non-directory ancestors',async t=>{
+  const f=await fixture(t),name='lib/new/nested/add.mjs';
+  const args={...f.args,changes:[{path:name,sha256:null,oldText:'',newText:'export const add=x=>x+2;'}],tests:[{path:name,exportName:'add',input:40,expected:42}]};
+  assert.equal((await f.build(args)).verification.tests[0].passed,true);
+  await assert.rejects(fs.stat(path.join(f.root,'lib/new')),/ENOENT/);
+  await fs.symlink(path.join(f.root,'test'),path.join(f.root,'lib/new'));
+  await assert.rejects(f.build(args),/Symbolic/);await fs.unlink(path.join(f.root,'lib/new'));
+  await fs.writeFile(path.join(f.root,'lib/new'),'not a directory');await assert.rejects(f.build(args),/directory/);
+});
