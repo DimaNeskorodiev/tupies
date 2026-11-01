@@ -2,6 +2,10 @@
 
 Last updated: 1 November 2026. Current application version: 0.5.0.
 
+## Bot profile UI refinement (1 November 2026, source only)
+
+The bot profile now uses a compact responsive hero, one horizontally scrollable tab row, compact overview metrics, clear content-section introductions and theme-aware note/task surfaces. Tab focus and scroll survive data refreshes; direct links reveal their selected tab. Phone Brain maps start collapsed, and the Settings save bar floats only for unsaved edits. All seven sections and existing actions remain available. Verification is recorded separately in docs/verification.md; operational engines and native apps have not been updated for this UI change.
+
 ## Organized bot workspaces and reusable programs (1 November 2026)
 
 Current source gives new bots standard private folders and presents their purposes in Files, with native Memory remaining its existing fact collection. Explicit initialization adds missing empty folders without relocating knowledge, documents or owner files. A Scripts library shows source packages, purpose, inputs, outputs, dependencies, runtime availability and draft/registered/changed state. Chat reuse prepares an unsent draft; routine reuse opens a paused, unsaved preset. Bots receive matching organization and reuse guidance only within their enabled capabilities.

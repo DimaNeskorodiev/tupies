@@ -160,14 +160,24 @@ function mount(context,botId,root){
   const v=view(botId);after(page,v);load(bot,v);
 }
 function hero(bot){
-  const intro=bot.description?esc(bot.description):`Ready to help with your next task. Add a short description in Bot settings.`;
-  return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="secondary-button" data-profile-action="tab" data-tab="settings">${icon('sliders')}Settings</button><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button></div></header>`;
+  const intro=bot.description?esc(bot.description):'Ready to help with your next task.';
+  return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button><button class="secondary-button bp-configure" data-profile-action="tab" data-tab="settings" aria-label="Bot settings" title="Bot settings">${icon('sliders')}<span>Settings</span></button></div></header>`;
 }
 function tabs(bot,v){
   const counts={brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length,scripts:v.scripts?.length};
-  return `<div class="segmented bp-tabs" id="bp-tabs" role="tablist" aria-label="${esc(bot.name)} profile">${TABS.map(([key,label,ico])=>`<button class="segment${v.tab===key?' active':''}" role="tab" id="bp-tab-${key}" aria-selected="${v.tab===key}" aria-controls="bp-panel" tabindex="${v.tab===key?0:-1}" data-profile-action="tab" data-tab="${key}">${icon(ico)}${label}${counts[key]?`<span>${counts[key]}</span>`:''}</button>`).join('')}</div>`;
+  return `<div class="bp-tabs" id="bp-tabs" role="tablist" aria-label="${esc(bot.name)} profile">${TABS.map(([key,label,ico])=>`<button class="segment${v.tab===key?' active':''}" role="tab" id="bp-tab-${key}" aria-selected="${v.tab===key}" aria-controls="bp-panel" tabindex="${v.tab===key?0:-1}" data-profile-action="tab" data-tab="${key}">${icon(ico)}${label}${counts[key]?`<span>${counts[key]}</span>`:''}</button>`).join('')}</div>`;
 }
-function panel(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):overviewPanel(bot,v);}
+function panelContent(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):overviewPanel(bot,v);}
+const PANEL_INTRO={
+  brain:['Brain','Linked notes about people, projects and what this bot has learned.'],
+  memory:['Memory','Key facts and preferences this bot carries into its tasks.'],
+  files:['Files','Documents, sources and outputs in this bot’s workspace.'],
+  scripts:['Scripts','Reusable programs. Inspect a package before using it.'],
+};
+function panel(bot,v){
+  const intro=PANEL_INTRO[v.tab];
+  return `${intro?`<header class="bp-panel-heading"><h2>${intro[0]}</h2><p>${intro[1]}</p></header>`:''}${panelContent(bot,v)}`;
+}
 function settingsPanel(bot){return ctx.botSettingsForm?.(bot.id,{embedded:true})||'<p class="bp-muted">Bot settings are unavailable. Reload this page to try again.</p>';}
 
 /* Overview */
@@ -229,7 +239,7 @@ function overviewPanel(bot,v){
   const skills=(bot.skills||[]).map(id=>(data.skills||[]).find(skill=>skill.id===id)?.name||id),integrations=(bot.integrationIds||[]).map(id=>(data.integrations||[]).find(item=>item.id===id)?.name).filter(Boolean);
   const mates=ctx.botTeammates?ctx.botTeammates(bot):(bot.collaborators||[]).map(id=>ctx.botById(id)).filter(Boolean),rooms=(data.rooms||[]).filter(room=>(room.botIds||[]).includes(bot.id)),routines=(data.routines||[]).filter(item=>item.botId===bot.id);
   const every=minutes=>({60:'hourly',1440:'daily',10080:'weekly'})[minutes]||(minutes<60?`every ${minutes} min`:minutes%1440===0?`every ${minutes/1440} days`:`every ${Math.round(minutes/60)} h`);
-  const setup=`<section class="glass-card bp-card"><h2>${icon('sliders')}How ${esc(bot.name)} works</h2><dl class="bp-rows">${row('Model',conn?`${esc(model||'Provider default')} <small>${bot.model?'Own choice':'Workspace default'}</small>`:'<span class="bp-muted">Choose a model provider in Edit</span>')}${conn?row('Provider',`${esc(conn.name)} <small>${esc(PROVIDERS[conn.type]||'Model provider')}</small>`):''}${row('Action review',`<strong>${strict?'Strict':'Balanced'}</strong><small class="bp-block">${strict?'Asks before every file change, command and outside action.':'Works freely in its own files. Asks before commands, deletions and outside actions.'}</small>`)}${bot.enabled===false?row('Status','<span class="bp-muted">Paused · it won’t take new tasks</span>'):''}</dl></section>`;
+  const setup=`<section class="glass-card bp-card"><h2>${icon('sliders')}How ${esc(bot.name)} works</h2><dl class="bp-rows">${row('Model',conn?`${esc(model||'Provider default')} <small>${bot.model?'Own choice':'Workspace default'}</small>`:'<span class="bp-muted">Choose a model provider in Settings</span>')}${conn?row('Provider',`${esc(conn.name)} <small>${esc(PROVIDERS[conn.type]||'Model provider')}</small>`):''}${row('Action review',`<strong>${strict?'Strict':'Balanced'}</strong><small class="bp-block">${strict?'Asks before every file change, command and outside action.':'Works freely in its own files. Asks before commands, deletions and outside actions.'}</small>`)}${bot.enabled===false?row('Status','<span class="bp-muted">Paused · it won’t take new tasks</span>'):''}</dl></section>`;
   const abilities=`<section class="glass-card bp-card"><h2>${icon('spark')}What it can use</h2>${chips(Object.keys(GROUPS).filter(key=>groups.includes(key)).map(key=>`<span class="bp-chip">${esc(GROUPS[key])}</span>`))||''}${groups.length?'':'<p class="bp-muted">No tools enabled. It can still chat.</p>'}<a class="text-button" href="#/skills/${esc(bot.id)}">${icon('spark')}Find skills</a>${skills.length?`<h3>Skills</h3>${chips(skills.map(name=>`<span class="bp-chip">${icon('spark')}${esc(name)}</span>`))}`:''}${integrations.length?`<h3>Integrations</h3>${chips(integrations.map(name=>`<span class="bp-chip">${icon('globe')}${esc(name)}</span>`))}`:''}</section>`;
   const team=mates.length||rooms.length||routines.length?`<section class="glass-card bp-card"><h2>${icon('team')}Team and routines</h2>${mates.length?`<h3>${bot.teamMode==='selected'?'Talks with selected teammates':'Talks with the whole team'}</h3><div class="bp-people">${mates.map(mate=>`<button class="bp-person" data-nav="/bots/${esc(mate.id)}">${ctx.avatar(mate,'tiny')}<span>${esc(mate.name)}</span></button>`).join('')}</div>`:''}${rooms.length?`<h3>Rooms</h3>${chips(rooms.map(room=>`<button class="bp-chip" data-nav="/room/${esc(room.id)}">${icon('team')}${esc(room.name||'Team room')}</button>`))}`:''}${routines.length?`<h3>Routines</h3><ul class="bp-plain-list">${routines.map(item=>`<li>${icon('routine')}<span>${esc(item.name||'Routine')}</span><small>${item.enabled===false?'Paused':esc(ctx.scheduleLabel?ctx.scheduleLabel(item):every(Number(item.intervalMinutes)||1440))}</small></li>`).join('')}</ul>`:''}</section>`:'';
   const activity=`<section class="glass-card bp-card"><h2>${icon('activity')}Recent activity</h2>${events.length?`<ul class="bp-events">${events.slice(0,6).map(item=>`<li>${icon(ACTIVITY[String(item.type||'').split('.')[0]]||'activity')}<span>${esc(eventText(item,bot))}</span><time>${esc(ctx.relative(item.createdAt||item.timestamp))}</time></li>`).join('')}</ul>`:`<p class="bp-muted">Nothing yet. When ${esc(bot.name)} gets to work, the important moments appear here.</p>`}</section>`;
@@ -260,7 +270,7 @@ function brainResults(bot,v){
   const sorted=v.sort==='linked'?[...list].sort((x,y)=>degree(y)-degree(x)||x.title.localeCompare(y.title)):v.sort==='az'?[...list].sort((x,y)=>x.title.localeCompare(y.title)):list;
   const tags=(b.tags||[]).slice(0,12);if(v.tag&&!tags.some(item=>item.tag===v.tag))tags.unshift({tag:v.tag,notes:list.length});
   const row=note=>`<button class="bp-note-row${note.path===v.noteTarget?' active':''}" data-profile-action="open-note" data-path="${esc(note.path)}"><span class="bp-note-dot" style="--c:${colorOf(v,note.folder)}"></span><span class="bp-note-main"><strong>${esc(note.title)}</strong><small>${esc(note.folder||'Notes')} · ${esc(ctx.relative(note.updated))}</small></span><span class="bp-note-side">${note.tags.slice(0,2).map(tag=>`<span class="bp-hash">#${esc(tag)}</span>`).join('')}<span class="bp-links" title="${plural(note.links.length,'link')} out · ${plural(note.backlinks,'backlink')}">${icon('link')}${degree(note)}</span></span></button>`;
-  return `${tags.length?`<div class="bp-chips bp-tag-filter" role="group" aria-label="Filter by tag">${tags.map(item=>`<button class="bp-chip${v.tag===item.tag?' active':''}" data-profile-action="tag" data-tag="${esc(item.tag)}" aria-pressed="${v.tag===item.tag}">#${esc(item.tag)}<small>${item.notes}</small></button>`).join('')}${filtering(v)?'<button class="text-button" data-profile-action="clear-filters">Clear</button>':''}</div>`:''}${graph(v)}<div class="bp-list-head"><span>${filtering(v)?`${list.length} of ${plural(b.total,'note')}`:plural(b.total,'note')}</span><div class="segmented bp-sort" role="group" aria-label="Sort notes">${[['recent','Recent'],['linked','Most linked'],['az','A–Z']].map(([key,label])=>`<button class="segment${v.sort===key?' active':''}" data-profile-action="sort" data-sort="${key}" aria-pressed="${v.sort===key}">${label}</button>`).join('')}</div></div>${list.length?`<div class="bp-note-list" data-profile-scroll="notes">${sorted.slice(0,v.shown).map(row).join('')}${sorted.length>v.shown?`<button class="text-button bp-more" data-profile-action="more-notes">Show ${Math.min(LIST_PAGE,sorted.length-v.shown)} more</button>`:''}</div>`:`<p class="bp-muted bp-none">No notes match. <button class="text-button" data-profile-action="clear-filters">Clear filters</button></p>`}`;
+  return `${tags.length?`<div class="bp-chips bp-tag-filter" role="group" aria-label="Filter by tag">${tags.map(item=>`<button class="bp-chip${v.tag===item.tag?' active':''}" data-profile-action="tag" data-tag="${esc(item.tag)}" aria-pressed="${v.tag===item.tag}">#${esc(item.tag)}<small>${item.notes}</small></button>`).join('')}${filtering(v)?'<button class="text-button" data-profile-action="clear-filters">Clear</button>':''}</div>`:''}${mapDisclosure(v)}<div class="bp-list-head"><span>${filtering(v)?`${list.length} of ${plural(b.total,'note')}`:plural(b.total,'note')}</span><div class="segmented bp-sort" role="group" aria-label="Sort notes">${[['recent','Recent'],['linked','Most linked'],['az','A–Z']].map(([key,label])=>`<button class="segment${v.sort===key?' active':''}" data-profile-action="sort" data-sort="${key}" aria-pressed="${v.sort===key}">${label}</button>`).join('')}</div></div>${list.length?`<div class="bp-note-list" data-profile-scroll="notes">${sorted.slice(0,v.shown).map(row).join('')}${sorted.length>v.shown?`<button class="text-button bp-more" data-profile-action="more-notes">Show ${Math.min(LIST_PAGE,sorted.length-v.shown)} more</button>`:''}</div>`:`<p class="bp-muted bp-none">No notes match. <button class="text-button" data-profile-action="clear-filters">Clear filters</button></p>`}`;
 }
 
 /* A deterministic force layout of the most connected notes: spiral start, fixed iterations, then fitted to the frame. */
@@ -281,6 +291,10 @@ function layout(v){
   const xs=pos.map(p=>p.x),ys=pos.map(p=>p.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),pad=34;
   const fit=(value,min,max,size)=>max-min<1?size/2:pad+(value-min)/(max-min)*(size-2*pad);
   return v.layout={source:v.brain,edges,nodes:picked.map((note,i)=>({note,degree:degree(note),x:Math.round(fit(pos[i].x,minX,maxX,W)*10)/10,y:Math.round(fit(pos[i].y,minY,maxY,H)*10)/10}))};
+}
+function mapDisclosure(v){
+  const open=v.mapOpen??!window.matchMedia?.('(max-width: 760px)').matches;
+  return `<details class="bp-map" data-profile-disclosure="map"${open?' open':''}><summary>${icon('brain')}<span>Explore connections</span>${icon('chevron')}</summary>${graph(v)}</details>`;
 }
 function graph(v){
   const {nodes,edges}=layout(v),active=nodes.findIndex(node=>node.note.path===v.noteTarget),near=new Set(),dimmed=filtering(v);
@@ -515,14 +529,29 @@ function capture(v){
   const form=page.querySelector('#bot-form[data-embedded]');
   if(form?.dataset.settingsDirty==='true')v.settingsDraft={fields:[...form.elements].filter(element=>element.name).map(element=>({name:element.name,type:element.type,value:element.value,checked:element.checked})),error:form.querySelector('.form-error')?.textContent||'',disclosures:[...form.querySelectorAll('details')].map(element=>element.open)};
   const settings=page.querySelector('[data-profile-disclosure="settings"]');if(settings)v.settingsOpen=settings.open;
+  const map=page.querySelector('[data-profile-disclosure="map"]');if(map)v.mapOpen=map.open;
   v.taskDetails=new Set([...page.querySelectorAll('details[data-task-evidence]')].filter(element=>element.open).map(element=>element.dataset.taskEvidence));
   const active=document.activeElement;
-  if(form?.contains(active)&&active.name)v.focus={settings:true,name:active.name,value:active.value,start:active.selectionStart,end:active.selectionEnd};
+  v.tabScroll=page.querySelector('#bp-tabs')?.scrollLeft||0;
+  if(active?.matches?.('#bp-tabs [role=tab]'))v.focus={tab:active.dataset.tab};
+  else if(form?.contains(active)&&active.name)v.focus={settings:true,name:active.name,value:active.value,start:active.selectionStart,end:active.selectionEnd};
   else if(page.contains(active)&&active.dataset?.profileInput)v.focus={key:active.dataset.profileInput,start:active.selectionStart,end:active.selectionEnd};
   else if(active?.matches?.('[data-profile-disclosure] > summary'))v.focus={disclosure:active.parentElement.dataset.profileDisclosure};
   for(const element of page.querySelectorAll('[data-profile-scroll]'))v.scroll[element.dataset.profileScroll]=element.scrollTop;
 }
 function after(root,v){
+  const rail=root.querySelector('#bp-tabs');
+  if(rail){
+    rail.scrollLeft=v.tabScroll||0;
+    if(v.visibleTab!==v.tab||v.tabWidth!==rail.clientWidth){
+      const selected=rail.querySelector('[aria-selected=true]'),outer=rail.getBoundingClientRect(),inner=selected?.getBoundingClientRect();
+      if(inner&&outer.width){
+        if(inner.left<outer.left+8)rail.scrollLeft-=outer.left+8-inner.left;
+        else if(inner.right>outer.right-8)rail.scrollLeft+=inner.right-outer.right+8;
+      }
+      v.visibleTab=v.tab;v.tabWidth=rail.clientWidth;v.tabScroll=rail.scrollLeft;
+    }
+  }
   if(v.tab==='learning'){const bot=ctx?.botById(v.id);if(bot)window.StudioStudyLearning?.mount(bot,studyContext(bot,v),root);}
   const form=root.querySelector('#bot-form[data-embedded]');
   if(form&&v.settingsDraft){
@@ -535,7 +564,7 @@ function after(root,v){
     const team=form.querySelector('.team-checklist');if(team)team.hidden=form.elements.teamMode.value!=='selected';
   }
   for(const element of root.querySelectorAll('[data-profile-scroll]')){const top=v.scroll[element.dataset.profileScroll];if(top)element.scrollTop=top;}
-  if(v.focus){const element=v.focus.settings?[...(form?.elements||[])].find(element=>element.name===v.focus.name&&(!['checkbox','radio'].includes(element.type)||element.value===v.focus.value)):v.focus.disclosure?root.querySelector(`[data-profile-disclosure="${v.focus.disclosure}"] > summary`):root.querySelector(`[data-profile-input="${v.focus.key}"]`);if(element&&document.activeElement!==element){element.focus({preventScroll:true});try{if(typeof v.focus.start==='number')element.setSelectionRange(v.focus.start,v.focus.end);}catch{}}v.focus=null;}
+  if(v.focus){const element=v.focus.tab?root.querySelector(`#bp-tab-${v.focus.tab}`):v.focus.settings?[...(form?.elements||[])].find(element=>element.name===v.focus.name&&(!['checkbox','radio'].includes(element.type)||element.value===v.focus.value)):v.focus.disclosure?root.querySelector(`[data-profile-disclosure="${v.focus.disclosure}"] > summary`):root.querySelector(`[data-profile-input="${v.focus.key}"]`);if(element&&document.activeElement!==element){element.focus({preventScroll:true});try{if(typeof v.focus.start==='number')element.setSelectionRange(v.focus.start,v.focus.end);}catch{}}v.focus=null;}
   const body=root.querySelector('.bp-note-body');if(body&&window.StudioRich?.hydrate)window.StudioRich.hydrate(body).catch(()=>{});
   const map=root.querySelector('.bp-graph');if(map&&!v.graphShown){v.graphShown=true;map.classList.add('bp-graph-enter');}
   if(v.revealReader&&!v.noteLoading){v.revealReader=false;const reader=root.querySelector('#bp-reader');if(reader&&window.matchMedia?.('(max-width: 1100px)').matches)reader.scrollIntoView?.({block:'start'});}
@@ -548,11 +577,12 @@ function refresh(botId){
   if(panelNode){panelNode.setAttribute('aria-labelledby',`bp-tab-${v.tab}`);if(!(v.tab==='settings'&&panelNode.querySelector('#bot-form[data-embedded]')))panelNode.innerHTML=panel(bot,v);}
   after(page,v);
 }
-function patch(bot,v,selector,html){const page=document.querySelector('.bot-profile'),target=page?.querySelector(selector);if(!target)return refresh(bot.id);capture(v);target.innerHTML=html;after(page,v);}
+function patch(bot,v,selector,renderHTML){const page=document.querySelector('.bot-profile'),target=page?.querySelector(selector);if(!target)return refresh(bot.id);capture(v);target.innerHTML=renderHTML();after(page,v);}
 function setTab(bot,v,tab,focus=false){
   if(!TABS.some(([key])=>key===tab))return;v.tab=tab;
   const hash=`#/bots/${bot.id}${tab==='overview'?'':`/${tab}`}`;if(location.hash!==hash)history.replaceState(history.state,'',hash);
-  refresh(bot.id);load(bot,v);if(focus)document.getElementById(`bp-tab-${tab}`)?.focus();
+  refresh(bot.id);load(bot,v);
+  if(focus)document.getElementById(`bp-tab-${tab}`)?.focus({preventScroll:true});
 }
 function watchDialogs(){
   const root=document.getElementById('dialog-root');if(!root||root.__profileWatch||typeof MutationObserver==='undefined')return;root.__profileWatch=true;
@@ -598,10 +628,10 @@ async function act(element){
     case 'open-link':openNote(bot,v,element.dataset.path||element.dataset.target);break;
     case 'memory-link':v.noteTarget='';setTab(bot,v,'brain');openNote(bot,v,element.dataset.target);break;
     case 'close-note':v.tickets.note=(v.tickets.note||0)+1;v.noteTarget='';v.note=null;v.noteHTML='';v.noteError='';v.noteLoading=false;refresh(bot.id);break;
-    case 'tag':{const tag=element.dataset.tag;v.tag=v.tag===tag?'':tag;v.shown=LIST_PAGE;if(v.tab!=='brain')setTab(bot,v,'brain');else patch(bot,v,'#bp-brain-results',brainResults(bot,v));break;}
+    case 'tag':{const tag=element.dataset.tag;v.tag=v.tag===tag?'':tag;v.shown=LIST_PAGE;if(v.tab!=='brain')setTab(bot,v,'brain');else patch(bot,v,'#bp-brain-results',()=>brainResults(bot,v));break;}
     case 'clear-filters':v.query='';v.folder='';v.tag='';v.shown=LIST_PAGE;refresh(bot.id);break;
-    case 'sort':v.sort=element.dataset.sort;patch(bot,v,'#bp-brain-results',brainResults(bot,v));break;
-    case 'more-notes':v.shown+=LIST_PAGE;patch(bot,v,'#bp-brain-results',brainResults(bot,v));break;
+    case 'sort':v.sort=element.dataset.sort;patch(bot,v,'#bp-brain-results',()=>brainResults(bot,v));break;
+    case 'more-notes':v.shown+=LIST_PAGE;patch(bot,v,'#bp-brain-results',()=>brainResults(bot,v));break;
     case 'edit-note':if(v.note){v.dirty=true;await ctx.fileEditor(bot.id,v.note.workspacePath||`brain/${v.note.path}`);}break;
     case 'add-fact':v.adding=true;v.editing='';v.confirming='';v.draft={};v.memoryNotice='';refresh(bot.id);document.getElementById('bp-fact-key')?.focus();break;
     case 'edit-fact':if(fact){v.editing=fact.id;v.adding=false;v.confirming='';v.draft={};v.memoryNotice='';refresh(bot.id);document.getElementById('bp-fact-value')?.focus();}break;
@@ -645,8 +675,8 @@ document.addEventListener('input',event=>{
   markSettingsDirty(event.target);
   const element=event.target,key=element.dataset?.profileInput,page=key&&element.closest('.bot-profile'),bot=page&&ctx?.botById(page.dataset.profileBot);if(!bot||element.tagName==='SELECT')return;
   const v=view(bot.id);
-  if(key==='brain-query'&&v.brain){v.query=element.value;v.shown=LIST_PAGE;patch(bot,v,'#bp-brain-results',brainResults(bot,v));}
-  if(key==='memory-query'&&v.memory){v.memoryQuery=element.value;patch(bot,v,'#bp-memory-list',memoryList(bot,v));}
+  if(key==='brain-query'&&v.brain){v.query=element.value;v.shown=LIST_PAGE;patch(bot,v,'#bp-brain-results',()=>brainResults(bot,v));}
+  if(key==='memory-query'&&v.memory){v.memoryQuery=element.value;patch(bot,v,'#bp-memory-list',()=>memoryList(bot,v));}
   if(key==='fact-key')v.draft.key=element.value;
   if(key==='fact-value')v.draft.value=element.value;
   if(key==='script-query'){v.scriptQuery=element.value;refresh(bot.id);}
@@ -656,7 +686,7 @@ document.addEventListener('change',event=>{
   markSettingsDirty(event.target);
   const element=event.target,page=element.closest?.('.bot-profile'),bot=page&&ctx?.botById(page.dataset.profileBot);if(!bot)return;
   const v=view(bot.id),key=element.dataset.profileInput;
-  if(key==='brain-folder'&&v.brain){v.folder=element.value;v.shown=LIST_PAGE;patch(bot,v,'#bp-brain-results',brainResults(bot,v));}
+  if(key==='brain-folder'&&v.brain){v.folder=element.value;v.shown=LIST_PAGE;patch(bot,v,'#bp-brain-results',()=>brainResults(bot,v));}
   if(key==='fact-pinned')v.draft.pinned=element.checked;
   if(element.dataset.profileUpload&&element.files?.length)upload(bot,v,element).catch(error=>ctx.toast(ctx.errorText(error),true));
 });
