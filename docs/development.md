@@ -2,7 +2,7 @@
 
 ## Engine candidate verification
 
-Maintainers can plan and explicitly run exported Engine candidates with `scripts/verify-engine-candidate.mjs`, a separately prepared pinned Docker image and a new local receipt. This is operator-only; no Engine tool gains Docker access. See [Tool workshop](tool-workshop.md#operator-container-verification-source-only) for clean-image preparation, exact CLI flags, isolation policy and pending real-container acceptance. Do not build the image from live data or treat protocol-fixture success as Linux/container validation.
+Maintainers can plan and explicitly run exported Engine candidates with `scripts/verify-engine-candidate.mjs`, a separately prepared pinned Docker image and a new local receipt. This is operator-only; no Engine tool gains Docker access. See [Tool workshop](tool-workshop.md#operator-container-verification-source-only) for clean-image preparation, exact CLI flags, isolation policy and the real-container CI acceptance procedure. Do not build the image from live data or treat protocol-fixture success as Linux/container validation.
 
 ## Workshop development and contribution intake
 

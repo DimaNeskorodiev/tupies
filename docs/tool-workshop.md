@@ -80,7 +80,7 @@ On a matching source checkout, independently reconstruct and check a contributio
 node scripts/review-contribution.mjs contribution.json --check-engine REVIEWED_SHA256
 ```
 
-The command validates schema/base hashes, re-runs syntax and pure-module checks and requires the resulting diff to match. Imported verification is not trusted; changed bases fail rather than silently rebasing. Successful checks still report `fullSuite:false` and `build:false`. Full Engine execution, dependency tests and build/release/rollback require a separately reviewed, appropriately isolated checkout and the normal release workflow. No candidate hot-patches the running process, runs install hooks, submits a PR or deploys itself. Stage 4 is partial. An operator-only container verifier is implemented below, but actual container acceptance and automatic bot dispatch remain pending.
+The command validates schema/base hashes, re-runs syntax and pure-module checks and requires the resulting diff to match. Imported verification is not trusted; changed bases fail rather than silently rebasing. Successful checks still report `fullSuite:false` and `build:false`. Full Engine execution, dependency tests and build/release/rollback require a separately reviewed, appropriately isolated checkout and the normal release workflow. No candidate hot-patches the running process, runs install hooks, submits a PR or deploys itself. Stage 4 is partial. An operator-only container verifier is implemented below, with real-container acceptance exercised in disposable Linux CI; automatic bot dispatch remains pending.
 
 ## Operator container verification (source only)
 
@@ -117,7 +117,8 @@ Receipts bind the proposal digest, pinned image, random job ID, requested policy
 
 Treat all contributed code, tests and logs as untrusted. Candidate processes share the guest UID with the supervisor; a hostile candidate can interfere with guest results. A passing receipt is diagnostic evidence from an isolated job, **not** a security certificate or proof of semantic correctness, and never grants installation/publication authority. Independent source/test review and normal release verification remain necessary.
 
-Current acceptance: deterministic protocol/kernel-policy fixtures and ordinary host regressions are available. Docker/Podman is absent on the development Mac, so **no image build, real container job, escape probe or Linux full-suite acceptance has been performed for this runner**. Chromium's sandbox must remain enabled; if the fixed container policy cannot run it, the job fails and needs reviewed platform work, not an automatic `--no-sandbox` fallback. Automatic bot dispatch stays disabled pending actual isolation/resource/cancellation/cleanup and full build acceptance.
+Actual Linux acceptance is exercised by `.github/workflows/engine-workshop.yml` and `scripts/accept-engine-verifier.mjs` on a disposable Ubuntu runner. The workflow prepares the image, verifies a nested synthetic candidate through the full suite/build, probes the non-root/read-only/no-network/no-credential boundary, tests Stop/cleanup and refuses a stale base. It retains bounded receipts for seven days. See [publication verification](verification.md#workshop-publication--1-november-2026-pr24-source-only) and the exact PR head checks for results. No Docker/Podman is installed on the development Mac. Chromium's sandbox stays enabled; startup failures fail closed. This finite acceptance does not prove absence of sandbox escapes or validate every Docker/rootless/Desktop configuration. Automatic bot dispatch remains disabled.
+
 
 `improvement_propose` saves either:
 

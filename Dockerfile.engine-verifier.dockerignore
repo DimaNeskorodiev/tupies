@@ -32,3 +32,4 @@
 **/*.log
 **/.env*
 docs/local-*
+!docs/local-coding.md

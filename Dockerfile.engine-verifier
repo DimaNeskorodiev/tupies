@@ -14,7 +14,7 @@ COPY eval ./eval
 COPY public ./public
 COPY assets ./assets
 COPY docs ./docs
-RUN mkdir -p /opt/tupies-verifier && cp scripts/engine-verifier-runner.mjs /opt/tupies-verifier/runner.mjs && chmod -R a+rX /opt/tupies-source /opt/tupies-verifier
+RUN test -f docs/local-coding.md && mkdir -p /opt/tupies-verifier && cp scripts/engine-verifier-runner.mjs /opt/tupies-verifier/runner.mjs && chmod -R a+rX /opt/tupies-source /opt/tupies-verifier
 LABEL dev.tupies.engine-verifier="1"
 USER 10001:10001
 ENTRYPOINT ["/usr/local/bin/node", "/opt/tupies-verifier/runner.mjs"]
