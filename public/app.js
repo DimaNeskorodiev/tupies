@@ -63,7 +63,7 @@ const composerAttachments=new Map(), attachmentUploads=new Set();
 // Whether each bot's current model is shown attached images, checked when an image is attached.
 const imageSight=new Map();const imageFile=/\.(?:png|jpe?g|webp)$/i;
 let data = {...initialState}, auth = null, search = '', filter = 'all', chat = {messages:[],run:null}, activeBot = null, messageRequest = 0, pollBusy = false, roomChat={messages:[],drive:null,activeRun:null};
-let workspaceStateRequest=0,workspaceStateApplied=0,conversationRouteResolution=null;
+let workspaceStateRequest=0,workspaceStateApplied=0,conversationRouteResolution=null,pendingBotDraft=null;
 const terminal = new Set(['completed','failed','cancelled','interrupted','unknown','error']);
 const route = () => { const [view, id] = location.hash.replace(/^#\/?/,'').split('/'); return {view:view||'dashboard',id}; };
 const navigate = hash => { location.hash = hash; };
@@ -294,7 +294,7 @@ async function start(){
 function renderAuth(){
   if(document.querySelector('.browser-control-panel'))closeDialog();
   window.StudioBrowser?.reset();
-  bootPending=false;sendSessionGeneration++;window.StudioSkills?.reset();window.TupiesCoding?.reset();pendingSends.clear();pendingSearchMessage=null;conversationSearchRequest++;conversationRouteResolution=null;
+  bootPending=false;sendSessionGeneration++;window.StudioSkills?.reset();window.TupiesCoding?.reset();window.StudioStudyLearning?.clear();pendingSends.clear();pendingSearchMessage=null;pendingBotDraft=null;conversationSearchRequest++;conversationRouteResolution=null;
   clearPendingDirections();clearSearchAnchor?.();
   readBotReplies.clear();closeInferencePicker(true,false);reasoningCatalogs.clear();reasoningSaves.clear();reasoningSaveOwners.clear();
   dismissConversationSearch();
@@ -406,6 +406,7 @@ function renderApp(){
   updateTopbarScroll();tellApp({type:'chrome',ownsChrome:phoneLayout()});
   mountPage(current);
   window.StudioMobile?.afterRender(current);
+  applyPendingBotDraft(current);
   if(current.view==='bot'&&conversationTargetExists('bot',current.id))loadChat(current.id);
   if(current.view==='room'&&conversationTargetExists('room',current.id))loadRoomChat(current.id);
   if(current.view==='sync')loadSyncPage();
@@ -417,7 +418,23 @@ function renderSettings(){
   return `<section class="page settings-overview">${pageHeading('Settings','A few things to make your team feel at home.')}${appServerRow()}<div class="pearl-settings-grid">${card('skills','Skills','Manage installed skills and assign them to your bots.','spark')}${card('connections','Models','Connect an account to power your team.','plug')}${card('coding','Coding on this Mac','Work with connected coding agents.','terminal')}${card('sync','Devices & sync','Keep your workspace close, on every device.','sync')}${card('help','Help','A little guidance when you need it.','book')}</div><details class="pearl-advanced" data-disclosure="settings-more"><summary>More settings</summary><div class="pearl-settings-grid">${card('integrations','Integrations','Connect tools your team can use.','globe')}${card('channels','Messaging','Bring your bots into other conversations.','chat')}${card('activity','Activity','Review changes on this engine.','activity')}</div></details><button class="text-button" data-action="logout">${icon('logout')}Sign out</button></section>`;
 }
 // Dashboard and bot profile live in their own scripts; they render from cache, then mount to load fresh data.
-const studioContext=()=>({data,api,esc,icon,avatar,botById,botTeammates,botStatus,statusPill,relative,timeLabel,shortDate,scheduleLabel,toast,errorText,openDialog,closeDialog,documentPreview,fileEditor,previewFormats,navigate,route,routineDialog,botSettingsForm,refresh,renderApp,settingsHeading,importDialog,viewSkill,confirmDelete});
+const studioContext=()=>({data,api,esc,icon,avatar,botById,botTeammates,botStatus,statusPill,relative,timeLabel,shortDate,scheduleLabel,toast,errorText,openDialog,closeDialog,documentPreview,fileEditor,previewFormats,navigate,route,openBotDraft,routineDialog,botSettingsForm,refresh,renderApp,settingsHeading,importDialog,viewSkill,confirmDelete});
+function openBotDraft(botId,text){
+  if(!auth?.authenticated||!botById(botId)||typeof text!=='string'||!text.trim())return false;
+  if(text.length>20000){toast('This script request exceeds the chat draft limit. Use fewer arguments or prepare a routine.',true);return false;}
+  pendingBotDraft={botId,text,generation:sendSessionGeneration};const current=route();
+  if(current.view==='bot'&&current.id===botId)applyPendingBotDraft(current);else navigate(`/bot/${encodeURIComponent(botId)}`);
+  return true;
+}
+function applyPendingBotDraft(current=route()){
+  const draft=pendingBotDraft;if(!draft)return;
+  if(draft.generation!==sendSessionGeneration||!auth?.authenticated||current.view!=='bot'||current.id!==draft.botId){pendingBotDraft=null;return;}
+  const form=$('#message-form'),field=$('#message-input');if(!field||form?.dataset.id!==draft.botId)return;
+  pendingBotDraft=null;const next=field.value?`${field.value}\n\n${draft.text}`:draft.text;
+  if(next.length>20000){toast('Your existing draft is too long to append this script request. Shorten it first; your text is unchanged.',true);return;}
+  field.value=next;field.dispatchEvent(new Event('input',{bubbles:true}));field.focus();
+  toast('Script request added to the chat draft. Review it, then Send.');
+}
 function renderDashboard(){return window.StudioDashboard?.render(studioContext())||`<section class="page">${pageHeading('Dashboard','A live view of your team’s work.')}<div class="section-empty"><p>Loading…</p></div></section>`;}
 function renderBotProfile(id){if(!botById(id))return `<section class="page">${emptyState('bots','This bot isn’t here','It may have been removed. Pick another bot or create one.','create-bot','New bot')}</section>`;return window.StudioBotProfile?.render(studioContext(),id)||`<section class="page"><div class="section-empty"><p>Loading…</p></div></section>`;}
 function mountPage(current=route()){const root=$('#main-content');if(!root)return;if(current.view==='coding')window.TupiesCoding?.mount(studioContext(),root);else if(current.view==='skills')window.StudioSkills?.mount(studioContext(),root);else if(current.view==='dashboard')window.StudioDashboard?.mount(studioContext(),root);else if(current.view==='bots'&&current.id&&botById(current.id))window.StudioBotProfile?.mount(studioContext(),current.id,root);}
@@ -1119,7 +1136,16 @@ async function defaultModelDialog(id){
 
 function routineExecutionFields(r){const limits={runtimeMinutes:30,modelTurns:50,toolCalls:200,...r.limits},mode=r.limits?.mode==='bounded'?'bounded':'autonomous',bounded=mode==='bounded';
   const example={version:1,mode:'agent',steps:[{id:'feed',op:'fetch',url:'https://example.com/feed.json'},{id:'items',op:'json',from:'feed',path:'text'},{id:'newItems',op:'select',from:'items',key:'url',limit:25}],skipIfEmpty:'newItems',context:'Review these new items: {{newItems}}'};
-  return `<details class="advanced-fields routine-execution"><summary>Advanced execution</summary><div class="field"><label for="routine-execution-mode">Execution</label><select id="routine-execution-mode" name="executionMode"><option value="autonomous" ${bounded?'':'selected'}>Work until done</option><option value="bounded" ${bounded?'selected':''}>Use explicit limits</option></select><small>Works toward completion and recovers from temporary interruptions. Stop remains available.</small></div><div data-routine-budget ${bounded?'':'hidden'}><div class="field"><label for="routine-runtime">Time budget, in minutes</label><input id="routine-runtime" name="runtimeMinutes" type="number" min="1" max="120" step="1" value="${esc(limits.runtimeMinutes)}" ${bounded?'':'disabled'} required><small>The whole run can use this much active time.</small></div><div class="field-row"><div class="field"><label for="routine-turns">Model turns</label><input id="routine-turns" name="modelTurns" type="number" min="1" max="200" step="1" value="${esc(limits.modelTurns)}" ${bounded?'':'disabled'} required></div><div class="field"><label for="routine-tools">Tool calls</label><input id="routine-tools" name="toolCalls" type="number" min="1" max="1000" step="1" value="${esc(limits.toolCalls)}" ${bounded?'':'disabled'} required></div></div></div><details class="advanced-fields"><summary>Saved preparation and reports</summary><p class="modal-subtitle">Optional steps can fetch, read and compare data before the bot works. A report workflow can finish without a model. Steps use the bot’s existing tool permissions.</p><div class="field"><label for="routine-workflow">Workflow JSON</label><textarea id="routine-workflow" name="workflow" class="code-input" maxlength="65536" spellcheck="false" placeholder="Leave empty for an agent task">${esc(r.workflow?JSON.stringify(r.workflow,null,2):'')}</textarea><small>Use fixed fetch/read targets and structured steps. Clear this field to use an agent task.</small></div><details><summary>Example: check a JSON feed</summary><p class="modal-subtitle">Replace the example URL with your feed. The bot receives only new items.</p><pre class="skill-source">${esc(JSON.stringify(example,null,2))}</pre></details></details></details>`;
+  return `<details class="advanced-fields routine-execution"${r.workflow?.steps?.some(step=>step.op==='script')?' open':''}><summary>Advanced execution</summary><div class="field"><label for="routine-execution-mode">Execution</label><select id="routine-execution-mode" name="executionMode"><option value="autonomous" ${bounded?'':'selected'}>Work until done</option><option value="bounded" ${bounded?'selected':''}>Use explicit limits</option></select><small>Works toward completion and recovers from temporary interruptions. Stop remains available.</small></div><div data-routine-budget ${bounded?'':'hidden'}><div class="field"><label for="routine-runtime">Time budget, in minutes</label><input id="routine-runtime" name="runtimeMinutes" type="number" min="1" max="120" step="1" value="${esc(limits.runtimeMinutes)}" ${bounded?'':'disabled'} required><small>The whole run can use this much active time.</small></div><div class="field-row"><div class="field"><label for="routine-turns">Model turns</label><input id="routine-turns" name="modelTurns" type="number" min="1" max="200" step="1" value="${esc(limits.modelTurns)}" ${bounded?'':'disabled'} required></div><div class="field"><label for="routine-tools">Tool calls</label><input id="routine-tools" name="toolCalls" type="number" min="1" max="1000" step="1" value="${esc(limits.toolCalls)}" ${bounded?'':'disabled'} required></div></div></div><details class="advanced-fields"${r.workflow?.steps?.some(step=>step.op==='script')?' open':''}><summary>Saved preparation and reports</summary><p class="modal-subtitle">Optional steps can fetch, read and compare data, or use a registered script before the bot works. Steps keep the bot’s existing tools and exact action approvals.</p><div class="field"><label for="routine-workflow-mode">After preparation</label><select id="routine-workflow-mode" name="workflowMode"><option value="agent" ${r.workflow?.mode==='report'?'':'selected'}>Let the bot work with the result</option><option value="report" ${r.workflow?.mode==='report'?'selected':''}>Produce a saved report without a model</option></select><small>The workflow JSON below keeps the complete preparation and report configuration.</small></div><div class="field"><label for="routine-workflow">Workflow JSON</label><textarea id="routine-workflow" name="workflow" class="code-input" maxlength="65536" spellcheck="false" placeholder="Leave empty for an agent task">${esc(r.workflow?JSON.stringify(r.workflow,null,2):'')}</textarea><small>Use fixed targets and registered script versions. Clear this field to use an ordinary agent task.</small></div><details><summary>Example: check a JSON feed</summary><p class="modal-subtitle">Replace the example URL with your feed. The bot receives only new items.</p><pre class="skill-source">${esc(JSON.stringify(example,null,2))}</pre></details></details></details>`;
+}
+function updateRoutineWorkflowMode(){
+  const field=$('#routine-workflow'),mode=$('#routine-workflow-mode')?.value;if(!field||!field.value.trim()||!['agent','report'].includes(mode))return;
+  let workflow;try{workflow=JSON.parse(field.value);}catch{return;}
+  if(!workflow||typeof workflow!=='object'||Array.isArray(workflow))return;
+  workflow.mode=mode;const step=workflow.steps?.at(-1),reference=step?.id?`{{${step.id}}}`:'';
+  if(mode==='report'&&typeof workflow.report!=='string')workflow.report=reference;
+  if(mode==='agent'&&typeof workflow.context!=='string')workflow.context=reference;
+  field.value=JSON.stringify(workflow,null,2);field.dispatchEvent(new Event('input',{bubbles:true}));
 }
 function updateRoutineExecutionMode(){const bounded=$('#routine-execution-mode')?.value==='bounded',fields=$('[data-routine-budget]');if(!fields)return;fields.hidden=!bounded;for(const input of fields.querySelectorAll('input'))input.disabled=!bounded;}
 function routineExecutionInput(values){
@@ -1141,7 +1167,7 @@ function routineDialog(id,botId,preset){const r=data.routines.find(r=>r.id===id)
 <div class="field" data-routine-kinds="once" ${show('once')}><label for="routine-at">Date and time</label><input id="routine-at" name="at" type="datetime-local" value="${esc(schedule.at||tomorrow)}" ${show('once')?'disabled':''} required></div>
 <div class="field"><label for="routine-zone">Time zone</label><select id="routine-zone" name="timezone">${zones.map(value=>`<option value="${esc(value)}" ${value===zone?'selected':''}>${esc(value.replaceAll('_',' '))}</option>`).join('')}</select></div>
 <div class="field"><label for="routine-missed">If Tupies is offline when it is due</label><select id="routine-missed" name="missed">${[['once','Run it once when Tupies is back'],['skip','Skip that run']].map(([value,label])=>`<option value="${value}" ${(r.missed||'once')===value?'selected':''}>${label}</option>`).join('')}</select><small>A bot that is busy at the time runs it as soon as it is free.</small></div>
-${routineExecutionFields(r)}<label class="checkbox-field"><input type="checkbox" name="enabled" ${r.enabled||!id?'checked':''}>Enable this schedule</label>${modalFooter(id?'Save routine':'Create routine',id?`<button class="danger-button" type="button" data-action="delete-routine" data-id="${esc(id)}">Delete</button>`:'')}</form>`);}
+${routineExecutionFields(r)}<label class="checkbox-field"><input type="checkbox" name="enabled" ${(r.enabled===undefined?!id:r.enabled)?'checked':''}>Enable this schedule</label>${modalFooter(id?'Save routine':'Create routine',id?`<button class="danger-button" type="button" data-action="delete-routine" data-id="${esc(id)}">Delete</button>`:'')}</form>`);}
 /** Shows the fields for the chosen kind of schedule; hidden fields are disabled so they are neither validated nor sent. */
 function updateRoutineKind(){const kind=$('#routine-kind')?.value;for(const field of document.querySelectorAll('[data-routine-kinds]')){const on=field.dataset.routineKinds.split(' ').includes(kind);field.hidden=!on;for(const input of field.querySelectorAll('input,select'))input.disabled=!on;}}
 function routineRunMarkup(run){
@@ -1452,6 +1478,7 @@ document.addEventListener('change',async event=>{
   }
   if(event.target.id==='routine-kind')updateRoutineKind();
   if(event.target.id==='routine-execution-mode')updateRoutineExecutionMode();
+  if(event.target.id==='routine-workflow-mode')updateRoutineWorkflowMode();
   if(event.target.id==='skill-file'&&event.target.files?.[0]){const file=event.target.files[0];if(file.size>100000)return toast('Please choose a SKILL.md smaller than 100 KB.',true);importedSkillFiles=null;$('#skill-content').readOnly=false;$('#skill-content').value=await file.text();$('#import-file-summary').textContent='';}
   if(event.target.id==='skill-folder'&&event.target.files?.length){
     try{

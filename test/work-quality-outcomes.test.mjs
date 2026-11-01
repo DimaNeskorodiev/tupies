@@ -7,7 +7,7 @@ import { Store } from '../lib/store.mjs';
 import { NativeEngine } from '../lib/engine.mjs';
 import { writeWorkspace } from '../lib/agent-tools.mjs';
 import { prepareDeliverable, recordDeliverableAttempt } from '../lib/delegated-deliverables.mjs';
-import { checkOutcomes, executeQualityTool, recordWork, workReceipt } from '../lib/work-quality.mjs';
+import { checkOutcomes, executeQualityTool, recordWork, workReceipt, reconcileWork, SAFE_RETRY_READS } from '../lib/work-quality.mjs';
 
 const call=(id,name,args={})=>({id,name,arguments:args});
 async function fixture(t) {
@@ -21,6 +21,25 @@ async function fixture(t) {
 const source=(id,callId=id)=>({id,kind:'source_read',callId});
 const teammate=delegationId=>({id:'teammate',kind:'teammate_completed',delegationId});
 const verifiedJob=()=>({id:'delegation_fixture',botId:'bot_scout',callId:'start_fixture',status:'completed',childRunId:'child_fixture',result:{botId:'bot_scout',runId:'child_fixture',status:'completed',deliverable:{status:'completed'}}});
+
+test('script inventories prove their exact observations while script execution proves only a real completed command',async t=>{
+  const h=await fixture(t),inventory=['workspace_structure','scripts_list','scripts_inspect'];
+  for(const name of inventory)await recordWork(h.engine,h.context,call(name,name),{items:[]});
+  await recordWork(h.engine,h.context,call('run','scripts_run',{scriptId:'fixture',digest:'a'.repeat(64),args:[]}),{status:'completed',exitCode:0,stdout:'verified',stderr:''});
+  const checks=[...inventory.map(name=>source(name)),{id:'command',kind:'command_success',callId:'run'}];
+  await executeQualityTool(h.engine,h.context,'task_outcome_set',{checks});
+  assert.equal((await checkOutcomes(h.engine,h.context)).passed,true);
+  await assert.rejects(executeQualityTool(h.engine,h.context,'task_outcome_set',{checks:[...checks,source('execution-is-not-source','run')]}),/not an eligible/);
+  for(const output of [{status:'failed',exitCode:7},{status:'timed_out',exitCode:0,timedOut:true},{status:'completed',exitCode:0,truncated:true},{status:'interrupted',exitCode:null}])assert.equal(workReceipt(call('bad','scripts_run'),output).status,'failed');
+  assert.equal(SAFE_RETRY_READS.has('scripts_run'),false);
+});
+
+test('lost script execution receipts remain unknown while script inventory observations remain unapplied reads',()=>{
+  const names=['scripts_run','scripts_list','scripts_inspect','workspace_structure'];
+  const run={events:names.map(name=>({type:'tool.started',toolCallId:name,tool:name,arguments:{}})),workRecords:[]};
+  reconcileWork(run);
+  assert.deepEqual(run.workRecords.map(record=>record.outcome),['unknown','not_applied','not_applied','not_applied']);
+});
 
 test('a real skill inventory and assigned skill read satisfy health-check source criteria',async t=>{
   const h=await fixture(t);let turn=0;

@@ -62,6 +62,35 @@ test('legacy numeric defaults do not silently choose bounded execution',async t=
   f.doc.querySelector('[name=runtimeMinutes]').value='121';await f.submit();assert.deepEqual(f.requests[0].body.limits,{mode:'autonomous'},'hidden old numeric values cannot constrain or invalidate autonomous work');
 });
 
+test('a script routine preset stays paused until the owner saves it and keeps exact script values when switching report mode',async t=>{
+  const f=ui(t),digest='a'.repeat(64),scriptWorkflow={version:1,mode:'agent',steps:[{id:'script',op:'script',scriptId:'daily-brief',digest,args:['--input','data/source.csv'],timeoutMs:120000}],context:'Use {{script}}.',report:'{{script}}'};
+  f.win.scriptPreset={name:'Daily brief',prompt:'Review the verified script result.',enabled:false,workflow:scriptWorkflow};
+  f.run('routineDialog(undefined,"bot_atlas",scriptPreset)');
+  assert.equal(f.requests.length,0,'opening a preset cannot create or enable a routine');
+  assert.equal(f.doc.querySelector('[name=enabled]').checked,false);assert.equal(f.doc.querySelector('.routine-execution').open,true);
+  assert.deepEqual(JSON.parse(f.doc.querySelector('[name=workflow]').value),scriptWorkflow);
+  const mode=f.doc.querySelector('#routine-workflow-mode');assert.equal(mode.value,'agent');mode.value='report';mode.dispatchEvent(new f.win.Event('change',{bubbles:true}));
+  assert.equal(JSON.parse(f.doc.querySelector('[name=workflow]').value).mode,'report');
+  assert.deepEqual(JSON.parse(f.doc.querySelector('[name=workflow]').value).steps,scriptWorkflow.steps);
+  await f.submit();assert.equal(f.requests.length,1);assert.equal(f.requests[0].path,'/api/routines');assert.equal(f.requests[0].body.enabled,false);assert.equal(f.requests[0].body.workflow.mode,'report');assert.deepEqual(f.requests[0].body.workflow.steps,scriptWorkflow.steps);
+});
+
+test('saved report workflow choices remain visible and retain their original report configuration',async t=>{
+  const reportWorkflow={...workflow,mode:'report',report:'Existing report {{newItems}}',savePath:'outputs/report.md'},f=ui(t,{routine:{workflow:reportWorkflow}});
+  f.run('routineDialog("routine_feed")');assert.equal(f.doc.querySelector('#routine-workflow-mode').value,'report');await f.submit();assert.deepEqual(f.requests[0].body.workflow,reportWorkflow);
+});
+
+test('script chat requests append to existing drafts without submitting and cannot cross a signed-out session',async t=>{
+  const f=ui(t);f.win.history.replaceState(null,'','http://studio.local/#/bot/bot_atlas');
+  f.doc.querySelector('#app').innerHTML='<form id="message-form" data-id="bot_atlas"><textarea id="message-input" name="text"></textarea><button type="submit">Send</button></form>';
+  const field=f.doc.querySelector('#message-input');field.value='Keep my unsent question.';let submissions=0;f.doc.querySelector('#message-form').addEventListener('submit',()=>submissions++);
+  assert.equal(f.run('openBotDraft("bot_atlas","Run the reviewed script.")'),true);
+  assert.equal(field.value,'Keep my unsent question.\n\nRun the reviewed script.');assert.equal(submissions,0);assert.equal(f.requests.length,0);assert.equal(f.doc.activeElement,field);
+  f.run('pendingBotDraft={botId:"bot_atlas",text:"Old private draft",generation:sendSessionGeneration};sendSessionGeneration++;applyPendingBotDraft()');
+  assert.equal(f.run('pendingBotDraft'),null);assert.doesNotMatch(field.value,/Old private/);
+  f.run('auth.authenticated=false');assert.equal(f.run('openBotDraft("bot_atlas","Another old request")'),false);assert.equal(submissions,0);
+});
+
 test('invalid workflow JSON and out-of-range budgets keep the draft and never dispatch a save',async t=>{
   const f=ui(t);f.run('routineDialog("routine_feed")');const form=f.doc.querySelector('form'),input=f.doc.querySelector('[name=workflow]');
   input.value='{not-json';await f.submit();assert.equal(f.requests.length,0);assert.match(form.querySelector('.form-error').textContent,/Workflow JSON is invalid/);assert.equal(input.value,'{not-json');
