@@ -67,6 +67,18 @@
     return `<header class="dash-card-head"><div class="dash-card-title"><h2 id="dash-team-title">Your team</h2><p>Choose a teammate and start with a message.</p></div><button type="button" class="text-button dash-head-link" data-nav="/bots">View team${svg(glyphs.arrow)}</button></header><div class="pearl-home-actions">${cards || `<button type="button" class="pearl-resource-card" data-nav="/bots">${ctx.icon('bots')}<span><strong>Find your first teammate</strong><small>Give a bot a name and a role.</small></span>${svg(glyphs.arrow)}</button>`}</div>`;
   }
 
+  function missionsSection(ctx) {
+    const e=ctx.esc,items=(ctx.data?.missions || []).filter(m=>!m.archivedAt),attention=m=>['needs_attention','blocked','failed','interrupted','unknown','budget_exhausted','expired'].includes(m.status);
+    const finished=m=>m.executionState==='terminal'||['achieved','stopped','failed','expired','budget_exhausted','archived'].includes(m.status);
+    const needs=items.filter(attention),active=items.filter(m=>!finished(m)&&!attention(m));
+    const label=m=>({queued:'Queued',running:'In progress',planning:'Planning',verifying:'Verifying',waiting:'Waiting',stopping:'Stopping',paused:'Paused',pausing:'Pausing'})[m.status]||'Needs attention';
+    const row=m=>{const p=m.progress||{},hasProgress=Number.isFinite(p.verified)&&Number.isFinite(p.total)&&p.total>0&&p.verified>=0&&p.verified<=p.total,mark=botMark(ctx,m.leadBotId,'small',keyOf('dash-mission',m.id))||`<span class="dash-mark dash-mark-neutral">${ctx.icon('mission')}</span>`;
+      return `<article class="dash-row dash-mission">${mark}<div class="dash-row-body"><div class="dash-row-top"><strong>${e(m.title||m.goal||'Mission')}</strong>${badge(e(attention(m)?'Needs you':label(m)),attention(m)?'warn':'active')}</div><p class="dash-row-detail">${e(m.remote?`Summary from ${m.originEngineName||'another engine'}`:m.currentStep||'Open the Mission to follow its work.')}${hasProgress?` · ${e(p.verified)} of ${e(p.total)} outcomes verified`:''}</p></div><div class="dash-row-actions"><button type="button" class="secondary-button dash-small" data-nav="/missions/${e(encodeURIComponent(m.id))}">${m.remote?'Open summary':'Open Mission'}${svg(glyphs.arrow)}</button></div></article>`;};
+    const group=(title,rows)=>rows.length?`<div class="dash-mission-group"><h3>${title}</h3><div class="dash-list">${rows.slice(0,6).map(row).join('')}</div></div>`:'';
+    const body=group('Needs you',needs)+group('Active',active);
+    return {visible:needs.length+active.length>0,html:head(ctx,'missions',ctx.icon('mission'),'Missions','Goals your team is working toward.',needs.length+active.length,`<button type="button" class="text-button dash-head-link" data-nav="/missions">View all${svg(glyphs.arrow)}</button>`)+body};
+  }
+
   function filesSection(ctx) {
     const e=ctx.esc,files=cache?.files || [],shown=allFiles?files:files.slice(0,FILES_SHOWN);
     const card=(file,index)=>{const bot=ctx.botById(file.botId);return `<article class="dash-file">${tile(file.format)}<div class="dash-file-body"><strong title="${e(file.name)}">${e(file.name)}</strong><span class="dash-file-meta">${bot?ctx.avatar(bot,'tiny',keyOf('dash-file',index,file.botId)):''}<span class="dash-file-bot">${e(bot?.name || file.botName || 'A bot')}</span><span aria-hidden="true">·</span><time datetime="${e(file.createdAt || '')}">${e(when(ctx,file.createdAt))}</time></span></div><div class="dash-file-actions">${previewButton(ctx,file)}${downloadLink(ctx,file)}</div></article>`;};
@@ -148,9 +160,10 @@
 
   function page(ctx) {
     const status=failure && cache?`<p class="dash-status" role="status">Showing the last update. Reconnecting…</p>`:'';
+    const mission=missionsSection(ctx),missionSection=section('missions',mission.html,{hidden:!mission.visible,live:false});
     const heading=`<div class="page-heading dash-heading"><div><h1>Dashboard</h1><p class="page-description">A live view of your team’s work.</p></div>${status}</div>`;
-    if(!cache && failure)return `<section class="page dashboard-page" data-dash-page>${heading}<div class="dash-card glass-card dash-failure" data-dash-section="failure" role="alert">${empty(ctx.icon('info'),'The dashboard didn’t load',ctx.esc(failure),'<button type="button" class="secondary-button dash-small" data-dash-action="retry">Try again</button>')}</div></section>`;
-    return `<section class="page dashboard-page" data-dash-page>${heading}${section('team',teamSection(ctx),{live:false,classes:'pearl-home-hero'})}<div class="dash-priority">${section('needs',needsSection(ctx),{hidden:Boolean(cache&&!cache.needs?.length)})}${section('working',workingSection(ctx),{hidden:Boolean(cache&&!cache.working?.length)})}</div>${section('files',filesSection(ctx),{hidden:Boolean(cache&&!cache.files?.length)})}<div class="dash-columns">${section('activity',activitySection(ctx))}<div class="dash-side">${section('routines',routinesSection(ctx),{hidden:Boolean(cache&&!cache.routines?.length)})}</div></div></section>`;
+    if(!cache && failure)return `<section class="page dashboard-page" data-dash-page>${heading}${mission.visible?missionSection:''}<div class="dash-card glass-card dash-failure" data-dash-section="failure" role="alert">${empty(ctx.icon('info'),'The dashboard didn’t load',ctx.esc(failure),'<button type="button" class="secondary-button dash-small" data-dash-action="retry">Try again</button>')}</div></section>`;
+    return `<section class="page dashboard-page" data-dash-page>${heading}${section('team',teamSection(ctx),{live:false,classes:'pearl-home-hero'})}${missionSection}<div class="dash-priority">${section('needs',needsSection(ctx),{hidden:Boolean(cache&&!cache.needs?.length)})}${section('working',workingSection(ctx),{hidden:Boolean(cache&&!cache.working?.length)})}</div>${section('files',filesSection(ctx),{hidden:Boolean(cache&&!cache.files?.length)})}<div class="dash-columns">${section('activity',activitySection(ctx))}<div class="dash-side">${section('routines',routinesSection(ctx),{hidden:Boolean(cache&&!cache.routines?.length)})}</div></div></section>`;
   }
 
   /** Swaps only the sections whose markup changed, keeping avatars animating and focus where it was. */

@@ -1,3 +1,4 @@
+import { loadMissionPricing } from './lib/mission-pricing.mjs';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
@@ -112,6 +113,7 @@ async function validateSkillAssignments(store,state,bot) {
 export async function createStudioServer(options={}) {
   const dataDir=options.dataDir || process.env.STUDIO_DATA_DIR || path.join(ROOT,'data');
   const store=await new Store(dataDir).init();
+  const missionPricing=await loadMissionPricing({file:options.missionPricingFile ?? process.env.STUDIO_MISSION_PRICES_FILE,dataDir:store.directory,state:store.state});
   const publicUrl=options.publicUrl ?? process.env.STUDIO_PUBLIC_URL ?? '';
   let publicOrigin='';
   if(publicUrl){const url=new URL(publicUrl);ensure(url.protocol==='https:' && !url.username && !url.password && (url.pathname==='/' || !url.pathname) && !url.search && !url.hash,500,'STUDIO_PUBLIC_URL must be an HTTPS origin.');publicOrigin=url.origin;}
@@ -135,7 +137,7 @@ export async function createStudioServer(options={}) {
     createBot:(input,{actor})=>store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);await ensureWorkspaceLayout(await getWorkspaceRoot(store,bot.id));state.bots.push(bot);store.audit('bot.created',`${actor.name} added ${bot.name} to your team`,bot.id,{source:'agent',createdBy:actor.id});return structuredClone(bot);}),
     updateBot:(botId,input,{actor})=>{botIdle(botId);return store.mutate(async state=>{botIdle(botId);const index=state.bots.findIndex(b=>b.id===botId);ensure(index>=0,404,'Bot not found.');const updated=validateBot(input,state.bots[index]);validateBinding(updated,state,integrations);await validateSkillAssignments(store,state,updated);botIdle(botId);state.bots[index]=updated;store.audit('bot.updated',`${actor.name} updated ${updated.name}`,botId,{source:'agent'});return structuredClone(updated);});},
   };
-  const runtime=new Runtime(store,{...options,providers,integrations,skills,setup,speech,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
+  const runtime=new Runtime(store,{...options,missionPriceFor:options.missionPriceFor || missionPricing.priceFor,missionPricingConfigured:missionPricing.configured,missionPricingCount:missionPricing.count,providers,integrations,skills,setup,speech,ownerEngineId:()=>sync.nodeId,ownerEngineName:()=>sync.identity.name,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();
@@ -261,7 +263,7 @@ export async function createStudioServer(options={}) {
         if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access}))return;
         if(await notificationsApi(req,res,url,{session,notifications,body,json}))return;
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
-        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
+        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
         if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,sync,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
@@ -303,7 +305,7 @@ export async function createStudioServer(options={}) {
             const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Stop the active run and room turn before removing this bot.');idle();
             await store.mutate(state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');state.bots=state.bots.filter(b=>b.id!==botId);state.routines=state.routines.filter(r=>r.botId!==botId);delete state.messages[botId];removeBotSessions(state,botId);delete state.memory[botId];delete state.runs[botId];delete state.runHistory?.[botId];delete state.submissions?.[botId];state.proposals=(state.proposals || []).filter(item=>item.botId!==botId);for(const b of state.bots)b.collaborators=(b.collaborators||[]).filter(id=>id!==botId);for(const room of state.rooms)room.botIds=room.botIds.filter(id=>id!==botId);for(const channel of state.channels)if(channel.botId===botId){channel.enabled=false;channel.error='The assigned bot was removed.';}store.audit('bot.deleted',`${bot.name} removed from this workspace`);});return json(res,{deleted:true});
           }
-          if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);return pollReply(req,res,`bot:${botId}`,elsewhere,()=>({messages:store.state.messages[botId] || [],run:store.state.runs[botId] || null,lastMessageAt:store.lastBotMessageAt(botId),elsewhere}));}
+          if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);return pollReply(req,res,`bot:${botId}`,elsewhere,()=>({messages:store.state.messages[botId] || [],missions:store.publicState().missions,run:store.state.runs[botId] || null,lastMessageAt:store.lastBotMessageAt(botId),elsewhere}));}
           if(action==='compact' && method==='POST'){
             const input=await body(req);ensure(input && typeof input==='object' && Object.keys(input).every(key=>key==='topic') && (input.topic===undefined || typeof input.topic==='boolean'),400,'Send {topic?: boolean}.');
             return json(res,await runtime.compactChat(botId,{topic:input.topic===true}));

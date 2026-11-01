@@ -25,3 +25,5 @@ node prototypes/mission/build-preview.mjs
 Перевірено синтаксис Node.js та фактичну роботу в Chrome на ширинах 1280, 834, 390 і 320 px: без горизонтального переповнення сторінки, у світлій і темній темах. Перевірені створення через форму, спільний стан питання в чаті й деталях, заперечні та гіпотетичні запити в чаті, збереження чернетки під час навігації, Pause/Resume/Stop зі збереженням 33% прогресу, наступний результат до 80% і фінальна перевірка до 100%, перегляд результату, відмова в демонстраційному погодженні та порожній пошук. Знімки: `preview-desktop.jpg`, `preview-detail.jpg`, `preview-mobile.jpg`.
 
 Це перевірка інтерфейсного прототипу. Реальні запуски Engine, нативний застосунок і поведінка моделей не входили до неї.
+
+Production source now has the separate Engine-backed A–D and independent-G Mission workflow described in [Missions](../../docs/missions.md). This prototype remains an inert design reference; its simulated state and percentages are not execution evidence; production Pause/drain/Resume uses the real Engine and preserved checkpoints. See [verification](../../docs/verification.md) for actual source acceptance.

@@ -17,6 +17,8 @@ Native push registration is a device-only exception: **GET/PUT/DELETE `/api/devi
 
 **POST `/api/notifications/read`** accepts `{botId,roomId?,messageIds:[...]}` from an authenticated workspace cookie (with CSRF) or paired-app session, never a linked-engine bearer. At most 20 safe message IDs are accepted; the server derives exact event hashes only for existing final owner-visible replies in that conversation. It returns `{acknowledged:true}` without exposing enrollment or execution controls. This suppresses pending alerts during the eight-second grace period; it does not mark a run successful, approve work or retract a push already sent. Linked-engine forwarding uses bounded ephemeral `notificationReads:[{id,at}]` inside the existing sealed v2 sync exchange; receipts are not workspace documents.
 
+**POST `/api/notifications/read`** additionally accepts the exclusive Mission attention receipt `{botId,missionId,attentionId,messageIds:[]}`. The server derives the currently authoritative local approval/blocker identity and suppresses only that exact notification. It cannot mix question, room or transcript reads, clear unread replies, approve an action or create execution authority. Mission detail alone exposes `notificationAttention`; summaries and sync exclude attention identities.
+
 **GET `/api/notifications/unread`** returns `{unreadBots:{[botId]:messageId}}` for the latest unread committed reply in each bot's main conversation, including routine replies. It uses the same authenticated workspace/paired-app boundary and refuses linked-engine bearers. No message content, push token or enrollment is returned. A visible exact read receipt clears that reply's sidebar dot; reading an older message cannot clear a newer reply. No APNs setup is required. The latest read reply per bot is retained within the bounded notification read metadata after older receipts expire.
 
 | Route | Behavior |
@@ -30,6 +32,23 @@ Native push registration is a device-only exception: **GET/PUT/DELETE `/api/devi
 | GET /api/capabilities | Tupies engine version and implemented feature flags. |
 | GET /api/conversations/search?query=words&scope=all | Owner-facing search of stored bot/room display transcripts, including hidden bots. Optional `scope=bot\|room`, `conversationId` and `limit=1..30`. Returns `{results:[{scope,conversationId,name,messageId,role,createdAt,excerpt}],total,scanned,truncated,hasMore,notice}`. Queries are 2–200 characters and at most 20 words; all words must match, with exact phrases ranked first, then recent messages. Scans at most 20,000 messages/8 million characters, with a partial-search notice. Redaction precedes matching and snippets. This is separate from a model's scoped history tools. |
 | GET /api/providers | Direct provider catalog and setup metadata. |
+
+## Missions
+
+All Mission routes use the existing authenticated workspace/device boundary, mutation CSRF and Origin/Host checks; linked-engine sessions cannot call them. `GET /api/state` and bot message polling include safe Mission summaries, with `missionsAdmission` on state. Dedicated local detail alone contains the exact current owner controls. Remote summary controls are refused.
+
+| Route | Request and behavior |
+| --- | --- |
+| GET /api/missions | `{missions,admission}`; local and read-only remote presentation. |
+| POST /api/missions | `{leadBotId,goal,clientMessageId,requirements?:string[],attachments?:[],limits?:object}`; 202 `{mission}`, or 200 `{mission,duplicate:true}` for the same durable submission/payload. A different payload under that ID returns409. Busy coordinators queue. |
+| GET /api/missions/:id | `{mission}` with state/progress, actual assignments, requirements, results/activity and bounded currentRun owner controls on the execution engine. |
+| POST /api/missions/adopt | `{botId,runId}` attaches the existing local direct-chat task once without replaying it. |
+| POST /api/missions/:id/control | `{action,revision,text?,clientMessageId?,requirements?}`. Actions: `stop`, `direction`, `archive`, `retry`, `revise`, `limits`, `pause`, `resume`, `wait`. Expected revision is required; `limits` accepts finite nonnegative integer `tokens`, `moneyMicros`, `requests`, `toolCalls`, `computeMs` and absolute epoch-millisecond `deadlineAt`, with optional `finalReserve`; recorded/unknown costs persist. `wait` accepts `{wait:{kind,...}}` for timer (`delayMs`), own dependency (`delegationIds`) or private file change (`path`, optional `intervalMs`), with bounded `deadlineAt`. Pause drains an admitted bounded action before Paused; Resume revalidates the whole retained family. Direction uses text and a stable clientMessageId. Revision/retry require a settled episode and preserve prior evidence; unknown effects cannot retry. |
+| GET /api/missions/:id/evidence/:evidenceId/download | Exact saved file bytes only for a file receipt owned by this Mission/coordinator. Hash, regular-file/no-symlink, size and immutable blob identities are rechecked. Attachment MIME/filename are Engine-derived; no-store. Workspace mutation does not replace the historical bytes. |
+
+`GET /api/missions/:id/approaches/:approachId?digest=...&offset=0&limit=4000` reads an exact local record. `/export?digest=...&kind=skill|brain&name=...` prepares an inert proposal/Brain draft using existing review and permissions; it installs/writes nothing. Wrong Mission/source/digest is refused.
+
+Mission questions/approvals/browser handoff use the same current `/api/bots/:id/answer`, `/approval` and `/browser/...` identities as chat. No Mission endpoint creates a tool grant, arbitrary progress or direct Achieved status. Tools `mission_start`, `mission_status`, `mission_contract_set`, `mission_submit_result` and `mission_request_completion`, `mission_wait`, `mission_approach_set`, `mission_approach_search` and `mission_approach_read` are narrower than owner controls; only final Engine acceptance commits success. See [Missions](missions.md) for schemas, limits, independent-review meaning, storage and deferred stages.
 
 ## Model providers
 

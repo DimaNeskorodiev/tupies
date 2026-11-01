@@ -1,6 +1,6 @@
 # Mission — план реалізації
 
-Дата: 1 листопада 2026 року. Статус: запропонований план, підготовлений за запитом власника. Mission ще не реалізовано. План охоплює інтерфейс, запуск із чату, керування довготривалою ціллю та поступове розширення автономного виконання.
+Дата: 1 листопада 2026 року. Статус: A+B реалізовано й перевірено як перший source-only реліз; фактичний стан та acceptance наведено в [Missions](../missions.md) і [verification](../verification.md). C–G залишаються планом поступового розширення, а не виконаними можливостями. План охоплює інтерфейс, запуск із чату, керування довготривалою ціллю та поступове розширення автономного виконання.
 
 ## Продуктовий результат
 
@@ -195,6 +195,8 @@ Mission controller викликає наявний Engine через один li
 **Gate:** фактичний браузер на 320/390 px, tablet і desktop; світла/темна тема, keyboard, reduced motion, великий текст, довгі назви, багато учасників, швидка навігація та оновлення під час редагування. Chat і Mission показують один ID/прогрес; promotion не повторює вже виконану дію. Явні й однозначні позитивні сценарії та цитовані/гіпотетичні негативні сценарії проходять окремо.
 
 **Перший придатний реліз — A+B.** Він дає реальні дослідницькі/документні місії, існуючу командну роботу, докази й два входи. Зберігає чинні action approvals; загальний monetary cap, довгі event waits, Pause і recovery незавершеної команди ще не обіцяються. Ліміти, яких Engine не вміє забезпечити, не показувати як активні налаштування.
+
+**Source status, 1 November 2026:** C and D plus the independent part of G are implemented after A+B. C is local conservative admission with explicit per-path readiness and modeled prices, not provider billing/quota or CPU isolation. D supports typed timers, own delegation completion and exact authorized private-file change, plus drain/Pause/Resume and safe same-identity family recovery. G records bounded approaches and supports exact inert reuse/export and deterministic evaluation. E autonomous external adapters, F general isolated workers and the E/F-dependent external-action/general-worker final G gate remain deferred; real-model and human usefulness are unmeasured. Current evidence is in [C/D/G acceptance](missions-cdg-acceptance-20261101.md); the original phase requirements below remain the source of scope.
 
 ### C — ресурси всієї Mission
 
