@@ -6,6 +6,12 @@ On phones, **Return** inserts a new line. Tap **Send**, or use **Cmd/Ctrl+Enter*
 
 Phone transitions settle cleanly after interrupted animations, rotation or returning to the app. New messages use a short entrance; automatic scrolling follows streamed replies with one bounded animation and stops as soon as you scroll. Composer growth also yields to your scrolling. The floating down-arrow returns to the latest message. These motion refinements are currently in source; operational engines require the matching static asset update.
 
+## Bot profile navigation
+
+The profile keeps Overview, Settings, Brain, Memory, Learning, Files and Scripts in a single horizontal tab row. On phones the row stays below the app header while scrolling. Swipe it to reach more sections; keyboard users can use Left/Right or Home/End. The selected tab is revealed for direct links, and focus and horizontal position survive data refreshes. **Open chat** is the primary action; the adjacent sliders button opens **Bot settings**. The gear in the app header opens workspace Settings.
+
+Overview shows compact Memory, Notes, Files and last-activity summaries followed by recent tasks. Brain contains linked knowledge; Memory contains short facts and preferences; Learning handles material intake and suggestions to review. On a phone the Brain connection map starts collapsed under **Explore connections**, leaving the note list easier to reach. It can be expanded without leaving the page.
+
 ## Search and direction during work
 
 The desktop sidebar keeps a compact brand and navigation area above **My Tupies**, your visible bot list. The list uses the remaining window height and scrolls independently, with **Settings** always available below it. Click a bot to open its conversation or **+** to create one. Phones keep their existing bottom navigation and teammate switcher.
@@ -26,7 +32,7 @@ Paused companions and **Reduce Motion** show the still idle image without blinki
 
 Open **Bots → bot profile → Settings**, the profile’s **Settings** button, or **chat ••• → Bot settings**. One page contains four visible sections, with buttons to jump between them: **Instructions** (identity, companion and standing rules), **Memory** (Memory/Brain tools, Save brief task notes, explanations of Brain and reviewed Learning, and links to the stored content), **Tools** (capabilities, action review, skills, integrations, search fallback and teammates), and **Model** (provider and model). Only context budget, enabled/hidden controls and deletion remain under **Advanced settings**. Brain, Memory and Learning remain content views; the Overview’s configuration summary is read-only. Creating a bot uses the same form in a dialog. A new bot inherits the workspace provider and its default model. Room handoffs and turn budgets remain under **Collaboration settings**.
 
-Settings are applied only with **Save changes**. Unsaved values, checkboxes, selected companion and focused input/caret survive profile refreshes and switching between profile tabs in the current page session. **Discard changes** restores the current saved configuration. A refused save retains the draft and shows its error. The phone save bar sits above the tab bar. This is session-local editing state, not persistent draft storage or a change to Engine permissions.
+Settings are applied only with **Save changes**. Unsaved values, checkboxes, selected companion and focused input/caret survive profile refreshes and switching between profile tabs in the current page session. **Discard changes** restores the current saved configuration. A refused save retains the draft and shows its error. On phones, the save bar floats above the tab bar only while there are unsaved edits; otherwise it stays at the end of the form. This is session-local editing state, not persistent draft storage or a change to Engine permissions.
 
 **Settings** starts with Models, Devices & sync and Help. Open **More settings** for Skills, Integrations, Messaging and Activity; those routes and their existing actions remain available. A collapsed section picker on each settings page switches sections. Open state and keyboard focus survive background refreshes.
 
