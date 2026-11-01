@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { Store } from '../lib/store.mjs';
 import { NativeEngine, isActive } from '../lib/engine.mjs';
 import { callFingerprint } from '../lib/work-quality.mjs';
+import { DelegationJobs } from '../lib/delegation-jobs.mjs';
 
 const call=(id,name,args)=>({id,name,arguments:args});
 const reply=text=>({text,toolCalls:[]});
@@ -311,4 +312,13 @@ test('identical bounded waits preserve genuine pending work while unchanged term
     phase=nextPhase;turns=0;const stalled=await engine.start('bot_atlas',nextPhase===2?'Repeat an unchanged terminal poll.':'Repeat an unchanged invalid poll.');await engine.tasks.get(stalled.id);
     assert.equal(parent(store).status,'failed');assert.match(parent(store).error,/made no progress/);assert.ok(turns>=4);assert.equal(childCalls,1);
   }
+});
+
+test('queue pump records not_started when an undispatched entry is already cancelled',async t=>{
+ let turns=0;const {engine,store}=await fixture(t,async request=>{assert.equal(worker(request),undefined);if(++turns===1)return tools(call('held-queue','delegate_task',{botId:'worker_0',task:'Never dispatch this cancelled request.',wait:false}));if(turns===2)return tools(call('collect-cancelled','delegation_status',{wait:true}));return reply('The cancelled request was not started.');},{workers:1});
+ engine.delegationJobs.schedule=()=>{};const run=await engine.start('bot_atlas','Collect a cancelled queued request.');await waitFor(()=>parent(store)?.status==='waiting_for_delegate'&&engine.delegationJobs.entries.size===1);const entry=[...engine.delegationJobs.entries.values()][0];assert.equal(entry.started,false);entry.controller.abort(new Error('Synthetic queued cancellation.'));await engine.delegationJobs.pump();await waitFor(()=>parent(store)?.status==='completed');await engine.tasks.get(run.id);const job=parent(store).delegationJobs[0];assert.equal(job.status,'cancelled');assert.equal(job.outcome,'not_started');assert.equal(job.childRunId,undefined);assert.equal(store.state.runs.worker_0,undefined);
+});
+
+test('cancelled restored queue retains prior child identity as unknown rather than not_started',async()=>{
+ const context={runId:'parent_retained',bot:{id:'bot_parent'},controller:new AbortController()},job={id:'job_retained',botId:'bot_child',childRunId:'child_original',status:'suspended'},run={id:context.runId,status:'running',delegationJobs:[job]},state={runs:{bot_parent:run},missions:{}},engine={closing:false,current:()=>run,starting:new Set(),options:{maxRuns:4},store:{state,redactValue:structuredClone,async mutate(fn){return fn(state);}}},queue=new DelegationJobs(engine),controller=new AbortController();controller.abort();queue.schedule=()=>{};queue.entries.set(job.id,{context,prepared:{botId:'bot_child',resumeChildRunId:'child_original'},controller,started:false,resolve(){}});await queue.pump();assert.equal(job.status,'cancelled');assert.equal(job.outcome,'unknown');assert.equal(job.childRunId,'child_original');assert.equal(queue.entries.size,0);
 });

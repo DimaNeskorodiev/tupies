@@ -2,6 +2,12 @@
 
 Tupies is one self-hosted server and a browser client. Its server uses Node's HTTP, filesystem, crypto, process and network APIs, with bundled document and browser-rendering dependencies. There is no remote agent gateway, database service or runtime CDN dependency.
 
+## Missions over task episodes
+
+`lib/missions.mjs` owns the durable owner goal above existing task episodes. Shared tab/chat admission and promotion commit identities in Store, then the normal Engine tick dispatches an eligible coordinator. Dedicated Mission lanes keep new canonical history separate; adopted chat retains its original lane and snapshots. Mission tools cannot expand permissions or set success. `mission-contract`, `mission-evidence` and `mission-verifier` bind immutable outcomes, exact saved observations/file versions and a separate tool-free model assessment; final evidence is rechecked inside the serialized completion mutation after resource drain. `mission-presentation` alone feeds polling and the read-only sync document. See [Missions](missions.md).
+
+`mission-resources.mjs` owns atomic shared reservations/settlement/unknown liabilities; `mission-resource-runtime.mjs` wraps provider and tool admission, including final review and hidden Engine inference. `mission-pricing.mjs` loads only a trusted startup operator file, pinning rates per run/operation. `mission-waits.mjs` retains typed one-shot conditions and bounded engine-local continuation snapshots. Pause drains bounded work, invalidates prompts and releases slots; recovery preflights the entire child tree before any dispatch and never replays unknown effects. `mission-learning.mjs` records bounded observations and exact read-only reuse; suggested Skills/Brain remain inert and untrusted until existing owner review. These records, rate pins, ledgers and snapshots never become sync authority.
+
 ## A task through the engine
 
 1. The authenticated HTTP API checks bot concurrency/reservations and validates selected attachment paths, actual file metadata, supported formats, count and combined size before recording a task. The display transcript retains the user text and attachment metadata; model context separately lists private file paths.

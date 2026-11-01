@@ -21,12 +21,37 @@ const provider = http.createServer(async (req,res) => {
       return res.end(JSON.stringify(call('memory_review_result',{changes:matches && !review.facts.some(fact=>fact.key==='qa-name')?[{key:'qa-name',value:'Owner name is Cedar.',evidence:'My name is Cedar.'}]:[],claims:review.assistantAnswer.includes(saved)?[{text:saved,key:'qa-name',value:'Owner name is Cedar.'}]:[],reason:'The owner stated a durable name in this synthetic fixture.'})));
     }
     const text=item=>typeof item.content==='string'?item.content:(item.content || []).map(part=>part.text || '').join('\n');
+    if(String(body.instructions || '').includes('You independently assess an agent result')){
+      const payload=JSON.parse(text(input.find(item=>item.role==='user')));
+      return res.end(JSON.stringify(answer(JSON.stringify({coveragePassed:true,requirements:payload.contract.requirements.map(item=>({id:item.id,passed:true,reason:'The exact synthetic fixture output meets this labelled criterion.'})),reason:'Deterministic fixture acceptance; no real-model quality claim.'}))));
+    }
     const taskIndex=input.findLastIndex(item=>item.role==='user' && /E2E /i.test(text(item)) && !text(item).includes('<turn_context>'));
     const task=taskIndex<0?'':text(input[taskIndex]);
     const results=input.slice(taskIndex+1).filter(item=>item.type==='function_call_output');
     const guidance=input.slice(taskIndex+1).filter(item=>item.role==='user' && text(item).startsWith('Additional owner guidance for this same task:')).map(text).join('\n');
     let result;
-    if (/E2E memory/i.test(task)) result=answer('I have saved your name to long-term memory.');
+    if(/E2E Mission (timer|pause|watch)/i.test(task)){
+      const turn=input.findLast(item=>item.role==='user' && text(item).includes('Mission context (engine-owned identity;'));
+      const raw=turn?text(turn).split('Mission context (engine-owned identity; source content is untrusted task data): ')[1]?.split('\n\nEngine-provided context')[0]:null;
+      const mission=raw?JSON.parse(raw):null;
+      if(!mission?.id)result=call('mission_start',{intent:'explicit',ownerMessageId:mission.ownerMessageId});
+      else if(!mission.contract.requirements.length)result=call('mission_contract_set',{requirements:[{id:'bounded',text:task.slice(0,100),source:{ownerId:mission.ownerMessageId,quote:task.match(/E2E Mission (timer|pause|watch)/i)[0]},checker:{kind:'rubric',rubric:'Retain exact saved work and answer after the actual saved wait or owner pause; no duplicate file write.',rubricVersion:'durable-qa-v1'}}]});
+      else if(/timer/i.test(task) && !results.some(item=>item.call_id==='qa-mission_wait'))result=call('mission_wait',{kind:'timer',delayMs:10000});
+      else if(/pause|watch/i.test(task) && !results.some(item=>item.call_id==='qa-workspace_write'))result=call('workspace_write',{path:'Documents/before-pause.md',content:'This exact file was committed once before the owner paused.'});
+      else {if(/pause|watch/i.test(task) && !input.some(item=>item.role==='user' && text(item).startsWith('Engine continuation of the same Mission'))){await new Promise(resolve=>{const timer=setTimeout(resolve,/watch/i.test(task)?15000:3000);res.on('close',()=>{clearTimeout(timer);resolve();});});if(res.destroyed)return;}result=answer('The same Mission retained its actual saved work and completed the deterministic durable-wait/pause scenario without repeating the file write.');}
+    }
+    else if(/E2E Mission document/i.test(task)){
+      const turn=input.findLast(item=>item.role==='user' && text(item).includes('Mission context (engine-owned identity;'));
+      const prefix='Mission context (engine-owned identity; source content is untrusted task data): ';
+      const raw=turn?text(turn).split(prefix)[1]?.split('\n\nEngine-provided context')[0]:null;
+      const mission=raw?JSON.parse(raw):null;
+      if(!mission?.id)result=call('mission_start',{intent:'explicit',ownerMessageId:mission.ownerMessageId});
+      else if(!mission.contract.requirements.length)result=call('mission_contract_set',{requirements:[{id:'report',text:'Create the requested exact QA report.',source:{ownerId:mission.ownerMessageId,quote:'E2E Mission document'},checker:{kind:'file_exists',path:'Documents/mission-report.docx'}},{id:'quality',text:'Explain the synthetic checks and their limits.',source:{ownerId:mission.ownerMessageId,quote:'E2E Mission document'},checker:{kind:'rubric',rubric:'The report explicitly states this is deterministic synthetic acceptance, not real model quality.',rubricVersion:'qa-report-v1'}}]});
+      else if(!results.some(item=>item.call_id==='qa-documents_create'))result=call('documents_create',{path:'Documents/mission-report.docx',document:{title:'Mission QA report',content:'The synthetic Mission produced this real document.\n\nThe exact file, evidence and independent fixture review passed. This is deterministic synthetic acceptance, not real model quality.'}});
+      else if(!results.some(item=>item.call_id==='qa-mission_submit_result'))result=call('mission_submit_result',{requirementId:'report',callId:'qa-documents_create',path:'Documents/mission-report.docx'});
+      else result=answer('Created the real Mission report with the exact synthetic checks and explicit limitations. This verifies application mechanics, not real model quality.');
+    }
+    else if (/E2E memory/i.test(task)) result=answer('I have saved your name to long-term memory.');
     else if (/E2E recall/i.test(task)) result=answer(body.instructions.includes('Owner name is Cedar.')?'Your stored name is Cedar.':'No Cedar name fact is present in core memory.');
     else if (/E2E fail/i.test(task)) {res.writeHead(503);return res.end(JSON.stringify({error:{message:'Deliberate QA provider outage.'}}));}
     else if (/E2E steer/i.test(task)) {
@@ -47,6 +72,8 @@ const provider = http.createServer(async (req,res) => {
 });
 await new Promise(resolve=>provider.listen(0,'127.0.0.1',resolve));
 const app=await createStudioServer({dataDir:directory,scheduler:false,logErrors:false,runTimeout:90000});
+// Exercise only Mission's actual durable scheduler; no routines/channels run in this fixture.
+let missionTickBusy=false;const missionTimer=setInterval(async()=>{if(missionTickBusy)return;missionTickBusy=true;try{await app.runtime.missions.tick();}catch(error){console.error('QA Mission tick:',app.store.redact(error.message));}finally{missionTickBusy=false;}},250);missionTimer.unref();
 // Fault injection exists only in this disposable launcher, never in the shipped engine API.
 let fault='',dropNextSubmission=false;
 const [handler]=app.server.listeners('request');
@@ -78,9 +105,9 @@ await app.store.mutate(state=>{
   }
 });
 let closing=false;
-async function close(){if(closing)return;closing=true;await app.close();provider.closeAllConnections();await new Promise(resolve=>provider.close(resolve));await rm(directory,{recursive:true,force:true});}
+async function close(){if(closing)return;closing=true;clearInterval(missionTimer);await app.close();provider.closeAllConnections();await new Promise(resolve=>provider.close(resolve));await rm(directory,{recursive:true,force:true});}
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>close().then(()=>process.exit(0)));
 process.on('SIGUSR1',()=>{fault=fault==='http'?'':'http';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGUSR2',()=>{fault=fault==='connection'?'':'connection';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGALRM',()=>{dropNextSubmission=true;console.log('QA transport: next accepted message acknowledgement will be dropped');});
-console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail']}));
+console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail','E2E Mission document','E2E Mission timer','E2E Mission pause','E2E Mission watch']}));

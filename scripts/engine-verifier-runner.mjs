@@ -40,7 +40,7 @@ export function verifierDiagnosticLog(text,passed){
 }
 async function command(name,exe,args,{cwd=WORK,timeoutMs=600000,input}={}){
   const started=Date.now();return new Promise(resolve=>{
-    const child=spawn(exe,args,{cwd,env:{PATH:'/usr/local/bin:/usr/bin:/bin',TUPIES_BUILD_WEB_ONLY:'1',TMPDIR:'/tmp',LANG:'C.UTF-8'},shell:false,detached:true,stdio:['pipe','pipe','pipe']});
+    const child=spawn(exe,args,{cwd,env:{PATH:'/usr/local/bin:/usr/bin:/bin',TUPIES_BUILD_WEB_ONLY:'1',TMPDIR:'/work',LANG:'C.UTF-8'},shell:false,detached:true,stdio:['pipe','pipe','pipe']});
     child.stdin.on('error',()=>{});child.stdin.end(input);
     let text='',bytes=0,failure=false;
     const kill=()=>{failure=true;try{process.kill(-child.pid,'SIGKILL');}catch{}};

@@ -2,6 +2,10 @@
 
 Tupies can run on your Mac and on a server at the same time, with the same bots, chats, memory and settings on both. Paired iPhone and Mac apps sign in with device keys and can switch between engines with one click. This page describes how that works, what it protects against and what it does not do.
 
+## Mission ownership and projections
+
+Each Mission is pinned to its creating engine's actual `sync.nodeId` and display name. Only an allowlisted `mission:<id>` presentation document replicates. Typed wait kind/next wake/expiry may appear as presentation only, without private path, condition ID, cursor or child IDs. Resource ledgers/journals, startup pricing/rate pins, reusable approach content and continuation snapshots are excluded. Remote waits never execute on the receiving engine. Full contracts/runtime, checkpoints, approval identities, tool payloads, immutable file bytes and dedicated Mission canonical histories remain local. A received summary never populates `missions` or grants execution authority; it cannot overwrite an existing local controller record. Remote artifact references cannot use this engine's private download route. The app displays the last confirmed state and owner engine, with no control/failover. Existing automation/token-renewal ownership stays unchanged. Update linked engines together for the new presentation kind. See [Missions](missions.md).
+
 ## The shape of it
 
 ```
