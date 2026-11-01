@@ -2,9 +2,9 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
-## Bot profile mobile usability (1 November 2026, source only)
+## Bot profile mobile usability (1 November 2026, installed on VPS)
 
-The profile refinement is implemented: a compact hero and overview, single-row scrolling section navigation, readable dark/light content, a collapsible phone Brain map and a save bar that floats only for unsaved edits. Browser checks use disposable synthetic data. Next: owner review on the physical iPhone and a separately verified deployment to the desired engine. Source changes do not update installed engines or native apps.
+The profile refinement is implemented: a compact hero and overview, single-row scrolling section navigation, readable dark/light content, a collapsible phone Brain map and a save bar that floats only for unsaved edits. Browser checks use disposable synthetic data. [PR21](https://github.com/DimaNeskorodiev/tupies/pull/21) is merged and deployed as **bot-profile-20261101-e4c3a593** on the existing VPS. The mobile app receives the engine’s shared assets after Reload; no native rebuild is needed. Mac and Linux focused checks, protected backup, installed asset/TLS checks and exact runtime preservation pass. Next: owner review on physical iPhone, including native WebKit, safe areas, Dynamic Type and VoiceOver.
 
 ## Organized workspaces and reusable bot software (1 November 2026)
 
