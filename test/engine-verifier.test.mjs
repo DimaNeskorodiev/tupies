@@ -6,7 +6,7 @@ import os from 'node:os';
 import { workshopDigest } from '../lib/workshop.mjs';
 import { VERIFIER_POLICY, verifierConfig, verifierCreateArgs, validateVerifierBundle, readVerifierBundle, inspectVerifierContainer, validateVerifierResult, runEngineVerification } from '../lib/engine-verifier.mjs';
 import { parseVerifierArguments, verifyCandidateCLI } from '../scripts/verify-engine-candidate.mjs';
-import { parseTestSummary, assertVerifierKernel, collectVerifierTests } from '../scripts/engine-verifier-runner.mjs';
+import { parseTestSummary, assertVerifierKernel, collectVerifierTests, verifierDiagnosticLog } from '../scripts/engine-verifier-runner.mjs';
 
 const image='sha256:'+'a'.repeat(64),id='b'.repeat(64),jobLabel='dev.tupies.verifier-job';
 const config={image,executable:'/fixture/no-docker',socket:'/fixture/docker.sock'};
@@ -122,4 +122,9 @@ test('full verifier discovers nested candidate tests and refuses linked test tre
   await fs.writeFile(path.join(dir,'test/top.test.mjs'),'');await fs.writeFile(path.join(dir,'test/nested/candidate.test.mjs'),'');await fs.writeFile(path.join(dir,'test/helper.mjs'),'');
   assert.deepEqual(await collectVerifierTests(dir),['test/nested/candidate.test.mjs','test/top.test.mjs']);
   await fs.symlink(path.join(dir,'test/nested'),path.join(dir,'test/link'));await assert.rejects(collectVerifierTests(dir),/symlinks/);
+});
+
+test('failed verifier output retains the first failure cause and final summary within the log bound',()=>{
+  const text='ok 1 - fixture\n'.repeat(1000)+'not ok 2 - browser\nerror: sandbox unavailable\n'+'ok 3 - fixture\n'.repeat(1000)+'# fail 1\n';
+  const log=verifierDiagnosticLog(text,false);assert.match(log,/sandbox unavailable/);assert.match(log,/# fail 1/);assert.ok(log.length<=4096);assert.equal(verifierDiagnosticLog(text,true),text.slice(-4096));
 });
