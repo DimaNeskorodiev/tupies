@@ -22,7 +22,7 @@ test('real verifier boundary: non-root, immutable baseline, no Docker socket, no
 export async function acceptEngineVerifier({image,executable,socket,output}){
   assert.equal(process.platform,'linux','Acceptance requires a disposable Linux runner.');
   const config=verifierConfig({image,executable,socket});await fs.mkdir(output,{recursive:true});
-  const candidate=await verifyEngineCandidate({changes:[{path:'test/verifier-boundary-probe.test.mjs',sha256:null,oldText:'',newText:probe}],dependencies:[],tests:[]});
+  const candidate=await verifyEngineCandidate({changes:[{path:'test/verifier-acceptance/boundary.test.mjs',sha256:null,oldText:'',newText:probe}],dependencies:[],tests:[]});
   const proposal={format:'tupies-improvement-v1',kind:'engine',title:'Synthetic container boundary probe',summary:'Disposable verification only.',patch:candidate.patch,candidate:{format:candidate.format,request:candidate.request,base:candidate.base}};
   const bundle={format:'tupies-contribution-v1',proposal,digest:workshopDigest(proposal)};
   const persist=async(name,receipt)=>{await fs.writeFile(path.join(output,name+'.json'),JSON.stringify(receipt,null,2)+'\n',{flag:'wx',mode:0o600});console.log(JSON.stringify({case:name,...receipt}));return receipt;};

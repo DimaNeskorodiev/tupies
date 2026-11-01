@@ -67,7 +67,7 @@ export async function verifierMain(){
     catch(error){const diagnostic=await command('browser-diagnostic','/usr/bin/chromium',['--headless=new','--no-first-run','--disable-background-networking','--disable-extensions','--user-data-dir=/tmp/verifier-browser-diagnostic','--dump-dom','about:blank'],{cwd:'/tmp',timeoutMs:15000});throw new Error(error.message+' '+diagnostic.log.slice(0,440));}
     await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
     await fs.cp(BASE,WORK,{recursive:true,verbatimSymlinks:true,errorOnExist:true,force:false});
-    for(const change of candidate.request.changes)await fs.writeFile(path.join(WORK,change.path),candidate.files[change.path]);
+    for(const change of candidate.request.changes){const target=path.join(WORK,change.path);await fs.mkdir(path.dirname(target),{recursive:true});await fs.writeFile(target,candidate.files[change.path]);}
     const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-control.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
     const rest=(await collectVerifierTests(WORK)).filter(name=>!sequential.some(file=>name==='test/'+file));
     const checks=[['syntax',process.execPath,['scripts/check.mjs']],['tests-sequential',process.execPath,['--test','--test-reporter=tap','--test-concurrency=1',...sequential.map(name=>'test/'+name)]],['tests-concurrent',process.execPath,['--test','--test-reporter=tap','--test-concurrency=4',...rest]],['build','/usr/local/bin/npm',['run','build']]];
