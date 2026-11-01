@@ -1,6 +1,6 @@
 /* Bot profile (#/bots/<botId>): Overview, Brain (long-term notes), Memory (core facts), Learning (suggested changes to review) and Files. app.js calls render(), sets the HTML, then mount(). */
 (()=>{
-const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code']];
+const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code'],['workshop','Workshop','code']];
 const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser'};
 const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
 const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
@@ -111,6 +111,7 @@ function load(bot,v,force=false){
   if(v.tab==='learning'){ensureProposals(bot,v,force);window.StudioStudyLearning?.mount(bot,studyContext(bot,v),document.querySelector('.bot-profile'));}
   if(v.tab==='files'){ensureFiles(bot,v,v.filesFolder,force);if(!v.filesFolder)ensureWorkspace(bot,v,force);}
   if(v.tab==='scripts')ensureScripts(bot,v,force);
+  if(v.tab==='workshop')ensureWorkshop(bot,v,force);
 }
 
 /* Note bodies use the shared sanitized Markdown renderer; [[links]] and #tags in prose then become buttons built with DOM APIs. */
@@ -167,11 +168,12 @@ function tabs(bot,v){
   const counts={brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length,scripts:v.scripts?.length};
   return `<div class="bp-tabs" id="bp-tabs" role="tablist" aria-label="${esc(bot.name)} profile">${TABS.map(([key,label,ico])=>`<button class="segment${v.tab===key?' active':''}" role="tab" id="bp-tab-${key}" aria-selected="${v.tab===key}" aria-controls="bp-panel" tabindex="${v.tab===key?0:-1}" data-profile-action="tab" data-tab="${key}">${icon(ico)}${label}${counts[key]?`<span>${counts[key]}</span>`:''}</button>`).join('')}</div>`;
 }
-function panelContent(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):overviewPanel(bot,v);}
+function panelContent(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):v.tab==='workshop'?workshopPanel(bot,v):overviewPanel(bot,v);}
 const PANEL_INTRO={
   brain:['Brain','Linked notes about people, projects and what this bot has learned.'],
   memory:['Memory','Key facts and preferences this bot carries into its tasks.'],
   files:['Files','Documents, sources and outputs in this bot’s workspace.'],
+  workshop:['Workshop','Isolated tools and improvements to review for product reuse.'],
   scripts:['Scripts','Reusable programs. Inspect a package before using it.'],
 };
 function panel(bot,v){
@@ -505,6 +507,19 @@ function scriptDetail(bot,v){
   const files=Array.isArray(script.files)?script.files:[],title=script.title||script.id;
   return `<article class="glass-card bp-script-detail"><header><span class="bp-script-status${ready?' is-ready':''}">${esc(scriptState(script))}</span><h2>${esc(title)}</h2><p>${esc(script.purpose||'No purpose has been recorded for this script.')}</p></header><dl class="bp-rows"><div class="bp-row"><dt>Runtime</dt><dd>${esc(script.interpreter||'Not configured')}</dd></div><div class="bp-row"><dt>Entry point</dt><dd><code>${esc(script.entrypoint||'Not configured')}</code></dd></div></dl>${script.error?`<p class="bp-limit" role="alert">${esc(script.error)}</p>`:''}${!allowed?`<div class="bp-notice">${icon('shield')}<p>Running scripts requires Files and Terminal tools for ${esc(bot.name)}.</p><button class="secondary-button" data-action="edit-bot" data-id="${esc(bot.id)}">Bot settings</button></div>`:'<p class="bp-hint">Each execution uses the bot’s normal task, exact approval and Stop controls.</p>'}${scriptConfig('Dependencies',script.dependencies)}${scriptConfig('Inputs',script.inputs)}${scriptConfig('Outputs',script.outputs)}<section class="bp-script-config"><h3>Package files</h3>${files.length?`<ul class="bp-script-files">${files.map(file=>`<li><button type="button" class="text-button" data-profile-action="script-file" data-path="${esc(file.path)}">${icon('file')}<span>${esc(file.relativePath||file.path)}</span></button><small>${esc(bytes(file.size))}</small></li>`).join('')}</ul>`:'<p class="bp-muted">No verified file inventory is available.</p>'}</section><div class="field bp-script-arguments"><label for="bp-script-args">Arguments</label><textarea id="bp-script-args" data-profile-input="script-args" data-script-id="${esc(script.id)}" rows="3" spellcheck="false" maxlength="65000">${esc(v.scriptArgs.get(script.id)||'[]')}</textarea><small>A JSON array of literal strings. These values are reviewed with the exact script before execution.</small></div>${v.scriptNotice?`<p class="bp-form-error" role="alert">${esc(v.scriptNotice)}</p>`:''}<div class="bp-script-actions"><button type="button" class="primary-button" data-profile-action="script-chat"${canUse?'':' disabled'}>${icon('chat')}Use in chat</button><button type="button" class="secondary-button" data-profile-action="script-routine"${canUse?'':' disabled'}>${icon('routine')}Use in routine</button></div><details class="bp-script-version"><summary>Version details</summary><dl class="bp-rows"><div class="bp-row"><dt>Package digest</dt><dd><code>${esc(script.digest||'Not registered')}</code></dd></div><div class="bp-row"><dt>Manifest hash</dt><dd><code>${esc(script.manifestSha256||'Unavailable')}</code></dd></div></dl></details></article>`;
 }
+function ensureWorkshop(bot,v,force=false){
+  if(v.loading.workshop||(!force&&v.workshopAt&&Date.now()-v.workshopAt<STALE))return;v.loading.workshop=true;
+  fetchInto(bot,v,'workshop',`/api/bots/${enc(bot.id)}/workshop`,(result,error)=>{v.loading.workshop=false;v.workshopAt=Date.now();v.workshopError=error?ctx.errorText(error):'';if(!error)v.workshop=result;});
+}
+function workshopGrantPanel(bot,v){
+  const grants=v.workshop?.grants||[];
+  return `<section class="glass-card bp-workshop-card"><h2>Bounded API reads</h2><p>Task-scoped permissions issued from an exact chat approval. Request budgets are shared by the selected participants, not copied to each bot.</p><button type="button" class="secondary-button" data-profile-action="refresh-workshop-grants">Refresh grants</button>${grants.length?grants.map(grant=>`<div class="bp-workshop-grant"><h3>${esc(grant.tool)} · ${esc(grant.status)}</h3><p>${esc(grant.endpoint)}</p><p>${esc(grant.used)} / ${esc(grant.maxRequests)} requests reserved · Expires ${esc(grant.expiresAt)}</p><p>Participants: ${esc(grant.botIds.map(id=>(ctx.data?.bots||[]).find(item=>item.id===id)?.name||id).join(', '))}</p>${['active','blocked','exhausted'].includes(grant.status)?`<button type="button" class="secondary-button" data-profile-action="revoke-workshop-grant" data-id="${esc(grant.id)}">Revoke grant</button>`:''}</div>`).join(''):'<p>No bounded-read grants for this bot.</p>'}</section>`;
+}
+function workshopPanel(bot,v){
+  if(!v.workshop)return v.workshopError?retry(v.workshopError,'retry'):loading('Opening workshop…');
+  const active=bot.tools?.includes('workshop'),engineWorkshop=bot.tools?.includes('engine_workshop'),tools=v.workshop.tools||[],items=v.workshop.items||[];
+  return `<p class="bp-hint">${active?'This bot can build and test local tools in isolation.':'Enable Tool workshop in this bot’s Settings to let it build and test local tools.'} Tools receive only supplied data. They cannot access the network, system files or credentials.</p><p class="bp-hint">${engineWorkshop?'Engine workshop is enabled: this bot can inspect allowlisted product source and prepare isolated candidates.':'Enable Engine workshop separately in Settings to let this bot prepare product source changes.'} Candidates never modify the running Engine. Syntax and pure-function checks do not replace a full build and regression suite.</p><section class="glass-card bp-workshop-card"><h2>Local tools</h2>${tools.length?tools.map(tool=>`<p><strong>${esc(tool.title||'Invalid package')}</strong> — ${esc(tool.description||tool.status)}</p>`).join(''):'<p>No tools yet. Ask the bot to build a reusable data transformation.</p>'}<p class="bp-hint">${esc(v.workshop.catalog?.length||0)} shared catalog tools available to the bot.</p></section><section class="glass-card bp-workshop-card"><h2>Product improvements</h2><p>Proposals stay on this engine. Review code and test fixtures for private data before exporting a package to share with the product maintainer.</p>${items.length?items.map(item=>`<p><strong>${esc(item.title||'Invalid proposal')}</strong> · ${esc(item.kind||item.status)}<br>${esc(item.summary||'')}<br>${item.checks?`<span>${esc(item.checks.syntax)} syntax checks · ${esc(item.checks.tests)} pure-function tests · Full Engine suite not run</span><br>`:''}<button class="secondary-button" data-profile-action="review-improvement" data-id="${esc(item.digest)}">Review proposal</button></p>`).join(''):'<p>No proposals yet. The bot can save a useful tool or an Engine patch here.</p>'}</section>${workshopGrantPanel(bot,v)}${v.improvement?`<section class="glass-card bp-workshop-card"><h2>Review source and fixtures</h2><p>Export includes the complete source below. No automatic upload or installation.</p><pre class="bp-workshop-source">${esc(JSON.stringify(v.improvement.proposal,null,2))}</pre><button class="primary-button" data-profile-action="export-improvement" data-id="${esc(v.improvement.digest)}">Export reviewed source</button></section>`:''}${v.workshopError?`<p role="alert">${esc(v.workshopError)}</p>`:''}`;
+}
 function scriptsPanel(bot,v){
   if(!v.scripts)return v.scriptsError&&!v.loading.scripts?retry(v.scriptsError,'retry'):loading('Opening scripts…');
   const query=fold(v.scriptQuery),items=v.scripts.filter(script=>!query||fold(`${script.title||script.id} ${script.purpose||''} ${script.interpreter||''}`).includes(query));
@@ -604,6 +619,15 @@ async function act(element){
     case 'retry':load(bot,v,true);refresh(bot.id);break;
     case 'retry-workspace':ensureWorkspace(bot,v,true);refresh(bot.id);break;
     case 'initialize-workspace':await initializeWorkspace(bot,v);break;
+    case 'refresh-workshop-grants':ensureWorkshop(bot,v,true);break;
+    case 'revoke-workshop-grant':await ctx.api(`/api/bots/${enc(bot.id)}/workshop-grants/${enc(id)}/revoke`,{method:'POST',body:{}});ensureWorkshop(bot,v,true);break;
+    case 'review-improvement':v.improvement=await ctx.api(`/api/bots/${enc(bot.id)}/improvements/${enc(id)}`);refresh(bot.id);break;
+    case 'export-improvement':{
+      if(v.improvement?.digest!==id)break;
+      const result=await ctx.api(`/api/bots/${enc(bot.id)}/improvements/${enc(id)}`,{method:'POST',body:{digest:id,reviewedDigest:id,includeSource:true}});
+      const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)+'\n'],{type:'application/json'}));
+      const link=document.createElement('a');link.href=url;link.download=`tupies-contribution-${id.slice(0,12)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);break;
+    }
     case 'inspect-script':openScript(bot,v,id);break;
     case 'retry-script':if(v.scriptTarget)openScript(bot,v,v.scriptTarget);break;
     case 'script-file':v.dirty=true;await ctx.fileEditor(bot.id,element.dataset.path);break;

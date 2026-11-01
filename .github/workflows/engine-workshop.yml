@@ -1,0 +1,43 @@
+name: Engine workshop isolation
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: workshop-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  linux-container:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Prepare dependencies
+        run: npm ci
+      - name: Enable user namespaces on this disposable runner only
+        run: |
+          sudo systemctl stop docker.service docker.socket
+          sudo install -d /etc/docker
+          node -e 'require("fs").writeFileSync(process.env.RUNNER_TEMP+"/verifier-daemon.json",JSON.stringify({"userns-remap":"default"}))'
+          sudo install -m 600 "$RUNNER_TEMP/verifier-daemon.json" /etc/docker/daemon.json
+          sudo systemctl start docker
+          docker info --format '{{json .SecurityOptions}}'
+      - name: Build immutable verifier image from this checkout
+        run: docker build --iidfile "$RUNNER_TEMP/verifier-image" -f Dockerfile.engine-verifier .
+      - name: Verify real container suite, build, boundary, Stop and stale base
+        run: |
+          node scripts/accept-engine-verifier.mjs "$(cat "$RUNNER_TEMP/verifier-image")" /usr/bin/docker /var/run/docker.sock "$RUNNER_TEMP/verifier-receipts"
+      - name: Retain bounded synthetic receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: engine-verifier-receipts
+          path: ${{ runner.temp }}/verifier-receipts/*.json
+          if-no-files-found: ignore
+          retention-days: 7

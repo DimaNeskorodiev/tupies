@@ -129,3 +129,13 @@ body.pearl-studio .chat-composer .composer-footer .composer-mic-button:hover{bac
 @media(prefers-color-scheme:dark) and (max-width:760px){:root:not([data-theme=light]):not([data-appearance=light]) .inference-layer{--ip-surface:rgba(39,41,48,.84);--ip-text:#f1f2f5;--ip-muted:#a8aab3;--ip-line:rgba(255,255,255,.1);--ip-hover:rgba(255,255,255,.075);--ip-shadow:0 24px 75px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.2)}:root:not([data-theme=light]):not([data-appearance=light]) .inference-panel{border-color:rgba(255,255,255,.12);box-shadow:var(--ip-shadow),inset 0 1px 0 rgba(255,255,255,.08)}}
 @media(max-width:760px){.inference-panel{border-radius:28px;padding:14px 16px 12px}.inference-model-heading{font-size:17px;margin-bottom:15px}.inference-defaults button{min-height:38px}.inference-model-row{min-height:48px}.inference-note{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.inference-layer *,.inference-trigger,.inference-trigger>svg{animation:none!important;transition:none!important}.inference-scrim{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+.workshop-grant-form { margin-top: 16px; overflow-wrap: anywhere; }
+.workshop-grant-form summary { cursor: pointer; font-weight: 600; }
+.workshop-grant-form .field { margin-block: 12px; }
+.workshop-grant-form input[type="number"] { display: block; width: 100%; max-width: 240px; margin-top: 6px; }
+.workshop-grant-form fieldset { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.workshop-grant-form .permission-option { margin-block: 8px; }
+
+.workshop-request-detail { margin-block: 12px; }
+.workshop-request-detail pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }

@@ -25,13 +25,13 @@ test('Apple runtime packaging verifies exact pinned release, checksum and archit
 
 test('Apple engine source staging includes runtime fonts and notices but excludes private and development data',async t=>{
   const dir=await temporary(t),repo=path.join(dir,'repo'),out=path.join(dir,'output');
-  for(const folder of ['lib','public','assets/fonts','assets/licenses','scripts','data','node_modules','test','prototypes'])await fs.mkdir(path.join(repo,folder),{recursive:true});
-  const files={'server.mjs':'// server','package.json':'{"name":"fixture"}','package-lock.json':'{"packages":{}}','LICENSE':'MIT','NOTICE':'notice','lib/engine.mjs':'// engine','public/app.js':'// app','assets/fonts/NotoSans-Regular.ttf':'font','assets/fonts/OFL.txt':'font license','assets/licenses/THIRD_PARTY_LICENSES.txt':'dependency notices','.env':'SECRET','data/state.json':'SECRET','data/vault.key':'SECRET','node_modules/private':'SECRET','test/private':'SECRET','prototypes/private':'SECRET','lib/.env':'SECRET','public/state.json':'SECRET','public/.private':'SECRET'};
+  for(const folder of ['lib','public','assets/fonts','assets/licenses','assets/tool-catalog','scripts','data','node_modules','test','prototypes'])await fs.mkdir(path.join(repo,folder),{recursive:true});
+  const files={'assets/tool-catalog/fixture.json':'{"format":"tupies-tool-v1"}','assets/tool-catalog/private.txt':'PRIVATE','server.mjs':'// server','package.json':'{"name":"fixture"}','package-lock.json':'{"packages":{}}','LICENSE':'MIT','NOTICE':'notice','lib/engine.mjs':'// engine','public/app.js':'// app','assets/fonts/NotoSans-Regular.ttf':'font','assets/fonts/OFL.txt':'font license','assets/licenses/THIRD_PARTY_LICENSES.txt':'dependency notices','.env':'SECRET','data/state.json':'SECRET','data/vault.key':'SECRET','node_modules/private':'SECRET','test/private':'SECRET','prototypes/private':'SECRET','lib/.env':'SECRET','public/state.json':'SECRET','public/.private':'SECRET'};
   for(const [name,value] of Object.entries(files))await fs.writeFile(path.join(repo,name),value);
   for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','eval-private.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
   await stageEngineSource(repo,out);
-  for(const name of ['server.mjs','lib/engine.mjs','public/app.js','assets/fonts/NotoSans-Regular.ttf','assets/fonts/OFL.txt','assets/licenses/THIRD_PARTY_LICENSES.txt','LICENSE','NOTICE'])assert.ok(await fs.stat(path.join(out,name)));
-  for(const name of ['.env','data','node_modules','test','prototypes','lib/.env','public/state.json','public/.private'])await assert.rejects(fs.lstat(path.join(out,name)),{code:'ENOENT'});
+  for(const name of ['assets/tool-catalog/fixture.json','server.mjs','lib/engine.mjs','public/app.js','assets/fonts/NotoSans-Regular.ttf','assets/fonts/OFL.txt','assets/licenses/THIRD_PARTY_LICENSES.txt','LICENSE','NOTICE'])assert.ok(await fs.stat(path.join(out,name)));
+  for(const name of ['assets/tool-catalog/private.txt','.env','data','node_modules','test','prototypes','lib/.env','public/state.json','public/.private'])await assert.rejects(fs.lstat(path.join(out,name)),{code:'ENOENT'});
   for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs'])assert.ok(await fs.stat(path.join(out,'scripts',name)));
   await assert.rejects(fs.lstat(path.join(out,'scripts','eval-private.mjs')),{code:'ENOENT'});
   await fs.symlink(path.join(repo,'.env'),path.join(repo,'public','leak.txt'));

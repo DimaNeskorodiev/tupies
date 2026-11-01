@@ -142,3 +142,9 @@ Restore the complete runtime consistently. A missing secure journal or engine id
 ## Material learning
 
 Accepted managed Brain Markdown and its active revision manifest use ordinary trusted workspace file replication. Raw source uploads, complete extracts, pending study candidates, study checkpoints and knowledge publication/revision journals remain engine-local outside sync. A compact study request/progress/outcome can appear in the shared conversation; it contains no complete source and grants no execution authority. An explicit retained local source copy stays in the source engine's study spool, not a replicated attachment. Recovery requires that engine's local verified material and the original bot/provider/learning-skill revision. Seven-day expiry can make an interrupted source unavailable while previously accepted knowledge remains readable on linked engines.
+
+### Workshop read grants
+
+`workshop-grants.json` is Engine-local authority and attempt evidence, outside workspace sync. Linked engines never copy its grants, counters or process epoch. A recovered or moved task requires fresh owner review on the executing engine; portable tools/catalog packages grant no access. Complete runtime backups include the ledger, but restoring it does not restore execution authority.
+
+Engine workshop source/candidate snapshots and proposal check evidence remain in engine-local Workshop storage. They do not sync or carry approval authority; reviewed export is the explicit sharing path.

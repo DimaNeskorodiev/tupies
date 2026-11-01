@@ -1,5 +1,20 @@
 # Development and project handoff
 
+## Engine candidate verification
+
+Maintainers can plan and explicitly run exported Engine candidates with `scripts/verify-engine-candidate.mjs`, a separately prepared pinned Docker image and a new local receipt. This is operator-only; no Engine tool gains Docker access. See [Tool workshop](tool-workshop.md#operator-container-verification-source-only) for clean-image preparation, exact CLI flags, isolation policy and the real-container CI acceptance procedure. Do not build the image from live data or treat protocol-fixture success as Linux/container validation.
+
+## Workshop development and contribution intake
+
+Engine candidates live in `lib/engine-workshop.mjs`; `engine-candidate-checks.mjs` owns fixed syntax parsing and worker lifecycle, and `engine-candidate-worker.mjs` owns the in-memory-only QuickJS loader. `engine_workshop` is separately owner-only. Never import/evaluate candidate modules in Node, inherit `NODE_OPTIONS` into syntax parsing, resolve guest imports from disk or apply patches to the installed tree. Preserve before/after base checks and visible evidence limits. `test/engine-workshop.test.mjs` covers disposable patch applicability, isolation, stale sources, revocation, Stop and maintainer rechecks; Engine/API/browser regressions cover admission and review/export. Full Engine suites still need normal reviewed development/release execution.
+
+`lib/workshop-grants.mjs` owns bounded-read authority and its local ledger. Never place grants in workspace manifests, synced state documents, checkpoint snapshots or model arguments. `workshop_poll_api` is routed by Engine; direct AgentTools calls cannot supply authority. Its owner controls use the current approval identity, finite limits and explicit participants. Tests cover concurrent reservation, restart, pending activation, denial aliases and receipt-write failure. Revalidate the full suite and actual approval/Workshop browser flows after changes.
+
+The stage-2 gateway lives in `lib/workshop-gateway.mjs`; `test/workshop-gateway.test.mjs` uses disposable localhost APIs and `test/workshop-engine.test.mjs` covers exact approval/denial/Stop. It composes the existing credentialed integration transport with a pure guest; keep request dispatch out of guest callbacks and never classify it as an automatically retryable read.
+
+See [Tool workshop](tool-workshop.md) for runtime boundaries and `scripts/review-contribution.mjs`. Run focused `node --test test/workshop*.test.mjs`, then the full suite for Engine/tool/security changes. Ship `assets/tool-catalog/`, the pinned QuickJS dependencies/lock and dependency notices. Build/install/proposals remain engine-local; do not use real runtime data for fixtures. Native packaging includes catalog JSON but a source change does not update installed apps.
+
+
 ## Coordinating an Apple release with its engines
 
 A native build number does not identify the selected engine or the Mac bundled fallback. Pin one GitHub commit in an isolated checkout, record each engine source root/commit and the app build/fallback commit, run verification, then update the idle engines with complete protected stopped backups and install signed apps in place. Keep existing identities, Keychain groups and profiles. Pass an explicitly increasing `CURRENT_PROJECT_VERSION` to both native targets and the extension; do not reset installed builds to a stale repository default. The 30 October checkpoint is GitHub `02aaf2e` with signed Mac/iPhone build 10. Update the mutable handoff after deployment without editing an immutable release. Existing local unfinished work is not a release source.

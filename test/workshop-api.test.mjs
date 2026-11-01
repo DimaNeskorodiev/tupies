@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { createStudioServer } from '../server.mjs';
+async function fixture(t){const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-workshop-api-')),app=await createStudioServer({dataDir:directory,scheduler:false,logErrors:false});const {url}=await app.listen(0,'127.0.0.1');let cookie='',csrf='';async function request(route,{method='GET',body,auth=true,security=true,origin}={}){const response=await fetch(url+route,{method,headers:{...(auth?{Cookie:cookie}:{}),...(security?{'X-CSRF-Token':csrf}:{}),...(body?{'Content-Type':'application/json'}:{}),...(origin?{Origin:origin}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await response.json();if(route==='/api/setup'){cookie=response.headers.get('set-cookie').split(';')[0];csrf=data.csrf;}return {status:response.status,body:data};}await request('/api/setup',{method:'POST',body:{token:app.bootstrapToken,password:'workshop-disposable-fixture-password'}});t.after(async()=>{await app.close();await fs.rm(directory,{recursive:true,force:true});});return {app,request};}
+test('owner workshop review/export retains auth, CSRF, origin, exact revision and no execution endpoint',async t=>{
+  const h=await fixture(t),base='/api/bots/bot_atlas';assert.equal((await h.request(`${base}/workshop`,{auth:false})).status,401);
+  assert.equal((await h.request('/api/bots/bot_atlas',{method:'PATCH',body:{tools:['workspace','workshop']}})).status,200);
+  const bot=h.app.store.state.bots[0];const pkg=await h.app.runtime.tools.execute(bot,'workshop_build',{id:'fixture',title:'Fixture',description:'Safe synthetic identity',source:'x=>x',tests:[{input:3,expected:3}]});const proposal=await h.app.runtime.tools.execute(bot,'improvement_propose',{kind:'tool',title:'Fixture',summary:'Reusable identity.',toolDigest:pkg.digest});const route=`${base}/improvements/${proposal.digest}`,body={digest:proposal.digest,reviewedDigest:proposal.digest,includeSource:true};
+  assert.equal((await h.request(route,{auth:false})).status,401);assert.equal((await h.request(route,{method:'POST',body,security:false})).status,403);assert.equal((await h.request(route,{method:'POST',body,origin:'https://attacker.invalid'})).status,403);
+  assert.equal((await h.request(route,{method:'POST',body:{...body,reviewedDigest:'0'.repeat(64)}})).status,400);
+  assert.equal((await h.request(route,{method:'POST',body})).body.format,'tupies-contribution-v1');assert.equal((await h.request(`${base}/workshop`)).body.items.length,1);
+  assert.notEqual((await h.request(`${base}/workshop`,{method:'POST',body:{}})).status,200);
+  assert.equal((await h.request(`/api/bots/bot_nova/workshop/${pkg.digest}`)).status,404);
+  const grants=`${base}/workshop-grants`,revoke=`${grants}/grant_000000000000000000/revoke`;
+  assert.equal((await h.request(grants,{auth:false})).status,401);
+  assert.deepEqual((await h.request(grants)).body.grants,[]);
+  assert.equal((await h.request(grants,{method:'POST',body:{maxRequests:100}})).status,405);
+  assert.equal((await h.request(revoke,{method:'POST',body:{},security:false})).status,403);
+  assert.equal((await h.request(revoke,{method:'POST',body:{},origin:'https://attacker.invalid'})).status,403);
+  assert.equal((await h.request(revoke,{method:'POST',body:{}})).status,404);
+  assert.equal((await h.request(base,{method:'PATCH',body:{tools:['engine_workshop']},security:false})).status,403);
+  assert.equal((await h.request(base,{method:'PATCH',body:{tools:['engine_workshop']}})).status,200);
+  assert.deepEqual(h.app.store.state.bots[0].tools,['engine_workshop']);
+  const candidate=await h.app.runtime.tools.execute(h.app.store.state.bots[0],'engine_candidate_build',{title:'Synthetic Engine candidate',summary:'New pure module; source remains unchanged.',changes:[{path:'lib/fixture-candidate-api-only.mjs',sha256:null,oldText:'',newText:'export const twice=x=>x*2;\n'}],dependencies:[],tests:[{path:'lib/fixture-candidate-api-only.mjs',exportName:'twice',input:21,expected:42}]});
+  const candidateRoute=`${base}/improvements/${candidate.digest}`,exportBody={digest:candidate.digest,reviewedDigest:candidate.digest,includeSource:true};
+  assert.equal((await h.request(candidateRoute,{auth:false})).status,401);
+  assert.equal((await h.request(candidateRoute,{method:'POST',body:exportBody,security:false})).status,403);
+  const exported=await h.request(candidateRoute,{method:'POST',body:exportBody});assert.equal(exported.status,200);assert.equal(exported.body.proposal.verification.fullSuite,false);assert.equal(exported.body.proposal.candidate.request.tests.length,1);
+  assert.equal((await h.request(`${base}/workshop`)).body.items.find(item=>item.digest===candidate.digest).checks.tests,1);
+});

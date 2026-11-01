@@ -1,0 +1,12 @@
+{
+  "format": "tupies-tool-v1",
+  "id": "summarize-numbers",
+  "title": "Summarize numbers",
+  "description": "Count, total, mean and range of a JSON array of finite numbers. Empty input returns null mean and bounds. Rejects non-numeric values.",
+  "source": "values => { if (!Array.isArray(values) || values.some(x => typeof x !== 'number' || !Number.isFinite(x))) throw new Error('Expected finite numbers'); let sum=0,min=null,max=null; for(const x of values){sum+=x;min=min===null?x:Math.min(min,x);max=max===null?x:Math.max(max,x);} if(!Number.isFinite(sum))throw new Error('Overflow'); return {count:values.length,sum,mean:values.length?sum/values.length:null,min,max}; }",
+  "tests": [
+    {"input": [2, 4, 6], "expected": {"count": 3, "sum": 12, "mean": 4, "min": 2, "max": 6}},
+    {"input": [], "expected": {"count": 0, "sum": 0, "mean": null, "min": null, "max": null}},
+    {"input": [-4, 0, 1], "expected": {"count": 3, "sum": -3, "mean": -1, "min": -4, "max": 1}}
+  ]
+}

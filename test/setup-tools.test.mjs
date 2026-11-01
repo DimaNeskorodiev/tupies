@@ -53,6 +53,7 @@ test('a bot creates a new bot through the same checks as the bot API, after appr
   const args={name:'Satoshi',title:'Crypto market watcher',description:'Tracks bitcoin and crypto prices.',instructions:'Watch crypto prices and report clearly.',color:'amber'};
   await assert.rejects(tools.execute(atlas,'bots_create',args),/approval/);
   await assert.rejects(tools.execute(atlas,'bots_create',{...args,tools:['web','terminal']},{approved:true}),error=>error.status===403 && /Only the owner/.test(error.message));
+  await assert.rejects(tools.execute(atlas,'bots_create',{...args,tools:['engine_workshop']},{approved:true}),error=>error.status===403 && /Only the owner/.test(error.message));
   await assert.rejects(tools.execute(atlas,'bots_create',{...args,skills:['missing-skill']},{approved:true}),/Unknown skill/);
   assert.equal(store.state.bots.length,3);
   const result=await tools.execute(atlas,'bots_create',args,{approved:true}),created=bot(result.bot.id);
