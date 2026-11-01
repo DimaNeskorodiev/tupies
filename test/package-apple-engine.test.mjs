@@ -38,19 +38,22 @@ test('Apple engine source staging includes runtime fonts and notices but exclude
   await assert.rejects(stageEngineSource(repo,path.join(dir,'symlink-output')),/symlinks/);
 });
 
-test('Apple staging preserves the complete product guide and its loadable catalog without bundling unrelated files',async t=>{
+test('Apple staging preserves complete reviewed skill packages and their loadable catalog without unrelated files',async t=>{
   const dir=await temporary(t),repo=path.join(dir,'repo'),out=path.join(dir,'output'),skillRoot='lib/skills/tupies-product';
   for(const folder of ['public','assets/fonts','assets/licenses','scripts','lib/skills/other',`${skillRoot}/references`])await fs.mkdir(path.join(repo,folder),{recursive:true});
   for(const [name,value] of Object.entries({'server.mjs':'// server','package.json':'{"name":"fixture","type":"module"}','package-lock.json':'{"packages":{}}','LICENSE':'MIT','lib/private.md':'PRIVATE','lib/skills/other/SKILL.md':'PRIVATE',[`${skillRoot}/.env`]:'PRIVATE',[`${skillRoot}/vault.key`]:'PRIVATE',[`${skillRoot}/private.json`]:'PRIVATE',[`${skillRoot}/private.txt`]:'PRIVATE'}))await fs.writeFile(path.join(repo,name),value);
   for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
-  for(const name of ['skill-catalog.mjs','skill-grok-catalog.mjs','skill-tupies-catalog.mjs'])await fs.copyFile(new URL(`../lib/${name}`,import.meta.url),path.join(repo,'lib',name));
-  const entry=bundledSkills().find(skill=>skill.catalogId==='tupies-product');
-  for(const file of entry.files)await fs.writeFile(path.join(repo,skillRoot,file.path),file.data);
+  for(const name of ['skill-catalog.mjs','skill-grok-catalog.mjs','skill-tupies-catalog.mjs','skill-learning-catalog.mjs'])await fs.copyFile(new URL(`../lib/${name}`,import.meta.url),path.join(repo,'lib',name));
+  const packages=[['tupies-product',skillRoot],['tupies-learn-from-material','lib/skills/tupies-learning']].map(([catalogId,root])=>({entry:bundledSkills().find(skill=>skill.catalogId===catalogId),root}));
+  for(const {entry,root} of packages)for(const file of entry.files) {
+    await fs.mkdir(path.dirname(path.join(repo,root,file.path)),{recursive:true});
+    await fs.writeFile(path.join(repo,root,file.path),file.data);
+  }
   await stageEngineSource(repo,out);
-  for(const file of entry.files)assert.deepEqual(await fs.readFile(path.join(out,skillRoot,file.path)),file.data);
+  for(const {entry,root} of packages)for(const file of entry.files)assert.deepEqual(await fs.readFile(path.join(out,root,file.path)),file.data);
   for(const name of ['lib/private.md','lib/skills/other/SKILL.md',`${skillRoot}/.env`,`${skillRoot}/vault.key`,`${skillRoot}/private.json`,`${skillRoot}/private.txt`])await assert.rejects(fs.lstat(path.join(out,name)),{code:'ENOENT'});
   const staged=await import(pathToFileURL(path.join(out,'lib/skill-catalog.mjs')).href);
-  assert.equal(staged.bundledSkills().find(skill=>skill.catalogId==='tupies-product').digest,entry.digest);
+  for(const {entry} of packages)assert.equal(staged.bundledSkills().find(skill=>skill.catalogId===entry.catalogId).digest,entry.digest);
   await fs.symlink(path.join(repo,skillRoot,'SKILL.md'),path.join(repo,skillRoot,'references','linked.md'));
   await assert.rejects(stageEngineSource(repo,path.join(dir,'symlink-output')),/symlinks/);
 });

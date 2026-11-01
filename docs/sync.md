@@ -138,3 +138,7 @@ Restore the complete runtime consistently. A missing secure journal or engine id
 - Workspace sync is designed for notes, documents and small projects, not large repositories: 20,000 files per engine, 64 MB per file.
 - Bot runs and their live progress are not mirrored. Other engines see "working on …" and the result when it is saved.
 - There is no web-based pairing of the browser itself; browsers keep using the workspace password.
+
+## Material learning
+
+Accepted managed Brain Markdown and its active revision manifest use ordinary trusted workspace file replication. Raw source uploads, complete extracts, pending study candidates, study checkpoints and knowledge publication/revision journals remain engine-local outside sync. A compact study request/progress/outcome can appear in the shared conversation; it contains no complete source and grants no execution authority. An explicit retained local source copy stays in the source engine's study spool, not a replicated attachment. Recovery requires that engine's local verified material and the original bot/provider/learning-skill revision. Seven-day expiry can make an interrupted source unavailable while previously accepted knowledge remains readable on linked engines.

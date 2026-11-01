@@ -1,6 +1,6 @@
 /* Bot profile (#/bots/<botId>): Overview, Brain (long-term notes), Memory (core facts), Learning (suggested changes to review) and Files. app.js calls render(), sets the HTML, then mount(). */
 (()=>{
-const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder']];
+const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code']];
 const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser'};
 const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
 const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
@@ -44,7 +44,8 @@ function view(botId){
   let v=views.get(botId);
   if(v){views.delete(botId);views.set(botId,v);return v;}
   v={id:botId,tab:'overview',tickets:{},loading:{},scroll:{},focus:null,brain:null,byPath:null,brainAt:0,brainError:'',layout:null,graphShown:false,noteTarget:'',note:null,noteHTML:'',noteAt:0,noteError:'',noteLoading:false,revealReader:false,query:'',folder:'',tag:'',sort:'recent',shown:LIST_PAGE,
-    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false,settingsDraft:null};
+    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false,settingsDraft:null,
+    workspace:null,workspaceAt:0,workspaceError:'',workspaceSaving:false,workspaceNotice:'',scripts:null,scriptsAt:0,scriptsError:'',scriptsTruncated:false,scriptTarget:'',script:null,scriptLoading:false,scriptError:'',scriptQuery:'',scriptArgs:new Map(),scriptNotice:'',revealScript:false};
   views.set(botId,v);while(views.size>8)views.delete(views.keys().next().value);
   return v;
 }
@@ -82,6 +83,19 @@ function ensureFiles(bot,v,folder,force=false){
   v.files.set(folder,{...entry,loading:true});while(v.files.size>30)v.files.delete(v.files.keys().next().value);
   fetchInto(bot,v,`files:${folder}`,`/api/bots/${enc(bot.id)}/files?path=${enc(folder)}`,(result,error)=>v.files.set(folder,{at:Date.now(),list:error?entry?.list:(result?.files||[]),truncated:Boolean(result?.truncated),error:error?ctx.errorText(error):''}));
 }
+function ensureWorkspace(bot,v,force=false){
+  if(v.loading.workspace||(!force&&v.workspaceAt&&Date.now()-v.workspaceAt<STALE))return;v.loading.workspace=true;
+  fetchInto(bot,v,'workspace',`/api/bots/${enc(bot.id)}/workspace`,(result,error)=>{v.loading.workspace=false;v.workspaceAt=Date.now();v.workspaceError=error?ctx.errorText(error):'';if(!error)v.workspace={...result,folders:Array.isArray(result?.folders)?result.folders:[]};});
+}
+function ensureScripts(bot,v,force=false){
+  if(v.loading.scripts||(!force&&v.scriptsAt&&Date.now()-v.scriptsAt<STALE))return;v.loading.scripts=true;
+  fetchInto(bot,v,'scripts',`/api/bots/${enc(bot.id)}/scripts`,(result,error)=>{v.loading.scripts=false;v.scriptsAt=Date.now();v.scriptsError=error?ctx.errorText(error):'';if(error)return;v.scripts=Array.isArray(result?.scripts)?result.scripts:[];v.scriptsTruncated=Boolean(result?.truncated);if(v.scriptTarget&&!v.scripts.some(script=>script.id===v.scriptTarget)){v.scriptTarget='';v.script=null;}if(force&&v.scriptTarget)openScript(bot,v,v.scriptTarget);});
+}
+function openScript(bot,v,id){
+  v.scriptTarget=id;v.script=null;v.scriptLoading=true;v.scriptError='';v.scriptNotice='';v.revealScript=true;
+  if(showing(bot.id))refresh(bot.id);
+  fetchInto(bot,v,'script',`/api/bots/${enc(bot.id)}/scripts/${enc(id)}`,(result,error)=>{v.scriptLoading=false;v.scriptError=error?ctx.errorText(error):'';if(!error)v.script=result;});
+}
 function openNote(bot,v,target,{quiet=false}={}){
   v.noteTarget=target;v.noteError='';if(!quiet){v.noteLoading=true;v.revealReader=true;if(showing(bot.id))refresh(bot.id);}
   fetchInto(bot,v,'note',`/api/bots/${enc(bot.id)}/brain/note?path=${enc(target)}`,(result,error)=>{
@@ -94,8 +108,9 @@ function load(bot,v,force=false){
   if(v.tab==='overview'){ensureMemory(bot,v,force);ensureBrain(bot,v,force);ensureFiles(bot,v,'',force);ensureRuns(bot,v,force);ensureProposals(bot,v,force);}
   if(v.tab==='brain'){ensureBrain(bot,v,force);if(v.noteTarget&&!v.noteLoading&&(force||!v.note||Date.now()-v.noteAt>STALE))openNote(bot,v,v.noteTarget,{quiet:Boolean(v.note)});}
   if(v.tab==='memory')ensureMemory(bot,v,force);
-  if(v.tab==='learning')ensureProposals(bot,v,force);
-  if(v.tab==='files')ensureFiles(bot,v,v.filesFolder,force);
+  if(v.tab==='learning'){ensureProposals(bot,v,force);window.StudioStudyLearning?.mount(bot,studyContext(bot,v),document.querySelector('.bot-profile'));}
+  if(v.tab==='files'){ensureFiles(bot,v,v.filesFolder,force);if(!v.filesFolder)ensureWorkspace(bot,v,force);}
+  if(v.tab==='scripts')ensureScripts(bot,v,force);
 }
 
 /* Note bodies use the shared sanitized Markdown renderer; [[links]] and #tags in prose then become buttons built with DOM APIs. */
@@ -149,10 +164,10 @@ function hero(bot){
   return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="secondary-button" data-profile-action="tab" data-tab="settings">${icon('sliders')}Settings</button><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button></div></header>`;
 }
 function tabs(bot,v){
-  const counts={brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length};
+  const counts={brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length,scripts:v.scripts?.length};
   return `<div class="segmented bp-tabs" id="bp-tabs" role="tablist" aria-label="${esc(bot.name)} profile">${TABS.map(([key,label,ico])=>`<button class="segment${v.tab===key?' active':''}" role="tab" id="bp-tab-${key}" aria-selected="${v.tab===key}" aria-controls="bp-panel" tabindex="${v.tab===key?0:-1}" data-profile-action="tab" data-tab="${key}">${icon(ico)}${label}${counts[key]?`<span>${counts[key]}</span>`:''}</button>`).join('')}</div>`;
 }
-function panel(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):overviewPanel(bot,v);}
+function panel(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):overviewPanel(bot,v);}
 function settingsPanel(bot){return ctx.botSettingsForm?.(bot.id,{embedded:true})||'<p class="bp-muted">Bot settings are unavailable. Reload this page to try again.</p>';}
 
 /* Overview */
@@ -388,13 +403,19 @@ function reviewRoutine(bot){
   if(routine)return `<div class="bp-notice">${icon('routine')}<p><strong>${esc(routine.name||'Review')}</strong> ${routine.enabled===false?'is paused.':`· ${esc(ctx.scheduleLabel?ctx.scheduleLabel(routine):'On a schedule')}`}</p><button class="secondary-button" data-action="edit-routine" data-id="${esc(routine.id)}">Edit</button></div>`;
   return `<div class="bp-notice">${icon('routine')}<p>Let ${esc(bot.name)} look back over each day and suggest what to remember. The home server runs the review.</p><button class="secondary-button" data-profile-action="setup-review">Set up a daily review</button></div>`;
 }
+function studyContext(bot,v){return {...ctx,studyChanged(kind){
+  if(kind==='proposal'){v.proposalsAt=0;ensureProposals(bot,v,true);}
+  if(kind==='knowledge'){v.brainAt=0;v.noteAt=0;ensureBrain(bot,v,true);}
+  if(kind==='study')return ctx.refresh?.();
+}};}
 function learningPanel(bot,v){
-  if(!v.proposals)return v.proposalsError&&!v.loading.proposals?retry(v.proposalsError,'retry'):loading('Opening suggestions…');
+  const study=window.StudioStudyLearning?.render(bot,studyContext(bot,v))||'';
+  if(!v.proposals)return study+(v.proposalsError&&!v.loading.proposals?retry(v.proposalsError,'retry'):loading('Opening suggestions…'));
   const pending=v.proposals.filter(item=>item.status==='pending'),reviewed=v.proposals.filter(item=>item.status!=='pending');
   const working=busy(bot)&&pending.length?`<div class="bp-notice">${icon('clock')}<p>${esc(bot.name)} is working on a task. You can read its suggestions now and accept them when it finishes.</p></div>`:'';
   const list=pending.length?`<div class="bp-proposals">${pending.map(item=>proposalCard(bot,v,item)).join('')}</div>`:empty('spark','Nothing to review',`When ${esc(bot.name)} suggests a memory update or a skill change, it appears here for you to accept or decline.`);
   const history=reviewed.length?`<section class="bp-proposal-history"><h3>Reviewed</h3><div class="bp-proposals">${reviewed.map(item=>proposalCard(bot,v,item)).join('')}</div></section>`:'';
-  return `${working}<p class="bp-hint">With Memory tools on, ${esc(bot.name)} checks your chats for lasting facts and preferences and suggests them here. Suggestions change nothing until you accept. You can also review skill suggestions and undo accepted changes while nothing newer has changed them.</p>${reviewRoutine(bot)}<p class="bp-form-error" role="alert">${esc(v.proposalNotice)}</p>${list}${history}`;
+  return `${study}${working}<p class="bp-hint">With Memory tools on, ${esc(bot.name)} checks your chats for lasting facts and preferences and suggests them here. Suggestions change nothing until you accept. You can also review skill suggestions and undo accepted changes while nothing newer has changed them.</p>${reviewRoutine(bot)}<p class="bp-form-error" role="alert">${esc(v.proposalNotice)}</p>${list}${history}`;
 }
 
 /* Files */
@@ -403,13 +424,31 @@ function fileIcon(item){
   const ext=String(item.name).split('.').at(-1).toLowerCase();
   return /^(png|jpe?g|webp|gif|svg)$/.test(ext)?'image':/^(xlsx|csv|tsv)$/.test(ext)?'sheet':/^(pptx|key)$/.test(ext)?'slides':/^(js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|c|h|cpp|sh|sql|html?|css|json|ya?ml|toml)$/.test(ext)?'code':'file';
 }
+function workspaceCategories(bot,v){
+  const folders=(v.workspace?.folders||[]).filter(folder=>typeof folder.path==='string'&&!folder.path.startsWith('.'));
+  const symbols={brain:'brain',notes:'book',scripts:'code',projects:'folder',documents:'file',data:'sheet',outputs:'download',uploads:'upload'};
+  const card=(folder)=>{
+    const tab=folder.path==='brain'?'brain':folder.path==='scripts'?'scripts':'',blocked=folder.status==='blocked',missing=folder.status==='missing',disabled=blocked||(!tab&&missing),action=tab?'tab':'folder';
+    return `<button type="button" class="glass-card bp-workspace-card${folder.path==='brain'?' is-brain':''}" data-profile-action="${action}" ${tab?`data-tab="${tab}"`:`data-path="${esc(folder.path)}"`}${disabled?' disabled':''}><span class="bp-workspace-symbol">${icon(symbols[folder.path]||'folder')}</span><span><strong>${esc(folder.label||folder.path)}</strong><small>${esc(folder.description||'Private workspace files.')}</small><span class="bp-folder-state${blocked?' is-blocked':''}">${blocked?'Path needs attention':missing?'Folder not created':'Ready'}</span></span>${icon('chevron')}</button>`;
+  };
+  const memory=`<button type="button" class="glass-card bp-workspace-card" data-profile-action="tab" data-tab="memory"><span class="bp-workspace-symbol">${icon('pin')}</span><span><strong>${esc(v.workspace?.memory?.label||'Memory')}</strong><small>Short facts and preferences kept in native memory.</small><span class="bp-folder-state">Core memory</span></span>${icon('chevron')}</button>`;
+  const missing=folders.some(folder=>folder.status==='missing'),blocked=folders.some(folder=>folder.status==='blocked');
+  return `<section class="bp-workspace"><div class="bp-section-heading"><div><h2>A place for everything</h2><p>Knowledge, working files and finished outputs, private to ${esc(bot.name)}.</p></div>${missing?`<button type="button" class="secondary-button" data-profile-action="initialize-workspace"${v.workspaceSaving||busy(bot)?' disabled':''}>${icon('plus')}${v.workspaceSaving?'Creating…':'Create default folders'}</button>`:''}</div><div class="bp-workspace-grid">${memory}${folders.map(card).join('')}</div>${v.loading.workspace&&!v.workspace?'<p class="bp-muted" role="status">Loading workspace folders…</p>':''}${v.workspaceError?`<p class="bp-limit" role="alert">${esc(v.workspaceError)} <button type="button" class="text-button" data-profile-action="retry-workspace">Try again</button></p>`:''}${v.workspaceNotice?`<p class="bp-muted" role="status">${esc(v.workspaceNotice)}</p>`:''}${blocked?'<p class="bp-limit">An existing file or link occupies a default folder path. Your files stay in place; inspect them below before changing anything.</p>':''}</section>`;
+}
+async function initializeWorkspace(bot,v){
+  if(v.workspaceSaving)return;v.workspaceSaving=true;v.workspaceNotice='';refresh(bot.id);
+  try{const result=await ctx.api(`/api/bots/${enc(bot.id)}/workspace`,{method:'POST',body:{}});if(Array.isArray(result?.folders)){v.workspace=result;v.workspaceAt=Date.now();v.workspaceError='';}else ensureWorkspace(bot,v,true);v.workspaceNotice='Default folders are ready. Existing files were kept in place.';ensureFiles(bot,v,'',true);ctx.toast('Workspace folders ready.');}
+  catch(error){v.workspaceNotice=friendly(bot,error,'workspace folders');}
+  finally{v.workspaceSaving=false;refresh(bot.id);}
+}
 function filesPanel(bot,v){
   const folder=v.filesFolder,entry=v.files.get(folder),parts=folder?folder.split('/'):[];
   const crumbs=`<nav class="bp-crumbs" aria-label="Folder">${[['','Workspace'],...parts.map((part,i)=>[parts.slice(0,i+1).join('/'),part])].map(([path,label],i,all)=>i===all.length-1?`<span aria-current="page">${esc(label)}</span>`:`<button class="text-button" data-profile-action="folder" data-path="${esc(path)}">${esc(label)}</button>${icon('chevron')}`).join('')}</nav>`;
   const tools=`<div class="bp-toolbar">${crumbs}<div class="bp-file-tools"><button class="secondary-button" data-profile-action="new-file">${icon('plus')}New file</button><input type="file" id="bp-upload" class="bp-file-input" multiple data-profile-upload="${esc(bot.id)}"${v.uploading?' disabled':''}><label class="secondary-button" for="bp-upload">${icon('upload')}${v.uploading?'Adding…':'Add files'}</label></div></div>`;
   const brainNote=folder==='brain'||folder.startsWith('brain/')?`<div class="bp-notice">${icon('brain')}<p>These are ${esc(bot.name)}’s long-term notes. The Brain tab shows them as linked, readable notes.</p><button class="secondary-button" data-profile-action="tab" data-tab="brain">Open Brain</button></div>`:'';
-  if(!entry?.list)return `${tools}${brainNote}${entry?.error&&!entry.loading?retry(entry.error,'retry'):loading('Opening files…')}`;
-  const all=entry.list,items=all.filter(item=>!item.name.startsWith('.')).sort((a,b)=>Number((b.kind||b.type)==='directory')-Number((a.kind||a.type)==='directory')||displayName(a).localeCompare(displayName(b))),hidden=all.length-items.length;
+  const categories=!folder?workspaceCategories(bot,v):'';
+  if(!entry?.list)return `${tools}${categories}${brainNote}${entry?.error&&!entry.loading?retry(entry.error,'retry'):loading('Opening files…')}`;
+  const all=entry.list,visible=all.filter(item=>!item.name.startsWith('.')),managed=new Set(!folder?(v.workspace?.folders||[]).filter(item=>item.status==='ready').map(item=>item.path):[]),items=visible.filter(item=>!((item.kind||item.type)==='directory'&&managed.has(item.path||item.name))).sort((a,b)=>Number((b.kind||b.type)==='directory')-Number((a.kind||a.type)==='directory')||displayName(a).localeCompare(displayName(b))),hidden=all.length-visible.length;
   const row=item=>{
     const kind=item.kind||item.type,path=item.path||[folder,item.name].filter(Boolean).join('/'),when=item.updatedAt?ctx.relative(item.updatedAt):'',name=displayName(item);
     if(kind==='blocked-symlink')return `<div class="bp-file-row"><span class="bp-file is-blocked">${icon('lock')}<strong>${esc(name)}</strong><small>Link blocked for safety</small></span></div>`;
@@ -421,8 +460,44 @@ function filesPanel(bot,v){
     const opener=ctx.previewFormats?.test(path)||TEXT.test(path)?`<button class="bp-file" data-profile-action="open-file" data-path="${esc(path)}" title="${ctx.previewFormats?.test(path)?'Preview':'Open as text'}">${icon(fileIcon(item))}${meta}</button>`:`<a class="bp-file" href="${esc(download)}" download title="Download">${icon(fileIcon(item))}${meta}</a>`;
     return `<div class="bp-file-row">${opener}<a class="icon-button" href="${esc(download)}" download aria-label="Download ${esc(name)}" title="Download">${icon('download')}</a></div>`;
   };
-  const list=items.length?`<div class="bp-files glass-card" data-profile-scroll="files">${items.map(row).join('')}</div>`:empty('folder',folder?'This folder is empty':'A clean workspace',folder?'Nothing here yet.':`${esc(bot.name)}’s private workspace is empty. Add files here, or ask ${esc(bot.name)} to create documents for you.`);
-  return `${tools}${brainNote}${entry.error?`<p class="bp-limit">${esc(entry.error)}</p>`:''}${list}${hidden||entry.truncated?`<p class="bp-limit">${hidden?`${plural(hidden,'hidden item')} not shown.`:''}${entry.truncated?' Only the first 500 items are listed.':''}</p>`:''}`;
+  const list=items.length?`${!folder&&v.workspace?'<h3>Other workspace files</h3>':''}<div class="bp-files glass-card" data-profile-scroll="files">${items.map(row).join('')}</div>`:folder?empty('folder','This folder is empty','Nothing here yet.'):v.workspace?'<p class="bp-muted">Open a category to browse its files. Any other folders and files appear here.</p>':empty('folder','A clean workspace',`${esc(bot.name)}’s private workspace is empty. Add files here, or ask ${esc(bot.name)} to create documents for you.`);
+  return `${tools}${categories}${brainNote}${entry.error?`<p class="bp-limit">${esc(entry.error)}</p>`:''}${list}${hidden||entry.truncated?`<p class="bp-limit">${hidden?`${plural(hidden,'hidden item')} not shown.`:''}${entry.truncated?' Only the first 500 items are listed.':''}</p>`:''}`;
+}
+
+/* Script packages are inspected here; execution stays in the normal task and approval flow. */
+function scriptState(script){return script.status==='registered'?(script.runtimeAvailable===false?'Runtime unavailable':'Registered'):{draft:'Draft',changed:'Files changed',invalid:'Needs correction'}[script.status]||'Needs inspection';}
+function scriptMetadata(value){
+  if(value===null||value===undefined)return '';
+  if(Array.isArray(value))return value.map(scriptMetadata).filter(Boolean).join(' · ');
+  if(typeof value==='object')return Object.entries(value).map(([key,item])=>`${key}: ${scriptMetadata(item)}`).join('; ');
+  return String(value);
+}
+function scriptConfig(label,value){
+  if(value===undefined||value===null||(Array.isArray(value)&&!value.length)||(typeof value==='object'&&!Array.isArray(value)&&!Object.keys(value).length))return '';
+  const rows=Array.isArray(value)?value:typeof value==='object'?Object.entries(value).map(([name,details])=>({name,details})):[value];
+  return `<section class="bp-script-config"><h3>${label}</h3><ul>${rows.map(item=>`<li>${esc(scriptMetadata(item))}</li>`).join('')}</ul></section>`;
+}
+function scriptArguments(v,id){
+  const source=v.scriptArgs.get(id)||'[]';let args;
+  try{args=JSON.parse(source);}catch{throw new Error('Arguments must be a JSON array of strings, such as ["--input", "data/source.csv"].');}
+  if(!Array.isArray(args)||args.length>30||args.some(item=>typeof item!=='string'||item.length>2000||item.includes('\0')))throw new Error('Use at most 30 literal string arguments, each up to 2000 characters.');
+  return args;
+}
+function scriptDetail(bot,v){
+  if(!v.scriptTarget)return `<section class="glass-card bp-script-detail bp-script-welcome">${icon('code')}<h2>Reusable work, with a clear purpose</h2><p>Select a script to inspect its files, inputs and outputs before using it.</p></section>`;
+  if(v.scriptLoading)return `<section class="glass-card bp-script-detail">${loading('Inspecting script…')}</section>`;
+  if(v.scriptError||!v.script)return `<section class="glass-card bp-script-detail">${retry(v.scriptError||'This script is unavailable.','retry-script')}</section>`;
+  const script=v.script,tools=groupsOf(bot),allowed=tools.includes('terminal')&&tools.includes('workspace'),ready=script.status==='registered'&&script.runtimeAvailable===true&&/^[a-f0-9]{64}$/.test(script.digest||''),canUse=allowed&&ready;
+  const files=Array.isArray(script.files)?script.files:[],title=script.title||script.id;
+  return `<article class="glass-card bp-script-detail"><header><span class="bp-script-status${ready?' is-ready':''}">${esc(scriptState(script))}</span><h2>${esc(title)}</h2><p>${esc(script.purpose||'No purpose has been recorded for this script.')}</p></header><dl class="bp-rows"><div class="bp-row"><dt>Runtime</dt><dd>${esc(script.interpreter||'Not configured')}</dd></div><div class="bp-row"><dt>Entry point</dt><dd><code>${esc(script.entrypoint||'Not configured')}</code></dd></div></dl>${script.error?`<p class="bp-limit" role="alert">${esc(script.error)}</p>`:''}${!allowed?`<div class="bp-notice">${icon('shield')}<p>Running scripts requires Files and Terminal tools for ${esc(bot.name)}.</p><button class="secondary-button" data-action="edit-bot" data-id="${esc(bot.id)}">Bot settings</button></div>`:'<p class="bp-hint">Each execution uses the bot’s normal task, exact approval and Stop controls.</p>'}${scriptConfig('Dependencies',script.dependencies)}${scriptConfig('Inputs',script.inputs)}${scriptConfig('Outputs',script.outputs)}<section class="bp-script-config"><h3>Package files</h3>${files.length?`<ul class="bp-script-files">${files.map(file=>`<li><button type="button" class="text-button" data-profile-action="script-file" data-path="${esc(file.path)}">${icon('file')}<span>${esc(file.relativePath||file.path)}</span></button><small>${esc(bytes(file.size))}</small></li>`).join('')}</ul>`:'<p class="bp-muted">No verified file inventory is available.</p>'}</section><div class="field bp-script-arguments"><label for="bp-script-args">Arguments</label><textarea id="bp-script-args" data-profile-input="script-args" data-script-id="${esc(script.id)}" rows="3" spellcheck="false" maxlength="65000">${esc(v.scriptArgs.get(script.id)||'[]')}</textarea><small>A JSON array of literal strings. These values are reviewed with the exact script before execution.</small></div>${v.scriptNotice?`<p class="bp-form-error" role="alert">${esc(v.scriptNotice)}</p>`:''}<div class="bp-script-actions"><button type="button" class="primary-button" data-profile-action="script-chat"${canUse?'':' disabled'}>${icon('chat')}Use in chat</button><button type="button" class="secondary-button" data-profile-action="script-routine"${canUse?'':' disabled'}>${icon('routine')}Use in routine</button></div><details class="bp-script-version"><summary>Version details</summary><dl class="bp-rows"><div class="bp-row"><dt>Package digest</dt><dd><code>${esc(script.digest||'Not registered')}</code></dd></div><div class="bp-row"><dt>Manifest hash</dt><dd><code>${esc(script.manifestSha256||'Unavailable')}</code></dd></div></dl></details></article>`;
+}
+function scriptsPanel(bot,v){
+  if(!v.scripts)return v.scriptsError&&!v.loading.scripts?retry(v.scriptsError,'retry'):loading('Opening scripts…');
+  const query=fold(v.scriptQuery),items=v.scripts.filter(script=>!query||fold(`${script.title||script.id} ${script.purpose||''} ${script.interpreter||''}`).includes(query));
+  const tools=`<div class="bp-toolbar"><label class="bp-search">${icon('search')}<input type="search" data-profile-input="script-query" value="${esc(v.scriptQuery)}" placeholder="Search scripts" aria-label="Search scripts" autocomplete="off"></label><button type="button" class="secondary-button" data-profile-action="script-folder">${icon('folder')}Browse script files</button></div>`;
+  if(!v.scripts.length)return `${tools}${empty('code','No scripts yet','Scripts saved for this bot appear here with their purpose, files, inputs and outputs. Open the scripts folder to inspect or add a package.')}<p class="bp-hint">Adding files does not execute them or enable Terminal tools.</p>`;
+  const rows=items.map(script=>`<button type="button" class="bp-script-row${v.scriptTarget===script.id?' active':''}" data-profile-action="inspect-script" data-id="${esc(script.id)}" aria-pressed="${v.scriptTarget===script.id}"><span class="bp-script-symbol">${icon('code')}</span><span><strong>${esc(script.title||script.id)}</strong><small>${esc(script.purpose||'Purpose not recorded')}</small><span class="bp-script-status">${esc(scriptState(script))}</span></span>${icon('chevron')}</button>`).join('');
+  return `${tools}${v.scriptsError?`<p class="bp-limit" role="alert">${esc(v.scriptsError)}</p>`:''}<div class="bp-scripts-layout"><div class="glass-card bp-script-list" aria-label="Script catalog">${rows||'<p class="bp-muted">No scripts match this search.</p>'}</div>${scriptDetail(bot,v)}</div>${v.scriptsTruncated?'<p class="bp-limit">This catalog is bounded. Browse the scripts folder for additional packages.</p>':''}`;
 }
 async function upload(bot,v,input){
   const files=[...input.files];input.value='';
@@ -448,6 +523,7 @@ function capture(v){
   for(const element of page.querySelectorAll('[data-profile-scroll]'))v.scroll[element.dataset.profileScroll]=element.scrollTop;
 }
 function after(root,v){
+  if(v.tab==='learning'){const bot=ctx?.botById(v.id);if(bot)window.StudioStudyLearning?.mount(bot,studyContext(bot,v),root);}
   const form=root.querySelector('#bot-form[data-embedded]');
   if(form&&v.settingsDraft){
     for(const field of v.settingsDraft.fields){const element=[...form.elements].find(element=>element.name===field.name&&element.type===field.type&&(!['checkbox','radio'].includes(field.type)||element.value===field.value));if(!element)continue;if(['checkbox','radio'].includes(field.type))element.checked=field.checked;else element.value=field.value;}
@@ -463,6 +539,7 @@ function after(root,v){
   const body=root.querySelector('.bp-note-body');if(body&&window.StudioRich?.hydrate)window.StudioRich.hydrate(body).catch(()=>{});
   const map=root.querySelector('.bp-graph');if(map&&!v.graphShown){v.graphShown=true;map.classList.add('bp-graph-enter');}
   if(v.revealReader&&!v.noteLoading){v.revealReader=false;const reader=root.querySelector('#bp-reader');if(reader&&window.matchMedia?.('(max-width: 1100px)').matches)reader.scrollIntoView?.({block:'start'});}
+  if(v.revealScript&&!v.scriptLoading){v.revealScript=false;if(window.matchMedia?.('(max-width: 900px)').matches)root.querySelector('.bp-script-detail')?.scrollIntoView?.({block:'start'});}
 }
 function refresh(botId){
   const page=document.querySelector('.bot-profile'),bot=ctx&&page?.dataset.profileBot===botId?ctx.botById(botId):null;if(!bot)return;
@@ -495,7 +572,29 @@ async function act(element){
     case 'settings-section':{const heading=page.querySelector(`#bot-section-${element.dataset.section}`);heading?.scrollIntoView?.({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});heading?.focus({preventScroll:true});break;}
     case 'discard-settings':settingsSaved(bot.id);page.querySelector('#bp-panel').innerHTML=settingsPanel(bot,v);break;
     case 'retry':load(bot,v,true);refresh(bot.id);break;
-    case 'open-note':openNote(bot,v,element.dataset.path);break;
+    case 'retry-workspace':ensureWorkspace(bot,v,true);refresh(bot.id);break;
+    case 'initialize-workspace':await initializeWorkspace(bot,v);break;
+    case 'inspect-script':openScript(bot,v,id);break;
+    case 'retry-script':if(v.scriptTarget)openScript(bot,v,v.scriptTarget);break;
+    case 'script-file':v.dirty=true;await ctx.fileEditor(bot.id,element.dataset.path);break;
+    case 'script-folder':{
+      if(!v.workspace)try{const result=await ctx.api(`/api/bots/${enc(bot.id)}/workspace`);v.workspace={...result,folders:Array.isArray(result?.folders)?result.folders:[]};v.workspaceAt=Date.now();v.workspaceError='';}catch{}
+      v.filesFolder=v.workspace?.folders?.some(folder=>folder.path==='scripts'&&folder.status==='ready')?'scripts':'';setTab(bot,v,'files');break;}
+    case 'script-chat':case 'script-routine':{
+      const script=v.script;if(!script||script.status!=='registered'||script.runtimeAvailable!==true||!groupsOf(bot).includes('workspace')||!groupsOf(bot).includes('terminal'))break;
+      const field=document.getElementById('bp-script-args');if(field)v.scriptArgs.set(script.id,field.value);
+      try{
+        const args=scriptArguments(v,script.id),request={scriptId:script.id,digest:script.digest,args,timeoutMs:120000};v.scriptNotice='';
+        if(action==='script-chat'){
+          const text=`Run the registered script ${JSON.stringify(script.title||script.id)} with scripts_run using these exact values:\n\n${JSON.stringify(request,null,2)}\n\nInspect the script and follow the normal approval and verification steps. Keep the actual result and any created files in this task.`;
+          if(!ctx.openBotDraft)throw new Error('Chat drafts are unavailable. Reload Tupies and try again.');ctx.openBotDraft(bot.id,text);
+        }else{
+          if(!ctx.routineDialog)throw new Error('Routine setup is unavailable. Reload Tupies and try again.');
+          ctx.routineDialog(undefined,bot.id,{name:String(script.title||script.id).slice(0,100),prompt:`Use the result of ${script.title||script.id}. ${script.purpose||'Report the actual outcome and any verified output files.'}`,enabled:false,workflow:{version:1,mode:'agent',steps:[{id:'script',op:'script',...request}],context:'Use this verified script result as task data: {{script}}',report:'{{script}}'}});
+        }
+      }catch(error){v.scriptNotice=ctx.errorText(error);refresh(bot.id);}
+      break;}
+    case 'open-note':if(v.tab!=='brain')setTab(bot,v,'brain');openNote(bot,v,element.dataset.path);break;
     case 'open-link':openNote(bot,v,element.dataset.path||element.dataset.target);break;
     case 'memory-link':v.noteTarget='';setTab(bot,v,'brain');openNote(bot,v,element.dataset.target);break;
     case 'close-note':v.tickets.note=(v.tickets.note||0)+1;v.noteTarget='';v.note=null;v.noteHTML='';v.noteError='';v.noteLoading=false;refresh(bot.id);break;
@@ -513,7 +612,7 @@ async function act(element){
     case 'confirm-delete':{if(v.saving)break;v.saving=true;element.disabled=true;v.memoryNotice='';
       try{await ctx.api(`/api/bots/${enc(bot.id)}/memory/${enc(id)}`,{method:'DELETE',body:{}});v.memory=(v.memory||[]).filter(entry=>entry.id!==id);v.memoryAt=Date.now();ctx.toast('Fact removed.');}
       catch(error){v.memoryNotice=friendly(bot,error);}finally{v.saving=false;v.confirming='';refresh(bot.id);}break;}
-    case 'folder':v.filesFolder=element.dataset.path||'';ensureFiles(bot,v,v.filesFolder);refresh(bot.id);break;
+    case 'folder':v.filesFolder=element.dataset.path||'';ensureFiles(bot,v,v.filesFolder);if(!v.filesFolder)ensureWorkspace(bot,v);refresh(bot.id);break;
     case 'open-file':{const path=element.dataset.path;v.dirty=true;if(ctx.previewFormats?.test(path))await ctx.documentPreview(bot.id,path);else await ctx.fileEditor(bot.id,path);break;}
     case 'new-file':v.dirty=true;await ctx.fileEditor(bot.id,v.filesFolder,true);break;
     case 'decide':{
@@ -550,6 +649,8 @@ document.addEventListener('input',event=>{
   if(key==='memory-query'&&v.memory){v.memoryQuery=element.value;patch(bot,v,'#bp-memory-list',memoryList(bot,v));}
   if(key==='fact-key')v.draft.key=element.value;
   if(key==='fact-value')v.draft.value=element.value;
+  if(key==='script-query'){v.scriptQuery=element.value;refresh(bot.id);}
+  if(key==='script-args'){v.scriptArgs.set(element.dataset.scriptId,element.value);v.scriptNotice='';}
 });
 document.addEventListener('change',event=>{
   markSettingsDirty(event.target);
