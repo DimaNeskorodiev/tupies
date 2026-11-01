@@ -64,7 +64,7 @@ export async function verifierMain(){
     if(candidate.patch!==bundle.proposal.patch||workshopDigest(candidate.base)!==workshopDigest(bundle.proposal.candidate.base))throw new Error('Exported edits or base hashes do not match the immutable image.');
     const {BrowserSession}=await import(pathToFileURL(BASE+'/lib/browser.mjs'));
     try{const browser=await BrowserSession.start({executable:'/usr/bin/chromium',profileRoot:'/tmp/verifier-browser-probe',noSandbox:false});await browser.close();}
-    catch(error){const diagnostic=await command('browser-diagnostic','/usr/bin/chromium',['--headless=new','--no-first-run','--disable-background-networking','--disable-extensions','--user-data-dir=/tmp/verifier-browser-diagnostic','--dump-dom','about:blank'],{cwd:'/tmp',timeoutMs:15000});throw new Error(error.message+' '+diagnostic.log.slice(-400));}
+    catch(error){const diagnostic=await command('browser-diagnostic','/usr/bin/chromium',['--headless=new','--no-first-run','--disable-background-networking','--disable-extensions','--user-data-dir=/tmp/verifier-browser-diagnostic','--dump-dom','about:blank'],{cwd:'/tmp',timeoutMs:15000});throw new Error(error.message+' '+diagnostic.log.slice(0,440));}
     await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
     await fs.cp(BASE,WORK,{recursive:true,verbatimSymlinks:true,errorOnExist:true,force:false});
     for(const change of candidate.request.changes)await fs.writeFile(path.join(WORK,change.path),candidate.files[change.path]);
