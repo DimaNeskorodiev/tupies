@@ -6,14 +6,14 @@ import os from 'node:os';
 import { workshopDigest } from '../lib/workshop.mjs';
 import { VERIFIER_POLICY, readVerifierSeccomp, verifierConfig, verifierCreateArgs, validateVerifierBundle, readVerifierBundle, inspectVerifierContainer, validateVerifierResult, runEngineVerification } from '../lib/engine-verifier.mjs';
 import { parseVerifierArguments, verifyCandidateCLI } from '../scripts/verify-engine-candidate.mjs';
-import { parseTestSummary, assertVerifierKernel, collectVerifierTests, verifierDiagnosticLog } from '../scripts/engine-verifier-runner.mjs';
+import { parseTestSummary, assertVerifierKernel, collectVerifierTests, verifierDiagnosticLog, verifyDocumentWorker } from '../scripts/engine-verifier-runner.mjs';
 
 const seccomp=JSON.parse(await readVerifierSeccomp());
 const image='sha256:'+'a'.repeat(64),id='b'.repeat(64),jobLabel='dev.tupies.verifier-job';
 const config={image,executable:'/fixture/no-docker',socket:'/fixture/docker.sock'};
 function bundle(){const proposal={format:'tupies-improvement-v1',kind:'engine',candidate:{format:'tupies-engine-candidate-v1',request:{changes:[],dependencies:[],tests:[]}}};return {format:'tupies-contribution-v1',proposal,digest:workshopDigest(proposal)};}
 function evidence(digest){return {format:'tupies-engine-verifier-result-v1',proposalDigest:digest,passed:true,fullSuite:true,build:true,sourceUnchanged:true,checks:['syntax','tests-sequential','tests-concurrent','build'].map(name=>({name,exitCode:0,passed:true,log:'fixture',...(name.startsWith('tests-')?{tests:10,failed:0,skipped:0,cancelled:0,todo:0}:{})}))};}
-function container(jobId){return {Id:id,Image:image,Config:{Labels:{[jobLabel]:jobId},User:'10001:10001',Entrypoint:['/usr/local/bin/node'],Cmd:['/opt/tupies-verifier/runner.mjs']},HostConfig:{NetworkMode:'none',LogConfig:{Type:'none'},ReadonlyRootfs:true,Privileged:false,CapDrop:['ALL'],IpcMode:'private',ShmSize:VERIFIER_POLICY.shm,Memory:VERIFIER_POLICY.memory,MemorySwap:VERIFIER_POLICY.memory,NanoCpus:2000000000,PidsLimit:512,SecurityOpt:['no-new-privileges=true','seccomp='+JSON.stringify(seccomp)],Tmpfs:{'/work':'rw,nosuid,nodev,size=2147483648,uid=10001,gid=10001,mode=0700','/tmp':'rw,nosuid,nodev,size=1073741824,uid=10001,gid=10001,mode=1777'}},Mounts:[],State:{Running:false,OOMKilled:false,ExitCode:0}};}
+function container(jobId){return {Id:id,Image:image,Config:{Labels:{[jobLabel]:jobId},User:'10001:10001',Entrypoint:['/usr/local/bin/node'],Cmd:['/opt/tupies-verifier/runner.mjs']},HostConfig:{NetworkMode:'none',LogConfig:{Type:'none'},ReadonlyRootfs:true,Privileged:false,CapDrop:['ALL'],IpcMode:'private',PidMode:'',UsernsMode:'',ShmSize:VERIFIER_POLICY.shm,Memory:VERIFIER_POLICY.memory,MemorySwap:VERIFIER_POLICY.memory,NanoCpus:2000000000,PidsLimit:512,SecurityOpt:['no-new-privileges=true','seccomp='+JSON.stringify(seccomp)],Tmpfs:{'/work':'rw,nosuid,nodev,size=2147483648,uid=10001,gid=10001,mode=0700','/tmp':'rw,nosuid,nodev,size=1073741824,uid=10001,gid=10001,mode=1777'}},Mounts:[],State:{Running:false,OOMKilled:false,ExitCode:0}};}
 // Protocol fixtures never create a real container or assert kernel-level acceptance.
 function runtime(changes={}){
   const calls=[],state={};const client=async(args,options={})=>{
@@ -80,7 +80,7 @@ test('weak daemons, unknown images, image volumes and inherited execution config
   assert.equal((await run({info:{OSType:'linux',OperatingSystem:'Docker Desktop',SecurityOptions:['name=seccomp']}})).report.passed,true);
 });
 test('unexpected mounts, networking, capabilities, user or resource configuration prevent start',async()=>{
-  const changes=[c=>c.HostConfig.NetworkMode='host',c=>c.HostConfig.LogConfig.Type='json-file',c=>c.Mounts=[{Source:'/private'}],c=>c.HostConfig.Binds=['/private:/private'],c=>c.HostConfig.Privileged=true,c=>c.HostConfig.CapAdd=['SYS_ADMIN'],c=>c.HostConfig.Memory=0,c=>c.HostConfig.PidsLimit=-1,c=>c.HostConfig.NanoCpus=0,c=>c.HostConfig.SecurityOpt=[],c=>c.HostConfig.IpcMode='host',c=>c.HostConfig.ShmSize=0,c=>c.HostConfig.SecurityOpt=['no-new-privileges=true','seccomp=unconfined'],c=>c.HostConfig.SecurityOpt=['no-new-privileges=true','seccomp='+JSON.stringify({...seccomp,defaultAction:'SCMP_ACT_ALLOW'})],c=>c.HostConfig.ReadonlyRootfs=false,c=>c.Config.User='0',c=>c.HostConfig.UsernsMode='host',c=>c.HostConfig.Tmpfs['/work']='rw',c=>c.Config.Cmd=['evil'],c=>c.HostConfig.PortBindings={'80/tcp':[{}]}];
+  const changes=[c=>c.HostConfig.NetworkMode='host',c=>c.HostConfig.LogConfig.Type='json-file',c=>c.Mounts=[{Source:'/private'}],c=>c.HostConfig.Binds=['/private:/private'],c=>c.HostConfig.Privileged=true,c=>c.HostConfig.CapAdd=['SYS_ADMIN'],c=>c.HostConfig.Memory=0,c=>c.HostConfig.PidsLimit=-1,c=>c.HostConfig.NanoCpus=0,c=>c.HostConfig.SecurityOpt=[],c=>c.HostConfig.IpcMode='host',c=>c.HostConfig.ShmSize=0,c=>c.HostConfig.SecurityOpt=['no-new-privileges=true','seccomp=unconfined'],c=>c.HostConfig.SecurityOpt=['no-new-privileges=true','seccomp='+JSON.stringify({...seccomp,defaultAction:'SCMP_ACT_ALLOW'})],c=>c.HostConfig.ReadonlyRootfs=false,c=>c.Config.User='0',c=>c.HostConfig.UsernsMode='host',c=>c.HostConfig.PidMode='container:other',c=>c.HostConfig.Tmpfs['/work']='rw',c=>c.Config.Cmd=['evil'],c=>c.HostConfig.PortBindings={'80/tcp':[{}]}];
   for(const change of changes){const f=await run({container:change});assert.equal(f.report.passed,false);assert.equal(f.state.started,undefined);assert.equal(f.report.cleanup,'removed');}
 });
 test('lost create reply cleans only the matching job and never retries execution',async()=>{
@@ -136,3 +136,5 @@ test('failed verifier output retains the first failure cause and final summary w
   assert.ok(seccomp.syscalls.some(rule=>rule.names.includes('clone3')&&rule.action==='SCMP_ACT_ERRNO'&&rule.errnoRet===38));
   for(const syscall of ['mount','bpf','ptrace'])assert.ok(!seccomp.syscalls.some(rule=>rule.names.includes(syscall)&&rule.action==='SCMP_ACT_ALLOW'&&!rule.includes));
 });
+
+test('restricted document preflight resolves the installed image library through its package entrypoint',async()=>{await verifyDocumentWorker(path.resolve(import.meta.dirname,'..'));});

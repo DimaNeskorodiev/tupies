@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
@@ -52,6 +53,12 @@ async function command(name,exe,args,{cwd=WORK,timeoutMs=600000,input}={}){
     });
   });
 }
+export async function verifyDocumentWorker(root){
+  const sharp=createRequire(path.join(root,'package.json'))('sharp');
+  const pixel=await sharp({create:{width:16,height:16,channels:3,background:'#e02020'}}).png().toBuffer();
+  const worker=await command('document-worker-preflight',process.execPath,['--max-old-space-size=256','--experimental-permission','--allow-addons',...['lib','node_modules','assets/fonts','package.json'].map(name=>'--allow-fs-read='+path.join(root,name)),path.join(root,'lib/document-worker.mjs')],{cwd:root,input:JSON.stringify({operation:'image',data:pixel.toString('base64')})});
+  if(!worker.passed||!worker.log.includes('"ok":true'))throw new Error('Restricted document worker: '+worker.log.replace(/^.*ExperimentalWarning.*$/gm,'').replace(/^.*Use `node.*$/gm,'').trim().slice(0,460));
+}
 export async function verifierMain(){
   const result={format:'tupies-engine-verifier-result-v1',proposalDigest:'',passed:false,fullSuite:false,build:false,sourceUnchanged:false,checks:[]};
   try {
@@ -69,13 +76,9 @@ export async function verifierMain(){
     await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
     await fs.cp(BASE,WORK,{recursive:true,verbatimSymlinks:true,errorOnExist:true,force:false});
     for(const change of candidate.request.changes){const target=path.join(WORK,change.path);await fs.mkdir(path.dirname(target),{recursive:true});await fs.writeFile(target,candidate.files[change.path]);}
-    // Exercise the real restricted worker before the suite, retaining its startup cause.
-    const {default:sharp}=await import(pathToFileURL(BASE+'/node_modules/sharp/lib/index.js'));
-    const pixel=await sharp({create:{width:16,height:16,channels:3,background:'#e02020'}}).png().toBuffer();
-    const worker=await command('document-worker-preflight',process.execPath,['--max-old-space-size=256','--experimental-permission','--allow-addons',...['lib','node_modules','assets/fonts','package.json'].map(name=>'--allow-fs-read='+path.join(WORK,name)),path.join(WORK,'lib/document-worker.mjs')],{input:JSON.stringify({operation:'image',data:pixel.toString('base64')})});
-    if(!worker.passed||!worker.log.includes('"ok":true'))throw new Error('Restricted document worker: '+worker.log.replace(/^.*ExperimentalWarning.*$/gm,'').replace(/^.*Use `node.*$/gm,'').trim().slice(0,460));
     const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-control.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
     const rest=(await collectVerifierTests(WORK)).filter(name=>!sequential.some(file=>name==='test/'+file));
+    await verifyDocumentWorker(WORK);
     const checks=[['syntax',process.execPath,['scripts/check.mjs']],['tests-sequential',process.execPath,['--test','--test-reporter=tap','--test-concurrency=1',...sequential.map(name=>'test/'+name)]],['tests-concurrent',process.execPath,['--test','--test-reporter=tap','--test-concurrency=4',...rest]],['build','/usr/local/bin/npm',['run','build']]];
     for(const args of checks){const checked=await command(...args);result.checks.push(checked);if(!checked.passed)break;}
     result.sourceUnchanged=workshopDigest(before)===workshopDigest(await sourceHashes(WORK,selected));
