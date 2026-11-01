@@ -73,7 +73,7 @@ export async function verifierMain(){
     const {default:sharp}=await import(pathToFileURL(BASE+'/node_modules/sharp/lib/index.js'));
     const pixel=await sharp({create:{width:16,height:16,channels:3,background:'#e02020'}}).png().toBuffer();
     const worker=await command('document-worker-preflight',process.execPath,['--max-old-space-size=256','--experimental-permission','--allow-addons',...['lib','node_modules','assets/fonts','package.json'].map(name=>'--allow-fs-read='+path.join(WORK,name)),path.join(WORK,'lib/document-worker.mjs')],{input:JSON.stringify({operation:'image',data:pixel.toString('base64')})});
-    if(!worker.passed)throw new Error('Restricted document worker: '+worker.log.replace(/^.*ExperimentalWarning.*$/gm,'').replace(/^.*Use `node.*$/gm,'').trim().slice(0,460));
+    if(!worker.passed||!worker.log.includes('"ok":true'))throw new Error('Restricted document worker: '+worker.log.replace(/^.*ExperimentalWarning.*$/gm,'').replace(/^.*Use `node.*$/gm,'').trim().slice(0,460));
     const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-control.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
     const rest=(await collectVerifierTests(WORK)).filter(name=>!sequential.some(file=>name==='test/'+file));
     const checks=[['syntax',process.execPath,['scripts/check.mjs']],['tests-sequential',process.execPath,['--test','--test-reporter=tap','--test-concurrency=1',...sequential.map(name=>'test/'+name)]],['tests-concurrent',process.execPath,['--test','--test-reporter=tap','--test-concurrency=4',...rest]],['build','/usr/local/bin/npm',['run','build']]];
