@@ -34,7 +34,10 @@ const provider = http.createServer(async (req,res) => {
       result=answer(guidance?`QA additional guidance applied to the same task.\n\n${guidance.split('\n\n')[0]}`:'The initial fixture response finished before any guidance.');
     }
     else if (/E2E stop/i.test(task)) {await new Promise(resolve=>{const timer=setTimeout(resolve,60000);res.on('close',()=>{clearTimeout(timer);resolve();});});if(res.destroyed)return;result=answer('The waiting fixture finished.');}
+    else if (/E2E progress/i.test(task) && results.length) {await new Promise(resolve=>setTimeout(resolve,6000));result=answer('The final QA answer is complete. The earlier update stays in this chat.');}
     else if (results.length) result=answer(`QA workflow finished. Tool result:\n\n${results.at(-1).output}`);
+    else if (/E2E progress/i.test(task)) {result=call('workspace_list',{path:'.'});result.output.unshift({type:'message',role:'assistant',content:[{type:'output_text',text:'I am checking the workspace before answering.'}]});}
+    else if (/E2E layout/i.test(task)) result=answer(`Long text: ${'WorkspaceDocumentation'.repeat(12)}\n\n| Source | Result |\n| --- | --- |\n| ${'long-source-identifier-'.repeat(16)} | Preserved |\n\n\`\`\`text\n${'long-code-value-'.repeat(30)}\n\`\`\``);
     else if (/E2E question/i.test(task)) result=call('ask_user',{questions:[{id:'format',header:'Format',prompt:'Which format should the QA report use?',options:[{id:'pdf',label:'PDF'},{id:'docx',label:'Word'}]}]});
     else if (/E2E pdf/i.test(task)) result=call('documents_create',{path:'qa-report.pdf',document:{title:'QA report',content:'Created by the real Tupies document worker.\n\n| Check | Result |\n| --- | --- |\n| Export | Passed |'}});
     else if (/E2E approv/i.test(task)) result=call('workspace_write',{path:'qa-approved.txt',content:'Exact QA approval contents.\n'});
@@ -66,6 +69,13 @@ if(setup.status!==201)throw new Error('Disposable fixture setup failed.');
 await app.store.mutate(state=>{
   state.connections.push({id:'qa-provider',name:'Local QA fixture',type:'openai',baseUrl:`http://127.0.0.1:${provider.address().port}/v1`,secret:app.store.seal('disposable-qa-key'),defaultModel:'qa-model',status:'connected',models:[{id:'qa-model',name:'QA model'}]});
   for(const bot of state.bots){bot.connectionId='qa-provider';bot.model='qa-model';bot.approvalPolicy=bot.id==='bot_nova'?'strict':'balanced';bot.collaborators=state.bots.filter(other=>other.id!==bot.id).map(other=>other.id);}
+  if(process.argv.includes('--layout-stress')) {
+    Object.assign(state.bots[0],{name:'ResearchAndDocumentationCoordinationAssistant',title:'DocumentationAndResearchForTheWholeWorkspace',description:'A synthetic teammate with deliberately long unbroken labels for mobile layout verification.'});
+    state.bots.push({...structuredClone(state.bots[1]),id:'bot_hidden_layout',name:'ArchivedLayoutFixture',hidden:true});
+    state.connections[0].name='LocalDevelopmentProviderWithAnUnbrokenConnectionName';
+    state.rooms.push({id:'room_layout',name:'ResearchAndDocumentationCoordinationRoom',description:'Synthetic layout fixture.',botIds:state.bots.slice(0,2).map(bot=>bot.id),enabled:true});
+    state.routines.push({id:'routine_layout',name:'DailyResearchAndDocumentationCoordination',botId:state.bots[0].id,prompt:'Synthetic layout fixture. Do not run automatically.',enabled:false,intervalMinutes:1440});
+  }
 });
 let closing=false;
 async function close(){if(closing)return;closing=true;await app.close();provider.closeAllConnections();await new Promise(resolve=>provider.close(resolve));await rm(directory,{recursive:true,force:true});}
@@ -73,4 +83,4 @@ for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>close().then(()=>
 process.on('SIGUSR1',()=>{fault=fault==='http'?'':'http';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGUSR2',()=>{fault=fault==='connection'?'':'connection';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGALRM',()=>{dropNextSubmission=true;console.log('QA transport: next accepted message acknowledgement will be dropped');});
-console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail']}));
+console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail']}));

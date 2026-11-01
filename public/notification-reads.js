@@ -21,10 +21,12 @@
       const form = document.querySelector(current.view === 'room' ? '#room-message-form' : '#message-form');
       if (!thread || form?.dataset.id !== current.id) {visibleSince.clear(); return;}
       const viewport = window.visualViewport, top = viewport?.offsetTop || 0, bottom = top + (viewport?.height || window.innerHeight);
-      const messages = new Map((current.messages || []).filter(row => row.role === 'assistant' && !row.partial).map(row => [row.id, row]));
+      const messages = new Map((current.messages || []).filter(row => row.role === 'assistant' && !row.partial && row.kind !== 'progress').map(row => [row.id, row]));
+      const question = current.view === 'bot' && current.run?.status === 'waiting_for_input' && current.run.pending_controls?.find(control => control.kind === 'question');
+      if (question) messages.set(question.prompt_id, {id:question.prompt_id,question:true});
       const groups = new Map(), onScreen = new Set();
-      for (const node of thread.querySelectorAll('[data-search-message-id]')) {
-        const message = messages.get(node.dataset.searchMessageId);
+      for (const node of thread.querySelectorAll('[data-search-message-id],[data-notification-question-id]')) {
+        const message = messages.get(node.dataset.searchMessageId || node.dataset.notificationQuestionId);
         if (!message) continue;
         const botId = current.view === 'room' ? message.botId : current.id;
         const key = `${current.view}:${current.id}:${message.id}`, rect = node.getBoundingClientRect();
@@ -32,7 +34,7 @@
         onScreen.add(key);
         if (!visibleSince.has(key)) visibleSince.set(key, now());
         if (now() - visibleSince.get(key) < dwellMs) continue;
-        const group = groups.get(botId) || []; group.push({id:message.id, key}); groups.set(botId, group);
+        const group = groups.get(botId) || []; group.push({id:message.id, key, question:!!message.question}); groups.set(botId, group);
       }
       for (const key of visibleSince.keys()) if (!onScreen.has(key)) visibleSince.delete(key);
       if (pending || now() < retryAt) return;
@@ -41,7 +43,7 @@
       const [botId, rows] = entry, batch = rows.slice(-20), version = generation;
       pending = true;
       try {
-        await current.api('/api/notifications/read', {method:'POST', body:{botId, ...(current.view === 'room' ? {roomId:current.id} : {}), messageIds:batch.map(row => row.id)}});
+        await current.api('/api/notifications/read', {method:'POST', body:{botId, ...(current.view === 'room' ? {roomId:current.id} : {}), messageIds:batch.filter(row => !row.question).map(row => row.id), ...(batch.some(row => row.question) ? {questionId:batch.find(row => row.question).id} : {})}});
         if (generation === version && context().generation === version) {
           for (const row of batch) sent.add(row.key);
           current.onRead?.({view:current.view, id:current.id, botId, messageIds:batch.map(row => row.id)});

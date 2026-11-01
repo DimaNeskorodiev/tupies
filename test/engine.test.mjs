@@ -23,6 +23,35 @@ async function fixture(t,complete,options={}) {
 const current=(store,botId='bot_atlas')=>store.state.runs[botId];
 const decision=run=>({runId:run.id,remoteRunId:run.remoteRunId,request_id:run.pending_controls[0].prompt_id,execution_generation:run.execution_generation});
 
+test('completed chat updates remain in the transcript through the next stream, completion and reload',async t=>{
+  let release;const gate=new Promise(resolve=>{release=resolve;});t.after(()=>release());
+  const {engine,store,directory}=await fixture(t,async(request,turn)=>{
+    if(turn===1){await request.onDelta('I am checking the files.');return {text:'I am checking the files.',toolCalls:[call('list-progress','workspace_list',{path:'.'})]};}
+    await delay(410);await request.onDelta('The final answer');await gate;return {text:'The final answer is complete.',toolCalls:[]};
+  });
+  const started=await engine.start('bot_atlas','Check files and answer.');
+  await waitFor(()=>current(store)?.steps===2 && current(store)?.partialOutput==='The final answer');
+  let replies=store.state.messages.bot_atlas.filter(message=>message.role==='assistant');
+  assert.deepEqual(replies.map(message=>[message.kind,message.content]),[['progress','I am checking the files.']]);
+  assert.equal(current(store).status,'running');release();await waitFor(()=>current(store)?.status==='completed');
+  replies=store.state.messages.bot_atlas.filter(message=>message.role==='assistant');
+  assert.deepEqual(replies.map(message=>message.content),['I am checking the files.','The final answer is complete.']);
+  assert.equal(replies.filter(message=>message.kind!=='progress').length,1);
+  await engine.tasks.get(started.id);await store.queue;
+  const saved=JSON.parse(await fs.readFile(path.join(directory,'state.json'),'utf8'));
+  assert.deepEqual(saved.messages.bot_atlas.filter(message=>message.role==='assistant').map(message=>message.content),replies.map(message=>message.content));
+});
+
+test('Stop retains a committed update once and marks it partial without admitting the pending action',async t=>{
+  const {engine,store}=await fixture(t,async()=>({text:'I have prepared the draft.',toolCalls:[call('pending-progress','workspace_write',{path:'not-approved.txt',content:'No approval.'})]}));
+  const run=await engine.start('bot_atlas','Prepare a draft and wait for approval.');await waitFor(()=>current(store)?.status==='waiting_for_approval');
+  await engine.control('bot_atlas','stop',{runId:run.id,remoteRunId:run.remoteRunId});await waitFor(()=>current(store)?.status==='cancelled');
+  const replies=store.state.messages.bot_atlas.filter(message=>message.runId===run.id && message.role==='assistant');
+  assert.equal(replies.length,1);assert.equal(replies[0].content,'I have prepared the draft.');assert.equal(replies[0].partial,true);assert.equal(replies[0].runStatus,'cancelled');
+  assert.equal(current(store).partialOutput,'I have prepared the draft.');
+  await assert.rejects(fs.access(path.join(await getWorkspaceRoot(store,'bot_atlas'),'not-approved.txt')));
+});
+
 test('independent engine runs its own model/tool loop and persists private memory/history',async t=>{
   const {engine,store,requests}=await fixture(t,async request=>request.messages.at(-1).role==='user' ? {text:'',toolCalls:[call('remember','memory_set',{key:'preferred-format',value:'Short plain paragraphs.'})],providerItems:[{type:'reasoning',id:'reasoning-fixture',summary:[]}]} : {text:'I remembered your writing preference.',toolCalls:[],usage:{input_tokens:10,output_tokens:8}},{reviewMemory:async()=>({toolCalls:[call('review','memory_review_result',{changes:[],claims:[{text:'I remembered your writing preference.',key:'preferred-format',value:'Short plain paragraphs.'}],reason:'Already saved.'})]})});
   const run=await engine.start('bot_atlas','Remember my writing preference.');

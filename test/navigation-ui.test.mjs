@@ -104,7 +104,7 @@ test('bots are narrow rows: the row opens the chat and ••• opens the detai
   const list=h.app.innerHTML.match(/<ul class="bot-list"[\s\S]*?<\/ul>/)[0];
   assert.match(list,/<button class="bot-row-main" data-nav="\/bot\/bot_nova" aria-label="Chat with Nova">/);
   assert.match(list,/<button class="bot-row-more" data-nav="\/bots\/bot_nova" aria-label="Nova details"/);
-  assert.match(list,/<strong>Nova<\/strong><span class="bot-row-status ready"><i class="dot"><\/i>Ready<\/span><small>Writer<\/small>/);
+  assert.match(list,/<strong>Nova<\/strong><small>Writer<\/small>/);assert.doesNotMatch(list,/>Ready</);
   assert.match(list,/data-action="create-bot"/);
 });
 
@@ -114,7 +114,7 @@ test('chat has one universal action menu and keeps everyday resources reachable'
   const header=h.app.innerHTML.match(/<header class="chat-header">[\s\S]*?<\/header>/)[0];
   assert.match(header,/class="icon-button chat-back" data-nav="\/bots"/);
   assert.match(header,/class="chat-switcher" data-action="switch-bot" data-id="bot_nova" aria-haspopup="menu"/);
-  assert.match(header,/class="chat-switcher-status ready"><i class="dot"><\/i>Ready/);
+  assert.match(header,/class="chat-switcher-status ready" hidden/);assert.doesNotMatch(header,/>Ready</);
   assert.match(header,/class="icon-button chat-more" data-action="chat-menu" data-id="bot_nova"/);
   assert.ok(!header.includes('data-action="bot-memory"')&&!header.includes('data-action="edit-bot"'));
   assert.equal([...header.matchAll(/data-action="chat-menu"/g)].length,1);

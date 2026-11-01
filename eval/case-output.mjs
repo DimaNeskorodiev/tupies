@@ -30,7 +30,7 @@ export async function collectSyntheticCaseOutput(harness,{definition,repetition,
   const diagnostics=[...diagnosticRuns.values()].slice(0,12).map(({botId,run})=>{const failure=sanitizeProviderFailure(run.failure);return {botId,runId:run.id,status:STATES.has(run.status)?run.status:'unknown',steps:count(run.steps,50),toolCalls:count(run.toolCalls ?? (Array.isArray(run.workRecords)?run.workRecords.length:undefined),60),failedChecks:(run.verification?.checks || []).filter(check=>check.passed===false&&CHECKS.has(check.kind)).slice(0,12).map(check=>({id:clean(check.id || '').slice(0,64),kind:check.kind})),failureCategory:syntheticFailureCategory(run),...(failure?{failure}:{})};});
   let remaining=128_000,truncated=false,omittedArtifacts=0;
   for(const [botId,messages] of Object.entries(store.state.messages))if(SAFE.test(botId))for(const message of messages) {
-    if(message.role!=='assistant'||!ids.has(message.runId)||typeof message.content!=='string')continue;
+    if(message.role!=='assistant'||message.kind==='progress'&&!message.partial||!ids.has(message.runId)||typeof message.content!=='string')continue;
     if(answers.length>=12||remaining<=0){truncated=true;continue;}
     const text=clean(message.content),kept=text.slice(0,Math.min(32_000,remaining));remaining-=kept.length;truncated ||= kept.length<text.length;
     answers.push({botId,runId:message.runId,text:kept,partial:message.partial===true});
