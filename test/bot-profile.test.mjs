@@ -155,6 +155,56 @@ function ui(t,{hash='#/bots/bot_atlas',tools,rich=false,brain=overview,workspace
   return {win,doc,ctx,data,requests,toasts,calls,state,root,show,click,$:selector=>doc.querySelector(selector),$$:selector=>[...doc.querySelectorAll(selector)],text:selector=>{const node=doc.querySelector(selector);if(!node)return undefined;const parts=[],walker=doc.createTreeWalker(node,4);while(walker.nextNode())parts.push(walker.currentNode.data);return parts.join(' ').replace(/\s+/g,' ').trim();}};
 }
 
+test('profile tab focus and horizontal position survive asynchronous data and shell renders',async t=>{
+  const h=ui(t);await h.show();
+  h.$('#bp-tab-overview').focus();
+  h.$('#bp-tab-overview').dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
+  await settled();
+  assert.equal(h.doc.activeElement.id,'bp-tab-scripts');
+  assert.equal(h.$('#bp-tab-scripts').getAttribute('aria-selected'),'true');
+  assert.equal(h.$('#bp-panel').getAttribute('aria-labelledby'),'bp-tab-scripts');
+  h.$('#bp-tabs').scrollLeft=240;
+  await h.show();
+  assert.equal(h.$('#bp-tabs').scrollLeft,240);
+  assert.equal(h.doc.activeElement.id,'bp-tab-scripts');
+  h.doc.activeElement.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
+  await settled();
+  assert.equal(h.doc.activeElement.id,'bp-tab-files');
+  assert.equal(h.$('#bp-tab-files').getAttribute('tabindex'),'0');
+  assert.equal(h.$('#bp-tab-scripts').getAttribute('tabindex'),'-1');
+});
+
+test('a deep-linked profile tab is revealed without scrolling the whole page',async t=>{
+  const h=ui(t,{hash:'#/bots/bot_atlas/scripts'});
+  const original=h.win.Element.prototype.getBoundingClientRect;
+  h.win.Element.prototype.getBoundingClientRect=function(){
+    if(this.id==='bp-tabs')return {left:16,right:374,width:358};
+    if(this.id==='bp-tab-scripts')return {left:600,right:680,width:80};
+    return original.call(this);
+  };
+  await h.show();
+  assert.equal(h.$('#bp-tabs').scrollLeft,314);
+  assert.equal(h.win.scrollY,0);
+  // Browsing elsewhere along the rail is retained during a routine rerender.
+  h.$('#bp-tabs').scrollLeft=80;await h.show();
+  assert.equal(h.$('#bp-tabs').scrollLeft,80);
+});
+
+test('the phone connection map starts collapsed and preserves its disclosure across filters and renders',async t=>{
+  const h=ui(t,{hash:'#/bots/bot_atlas/brain'});
+  h.win.matchMedia=()=>({matches:true});
+  await h.show();
+  assert.equal(h.$('.bp-map').open,false);
+  h.$('.bp-map').open=true;
+  await h.show();
+  assert.equal(h.$('.bp-map').open,true);
+  h.$('.bp-map').open=false;
+  const search=h.$('[data-profile-input=brain-query]');search.value='Ada';
+  search.dispatchEvent(new h.win.Event('input',{bubbles:true}));await settled();
+  assert.equal(h.$('.bp-map').open,false);
+  assert.equal(h.$$('.bp-note-row').length,1);
+});
+
 test('the overview shows a calm summary and keeps cached counts across app re-renders',async t=>{
   const h=ui(t);await h.show();
   assert.equal(h.$('.bot-profile').dataset.profileBot,'bot_atlas');

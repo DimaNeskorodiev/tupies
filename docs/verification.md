@@ -1,5 +1,16 @@
 # Verification — Tupies Engine 0.5
 
+
+## Bot profile responsive refinement (1 November 2026, source only)
+
+The mutable profile UI keeps all seven sections and existing actions while replacing the wrapping segmented capsule with one scrollable tab row. Phone tabs remain reachable while reading; initial deep links reveal their selection. The hero and overview are compact, tablet actions no longer squeeze the identity text, section introductions distinguish notes/facts/files/scripts, and note/task surfaces use shared light/dark tokens. The phone Brain map starts collapsed and preserves its disclosure during search/filtering. The Settings save bar floats only for unsaved edits.
+
+Verification on official Node **22.23.4**: **74/74 focused regressions** across `bot-profile`, `mobile-ui`, `mobile-motion` and `study-learning-ui`; **139 syntax checks**; the full web-only build, **27 guide pages** and **399 dependency notices**. Three new regressions protect tab focus/scroll across asynchronous refresh, initial deep-link visibility and map disclosure across filtering. The map regression first exposed eager fragment rendering before state capture; rendering now happens after capture, and the final suite passes. Early sandbox-only HTTP bind refusals were rerun with local-server permission. Final affected asset/guide/notices generation was repeated after the last edits; unrelated native assets were excluded.
+
+Actual Chrome acceptance used an isolated scheduler-disabled local fixture with synthetic facts, 14 linked notes, long titles/filenames, completed/failed task records and empty Scripts. All seven sections pass page-width checks at **320×568** (dark) and **1440×1000** (light); **390×844** light/dark and **820×1000** tablet layouts were visually inspected. Direct Scripts links reveal the active tab; long-note reading and sticky tabs, file-folder navigation, empty states, map expansion/filtering and unsaved Settings edits across tabs/discard were exercised. No application-origin console errors were observed; an unrelated installed browser extension reports its own injection error. Screenshots and local test logs are disposable operator artifacts, not user data.
+
+This is source/browser verification. The complete backend suite was not rerun for this presentation-only change. Physical iPhone safe areas, Dynamic Type, touch/VoiceOver and native WebKit remain unmeasured. Operational engines, runtime data, accounts, native apps, profiles and pairings were not changed or restarted.
+
 ## Specialist learning VPS installation — 1 November 2026
 
 [PR19](https://github.com/DimaNeskorodiev/tupies/pull/19) is merged to main as `a396a89e82028b5682f798e84895b8a49218330b`; its tree equals the tested source head `7fa4f18f2084d72275fa03cb3de7b5e94680edb2`. VPS runs immutable **specialist-knowledge-20261101-7fa4f18f**, a targeted union over **organized-workspaces-20261101-720ef5eb**, containing **1870 payload files plus provenance**. This supersedes the prior VPS source checkpoint while preserving its workspace/Scripts, reader and team-health behavior. It does not change the Mac or installed native baseline.

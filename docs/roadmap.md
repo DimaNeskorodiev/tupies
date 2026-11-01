@@ -2,6 +2,10 @@
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
+## Bot profile mobile usability (1 November 2026, source only)
+
+The profile refinement is implemented: a compact hero and overview, single-row scrolling section navigation, readable dark/light content, a collapsible phone Brain map and a save bar that floats only for unsaved edits. Browser checks use disposable synthetic data. Next: owner review on the physical iPhone and a separately verified deployment to the desired engine. Source changes do not update installed engines or native apps.
+
 ## Organized workspaces and reusable bot software (1 November 2026)
 
 Current source adds standard folder purposes, explicit preservation-safe initialization, a native Scripts library and matching bot guidance. Documented Python3/Node/Bash packages have named entrypoints, complete source hashes, inputs, outputs and dependencies; exact reviewed runs use managed processes. Routines can pin the same package revision, retaining execution approval on every occurrence. Existing imported code remains reference material until deliberately adapted and registered. Next: representative real-provider creation/reuse, selectively adapting foreign scripts and reviewing their required connections; engine-local dependency environment management and recurring unattended execution grants remain future work. See [Workspaces and scripts](workspaces.md) for actual boundaries.
