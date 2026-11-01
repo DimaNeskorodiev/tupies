@@ -38,7 +38,7 @@ test('a plain owner statement automatically produces a source-linked Learning su
   assert.equal(result.usage.input_tokens,20);assert.equal(h.store.state.runHistory[h.bot.id][0].diagnostics.memoryReview.proposed,1);
   const reopened=await new Store(h.directory).init();assert.equal(reopened.state.proposals.length,1);
   await decideProposal(h.store,{botId:h.bot.id,proposalId:proposal.id,action:'accept',idle(){}});
-  await h.run('What is my name?');assert.match(h.requests.at(-1).messages[0].content,/Owner name is Fixture/);
+  await h.run('What is my name?');assert.doesNotMatch(h.requests.at(-1).messages[0].content,/Owner name is Fixture/);assert.match(h.requests.at(-1).turnContext,/Owner name is Fixture/);
 });
 
 test('Strict permits only a pending automatic suggestion and retains owner review',async t=>{

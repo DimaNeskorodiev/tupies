@@ -1,5 +1,14 @@
 # Verification — Tupies Engine 0.5
 
+## Prompt-injection publication candidate (1 November 2026, source only)
+
+The isolated branch based on GitHub main `e04b3074a8459b274f32de5eaf7311f847ed3916` passes **1592/1592 tests across159 files** on official **Node22.23.4**: **61** tests in four sequential timing-sensitive files (8.717s), then **1531** tests in155 files at concurrency4 (183.120s), with zero failures, skips or cancellations. All **310 JavaScript/test/package hashes** remain stable during the full suite. The exact main package lock is installed with `npm ci`; **139 syntax checks** and the affected **27-page guide rebuild** pass. No dependency or lock changes are included; unchanged brand/avatar/vendor assets retain their existing build baseline.
+
+The four added adversarial tests force a fixture model to follow injected text, then verify exact shell approval, denial/replay refusal, rejection of a forged approval argument, disabled capabilities, workspace path boundaries and protected Git writes. Poisoned memory/skill/team metadata stays out of the system message and cannot close the turn-context wrapper; the task snapshot and checkpoint capture are checked. Existing memory/team/provider tests assert that reference data remains available at lower priority. The 8K-context and disposable crash/restore regressions pass; Browser-specific guidance is limited to Browser-enabled bots without relaxing schemas, assertions or timeouts.
+
+This publication includes only the prompt-injection changes over main. The earlier1643-test working-copy receipt included unpublished Workshop work and is not the validation count for this branch. The owner retains autonomous web access and its residual URL/query exfiltration risk. Deterministic fixtures do not establish universal model resistance, answer integrity or safe arbitrary host execution. No operational engine, native app, profile, pairing or real account data is changed. See [security](security.md#prompt-injection-engine-responsibility) and [working context](context.md).
+
+
 
 ## Bot profile responsive refinement (1 November 2026, installed on VPS)
 
