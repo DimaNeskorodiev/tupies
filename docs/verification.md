@@ -1,7 +1,7 @@
 # Verification — Tupies Engine 0.5
 
 
-## Bot profile responsive refinement (1 November 2026, source only)
+## Bot profile responsive refinement (1 November 2026, installed on VPS)
 
 The mutable profile UI keeps all seven sections and existing actions while replacing the wrapping segmented capsule with one scrollable tab row. Phone tabs remain reachable while reading; initial deep links reveal their selection. The hero and overview are compact, tablet actions no longer squeeze the identity text, section introductions distinguish notes/facts/files/scripts, and note/task surfaces use shared light/dark tokens. The phone Brain map starts collapsed and preserves its disclosure during search/filtering. The Settings save bar floats only for unsaved edits.
 
@@ -9,7 +9,13 @@ Verification on official Node **22.23.4**: **74/74 focused regressions** across 
 
 Actual Chrome acceptance used an isolated scheduler-disabled local fixture with synthetic facts, 14 linked notes, long titles/filenames, completed/failed task records and empty Scripts. All seven sections pass page-width checks at **320×568** (dark) and **1440×1000** (light); **390×844** light/dark and **820×1000** tablet layouts were visually inspected. Direct Scripts links reveal the active tab; long-note reading and sticky tabs, file-folder navigation, empty states, map expansion/filtering and unsaved Settings edits across tabs/discard were exercised. No application-origin console errors were observed; an unrelated installed browser extension reports its own injection error. Screenshots and local test logs are disposable operator artifacts, not user data.
 
-This is source/browser verification. The complete backend suite was not rerun for this presentation-only change. Physical iPhone safe areas, Dynamic Type, touch/VoiceOver and native WebKit remain unmeasured. Operational engines, runtime data, accounts, native apps, profiles and pairings were not changed or restarted.
+The complete backend suite was not rerun for this presentation-only change. Physical iPhone safe areas, Dynamic Type, touch/VoiceOver and native WebKit remain unmeasured.
+
+[PR21](https://github.com/DimaNeskorodiev/tupies/pull/21) merged as `9579ff453a8d1f1e4d96f564de7d9136eaaf9356`, tree-equal to tested head `e4c3a5939f81d0c2d530ea20b543ef13ef2b4de9`. The isolated Linux candidate also passes **74/74 focused tests** and **139 syntax checks** on Node22.23.4, after its own locked dependency installation; all **1870 payload files plus provenance** remain exact. No GitHub status checks or workflow runs were reported for the source commit.
+
+The VPS now serves immutable **bot-profile-20261101-e4c3a593**, an eight-file source/docs/test overlay on the preceding specialist-learning release. Fresh idle/recovery checks preceded one normal stop, a complete encrypted stopped-runtime backup with authenticated roundtrip and offline restore verification, and one start through a new WorkingDirectory-only override. The backup key is protected separately. Runtime bytes, owners/groups, modes, directories and state collections remain exact at replacement capture, as do previous source/configuration. Root ownership freezes the new release without changing bytes/modes. Eight served assets, the retained TLS identity pin and anonymous API rejection pass; no task, temporary device or session is created for these checks. Private ownership and rollback receipts are in ignored `local-workspace.md`.
+
+The iOS app loads these shared assets from the selected engine. Pull down or use app Settings → **Reload <engine>** for an existing view; switching engines alone retains cached views. No native binary/profile/Keychain/pairing change was needed. Actual installed-phone visual acceptance remains separate from the disposable Chrome checks.
 
 ## Specialist learning VPS installation — 1 November 2026
 
