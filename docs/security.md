@@ -6,6 +6,19 @@ Native notifications use operator-configured APNs credentials and fixed Apple HT
 
 The server stores provider API keys, integration credentials and ChatGPT OAuth bundles sealed with AES-256-GCM; only the full 128-bit authentication tag is accepted. The generated vault key and state files are owner-readable. Browser state omits encrypted credential fields and redacts known secrets from returned text/errors. Tokens are not borrowed from existing apps. Responses, memory, workspace files, skill resources and activity remain plaintext local data. Protect the service account, disk and backups.
 
+
+## Prompt injection: Engine responsibility
+
+The Engine owns authorization; the model provides an additional, fallible layer of instruction following. Treat an attack as successful at steering the model when testing the permission boundary. External documents, web pages, images, skill descriptions, memories, summaries and teammate replies cannot supply approval identities, enable tools or change the bot's assigned capabilities.
+
+New tasks keep core-memory text, assigned skill descriptions and teammate profiles out of the system message. They enter the lower-priority turn context as an explicitly untrusted JSON reference snapshot, with angle brackets escaped, frozen for that task and retained across continuation checkpoints. The system and summary instructions preserve the origin of source instructions instead of presenting them as owner requests or approvals. This separation and wording reduce instruction confusion; they are not an execution sandbox or proof that a model will ignore every injection. Old continuations retain their saved prompt snapshots.
+
+`test/prompt-injection.test.mjs` deliberately makes a fixture model obey injected content. It verifies exact shell approval, denial/replay refusal, rejection of a model-authored approval argument, disabled tools, private workspace paths and protected Git configuration. It also checks poisoned memory/skill/team data placement and the deterministic compaction handoff. No live-model attack success rate is claimed.
+
+**Autonomous web access remains enabled by owner choice.** `http_fetch`, keyless search and ordinary fresh-profile browser navigation retain their existing behavior. A public URL or search query can carry private text; public-address/SSRF checks and known-secret redaction cannot prevent all such exfiltration. Source text can also corrupt an answer or poison ordinary Balanced notes/files without violating an existing permission. Approved host commands have service-account access. Scope tools, integrations, teammates and retained browser sessions to the actual task; use Strict policy for exact review of local writes when needed. Future owner-issued scoped egress grants and OS process isolation are separate work, not protection supplied by this change.
+
+The boundary follows [OWASP prompt-injection prevention guidance](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html): authorization and least privilege belong outside the model. Prompt filtering alone cannot establish safety.
+
 ## Tool boundary
 
 The Skills catalog has a separate owner-controlled installation policy. By default, `skills_install` requires exact approval of the catalog ID, version and digest. An owner may allow compatible bundled reviewed versions for a Balanced bot; Strict still asks, both the run snapshot and current policy must permit automatic installation, and a denial cannot be overridden by a later policy change. At most three new assignments are installed per task. This standing policy authorizes package storage and assignment only, never scripts, dependencies, tool groups, credentials or external effects. Foreign metadata is not authority. See [skills](skills.md).

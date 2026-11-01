@@ -1,5 +1,11 @@
 # Product roadmap
 
+## Prompt-injection boundaries (1 November 2026, source only)
+
+New tasks separate core memory, assigned skill descriptions and teammate profiles from system instructions into a frozen, escaped JSON reference snapshot in the turn context. Checkpoints retain that snapshot; summary guidance preserves source provenance. Deterministic adversarial fixtures drive a compromised model into existing exact-approval, denial, tool-capability and filesystem boundaries. These tests validate Engine behavior, not universal model resistance.
+
+The owner explicitly chose to preserve autonomous web access and accept its residual exfiltration risk. No new web confirmations or inferred URL grants are introduced. Scoped egress grants, stronger host-process isolation and real-model multilingual/multimodal attack evaluation remain future work. Source changes do not update running Mac/VPS engines or native apps; legacy continuations keep their saved prompt snapshots. See [security](security.md), [working context](context.md) and [verification](verification.md).
+
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
 ## Bot profile mobile usability (1 November 2026, installed on VPS)
