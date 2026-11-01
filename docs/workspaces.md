@@ -1,5 +1,10 @@
 # A bot’s workspace and reusable scripts
 
+## Isolated tools and reusable product improvements
+
+The separate owner-enabled [Tool workshop](tool-workshop.md) supports autonomous pure JavaScript/JSON tools without Terminal. It has its own isolated runtime and Engine-local package/inbox storage; it does not loosen the host Scripts rules below. Bot → Workshop lets owners inspect and export selected improvements for maintainer review and future shared catalog releases.
+
+
 Each bot has a private workspace for its knowledge, documents, projects and results. Folder names organize the files; they do not grant extra tools or permission to run code. Another bot cannot read these files merely because a teammate mentions their paths.
 
 ## Start with a useful structure
