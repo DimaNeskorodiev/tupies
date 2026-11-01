@@ -1,5 +1,11 @@
 # Product roadmap
 
+## Mission (1 November 2026, proposed)
+
+The owner requested **Mission** as a separate main tab for goals, verified progress, participants, current work and results. The same Mission can start in that tab or from direct owner chat through explicit intent or conservative recognition of a clear autonomous goal. Promoting an active chat task attaches its existing run and evidence; it must not restart the request or duplicate effects.
+
+The [implementation plan](plans/mission-controller-20261101.md) sequences seven stages: A contract/admission/verifier, B Mission UI and chat entry, C shared resource accounting, D durable waits/Pause/team recovery, E scoped external operations, F isolated general code workers and G measured learning and long-task acceptance. A+B form the first useful release under existing action approvals. Progress derives from verified required outcomes, and run completion alone cannot complete a Mission. Initial execution has one pinned engine; other engines receive presentation-only summaries. This is proposed work, with no Mission implementation or operational rollout included.
+
 ## Prompt-injection boundaries (1 November 2026, source only)
 
 Published as [PR23](https://github.com/DimaNeskorodiev/tupies/pull/23), commit `4fb4dd7ecced8e139e35df568008302467c2c68c`, merged into main as `5264a15c4e73347200a8ed5c4de318a4b3cef948`. The merge tree is identical to the tested PR head. The isolated publication excludes unpublished Workshop work and passes **1592/1592 tests in159 files**, **139 syntax checks** and **27 rebuilt guide pages** on Node22.23.4, with310 stable source/test/package hashes. GitHub reported no status checks, check runs or workflows for this head; validation is local. Operational Mac/VPS/native releases remain unchanged.
