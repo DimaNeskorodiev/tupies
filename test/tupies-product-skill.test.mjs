@@ -38,7 +38,7 @@ async function fixture(t) {
 test('the product guide appends a portable package without changing existing catalog identities',()=>{
   const entries=bundledSkills(),entry=packageEntry();
   assert.deepEqual(entries.slice(0,16).map(({catalogId,digest})=>[catalogId,digest]),ORIGINAL_PACKAGES);
-  assert.equal(entries.at(-1).catalogId,'tupies-product');
+  assert.equal(entries[16].catalogId,'tupies-product');
   assert.deepEqual(entry.files.map(file=>file.path),['SKILL.md','references/product-workflows.md','references/troubleshooting.md','references/operator-recovery.md']);
   assert.equal(entry.digest,skillPackageManifest(entry.files).digest);
   const digest=entry.digest;entry.files[0].data.fill(0);

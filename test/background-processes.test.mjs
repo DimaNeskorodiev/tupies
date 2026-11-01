@@ -19,6 +19,44 @@ async function fixture(t,options={}) {
   return {directory,store,manager,bot,runId,root,start};
 }
 
+test('internal captured streams remain separate, bounded and redacted without changing public process output',async t=>{
+  const {manager,store,bot,runId}=await fixture(t),token='fixture-private-captured-token';
+  await store.mutate(state=>{state.connections.push({id:'capture',secret:store.seal(token)});});
+  const child=await manager.start(bot,runId,{executable:process.execPath,args:['-e',`process.stdout.write('{"count":3}');process.stderr.write(${JSON.stringify(token)});`],timeoutMs:5000},{captureStreams:true});
+  assert.equal(Object.hasOwn(child,'stdout'),false);assert.equal(Object.hasOwn(child,'stderr'),false);
+  const result=await manager.waitResult(bot.id,runId,child.processId);
+  assert.equal(result.status,'completed');assert.equal(result.exitCode,0);assert.equal(result.stdout,'{"count":3}');assert.equal(result.stderr,'[redacted]');
+  const publicRead=await manager.read(bot.id,runId,child.processId);
+  assert.equal(Object.hasOwn(publicRead,'stdout'),false);assert.equal(Object.hasOwn(publicRead,'stderr'),false);
+  assert.equal(publicRead.output.includes('{"count":3}'),true);assert.equal(publicRead.output.includes(token),false);
+  assert.equal(Object.hasOwn(store.state.runs[bot.id].backgroundProcesses[0],'stdout'),false);
+  const late='fixture-late-captured-secret';
+  const later=await manager.start(bot,runId,{executable:process.execPath,args:['-e',`process.stdout.write(${JSON.stringify(late)});`],timeoutMs:5000},{captureStreams:true});
+  await manager.wait(bot.id,runId,later.processId);
+  await store.mutate(state=>{state.connections.push({id:'late-capture',secret:store.seal(late)});});
+  assert.equal((await manager.waitResult(bot.id,runId,later.processId)).stdout,'[redacted]');
+});
+
+test('separate stream capture is internal only and cancellation drains the actual child before waitResult rejects',async t=>{
+  const {manager,bot,runId,start}=await fixture(t);
+  const ordinary=await start("process.stdout.write('ordinary');");await manager.wait(bot.id,runId,ordinary.processId);
+  await assert.rejects(manager.waitResult(bot.id,runId,ordinary.processId),/internal capture/);
+  await assert.rejects(manager.start(bot,runId,{executable:process.execPath,args:[],captureStreams:true}),/supported background command arguments/);
+  const child=await manager.start(bot,runId,{executable:process.execPath,args:['-e',"process.stdout.write('started');setInterval(()=>{},1000)"],timeoutMs:5000},{captureStreams:true});
+  const controller=new AbortController(),waiting=manager.waitResult(bot.id,runId,child.processId,{signal:controller.signal});
+  controller.abort(new Error('capture owner stopped'));
+  await assert.rejects(waiting,/capture owner stopped/);assert.equal(manager.hasActive(runId),false);
+  assert.equal((await manager.read(bot.id,runId,child.processId)).status,'stopped');
+});
+
+test('captured streams obey the shared output budget and redact truncated credential prefixes',async t=>{
+  const {manager,store,bot,runId}=await fixture(t,{maxBytes:150}),secret='fixture-captured-private-prefix-with-a-long-suffix';
+  await store.mutate(state=>{state.connections.push({id:'prefix-capture',secret:store.seal(secret)});});
+  const child=await manager.start(bot,runId,{executable:process.execPath,args:['-e',`process.stdout.write('x'.repeat(130)+${JSON.stringify(secret)});setInterval(()=>{},1000)`],timeoutMs:5000},{captureStreams:true});
+  const result=await manager.waitResult(bot.id,runId,child.processId);
+  assert.equal(result.status,'output_limit');assert.equal(result.truncated,true);assert.equal(result.stdout,'x'.repeat(130)+'[redacted partial]');assert.equal(result.stderr,'');
+});
+
 test('background commands return live handles, overlap and page captured output after real completion',async t=>{
   const {manager,bot,runId,root,start}=await fixture(t);
   const a=await start("const fs=require('node:fs');const timer=setInterval(()=>{if(fs.existsSync('go-a')){clearInterval(timer);process.stdout.write('alpha🙂omega');}},5)");

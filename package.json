@@ -16,6 +16,7 @@
     "context:report": "node --env-file-if-exists=.env scripts/context-report.mjs",
     "eval:agent": "node scripts/eval-agent.mjs",
     "eval:retrieval": "node scripts/eval-retrieval.mjs",
+    "eval:assimilation": "node scripts/eval-assimilation.mjs",
     "runtime:backup": "node scripts/runtime-backup.mjs",
     "verify:runtime": "node scripts/verify-runtime.mjs",
     "docs:build": "node scripts/build-guide.mjs",
