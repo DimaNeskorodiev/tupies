@@ -68,3 +68,41 @@ test('successful exact reads notify the sidebar only in the same sign-in generat
   f.context.generation++;resolve({acknowledged:true});await pending;
   assert.equal(reads.length,1,'a response after sign-out cannot update the new session');
 });
+
+test('an attended local Mission acknowledges only its exact owner question, never transcript messages',async t=>{
+ const f=fixture(t),doc=f.win.document;doc.body.innerHTML='<section data-mission-page="mission_a"><div class="mission-owner-controls"><article data-notification-question-id="question_mission"></article><article data-search-message-id="reply"></article></div></section>';
+ for(const node of doc.querySelectorAll('article'))node.getBoundingClientRect=()=>({top:100,bottom:300,width:600,height:200});
+ Object.assign(f.context,{view:'missions',id:'mission_a',botId:'bot_atlas',messages:[{id:'reply',role:'assistant'}],run:{id:'run_a',missionId:'mission_a',botId:'bot_atlas',status:'waiting_for_input',pending_controls:[{kind:'question',prompt_id:'question_mission'}]}});
+ await f.reader.tick();f.advance(700);await f.reader.tick();await f.reader.tick();
+ assert.deepEqual(JSON.parse(JSON.stringify(f.calls.map(call=>call[1].body))),[{botId:'bot_atlas',messageIds:[],questionId:'question_mission'}]);
+ f.context.run.pending_controls[0].prompt_id='new_question';f.advance(700);await f.reader.tick();assert.equal(f.calls.length,1,'old card cannot acknowledge a replacement');
+});
+
+test('Mission summaries, wrong page/bot/run identities, browser handoffs and unattended cards cannot acknowledge questions',async t=>{
+ for(const kind of ['summary','page','mission','bot','browser','hidden','blur','dialog','offscreen']){
+  const f=fixture(t),doc=f.win.document;doc.body.innerHTML='<section data-mission-page="mission_a"><div class="mission-owner-controls"><article data-notification-question-id="question_mission"></article></div></section>';
+  doc.querySelector('article').getBoundingClientRect=()=>kind==='offscreen'?{top:1000,bottom:1200,width:600,height:200}:{top:100,bottom:300,width:600,height:200};
+  Object.assign(f.context,{view:'missions',id:'mission_a',botId:'bot_atlas',run:{id:'run_a',missionId:'mission_a',botId:'bot_atlas',status:'waiting_for_input',pending_controls:[{kind:'question',prompt_id:'question_mission'}]}});
+  if(kind==='summary')f.context.run=null;if(kind==='page')doc.querySelector('section').dataset.missionPage='mission_b';if(kind==='mission')f.context.run.missionId='mission_b';if(kind==='bot')f.context.botId='bot_nova';if(kind==='browser')f.context.run.pending_controls[0].kind='browser';if(kind==='hidden')f.hide(true);if(kind==='blur')f.focus(false);if(kind==='dialog')doc.body.insertAdjacentHTML('beforeend','<dialog open></dialog>');
+  await f.reader.tick();f.advance(700);await f.reader.tick();assert.equal(f.calls.length,0,kind);
+ }
+});
+
+test('visible exact local approval and settled blocker attention send exclusive Mission receipts',async t=>{
+ for(const kind of ['approval','blocker']){
+  const f=fixture(t),doc=f.win.document,attentionId='a'.repeat(32);doc.body.innerHTML=`<section data-mission-page="mission_a"><div data-notification-mission-id="mission_a" data-notification-attention-id="${attentionId}"></div><article data-search-message-id="reply"></article></section>`;
+  for(const node of doc.querySelectorAll('[data-notification-attention-id],article'))node.getBoundingClientRect=()=>({top:100,bottom:300,width:600,height:200});
+  Object.assign(f.context,{view:'missions',id:'mission_a',botId:'bot_atlas',run:kind==='approval'?{id:'run_a',missionId:'mission_a',botId:'bot_atlas',execution_generation:3,status:'waiting_for_approval'}:null,notificationAttention:{kind,attentionId,missionId:'mission_a',botId:'bot_atlas',...(kind==='approval'?{runId:'run_a',generation:3}:{})}});
+  await f.reader.tick();f.advance(700);await f.reader.tick();await f.reader.tick();assert.deepEqual(JSON.parse(JSON.stringify(f.calls.map(call=>call[1].body))),[{botId:'bot_atlas',missionId:'mission_a',attentionId,messageIds:[]}]);
+  f.context.notificationAttention.attentionId='b'.repeat(32);f.advance(700);await f.reader.tick();assert.equal(f.calls.length,1,'stale card cannot acknowledge replacement attention');
+ }
+});
+
+test('remote/mismatched attention, wrong generation and covered or inactive Mission detail cannot acknowledge',async t=>{
+ for(const bad of ['no-context','wrong-node','wrong-mission','wrong-bot','wrong-run','generation','hidden','blur','dialog']){
+  const f=fixture(t),doc=f.win.document,attentionId='a'.repeat(32);doc.body.innerHTML=`<section data-mission-page="mission_a"><div data-notification-mission-id="mission_a" data-notification-attention-id="${attentionId}"></div></section>`;doc.querySelector('[data-notification-attention-id]').getBoundingClientRect=()=>({top:100,bottom:300,width:600,height:200});
+  Object.assign(f.context,{view:'missions',id:'mission_a',botId:'bot_atlas',run:{id:'run_a',missionId:'mission_a',botId:'bot_atlas',execution_generation:3},notificationAttention:{kind:'approval',attentionId,missionId:'mission_a',botId:'bot_atlas',runId:'run_a',generation:3}});
+  if(bad==='no-context')f.context.notificationAttention=null;if(bad==='wrong-node')doc.querySelector('[data-notification-mission-id]').dataset.notificationMissionId='mission_b';if(bad==='wrong-mission')f.context.notificationAttention.missionId='mission_b';if(bad==='wrong-bot')f.context.notificationAttention.botId='bot_nova';if(bad==='wrong-run')f.context.notificationAttention.runId='run_old';if(bad==='generation')f.context.notificationAttention.generation=2;if(bad==='hidden')f.hide(true);if(bad==='blur')f.focus(false);if(bad==='dialog')doc.body.insertAdjacentHTML('beforeend','<dialog open></dialog>');
+  await f.reader.tick();f.advance(700);await f.reader.tick();assert.equal(f.calls.length,0,bad);
+ }
+});

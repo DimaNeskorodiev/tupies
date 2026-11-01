@@ -21,6 +21,10 @@ A native build number does not identify the selected engine or the Mac bundled f
 
 Start with `AGENTS.md` and `PROJECT_CONTEXT.md` at the repository root. `CLAUDE.md` points Claude Code to the same instructions. Keep portable documentation relative to the checkout.
 
+## Mission development
+
+Mission A–D plus independent G source ownership is in `lib/missions.mjs` (controller/admission), `mission-contract.mjs`, `mission-evidence.mjs`, `mission-verifier.mjs`, `mission-presentation.mjs`, `mission-attention.mjs` and `mission-api.mjs`; UI is `public/missions.js` + `.css`. Shared resource admission is in `mission-resources.mjs`/`mission-resource-runtime.mjs`; startup trusted pricing in `mission-pricing.mjs`; typed waits/family checkpoint safety in `mission-waits.mjs`; reusable inert observations in `mission-learning.mjs`. `eval/missions-runner.mjs` writes a deterministic labelled report and explicitly separates unmeasured real-model/human quality. The e2e fixture also supports **E2E Mission timer**, **E2E Mission pause** and **E2E Mission watch** through normal Engine tools. Never use operational data or paid inference for these fixtures. Use `node --test test/mission-*.test.mjs test/missions-*.test.mjs`, then the complete suite for persistence/lifecycle/auth changes. `scripts/e2e-fixture.mjs` includes **E2E Mission document**: real disposable Engine, real DOCX, exact saved download and deterministic independent reviewer. It measures machinery, not real-model quality. Check owner questions/approval/Stop, source-bound recognition, same-run promotion, safe restart, exact immutable downloads and read-only remote projections. See [Missions](missions.md). The full unchanged-source receipt isolates `browser-actions`, `browser-control`, `lsp`, `questions-history`, `team` and the18 new `missions-durable` cases sequentially, then runs every other `test/*.test.mjs` file at concurrency4. This preserves existing timing budgets and assertions; no tests are skipped. Chrome startup isolation addresses measured competing fixture load, not a product timeout extension.
+
 ## Run locally
 
 Use Node 22 (at least 22.16).
