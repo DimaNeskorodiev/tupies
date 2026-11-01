@@ -36,7 +36,7 @@ async function sourceHashes(root,selected=[]){
 }
 export function verifierDiagnosticLog(text,passed){
   if(passed)return text.slice(-4096);
-  const failure=text.search(/^\s*not ok /m);return failure<0?text.slice(-4096):(text.slice(failure,failure+3400)+'\n… final summary …\n'+text.slice(-600)).slice(0,4096);
+  const failure=text.search(/^[ \t]*not ok /m),names=[...text.matchAll(/^[ \t]*not ok [^\n]+/gm)].slice(0,10).map(match=>match[0].slice(0,100)).join('\n');return failure<0?text.slice(-4096):(text.slice(failure,failure+2200)+'\n… failing checks …\n'+names+'\n… final summary …\n'+text.slice(-600)).slice(0,4096);
 }
 async function command(name,exe,args,{cwd=WORK,timeoutMs=600000,input}={}){
   const started=Date.now();return new Promise(resolve=>{

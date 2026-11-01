@@ -13,7 +13,7 @@ const image='sha256:'+'a'.repeat(64),id='b'.repeat(64),jobLabel='dev.tupies.veri
 const config={image,executable:'/fixture/no-docker',socket:'/fixture/docker.sock'};
 function bundle(){const proposal={format:'tupies-improvement-v1',kind:'engine',candidate:{format:'tupies-engine-candidate-v1',request:{changes:[],dependencies:[],tests:[]}}};return {format:'tupies-contribution-v1',proposal,digest:workshopDigest(proposal)};}
 function evidence(digest){return {format:'tupies-engine-verifier-result-v1',proposalDigest:digest,passed:true,fullSuite:true,build:true,sourceUnchanged:true,checks:['syntax','tests-sequential','tests-concurrent','build'].map(name=>({name,exitCode:0,passed:true,log:'fixture',...(name.startsWith('tests-')?{tests:10,failed:0,skipped:0,cancelled:0,todo:0}:{})}))};}
-function container(jobId){return {Id:id,Image:image,Config:{Labels:{[jobLabel]:jobId},User:'10001:10001',Entrypoint:['/usr/local/bin/node'],Cmd:['/opt/tupies-verifier/runner.mjs']},HostConfig:{NetworkMode:'none',LogConfig:{Type:'none'},ReadonlyRootfs:true,Privileged:false,CapDrop:['ALL'],IpcMode:'private',PidMode:'',UsernsMode:'',ShmSize:VERIFIER_POLICY.shm,Memory:VERIFIER_POLICY.memory,MemorySwap:VERIFIER_POLICY.memory,NanoCpus:2000000000,PidsLimit:512,SecurityOpt:['no-new-privileges=true','seccomp='+JSON.stringify(seccomp)],Tmpfs:{'/work':'rw,nosuid,nodev,size=2147483648,uid=10001,gid=10001,mode=0700','/tmp':'rw,nosuid,nodev,size=1073741824,uid=10001,gid=10001,mode=1777'}},Mounts:[],State:{Running:false,OOMKilled:false,ExitCode:0}};}
+function container(jobId){return {Id:id,Image:image,Config:{Labels:{[jobLabel]:jobId},User:'10001:10001',Entrypoint:['/usr/local/bin/node'],Cmd:['/opt/tupies-verifier/runner.mjs']},HostConfig:{NetworkMode:'none',LogConfig:{Type:'none'},ReadonlyRootfs:true,Privileged:false,CapDrop:['ALL'],IpcMode:'private',PidMode:'',UsernsMode:'',ShmSize:VERIFIER_POLICY.shm,Memory:VERIFIER_POLICY.memory,MemorySwap:VERIFIER_POLICY.memory,NanoCpus:2000000000,PidsLimit:512,SecurityOpt:['no-new-privileges=true','seccomp='+JSON.stringify(seccomp)],Tmpfs:{'/work':'rw,exec,nosuid,nodev,size=2147483648,uid=10001,gid=10001,mode=0700','/tmp':'rw,exec,nosuid,nodev,size=1073741824,uid=10001,gid=10001,mode=1777'}},Mounts:[],State:{Running:false,OOMKilled:false,ExitCode:0}};}
 // Protocol fixtures never create a real container or assert kernel-level acceptance.
 function runtime(changes={}){
   const calls=[],state={};const client=async(args,options={})=>{
@@ -126,8 +126,8 @@ test('full verifier discovers nested candidate tests and refuses linked test tre
 });
 
 test('failed verifier output retains the first failure cause and final summary within the log bound',()=>{
-  const text='ok 1 - fixture\n'.repeat(1000)+'not ok 2 - browser\nerror: sandbox unavailable\n'+'ok 3 - fixture\n'.repeat(1000)+'# fail 1\n';
-  const log=verifierDiagnosticLog(text,false);assert.match(log,/sandbox unavailable/);assert.match(log,/# fail 1/);assert.ok(log.length<=4096);assert.equal(verifierDiagnosticLog(text,true),text.slice(-4096));
+  const text='ok 1 - fixture\n'.repeat(1000)+'not ok 2 - browser\nerror: sandbox unavailable\n'+'ok 3 - fixture\n'.repeat(1000)+'not ok 4 - another distant failure\n# fail 2\n';
+  const log=verifierDiagnosticLog(text,false);assert.match(log,/sandbox unavailable/);assert.match(log,/another distant failure/);assert.match(log,/# fail 2/);assert.ok(log.length<=4096);assert.equal(verifierDiagnosticLog(text,true),text.slice(-4096));
 });
 
  test('fixed Chromium policy retains default denial and clone3 fallback without granting outer capabilities',()=>{
