@@ -347,7 +347,7 @@ test('a quiet dashboard keeps direct teammate entry and one honest empty state',
   h.mount();await h.settle();
   assert.equal(h.root.querySelectorAll('.pearl-home-teammate').length,2);
   assert.ok(!h.root.querySelector('.pearl-home-teammate[data-nav="/bot/bot_hidden"]'));
-  assert.deepEqual([...h.root.querySelectorAll('[data-dash-section][hidden]')].map(node=>node.dataset.dashSection),['needs','working','files','routines']);
+  assert.deepEqual([...h.root.querySelectorAll('[data-dash-section][hidden]')].map(node=>node.dataset.dashSection),['missions','needs','working','files','routines']);
   assert.match(h.root.querySelector('.dash-activity').textContent,/No activity yet/);
   assert.ok(h.root.querySelector('.dash-activity [data-nav="/bots"]'));
 });
@@ -372,4 +372,17 @@ test('a failed first load offers a retry and a later failure keeps the last data
   assert.ok(h.root.querySelector('[data-dash-section="activity"]'));assert.ok(!h.root.querySelector('[role="alert"]'));
   h.intervals[0]();await h.settle();
   assert.ok(h.root.querySelector('.dash-status'));assert.equal(h.root.querySelectorAll('.dash-file').length,2);
+});
+
+
+test('Mission goals appear once in needs-you or active groups with shared links and remote summary labels',async t=>{
+  const h=uiHarness(t,[{body:{counts:{},files:[],activity:[],needs:[],working:[],routines:[]},etag:'"missions"'}]);
+  h.ctx.data.missions=[{id:'mission_active',title:'Compare sources',status:'running',leadBotId:'bot_atlas',progress:{verified:1,total:3,percent:33}},{id:'mission_attention',title:'<unsafe> report',status:'needs_attention',leadBotId:'bot_nova',currentStep:'Your audience choice is needed'},{id:'mission_remote',title:'Remote report',status:'waiting',leadBotId:'bot_atlas',remote:true,originEngineName:'Home engine'},{id:'mission_achieved',title:'Already done',status:'achieved',executionState:'terminal'},{id:'mission_archived',title:'Archived',status:'running',archivedAt:ago(1)}];
+  h.mount();await h.settle();const section=h.root.querySelector('.dash-missions');assert.equal(section.hidden,false);assert.equal(section.querySelectorAll('.dash-mission').length,3);
+  assert.deepEqual([...section.querySelectorAll('.dash-mission [data-nav]')].map(n=>n.dataset.nav),['/missions/mission_attention','/missions/mission_active','/missions/mission_remote']);
+  assert.match(section.textContent,/1 of 3 outcomes verified/);assert.match(section.textContent,/Summary from Home engine/);assert.match(section.textContent,/Open summary/);assert.doesNotMatch(section.textContent,/Already done|Archived/);assert.equal(section.querySelectorAll('unsafe').length,0);assert.equal(section.querySelector('h3').textContent,'Needs you');
+});
+
+test('Mission limits and expiry need the owner while paused work stays quietly labelled',async t=>{
+ const h=uiHarness(t,[{body:{counts:{},files:[],activity:[],needs:[],working:[],routines:[]},etag:'"cdg"'}]);h.ctx.data.missions=[{id:'mission_limit',title:'Limit reached',status:'budget_exhausted',executionState:'terminal',leadBotId:'bot_atlas'},{id:'mission_expired',title:'Deadline expired',status:'expired',executionState:'terminal',leadBotId:'bot_atlas'},{id:'mission_paused',title:'Saved project',status:'paused',leadBotId:'bot_atlas'}];h.mount();await h.settle();const groups=[...h.root.querySelectorAll('.dash-mission-group')];assert.equal(groups[0].querySelectorAll('.dash-mission').length,2);assert.equal(groups[0].querySelector('h3').textContent,'Needs you');assert.match(groups[1].textContent,/Paused/);assert.doesNotMatch(groups[1].textContent,/Needs attention/);
 });

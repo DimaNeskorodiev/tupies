@@ -75,10 +75,11 @@ test('the Dashboard and bot profile render from their modules and mount after ev
   h.setHash('#/bots');h.run('renderApp()');assert.match(h.app.innerHTML,/<h1>Bots<\/h1>/);assert.match(h.app.innerHTML,/data-nav="\/bots\/bot_nova"/);assert.equal(mounts.length,3);
 });
 
-test('phones get a four-tab bar and a navigation bar with Settings in the top-right corner',()=>{
+test('phones get a five-tab bar and a navigation bar with Settings in the top-right corner',()=>{
   const h=harness('#/routines');h.run('renderApp()');
   const tabbar=h.app.innerHTML.match(/<nav class="tabbar"[\s\S]*?<\/nav>/)[0];
-  assert.deepEqual([...tabbar.matchAll(/<span>([^<]+)<\/span>/g)].map(m=>m[1]),['Dashboard','Bots','Team rooms','Routines']);
+  assert.deepEqual([...tabbar.matchAll(/<span>([^<]+)<\/span>/g)].map(m=>m[1]),['Dashboard','Bots','Mission','Rooms','Routines']);
+  assert.match(tabbar,/data-nav="\/rooms" aria-label="Team rooms"/);
   assert.match(tabbar,/class="tab active" data-nav="\/routines" aria-current="page"/);
   assert.ok(!h.app.innerHTML.includes('mobile-menu')&&!h.app.innerHTML.includes('menu-overlay'),'the side menu is gone');
   const header=h.app.innerHTML.match(/<header class="topbar">[\s\S]*?<\/header>/)[0];

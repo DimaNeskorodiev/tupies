@@ -1,0 +1,243 @@
+/* Mission presentation. Execution, evidence and owner authority belong to Engine. */
+(() => {
+  'use strict';
+  const labels={waiting_for_approval:'Needs approval',waiting_for_input:'Needs your answer',waiting_for_delegate:'Waiting for teammate',completed:'Done',cancelled:'Stopped',suspended:'Saved',budget_exhausted:'Limit reached',paused:'Paused',pausing:'Pausing',expired:'Expired',queued:'Queued',planning:'Planning',verifying:'Verifying',blocked:'Needs attention',running:'In progress',working:'In progress',needs_attention:'Needs you',waiting:'Waiting',stopping:'Stopping',achieved:'Achieved',stopped:'Stopped',failed:'Failed',interrupted:'Needs attention',unknown:'Needs attention',archived:'Archived'};
+  const ended=new Set(['achieved','stopped','failed','expired','archived']);
+  let context,host,timer,epoch=0,sequence=0,applied=0,loading=false,failure='',loaded=false,lastLoad=0;
+  let missions=[],selected=new Map(),filter='active',query='',createDraft={leadBotId:'',goal:'',requirements:''},createPending=null;
+  const ownerDrafts=new Map(),approachReads=new Map(),directions=new Map(),goalDrafts=new Map(),pendingControls=new Set();
+  const text=value=>typeof value==='string'?value:'';
+  const list=value=>Array.isArray(value)?value:[];
+  const current=()=>context?.route?.().view==='missions'&&host?.isConnected;
+  const detailId=()=>context?.route?.().id||'';
+  const bot=id=>context?.botById(id);
+  const lead=m=>bot(m.leadBotId);
+  const name=id=>bot(id)?.name||'Unavailable teammate';
+  const finished=m=>m.executionState==='terminal'||ended.has(m.status)||!!m.archivedAt;
+  const needs=m=>['needs_attention','interrupted','unknown','blocked','budget_exhausted','expired'].includes(m.status);
+  const controllable=m=>m.canControl!==false&&!m.remote;
+  const settled=m=>selected.has(m.id)&&controllable(m)&&!m.archivedAt&&!m.wait&&!m.canResume&&!['paused','pausing'].includes(m.status)&&['waiting','terminal'].includes(m.executionState)&&(!m.currentRun||['completed','failed','cancelled','interrupted','unknown','error'].includes(m.currentRun.status));
+  const canWait=m=>m.canPause&&m.currentRun?.missionId===m.id&&['queued','running','recovering','waiting_for_delegate'].includes(m.currentRun?.status);
+  const retryable=m=>settled(m)&&m.status!=='achieved';
+  const admitted=()=>context?.data?.missionsAdmission!==false;
+  const key=()=>{const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);return [...bytes].map(v=>v.toString(16).padStart(2,'0')).join('');};
+  const e=value=>context.esc(value);
+  const icon=id=>context.icon(id);
+  const nav=m=>`/missions/${encodeURIComponent(m.id)}`;
+  function sync(ctx){context=ctx;if(Array.isArray(ctx.data.missions)){missions=ctx.data.missions;for(const summary of missions){const cached=selected.get(summary.id);if(cached&&Number(summary.revision)>Number(cached.revision))selected.delete(summary.id);}}}
+  function status(m){return `<span class="mission-status ${needs(m)?'attention':m.status==='achieved'?'complete':finished(m)?'finished':''}"><i aria-hidden="true"></i>${e(labels[m.status]||'Needs attention')}</span>`;}
+  function progress(m){
+    const p=m.progress||{},total=Number(p.total),verified=Number(p.verified),percent=Number(p.percent);
+    const valid=Number.isFinite(total)&&total>0&&Number.isFinite(verified)&&verified>=0&&verified<=total&&typeof p.percent==='number'&&Number.isFinite(percent)&&percent>=0&&percent<=100;
+    return `<div class="mission-progress-wrap"><div class="mission-progress-caption"><span>${valid?`${verified} of ${total} outcomes verified`:e(text(p.label)||'Defining the outcomes')}</span><strong>${valid?Math.round(percent)+'%':'—'}</strong></div><div class="mission-progress ${m.status==='achieved'?'complete':''}" role="progressbar" aria-label="Verified Mission outcomes" ${valid?`aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}" aria-valuetext="${verified} of ${total} outcomes verified"`:'aria-valuetext="Defining the outcomes"'}>${valid?`<span style="width:${percent}%"></span>`:''}</div></div>`;
+  }
+  function participants(m,compact=false){
+    const actual=list(m.participants),shown=compact?actual.filter(p=>p.botId!==m.leadBotId).slice(0,5):actual;
+    if(!shown.length)return compact?'':`<p class="mission-muted">Participants appear when work is assigned.</p>`;
+    if(compact)return `<div class="mission-avatar-stack" aria-label="Participants: ${e(actual.map(p=>name(p.botId)).join(', '))}">${shown.map(p=>bot(p.botId)?context.avatar(bot(p.botId),'tiny',`mission-${m.id}-${p.botId}`):'').join('')}${actual.filter(p=>p.botId!==m.leadBotId).length>shown.length?`<span>+${actual.filter(p=>p.botId!==m.leadBotId).length-shown.length}</span>`:''}</div>`;
+    return `<ul class="mission-people">${shown.map(p=>`<li>${bot(p.botId)?context.avatar(bot(p.botId),'small',`mission-team-${m.id}-${p.botId}`):`<span class="mission-person-fallback">${icon('bots')}</span>`}<div>${bot(p.botId)?`<button type="button" class="mission-person-link" data-nav="/bot/${e(p.botId)}">${e(name(p.botId))}</button>`:`<strong>${e(name(p.botId))}</strong>`}<small>${e(p.role|| (p.botId===m.leadBotId?'Lead':'Teammate'))}${p.status?` · ${e(labels[p.status]||p.status)}`:''}</small></div></li>`).join('')}</ul>`;
+  }
+  function card(m,chat=false){
+    return `<article class="mission-card ${chat?'mission-chat-card':''}"><div class="mission-card-top">${status(m)}<time datetime="${e(m.updatedAt||'')}">${e(context.relative(m.updatedAt))}</time></div><h2><a href="#${e(nav(m))}">${e(m.title||m.goal||'Mission')}</a></h2>${!chat?`<p class="mission-card-goal">${e(m.goal)}</p>`:''}${progress(m)}${m.currentStep?`<p class="mission-card-step">${icon(needs(m)?'chat':'activity')}<span>${e(text(m.currentStep))}</span></p>`:''}<footer><span class="mission-led">${lead(m)?context.avatar(lead(m),'tiny',`mission-lead-${m.id}`):''}<span>Led by <strong>${e(name(m.leadBotId))}</strong></span></span>${participants(m,true)}<a class="mission-open" href="#${e(nav(m))}">Open${icon('arrow')}</a></footer>${m.remote?`<p class="mission-remote">Summary from ${e(m.originEngineName||'another engine')}. Open its engine to control this Mission.</p>`:''}</article>`;
+  }
+  function empty(title,description,action=''){return `<div class="mission-empty">${icon('mission')}<h2>${e(title)}</h2><p>${e(description)}</p>${action}</div>`;}
+  function filtered(){return missions.filter(m=>(filter==='all'||filter==='active'&&!finished(m)||filter==='attention'&&needs(m)||filter==='finished'&&finished(m))&&`${m.title||''} ${m.goal||''} ${name(m.leadBotId)}`.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>Number(needs(b))-Number(needs(a))||Date.parse(b.updatedAt||0)-Date.parse(a.updatedAt||0));}
+  function cards(){
+    const found=filtered();
+    if(!loaded&&!missions.length&&!failure)return empty('Loading Missions…','Getting the latest work from your engine.');
+    if(failure&&!missions.length)return empty('Missions couldn’t load',failure,'<button type="button" class="secondary-button" data-mission-action="retry">Try again</button>');
+    return found.length?found.map(m=>card(m)).join(''):empty(query?'No matching Missions':filter==='attention'?'Nothing needs your attention':filter==='finished'?'No finished Missions yet':'Your next goal starts here',query?'Try a different goal, title or lead bot.':filter==='attention'?'Requests from your team will appear here.':'Give a bot a goal and follow its progress and results.',query?'<button type="button" class="secondary-button" data-mission-action="clear-search">Clear search</button>':admitted()?'<button type="button" class="secondary-button" data-mission-action="create">New Mission</button>':'');
+  }
+  function errorNotice(){return failure?`<p class="mission-notice" role="status">${icon('info')}<span>${e(missions.length||selected.size?'Showing the last received update. Live status may have changed.':'')}${e(failure)}</span><button class="text-button" data-mission-action="retry">Try again</button></p>`:'';}
+  function listPage(){
+    const counts={active:missions.filter(m=>!finished(m)).length,attention:missions.filter(needs).length,finished:missions.filter(finished).length,all:missions.length};
+    return `<section class="page missions-page" data-mission-page="list"><div class="page-heading"><div><h1>Mission</h1><p class="page-description">A goal for your team. A shared view of the journey.</p></div>${admitted()?`<button type="button" class="primary-button" data-mission-action="create">${icon('plus')}New Mission</button>`:''}</div><div class="mission-overview"><span><strong>${counts.active}</strong>Active</span><span><strong>${counts.attention}</strong>Needs you</span><span><strong>${missions.filter(m=>m.status==='achieved').length}</strong>Achieved</span><small>${icon('check')}Progress backed by results</small></div><div class="mission-toolbar"><div class="mission-filters" role="group" aria-label="Filter Missions">${[['active','Active'],['attention','Needs you'],['finished','Finished'],['all','All']].map(([id,label])=>`<button type="button" data-mission-filter="${id}" class="${filter===id?'active':''}" aria-pressed="${filter===id}">${label}<span>${counts[id]}</span></button>`).join('')}</div><label class="mission-search">${icon('search')}<input type="search" data-mission-search placeholder="Search Missions" aria-label="Search Missions" value="${e(query)}"></label></div>${errorNotice()}<div class="mission-grid" data-mission-list>${cards()}</div></section>`;
+  }
+  function panel(title,body,cls=''){return `<section class="mission-panel ${cls}"><h2>${e(title)}</h2>${body}</section>`;}
+  function requirements(m){return list(m.requirements).length?`<ol class="mission-requirements">${m.requirements.map((r,i)=>`<li><span class="mission-check ${r.status==='verified'?'verified':''}">${r.status==='verified'?icon('check'):i+1}</span><div><strong>${e(r.title||r.description||r.text)}</strong><small>${e(r.detail||({verified:'Verified',pending:'Not yet verified',stale:'Evidence needs a fresh check',failed:'Check failed'})[r.status]||'Not yet verified')}</small></div></li>`).join('')}</ol>`:'<p class="mission-muted">The lead bot is defining outcomes for this goal.</p>';}
+  function snapshotUrl(m,result){
+    const file=result.file;if(m.remote||file?.verified!==true||typeof file.snapshotUrl!=='string')return '';
+    const prefix=`/api/missions/${encodeURIComponent(m.id)}/evidence/`;
+    return file.snapshotUrl.startsWith(prefix)&&/^evidence_[a-f0-9]{64}\/download$/.test(file.snapshotUrl.slice(prefix.length))?file.snapshotUrl:'';
+  }
+  function results(m){return list(m.results).length?`<div class="mission-results">${m.results.map(r=>{const file=r.file,verified=r.verified===true,url=snapshotUrl(m,r);return `<article class="mission-result">${icon(file?'file':'check')}<div><h3>${e(r.title||'Result')}</h3>${r.summary?`<p>${e(r.summary)}</p>`:''}<small>${verified?'Verified result':'Awaiting verification'}${r.botId?` · ${e(name(r.botId))}`:''}</small></div>${url?`<a class="secondary-button" href="${e(url)}" download>Download${icon('file')}</a>`:''}</article>`;}).join('')}</div>`:'<p class="mission-muted">Completed results will appear here with their verification status.</p>';}
+
+  function activity(m){return list(m.activity).length?`<ol class="mission-activity">${m.activity.slice(-100).reverse().map(item=>`<li><span class="mission-event-mark">${icon(item.type?.includes('result')?'file':item.type?.includes('verified')?'check':'activity')}</span><div><strong>${e(item.text||item.title||'Mission updated')}</strong>${item.detail?`<p>${e(item.detail)}</p>`:''}<time datetime="${e(item.at||'')}">${e(context.relative(item.at))}${item.botId?` · ${e(name(item.botId))}`:''}</time></div></li>`).join('')}</ol>`:'<p class="mission-muted">Updates from the work will appear here.</p>';}
+  function direction(m){
+    if(!controllable(m)||finished(m)||['stopping','pausing','paused'].includes(m.status)||m.currentRun?.missionId!==m.id||!['queued','running','recovering','waiting_for_delegate'].includes(m.currentRun?.status))return '';
+    return `<form data-mission-direction="${e(m.id)}" class="mission-direction"><label for="mission-direction">Add direction</label><p>Guide this Mission as it works. Changes to its goal may require a new review.</p><textarea id="mission-direction" name="text" rows="3" maxlength="4000" placeholder="What should the team keep in mind?">${e(directions.get(m.id)?.text||'')}</textarea><div><p class="form-error" role="status">${e(directions.get(m.id)?.notice||'')}</p><button type="submit" class="secondary-button" ${pendingControls.has(m.id)?'disabled':''}>${icon('send')}Add direction</button></div></form>`;
+  }
+  function notificationAttention(m){const notice=m.notificationAttention;return selected.has(m.id)&&controllable(m)&&notice?.missionId===m.id&&notice.botId===m.leadBotId&&['approval','blocker'].includes(notice.kind)&&(notice.kind!=='approval'||m.currentRun?.id===notice.runId&&(notice.generation===undefined||m.currentRun?.execution_generation===notice.generation))&&/^[a-f0-9]{32}$/.test(notice.attentionId||'')?notice:null;}
+  function attentionAttributes(notice){return notice?`data-notification-mission-id="${e(notice.missionId)}" data-notification-attention-id="${e(notice.attentionId)}"`:'';}
+  const resourceFields=[['tokens','Tokens (local estimate)'],['moneyMicros','Money (USD, known prices only)'],['requests','API requests'],['toolCalls','Tool calls'],['computeMs','Active tool/model time (milliseconds)']];
+  const number=value=>Number.isSafeInteger(value)&&value>=0?value.toLocaleString():'Unknown';
+  const amount=(value,dimension)=>dimension==='moneyMicros'?(Number.isSafeInteger(value)&&value>=0?'$'+(value/1e6).toFixed(6):'Unavailable'):number(value);
+  const localDetail=m=>selected.has(m.id)&&controllable(m);
+  function resources(m){
+    const r=m.resources;if(!localDetail(m)||!r)return '';const moneyUnavailable=r.moneyBasis==='unavailable'||list(r.unknownUnbounded).includes('moneyMicros');
+    return panel('Resources',`<p class="mission-muted">Recorded use and reservations are shared across this Mission’s attempts and team. Tokens are local admission estimates; they do not guarantee the provider’s output or bill.</p><div class="mission-resource-list">${resourceFields.map(([id,label])=>`<div class="mission-resource-row"><strong>${e(label)}</strong><dl><div><dt>Used</dt><dd>${e(amount(id==='moneyMicros'&&moneyUnavailable?null:r.used?.[id],id))}</dd></div><div><dt>Reserved</dt><dd>${e(amount(id==='moneyMicros'&&moneyUnavailable?null:r.reserved?.[id],id))}</dd></div><div><dt>Unknown</dt><dd>${e(list(r.unknownUnbounded).includes(id)?'Unknown':amount(id==='moneyMicros'&&moneyUnavailable?null:r.unknown?.[id],id))}</dd></div><div><dt>Remaining</dt><dd>${e(r.limits?.[id]===undefined?'No explicit limit':amount(r.remaining?.[id],id))}</dd></div></dl></div>`).join('')}</div>${r.limits?.deadlineAt?`<p class="mission-muted">Deadline: ${e(new Date(r.limits.deadlineAt).toLocaleString())}</p>`:''}${r.priceNotice?`<p class="mission-muted">${e(r.priceNotice)}</p>`:''}${list(r.readiness).length?`<ul class="mission-readiness">${r.readiness.map(item=>`<li><strong>${e(resourceFields.find(([id])=>id===item.dimension)?.[1]||({workspace_read:'Read private files',documents_create:'Create documents',http_fetch:'Read public pages',browser_navigate:'Browser actions',shell_run:'Approved commands'})[item.dimension]||'Readiness')}</strong><span>${e(item.available===true?'Available with current access. Existing approvals still apply.':item.detail||item.reason||({needs_access:'Needs access',unsupported_bound:'This action cannot keep the selected limit.',unknown_price:'Price is unavailable'})[item.status]||'Unavailable')}</span></li>`).join('')}</ul>`:''}${r.canEdit?`<button class="secondary-button" data-mission-action="limits" data-mission-id="${e(m.id)}">Edit limits</button>`:''}`,'mission-resources');
+  }
+  function waiting(m){
+    if(!m.wait&&m.status!=='paused'&&m.status!=='pausing')return '';
+    const wait=m.wait||{},kind={timer:'Waiting for a timer',dependency:'Waiting for teammate results',file_change:'Watching a private file'}[wait.kind]||labels[m.status]||'Waiting';
+    return panel('Saved work',`<h3 class="mission-wait-title">${e(m.status==='pausing'?'Finishing current action before pausing':m.status==='paused'?'Paused':kind)}</h3><p class="mission-muted">${e(wait.reason||m.currentStep||'Saved work will be checked before it resumes.')}</p>${wait.nextWakeAt?`<p class="mission-muted">Next check: ${e(new Date(wait.nextWakeAt).toLocaleString())}</p>`:''}${wait.deadline?`<p class="mission-muted">Wait expires: ${e(new Date(wait.deadline).toLocaleString())}</p>`:''}`,'mission-wait');
+  }
+  function approaches(m){
+    if(!localDetail(m)||!list(m.approaches).length)return '';
+    return panel('Saved approaches',`<p class="mission-muted">Observations from previous work. Check the assumptions, evidence and limitations before using an approach for a new goal.</p><div class="mission-approaches">${m.approaches.map(a=>`<article><div><h3>${e(a.title||'Observed approach')}</h3><p>${e(a.accepted?'Accepted for its original goal':labels[a.observedOutcome]||a.observedOutcome||'Unaccepted')}${a.unknownEffects?' · Unknown effects remain':''} · Goal version ${e(a.contractVersion)}</p>${a.reuse?.status==='historical'?'<small>Historical observation. Source or access needs a fresh check.</small>':''}</div><button class="secondary-button" data-mission-action="read-approach" data-mission-id="${e(m.id)}" data-approach-id="${e(a.id)}">Review approach</button></article>`).join('')}</div>${m.approachesOmitted?`<p class="mission-muted">${e(m.approachesOmitted)} older observations are not shown.</p>`:''}`);
+  }
+  const dateInput=value=>{if(!Number.isFinite(Number(value)))return '';const date=new Date(value);return new Date(date-date.getTimezoneOffset()*60000).toISOString().slice(0,16);};
+  function ownerForm(m,action){
+    if(!localDetail(m)||action==='limits'&&!m.resources?.canEdit||action==='wait'&&!canWait(m))return;
+    const id=`${m.id}:${action}`,saved=ownerDrafts.get(id),values=saved?.values||{};ownerDrafts.set(id,{values,revision:m.revision});
+    const fields=action==='limits'?resourceFields.map(([key,label])=>`<div class="field"><label for="mission-limit-${key}">${e(label)}</label><input id="mission-limit-${key}" name="${key}" type="number" min="0" step="${key==='moneyMicros'?'0.000001':'1'}" value="${e(values[key]??(key==='moneyMicros'&&m.resources.limits?.[key]!==undefined?m.resources.limits[key]/1e6:m.resources.limits?.[key]??''))}"></div>`).join('')+`<div class="field"><label for="mission-limit-deadline">Deadline</label><input id="mission-limit-deadline" name="deadlineAt" type="datetime-local" value="${e(values.deadlineAt??dateInput(m.resources.limits?.deadlineAt))}"></div>`:`<div class="field"><label for="mission-wait-kind">Wait for</label><select id="mission-wait-kind" name="kind"><option value="timer" ${values.kind==='file_change'?'':'selected'}>Timer</option><option value="file_change" ${values.kind==='file_change'?'selected':''}>Private file change</option></select></div><div class="field"><label for="mission-wait-delay">Timer duration (seconds)</label><input id="mission-wait-delay" name="delaySeconds" type="number" min="1" max="2592000" step="1" value="${e(values.delaySeconds??60)}"></div><div class="field"><label for="mission-wait-path">Private file path</label><input id="mission-wait-path" name="path" maxlength="1000" value="${e(values.path||'')}" placeholder="outputs/report.md"><small>For a file wait, choose an existing file in the lead bot’s private Files.</small></div><div class="field"><label for="mission-wait-interval">File check interval (seconds)</label><input id="mission-wait-interval" name="intervalSeconds" type="number" min="1" max="86400" step="1" value="${e(values.intervalSeconds??60)}"></div><div class="field"><label for="mission-wait-expiry">Wait expiry (optional)</label><input id="mission-wait-expiry" name="deadlineAt" type="datetime-local" value="${e(values.deadlineAt||'')}"></div>`;
+    context.openDialog(action==='limits'?'Mission limits':'Save a wait',`<form data-mission-owner-form="${action}" data-mission-id="${e(m.id)}" data-revision="${e(m.revision)}"><p class="modal-subtitle">${action==='limits'?'Empty fields have no explicit ceiling. Previous usage and unknown consumption remain counted. A monetary ceiling requires known prices.':'The Mission will save its work at a safe boundary. A file watch only reads the chosen private file and creates no action permission.'}</p><div class="mission-form-grid">${fields}</div><p class="form-error" role="alert"></p><div class="modal-footer"><button type="button" class="secondary-button" data-action="close-dialog">Cancel</button><button type="submit" class="primary-button">${action==='limits'?'Save limits':'Save wait'}</button></div></form>`);
+  }
+  function readOwnerValues(form){return Object.fromEntries(new FormData(form));}
+  async function submitOwner(form){
+    const id=form.dataset.missionId,action=form.dataset.missionOwnerForm,m=selected.get(id);if(!m||!localDetail(m)||pendingControls.has(id))return;
+    const ctx=context,session=epoch,values=readOwnerValues(form),stored=ownerDrafts.get(`${id}:${action}`)||{};stored.values=values;ownerDrafts.set(`${id}:${action}`,stored);let body={action,revision:Number(form.dataset.revision)};
+    const integer=(value,label,multiplier=1)=>{const n=Number(value)*multiplier;if(value===''||!Number.isSafeInteger(n)||n<0)throw new Error(`Enter a valid ${label}.`);return n;};
+    try{if(action==='limits'){body.limits={};for(const [key,label] of resourceFields)if(values[key]!=='')body.limits[key]=key==='moneyMicros'?(()=>{if(!/^\d+(?:\.\d{1,6})?$/.test(values[key]))throw new Error('Enter USD with at most six decimal places.');const [whole,fraction='']=values[key].split('.'),micros=BigInt(whole)*1000000n+BigInt(fraction.padEnd(6,'0'));if(micros>BigInt(Number.MAX_SAFE_INTEGER))throw new Error('The monetary limit is too large.');return Number(micros);})():integer(values[key],label);if(values.deadlineAt)body.limits.deadlineAt=integer(String(new Date(values.deadlineAt).getTime()),'deadline');}else{body.wait=values.kind==='file_change'?{kind:'file_change',path:values.path.trim(),intervalMs:integer(values.intervalSeconds,'check interval',1000)}:{kind:'timer',delayMs:integer(values.delaySeconds,'timer duration',1000)};if(values.deadlineAt)body.wait.deadlineAt=integer(String(new Date(values.deadlineAt).getTime()),'wait expiry');}}
+    catch(error){form.querySelector('.form-error').textContent=error.message;return;}
+    const button=form.querySelector('[type=submit]');pendingControls.add(id);button.disabled=true;
+    try{const result=await ctx.api(`/api/missions/${encodeURIComponent(id)}/control`,{method:'POST',body});if(session!==epoch)return;if(!result.mission)throw new Error('The engine did not confirm this change.');selected.set(id,result.mission);missions=missions.map(row=>row.id===id?result.mission:row);ctx.data.missions=missions;
+      if(JSON.stringify(ownerDrafts.get(`${id}:${action}`)?.values)!==JSON.stringify(values)){form.querySelector('.form-error').textContent='Saved. Your newer draft is preserved. Close and reopen to review the current Mission.';}else{ownerDrafts.delete(`${id}:${action}`);if(form.isConnected)ctx.closeDialog();}ctx.toast(action==='limits'?'Mission limits saved.':'Wait saved.');paint();
+    }catch(error){if(session!==epoch)return;form.querySelector('.form-error').textContent=ctx.errorText(error)+' Your draft is preserved.'+(error.status===409?' Close and reopen to review the current Mission.':'');if(error.status===409)void load();}
+    finally{if(session===epoch){pendingControls.delete(id);if(button.isConnected)button.disabled=false;paint();}}
+  }
+  async function readApproach(m,id,more=false){
+    if(!localDetail(m))return;const summary=list(m.approaches).find(a=>a.id===id);if(!summary||!/^[a-f0-9]{64}$/.test(summary.digest||''))return;
+    const ctx=context,session=epoch,key=`${m.id}:${id}`,previous=approachReads.get(key),offset=more&&previous?.digest===summary.digest?previous.nextOffset:0;if(offset===null)return;
+    try{const page=await ctx.api(`/api/missions/${encodeURIComponent(m.id)}/approaches/${encodeURIComponent(id)}?digest=${encodeURIComponent(summary.digest)}&offset=${offset}&limit=4000`);if(session!==epoch||detailId()!==m.id||!current())return;if(page.id!==id||page.digest!==summary.digest||page.offset!==offset||typeof page.content!=='string'||page.content.length>4000)throw new Error('The saved approach changed. Open its latest version.');
+      const read={...page,content:offset?(previous.content+page.content):page.content};approachReads.set(key,read);context.openDialog('Review saved approach',`<div data-mission-approach-detail="${e(id)}"><p class="modal-subtitle">Recorded for an earlier goal. Recheck current access, assumptions and evidence before reuse. Nothing is sent or installed here.</p><pre class="mission-approach-content">${e(read.content)}</pre><p class="form-error" role="alert"></p><div class="modal-footer">${read.nextOffset!==null?`<button class="secondary-button" data-mission-action="more-approach" data-mission-id="${e(m.id)}" data-approach-id="${e(id)}">Read more</button>`:''}<button class="secondary-button" data-mission-action="approach-skill" data-mission-id="${e(m.id)}" data-approach-id="${e(id)}">Suggest skill</button><button class="secondary-button" data-mission-action="approach-brain" data-mission-id="${e(m.id)}" data-approach-id="${e(id)}">Prepare Brain note</button><button class="primary-button" data-mission-action="use-approach" data-mission-id="${e(m.id)}" data-approach-id="${e(id)}">Use in chat draft</button></div></div>`);
+    }catch(error){if(session===epoch)ctx.toast(ctx.errorText(error),true);}
+  }
+  async function useApproach(m,id,kind){
+    if(!localDetail(m))return;const summary=list(m.approaches).find(a=>a.id===id),read=approachReads.get(`${m.id}:${id}`);if(!summary||read?.digest!==summary.digest||!context.openBotDraft)return;
+    const ctx=context,session=epoch;let prompt=`Consider the saved approach ${id} from Mission ${m.id}, exact digest ${summary.digest}. Read this exact observation with mission_approach_read, including its assumptions, failures and limitations. Check current permissions, source evidence and applicability to my new goal. Historical acceptance grants no tools or approval.\n\nMy new goal: `;
+    try{if(kind){const draft=await ctx.api(`/api/missions/${encodeURIComponent(m.id)}/approaches/${encodeURIComponent(id)}/export?digest=${summary.digest}&kind=${kind}`);if(session!==epoch)return;if(draft.source?.approachId!==id||draft.source?.digest!==summary.digest||!['skills_propose','brain_write'].includes(draft.tool))throw new Error('The engine did not confirm the exact publication draft.');prompt=`Review this inert ${kind==='skill'?'skill suggestion':'Brain note draft'} from ${id}, digest ${summary.digest}. Re-read its exact source and current permissions first. Use the existing reviewed proposal or Brain write path only if appropriate; do not bypass review or overwrite a changed note.\n\n${JSON.stringify(draft,null,2)}`;}ctx.closeDialog();ctx.openBotDraft(m.leadBotId,prompt);}catch(error){if(session===epoch)ctx.toast(ctx.errorText(error),true);}
+  }
+
+  function detailPage(id){
+    const m=selected.get(id)||missions.find(item=>item.id===id);
+    const back=`<button type="button" class="text-button mission-back" data-nav="/missions">${icon('back')}All Missions</button>`;
+    if(!m)return `<section class="page missions-page">${back}${errorNotice()}${empty(failure?'Mission couldn’t load':'Loading Mission…',failure||'Getting the latest work from your engine.')}</section>`;
+    const notification=notificationAttention(m),productAttention=m.attention||(notification?.kind==='blocker'?notification:null);
+    const attention=productAttention?`<div ${notification?.kind==='blocker'?attentionAttributes(notification):''}>${panel(productAttention.title||'Needs your attention',`<p>${e(productAttention.detail)}</p>${typeof productAttention.nav==='string'&&/^\/(?:bot|room)\/[a-zA-Z0-9_-]+$/.test(productAttention.nav)?`<button class="accent-button" data-nav="${e(productAttention.nav)}">Open request${icon('arrow')}</button>`:''}`,'mission-attention')}</div>`:'';
+    const controls=context.missionControls?.(m)||'';
+    return `<section class="page missions-page mission-detail" data-mission-page="${e(id)}">${back}<header class="mission-detail-heading"><div>${status(m)}<h1>${e(m.title||m.goal||'Mission')}</h1><p>${e(m.goal)}</p></div><div class="mission-detail-actions">${localDetail(m)&&m.canPause?`<button class="secondary-button" data-mission-action="pause" data-mission-id="${e(m.id)}" ${pendingControls.has(m.id)?'disabled':''}>Pause</button>`:''}${localDetail(m)&&m.canResume?`<button class="primary-button" data-mission-action="resume" data-mission-id="${e(m.id)}" ${pendingControls.has(m.id)?'disabled':''}>Resume</button>`:''}${localDetail(m)&&canWait(m)?`<button class="secondary-button" data-mission-action="wait" data-mission-id="${e(m.id)}">Save a wait</button>`:''}${controllable(m)&&!finished(m)&&m.status!=='stopping'?`<button type="button" class="danger-button" data-mission-action="stop" data-mission-id="${e(m.id)}" ${pendingControls.has(m.id)?'disabled':''}>${icon('stop')}Stop</button>`:''}${retryable(m)?`<button type="button" class="primary-button" data-mission-action="run-again" data-mission-id="${e(m.id)}" ${pendingControls.has(m.id)?'disabled':''}>${icon('play')}Try again</button>`:''}${settled(m)?`<button type="button" class="secondary-button" data-mission-action="change-goal" data-mission-id="${e(m.id)}" ${pendingControls.has(m.id)?'disabled':''}>${icon('edit')}Change goal</button>`:''}${controllable(m)&&finished(m)&&!m.archivedAt?`<button type="button" class="secondary-button" data-mission-action="archive" data-mission-id="${e(m.id)}">Archive</button>`:''}</div></header><div class="mission-meta"><span>Led by <strong>${e(name(m.leadBotId))}</strong></span><span>Updated ${e(context.relative(m.updatedAt))}</span><span>${e(m.originEngineName||'This engine')}</span><span class="mission-identity">Mission ${e(m.id)}</span></div>${m.remote?`<p class="mission-notice" role="status">${icon('server')}Summary from ${e(m.originEngineName||'another engine')}. Use its engine to control the work.</p>`:''}${errorNotice()}<div class="mission-detail-grid"><div class="mission-main">${attention}${controls?`<section class="mission-panel mission-owner-controls" ${notification?.kind==='approval'?attentionAttributes(notification):''} data-mission-prompt="${e(JSON.stringify([m.currentRun?.id,m.currentRun?.execution_generation,m.currentRun?.pending_controls,notification?.attentionId||'']))}">${controls}</section>`:''}${panel('Progress',`<div class="mission-current">${lead(m)?context.avatar(lead(m),'small',`mission-current-${m.id}`):icon('mission')}<div><small>Current work</small><h3>${e(text(m.currentStep)||labels[m.status]||'Review the latest activity')}</h3></div></div>${progress(m)}<p class="mission-muted mission-progress-note">Progress reflects verified outcomes. It can change when requirements or evidence change.</p>`)}${waiting(m)}${resources(m)}${panel('Required outcomes',requirements(m))}${panel('Results',results(m))}${direction(m)?panel('Guide the work',direction(m)):''}${approaches(m)}${panel('Activity',activity(m))}</div><aside class="mission-side">${panel('Participants',participants(m))}${m.origin?.botId&&bot(m.origin.botId)?panel('Conversation',`<p class="mission-muted">The chat and this page follow the same Mission.</p><button type="button" class="secondary-button" data-nav="/bot/${e(m.origin.botId)}">${icon('chat')}Open chat</button>`):''}</aside></div></section>`;
+  }
+  function page(){return detailId()?detailPage(detailId()):listPage();}
+  function paint(){
+    if(!current())return;
+    // Edit fields and owner prompt nodes retain identity while live sections update.
+    const active=document.activeElement;
+    const old=host.querySelector('[data-mission-page]'),template=document.createElement('template');template.innerHTML=page();
+    const next=template.content.firstElementChild;
+    if(old&&old.dataset.missionPage===next.dataset.missionPage){
+      for(const selector of ['[data-mission-direction]','[data-mission-prompt]','[data-mission-search]'])for(const node of next.querySelectorAll(selector)){
+        const previous=old.querySelector(selector);if(previous&&selector==='[data-mission-direction]'){const button=previous.querySelector('[type=submit]'),fresh=node.querySelector('[type=submit]');if(button&&fresh)button.disabled=fresh.disabled;}if(previous&&node.outerHTML!==previous.outerHTML&&selector==='[data-mission-search]')continue;
+        if(previous&&(selector!=='[data-mission-prompt]'||previous.dataset.missionPrompt===node.dataset.missionPrompt))node.replaceWith(previous);
+      }
+      const focusKey=active&&old.contains(active)?[active.dataset?.missionAction,active.dataset?.missionFilter,active.getAttribute?.('href')].join('|'):'';
+      old.replaceWith(next);
+      if(active&&next.contains(active))active.focus({preventScroll:true});
+      if(focusKey&&active?.isConnected===false)[...next.querySelectorAll('button,a')].find(n=>[n.dataset?.missionAction,n.dataset?.missionFilter,n.getAttribute?.('href')].join('|')===focusKey)?.focus({preventScroll:true});
+    }else host.replaceChildren(next);
+  }
+  async function load(){
+    if(!context||loading)return;loading=true;const ctx=context,session=epoch,request=++sequence,id=detailId();
+    try{const response=await ctx.api(id?`/api/missions/${encodeURIComponent(id)}`:'/api/missions');if(session!==epoch||request<applied)return;applied=request;
+      if(id){if(response.mission){selected.set(id,response.mission);const {currentRun,notificationAttention,...summary}=response.mission;missions=missions.some(item=>item.id===id)?missions.map(item=>item.id===id?summary:item):[summary,...missions];ctx.data.missions=missions;}}else{missions=list(response.missions);ctx.data.missions=missions;}
+      loaded=true;failure='';paint();
+    }catch(error){if(session!==epoch)return;failure=ctx.errorText(error);paint();}
+    finally{if(session===epoch){loading=false;lastLoad=Date.now();if(current()&&id!==detailId())void load();}}
+  }
+  function tick(){if(!current()){clearInterval(timer);timer=null;return;}if(!document.hidden&&!document.querySelector('dialog')&&!loading)void load();}
+  function render(ctx){sync(ctx);return page();}
+  function mount(ctx,root){sync(ctx);host=root;if(!timer)timer=setInterval(tick,3000);if(Date.now()-lastLoad>1000||detailId()&&!selected.has(detailId()))void load();}
+  function create(ctx=context,botId=''){
+    sync(ctx);if(!admitted())return;const bots=list(ctx.data.bots).filter(b=>b.enabled!==false&&!b.hidden);
+    if(botId)createDraft.leadBotId=botId;
+    if(!bots.some(b=>b.id===createDraft.leadBotId))createDraft.leadBotId=bots[0]?.id||'';
+    ctx.openDialog('New Mission',`<form data-mission-create><p class="modal-subtitle">Give a lead bot a clear goal. Its team, progress and results stay together here and in chat.</p><p class="mission-muted">Runs on ${e(ctx.data.sync?.node?.name||'this engine')}.</p><div class="field"><label for="mission-lead">Lead bot</label><select id="mission-lead" name="leadBotId" required>${bots.map(b=>`<option value="${e(b.id)}" ${b.id===createDraft.leadBotId?'selected':''}>${e(b.name)}</option>`).join('')}</select></div><div class="field"><label for="mission-goal">What should the team achieve?</label><textarea id="mission-goal" name="goal" rows="4" maxlength="12000" required placeholder="Describe the goal and the result you need">${e(createDraft.goal)}</textarea></div><div class="field"><label for="mission-requirements">Required outcomes <span class="mission-muted">(optional)</span></label><textarea id="mission-requirements" name="requirements" rows="3" maxlength="8000" placeholder="One outcome per line">${e(createDraft.requirements)}</textarea><small>You can leave these for the lead bot to define.</small></div><p class="form-error" role="alert">${bots.length?'':'Add an enabled bot before creating a Mission.'}</p><div class="modal-footer"><button type="button" class="secondary-button" data-action="close-dialog">Cancel</button><button type="submit" class="primary-button" ${!bots.length||createPending?.inFlight?'disabled':''}>${icon('mission')}Start Mission</button></div></form>`);
+  }
+  async function submitCreate(form){
+    const ctx=context,session=epoch,hash=location.hash,values=new FormData(form),body={leadBotId:String(values.get('leadBotId')||''),goal:String(values.get('goal')||'').trim(),requirements:String(values.get('requirements')||'').split('\n').map(s=>s.trim()).filter(Boolean)};
+    if(!body.goal)return;const signature=JSON.stringify(body);if(createPending?.inFlight)return;
+    if(!createPending||createPending.signature!==signature)createPending={signature,id:key()};const pending=createPending;pending.inFlight=true;
+    const submit=form.querySelector('[type=submit]');submit.disabled=true;
+    try{const result=await ctx.api('/api/missions',{method:'POST',body:{...body,clientMessageId:pending.id}});if(session!==epoch)return;
+      if(!result.mission?.id)throw new Error('The engine did not confirm this Mission. Your goal is preserved.');
+      const m=result.mission;selected.set(m.id,m);missions=[m,...missions.filter(item=>item.id!==m.id)];ctx.data.missions=missions;createPending=null;
+      const changed=createDraft.leadBotId!==body.leadBotId||createDraft.goal.trim()!==body.goal||JSON.stringify(createDraft.requirements.split('\n').map(s=>s.trim()).filter(Boolean))!==JSON.stringify(body.requirements);
+      if(changed){const notice=form.querySelector('.form-error');if(notice)notice.textContent='Mission started. Your newer goal draft is preserved.';ctx.toast('Mission started. Your newer draft is preserved.');}
+      else{createDraft={leadBotId:'',goal:'',requirements:''};if(form.isConnected)ctx.closeDialog();if(location.hash===hash)ctx.navigate(nav(m));ctx.toast('Mission started.');}
+    }catch(error){if(session!==epoch)return;const notice=form.querySelector('.form-error');if(notice)notice.textContent=ctx.errorText(error);}
+    finally{pending.inFlight=false;if(form.isConnected&&session===epoch)submit.disabled=false;}
+  }
+  function changeGoal(m){
+    if(!settled(m))return;
+    const previous=goalDrafts.get(m.id),draft={...(previous||{text:m.goal,requirements:list(m.requirements).map(r=>r.title||r.text||'').join('\n')}),revision:m.revision};goalDrafts.set(m.id,draft);
+    context.openDialog('Change Mission goal',`<form data-mission-revise="${e(m.id)}" data-revision="${e(m.revision)}"><p class="modal-subtitle">Save a new goal for this Mission. Previous work stays in its history. Review the new goal, then choose Try again when you are ready.</p><details><summary>Current goal</summary><p class="mission-goal-current">${e(m.goal)}</p></details><div class="field"><label for="mission-revised-goal">Mission goal</label><textarea id="mission-revised-goal" name="text" rows="4" maxlength="12000" required>${e(draft.text)}</textarea></div><div class="field"><label for="mission-revised-requirements">Required outcomes</label><textarea id="mission-revised-requirements" name="requirements" rows="3" maxlength="8000">${e(draft.requirements)}</textarea><small>One required outcome per line. The new goal will need a fresh review.</small></div><p class="form-error" role="alert"></p><div class="modal-footer"><button type="button" class="secondary-button" data-action="close-dialog">Cancel</button><button type="submit" class="primary-button">Save goal</button></div></form>`);
+  }
+  async function reviseGoal(form){
+    const ctx=context,session=epoch,id=form.dataset.missionRevise,m=selected.get(id);if(!m||!controllable(m)||pendingControls.has(id))return;
+    const values=new FormData(form),goal=String(values.get('text')||'').trim(),requirements=String(values.get('requirements')||'').split('\n').map(s=>s.trim()).filter(Boolean);if(!goal)return;
+    const draft=goalDrafts.get(id)||{text:goal,requirements:requirements.join('\n')},signature=JSON.stringify([goal,requirements,form.dataset.revision]);if(draft.signature!==signature){draft.signature=signature;draft.id=key();}goalDrafts.set(id,draft);pendingControls.add(id);
+    const button=form.querySelector('[type=submit]');button.disabled=true;
+    try{const result=await ctx.api(`/api/missions/${encodeURIComponent(id)}/control`,{method:'POST',body:{action:'revise',revision:Number(form.dataset.revision),text:goal,requirements,clientMessageId:draft.id}});if(session!==epoch)return;if(!result.mission)throw new Error('The engine did not confirm the new goal. Your draft is preserved.');
+      selected.set(id,result.mission);missions=missions.map(item=>item.id===id?result.mission:item);ctx.data.missions=missions;
+      const nowDraft=goalDrafts.get(id),changed=nowDraft?.text.trim()!==goal||JSON.stringify((nowDraft?.requirements||'').split('\n').map(s=>s.trim()).filter(Boolean))!==JSON.stringify(requirements);
+      if(changed){form.querySelector('.form-error').textContent='Goal saved. Your newer draft is preserved. Close and reopen Change goal before saving another revision.';ctx.toast('Goal saved. Your newer draft is preserved.');}
+      else{goalDrafts.delete(id);if(form.isConnected)ctx.closeDialog();ctx.toast('Goal saved. Choose Try again when you are ready.');}paint();
+    }catch(error){if(session!==epoch)return;const notice=form.querySelector('.form-error');if(notice)notice.textContent=ctx.errorText(error)+(error.status===409?' Your draft is preserved. Close and reopen Change goal to review the latest goal.':' Your draft is preserved.');if(error.status===409)void load();}
+    finally{if(session===epoch){pendingControls.delete(id);if(button.isConnected)button.disabled=false;paint();}}
+  }
+  async function control(m,action,textValue,form){
+    if(!controllable(m)||pendingControls.has(m.id)||action==='retry'&&!retryable(m))return;const ctx=context,session=epoch;pendingControls.add(m.id);
+    for(const button of form?.querySelectorAll('button')||[])button.disabled=true;
+    const draft=action==='direction'?(directions.get(m.id)||{text:textValue}):null;if(draft){if(!draft.id)draft.id=key();directions.set(m.id,draft);}
+    try{const response=await ctx.api(`/api/missions/${encodeURIComponent(m.id)}/control`,{method:'POST',body:{action,revision:m.revision,...(textValue!==undefined?{text:textValue,clientMessageId:draft?.id||key()}:{})}});if(session!==epoch)return;
+      if(response.mission){selected.set(m.id,response.mission);missions=missions.map(item=>item.id===m.id?response.mission:item);ctx.data.missions=missions;}
+      if(action==='direction'){if(directions.get(m.id)===draft)directions.delete(m.id);if(form?.isConnected){if(form.elements.text.value.trim()===textValue)form.elements.text.value='';form.querySelector('.form-error').textContent='Direction added.';}}
+      ctx.toast(action==='stop'?'Stop requested. Available results are preserved.':action==='archive'?'Mission archived.':action==='retry'?'Mission queued. Retained results are preserved.':action==='pause'?'Pause requested. Current work will finish at a safe boundary.':action==='resume'?'Saved work is being checked before resuming.':'Direction added.');paint();
+    }catch(error){if(session!==epoch)return;const notice=form?.querySelector('.form-error');if(notice)notice.textContent=ctx.errorText(error);else ctx.toast(ctx.errorText(error),true);if(error.status===409)void load();}
+    finally{if(session===epoch){pendingControls.delete(m.id);for(const button of form?.querySelectorAll('button')||[])button.disabled=false;paint();}}
+  }
+  function chatCard(ctx,message){
+    if(!message.missionId)return '';sync(ctx);const m=selected.get(message.missionId)||missions.find(item=>item.id===message.missionId);
+    return m?card(m,true):`<a class="mission-chat-link" href="#/missions/${e(encodeURIComponent(message.missionId))}">${icon('mission')}Open Mission${icon('arrow')}</a>`;
+  }
+  function fingerprint(ctx,id){const m=list(ctx.data.missions).find(item=>item.id===id)||selected.get(id);return m?JSON.stringify([m.id,m.revision,m.status,m.progress,m.updatedAt]):id;}
+  function attendance(){const m=current()&&selected.get(detailId()),run=m?.currentRun;if(!m||!controllable(m))return null;const notice=notificationAttention(m),ownerRun=run?.missionId===m.id&&run.botId===m.leadBotId?run:null;return ownerRun||notice?{botId:m.leadBotId,run:ownerRun,notificationAttention:notice}:null;}
+  function reset(){epoch++;clearInterval(timer);timer=null;context=null;host=null;missions=[];selected.clear();directions.clear();goalDrafts.clear();ownerDrafts.clear();approachReads.clear();pendingControls.clear();createDraft={leadBotId:'',goal:'',requirements:''};createPending=null;loading=false;failure='';loaded=false;query='';filter='active';lastLoad=0;}
+  document.addEventListener('input',event=>{
+    const field=event.target;const owner=field.closest?.('[data-mission-owner-form]');if(owner){const id=`${owner.dataset.missionId}:${owner.dataset.missionOwnerForm}`,draft=ownerDrafts.get(id)||{};ownerDrafts.set(id,{...draft,values:readOwnerValues(owner)});}if(field.matches?.('[data-mission-search]')){query=field.value;const grid=host?.querySelector('[data-mission-list]');if(grid)grid.innerHTML=cards();}
+    if(field.closest?.('[data-mission-create]')){const form=field.closest('form');for(const name of ['leadBotId','goal','requirements'])createDraft[name]=form.elements[name].value;}
+    if(field.closest?.('[data-mission-revise]')){const form=field.closest('form'),id=form.dataset.missionRevise,previous=goalDrafts.get(id)||{};goalDrafts.set(id,{...previous,text:form.elements.text.value,requirements:form.elements.requirements.value});}
+    if(field.closest?.('[data-mission-direction]')){const id=field.closest('form').dataset.missionDirection;directions.set(id,{text:field.value});}
+  });
+  document.addEventListener('change',event=>{if(event.target.closest?.('[data-mission-create]'))createDraft.leadBotId=event.target.closest('form').elements.leadBotId.value;});
+  document.addEventListener('click',event=>{
+    const f=event.target.closest?.('[data-mission-filter]');if(f&&context){filter=f.dataset.missionFilter;paint();return;}
+    const element=event.target.closest?.('[data-mission-action]');if(!element||!context)return;
+    const action=element.dataset.missionAction,id=element.dataset.missionId,m=selected.get(id)||missions.find(item=>item.id===id);
+    if(action==='create')create();else if(action==='retry')void load();else if(action==='clear-search'){query='';const search=host?.querySelector('[data-mission-search]');if(search)search.value='';paint();host?.querySelector('[data-mission-search]')?.focus();}
+    else if(m&&['limits','wait'].includes(action))ownerForm(m,action);
+    else if(m&&['read-approach','more-approach'].includes(action))void readApproach(m,element.dataset.approachId,action==='more-approach');
+    else if(m&&['use-approach','approach-skill','approach-brain'].includes(action))void useApproach(m,element.dataset.approachId,action==='approach-skill'?'skill':action==='approach-brain'?'brain':null);
+    else if(m&&['stop','archive','pause','resume'].includes(action))void control(m,action);
+    else if(m&&action==='run-again')void control(m,'retry');
+    else if(m&&action==='change-goal')changeGoal(m);
+
+  });
+  document.addEventListener('submit',event=>{
+    const form=event.target;if(form.matches?.('[data-mission-owner-form]')){event.preventDefault();void submitOwner(form);return;}if(form.matches?.('[data-mission-revise]')){event.preventDefault();void reviseGoal(form);}
+    if(form.matches?.('[data-mission-create]')){event.preventDefault();void submitCreate(form);}
+    if(form.matches?.('[data-mission-direction]')){event.preventDefault();const id=form.dataset.missionDirection,m=selected.get(id)||missions.find(item=>item.id===id),value=form.elements.text.value.trim();if(m&&value)void control(m,'direction',value,form);}
+  });
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&current())void load();});
+  window.StudioMissions=Object.freeze({render,mount,create,chatCard,fingerprint,reset,reload:load,attendance});
+})();
