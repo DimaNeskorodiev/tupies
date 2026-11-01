@@ -1,5 +1,11 @@
 # Tupies — project context
 
+## Mission product plan (1 November 2026, proposed)
+
+The owner requested a top-level **Mission** destination with verified progress, current work, participants and results, shared with creation from direct bot chat when explicitly requested or clearly implied by an owner goal. The [Mission implementation plan](docs/plans/mission-controller-20261101.md) specifies one native Engine controller, atomic promotion of the existing run without replay, versioned acceptance criteria, evidence-derived progress, shared resources, durable waits/recovery and later scoped external actions and isolated workers. The first useful release combines the contract/verifier with the tab and chat entry points; existing action permissions remain in force. Execution starts pinned to one engine, with presentation-only summary sync and no presence-based failover. This is a planning checkpoint, not implemented functionality, source-test evidence or deployment authorization. Current operational/native ownership remains unchanged.
+
+The [interactive HTML prototype](prototypes/mission/README.md) reuses the current Pearl styles and companion assets. It demonstrates Mission lists/details, outcome-based progress, participants, result previews, creation from the tab/chat, shared questions and a simulated one-time approval, Pause/Resume/Stop. All state is local demo memory; chat recognition is scripted and no Engine or service runs. The portable HTML can be regenerated with `node prototypes/mission/build-preview.mjs`. Prototype browser checks are recorded in its README and do not establish backend or native acceptance.
+
 ## Mobile chat consistency and Favorites (1 November 2026, source only)
 
 Direct-chat `ask_user` prompts now enter the existing message-category notification path with static attention text, exact prompt deduplication/visible-read receipts and cancellation after answer, skip, Stop or replacement. Answer/direction transcript records no longer hide the original request from final-reply classification. Pending controls stay local; linked-engine question push requires execution on the configured home delivery engine. No new native entitlement or notification kind is needed.
