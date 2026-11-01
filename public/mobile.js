@@ -883,6 +883,7 @@
     const name = target.querySelector('strong')?.textContent.trim() || 'Bot', key = `data-id="${escape(id)}"`;
     return {label:`${name} options`, html:menuItem('Chat', 'chat', `data-nav="/bot/${escape(id)}"`) + menuItem('Bot profile', 'heart', `data-nav="/bots/${escape(id)}"`)
       + menuItem('Memory', 'book', `data-action="bot-memory" ${key}`) + menuItem('Files', 'file', `data-action="bot-files" ${key}`)
+      + (target.hasAttribute('data-bot-favorite') ? menuItem(target.dataset.botFavorite==='true'?'Remove from Favorites':'Add to Favorites', 'heart', `data-action="toggle-bot-favorite" ${key}`) : '')
       + '<hr>' + menuItem('Bot settings', 'sliders', `data-action="edit-bot" ${key}`)};
   }
   async function copyText(text) {

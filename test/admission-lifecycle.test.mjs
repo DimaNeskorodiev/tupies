@@ -45,6 +45,10 @@ test('owner bot edits and deletion wait for asynchronous admission and explicit 
     assert.equal((await request('PATCH',{name:'During summary'})).status,409);
     assert.equal((await request('DELETE')).status,409);
     assert.equal((await request('PATCH',{hidden:true})).status,200,'Visibility changes are still safe while summarizing.');
+    assert.equal((await request('PATCH',{favorite:true})).status,200,'Favorites do not alter execution settings.');
+    assert.equal(app.store.state.bots.find(bot=>bot.id==='bot_atlas').favorite,true);
+    assert.equal((await request('PATCH',{favorite:'yes'})).status,400);
+    assert.equal((await request('PATCH',{favorite:false,tools:[]})).status,409,'List preferences cannot bypass execution-setting guards.');
   } finally {app.runtime.compactions.delete('bot_atlas');}
   assert.ok(app.store.state.bots.some(bot=>bot.id==='bot_atlas'));
 });

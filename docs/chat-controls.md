@@ -1,5 +1,19 @@
 # Bot appearance, models, reasoning and voice
 
+## Bots and Favorites
+
+The **Bots** page orders conversations by their latest user or bot message, newest first. Local activity logs, settings edits and run heartbeats do not change that order; chats without messages follow the conversations with messages. The order is derived from the shared transcript, including routine replies shown in Bot Chat, while private messaging lanes and teammate/room work do not promote a bot.
+
+Tap a bot's heart to add or remove it from **Favorites**, or use **••• → Add to Favorites** in its chat. Favorites has its own filter tab and the same message ordering. The choice is saved on the bot and travels through existing bot sync. Hidden favorites stay in Hidden. Changing a favorite is available while the bot works and does not change its tools, model or permissions.
+
+Idle, configured bots have no Ready label or status dot. Working, Needs your answer, Needs approval, Paused and setup/connection errors remain visible and update in place.
+
+## Text during a task
+
+Completed public assistant messages between tool/model steps stay in direct-chat history as **Update** messages. A provider attempt interrupted by a transient error keeps available text as **Interrupted update**. The final reply follows these updates; neither the next model step nor a page reload erases them. Stopping retains the available text once and marks terminal partial text without claiming completion. Updates do not trigger reply push, unread markers, automatic speech or Dashboard completion. Opaque provider reasoning is not exposed. This applies to direct Bot Chat; room and private-lane progress keep their existing behavior. Update linked engines together before using this feature: older engines do not recognize progress messages and can mistake them for ordinary replies.
+
+## Chat controls
+
 Open a bot conversation and use the **•••** button in the top-right corner on desktop or phone. It holds Search conversation, Memory, Files, Quick details, Bot profile, Chat options and Bot settings. **Bot settings** opens the bot profile’s **Settings** page. **Reasoning** is directly visible in the chat and in **Bot settings › Model**. **Chat options** also has three closed sections: **Model & reasoning**, **Conversation history** and **Voice & dictation**. Open only the section you need. Saving leaves untouched model and voice preferences intact. Model and reasoning changes apply to that bot's next task; an active task keeps its original settings. The configured composer keeps attachment, dictation and Send visible. A bot without a provider retains a **Connect to start** action. On a phone, tapping the bot's name switches teammates.
 
 On phones, **Return** inserts a new line. Tap **Send**, or use **Cmd/Ctrl+Enter** with a hardware keyboard, to submit. Desktop keeps Enter to send and Shift+Enter for a new line. After the engine confirms a bot message, room message or task update, the phone/touch keyboard closes. Touch taps reach Send and Add direction without cancelling the native pointer event. Failed or unconfirmed sends keep the draft ready to retry; a late receipt never dismisses a newer draft or another chat’s keyboard. Desktop keyboard focus stays ready for typing. The phone composer grows with the text and follows the visible viewport above the keyboard. Unsent text survives switching between bot/room chats within the current page session; it is kept only in memory, clears at sign-out, and does not survive reloading the page. Text written while an earlier message is sending is kept for the next message. Swipe right from the left edge of a pushed screen to follow its Back button. A sheet can be dismissed with its close button or by dragging its top grabber down; scrolling a form does not dismiss it. System Reduce Motion suppresses the added navigation and sheet motion.

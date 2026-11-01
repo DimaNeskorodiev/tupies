@@ -5,6 +5,19 @@
 .tabbar,.topbar-back,.topbar-settings,.bot-list,.chat-back,.chat-switcher,.chat-more,.sheet-grabber,.mobile-search{display:none}
 .chat-tools{display:contents}
 
+/* Bound the page itself, including the translated screen during push/pop. Keep
+   horizontal scrolling inside tables, code and profile tabs, with vertical page
+   scrolling and pinch zoom left to the browser. Long labels must wrap before
+   they can enlarge a card's scrollable overflow. */
+@media(max-width:760px), (max-height:500px) and (pointer:coarse){
+  html{overflow-x:clip;overscroll-behavior-x:none}
+  body{width:100%;min-width:0;max-width:100%;overflow-x:clip}
+  #app,.app-shell,.content,#main-content,.page{min-width:0;max-width:100%}
+  .page,.auth-card,.modal-body,.popover-menu{overflow-wrap:anywhere}
+  .page-heading>div{min-width:0}
+  .bot-profile{grid-template-columns:minmax(0,1fr)}
+}
+
 /* Settings › the app's own server switcher (rendered only inside the iPhone app) */
 .app-server-row{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;margin:-6px 0 18px;border-radius:20px;text-align:left;color:inherit;font:inherit}
 .app-server-row>span:nth-child(2){flex:1;min-width:0}

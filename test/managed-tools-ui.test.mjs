@@ -54,12 +54,12 @@ test('clipped command arguments are displayed as a preview with an ellipsis',()=
   assert.equal(command,'node -e '+ 'x'.repeat(120)+'…');assert.doesNotMatch(command,/-e,/);
 });
 
-test('a header loaded while awaiting approval returns to Ready after completion without replacing the draft',()=>{
+test('a header loaded while awaiting approval clears its status after completion without replacing the draft',()=>{
   const run=currentRun();run.status='waiting_for_approval';const h=harness({run});
-  h.document.body.insertAdjacentHTML('afterbegin','<header class="chat-header"><span class="status-pill">Old status</span></header><textarea id="message-input">Keep my next draft.</textarea>');
+  h.document.body.insertAdjacentHTML('afterbegin','<header class="chat-header"><span class="chat-tools"><span class="status-pill">Old status</span></span></header><textarea id="message-input">Keep my next draft.</textarea>');
   h.render();assert.equal(h.document.querySelector('.chat-header .status-pill').textContent,'Needs approval');const draft=h.document.querySelector('#message-input');
   h.execute("chat.run={...chat.run,status:'completed'}");h.render();
-  assert.equal(h.document.querySelector('.chat-header .status-pill').textContent,'Ready');assert.equal(h.document.querySelector('#message-input'),draft);assert.equal(draft.value,'Keep my next draft.');assert.equal(h.document.querySelector('#message-form .send').disabled,false);
+  assert.equal(h.document.querySelector('.chat-header .status-pill'),null);assert.equal(h.document.querySelector('#message-input'),draft);assert.equal(draft.value,'Keep my next draft.');assert.equal(h.document.querySelector('#message-form .send').disabled,false);
   assert.equal(h.execute('data.runs.bot_qa.status'),'completed');
 });
 
