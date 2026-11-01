@@ -126,7 +126,7 @@ test('Tupies owns the actual model/tool loop and supplies memory, skills, and pe
   assert.equal((await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text:'Read the assigned skill and report.'}})).status,202);
   const run=await f.wait();assert.equal(run.status,'completed',run.error);assert.equal(run.engine,'studio-native');
   const first=f.remote.requests.find(r=>r.url.endsWith('/responses')).input;
-  assert.match(first.instructions,/Verify primary sources/);assert.ok(first.tools.some(tool=>tool.name==='skills_read'));
+  assert.doesNotMatch(first.instructions,/Verify primary sources/);assert.ok(first.input.some(item=>item.role==='user' && typeof item.content==='string' && item.content.includes('Verify primary sources')));assert.ok(first.tools.some(tool=>tool.name==='skills_read'));
   assert.ok(f.remote.requests.some(r=>r.input?.input?.some(item=>item.type==='function_call_output'&&item.output.includes('source-check'))));
   assert.ok(run.events.some(event=>event.type==='tool.completed'));
   f.remote.handler=()=>answer('The earlier task is in my native history.');
