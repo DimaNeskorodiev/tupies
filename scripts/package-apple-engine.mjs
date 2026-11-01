@@ -83,6 +83,7 @@ export async function stageEngineSource(repo,destination) {
   }
   await copyTree(path.join(repo,'public'),path.join(destination,'public'),name=>publicExtensions.has(path.extname(name))||/^(?:LICENSE|NOTICE)(?:_|$)/.test(name));
   await copyTree(path.join(repo,'assets','fonts'),path.join(destination,'assets','fonts'),name=>['.ttf','.woff','.woff2'].includes(path.extname(name))||/^(?:OFL|LICENSE|NOTICE)(?:\.|_|$)/.test(name));
+  if(await exists(path.join(repo,'assets','tool-catalog')))await copyTree(path.join(repo,'assets','tool-catalog'),path.join(destination,'assets','tool-catalog'),name=>name.endsWith('.json'));
   await fs.mkdir(path.join(destination,'assets','licenses'),{recursive:true,mode:0o755});
   for(const name of ['THIRD_PARTY_LICENSES.txt','dependencies.json']) {
     const source=path.join(repo,'assets','licenses',name);

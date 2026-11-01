@@ -138,6 +138,8 @@ function ui(t,{hash='#/bots/bot_atlas',tools,rich=false,brain=overview,workspace
       if(options.method==='POST'){if(state.workspaceStatus===409)throw Object.assign(new Error('Wait for this bot and its team task before changing its workspace.'),{status:409});workspace={...workspace,folders:workspace.folders.map(folder=>({...folder,status:folder.status==='missing'?'ready':folder.status}))};}
       return structuredClone(workspace);
     }
+    if(route==='/api/bots/bot_atlas/workshop')return structuredClone(state.workshop||{tools:[],catalog:[],items:[]});
+    if(route.startsWith('/api/bots/bot_atlas/improvements/'))return options.method==='POST'?{format:'tupies-contribution-v1',...state.improvement}:structuredClone(state.improvement);
     if(route==='/api/bots/bot_atlas/scripts')return {scripts:structuredClone(state.scripts||scripts),truncated:Boolean(state.scriptsTruncated)};
     if(url.pathname.startsWith('/api/bots/bot_atlas/scripts/')){if(state.scriptError)throw new Error(state.scriptError);const found=(state.scripts||scripts).find(script=>script.id===decodeURIComponent(url.pathname.split('/').at(-1)));if(!found)throw new Error('Script not found.');return structuredClone(found);}
     if(url.pathname==='/api/bots/bot_atlas/brain/note'){const target=url.searchParams.get('path');if(['projects/acme.md','projects/acme'].includes(target))return structuredClone(acmeNote);if(['people/Ada Lovelace.md','Ada'].includes(target))return structuredClone(adaNote);throw Object.assign(new Error('Note not found.'),{status:404});}
@@ -160,18 +162,18 @@ test('profile tab focus and horizontal position survive asynchronous data and sh
   h.$('#bp-tab-overview').focus();
   h.$('#bp-tab-overview').dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
   await settled();
-  assert.equal(h.doc.activeElement.id,'bp-tab-scripts');
-  assert.equal(h.$('#bp-tab-scripts').getAttribute('aria-selected'),'true');
-  assert.equal(h.$('#bp-panel').getAttribute('aria-labelledby'),'bp-tab-scripts');
+  assert.equal(h.doc.activeElement.id,'bp-tab-workshop');
+  assert.equal(h.$('#bp-tab-workshop').getAttribute('aria-selected'),'true');
+  assert.equal(h.$('#bp-panel').getAttribute('aria-labelledby'),'bp-tab-workshop');
   h.$('#bp-tabs').scrollLeft=240;
   await h.show();
   assert.equal(h.$('#bp-tabs').scrollLeft,240);
-  assert.equal(h.doc.activeElement.id,'bp-tab-scripts');
+  assert.equal(h.doc.activeElement.id,'bp-tab-workshop');
   h.doc.activeElement.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}));
   await settled();
-  assert.equal(h.doc.activeElement.id,'bp-tab-files');
-  assert.equal(h.$('#bp-tab-files').getAttribute('tabindex'),'0');
-  assert.equal(h.$('#bp-tab-scripts').getAttribute('tabindex'),'-1');
+  assert.equal(h.doc.activeElement.id,'bp-tab-scripts');
+  assert.equal(h.$('#bp-tab-scripts').getAttribute('tabindex'),'0');
+  assert.equal(h.$('#bp-tab-workshop').getAttribute('tabindex'),'-1');
 });
 
 test('a deep-linked profile tab is revealed without scrolling the whole page',async t=>{
@@ -214,7 +216,7 @@ test('the overview shows a calm summary and keeps cached counts across app re-re
   assert.match(settings.querySelector('summary').textContent,/Configuration summary/);
   assert.ok(settings.querySelector('[data-profile-action="tab"][data-tab="settings"]'));
   assert.equal(settings.querySelector('[data-action="toggle-bot-hidden"]'),null);
-  assert.deepEqual(h.$$('[role=tab]').map(tab=>[tab.dataset.tab,tab.getAttribute('aria-selected')]),[['overview','true'],['settings','false'],['brain','false'],['memory','false'],['learning','false'],['files','false'],['scripts','false']]);
+  assert.deepEqual(h.$$('[role=tab]').map(tab=>[tab.dataset.tab,tab.getAttribute('aria-selected')]),[['overview','true'],['settings','false'],['brain','false'],['memory','false'],['learning','false'],['files','false'],['scripts','false'],['workshop','false']]);
   assert.deepEqual(h.requests.map(item=>item.path).sort(),['/api/bots/bot_atlas/brain','/api/bots/bot_atlas/files?path=','/api/bots/bot_atlas/memory','/api/bots/bot_atlas/proposals','/api/bots/bot_atlas/runs']);
   assert.deepEqual(h.$$('.bp-stat strong').map(node=>node.textContent),['2','3','6','2h ago']);
   assert.match(h.text('.bp-stats'),/1 pinned/);
@@ -480,4 +482,33 @@ test('the daily review routine is offered once and opens a prepared routine dial
   assert.match(h.text('.bp-panel'),/Daily review · Every day at 21:00/);assert.ok(h.$('[data-action="edit-routine"][data-id="routine_review"]'));
   const off=ui(t,{hash:'#/bots/bot_atlas/learning',tools:['workspace']});off.state.proposals=[];await off.show();
   assert.match(off.text('.bp-panel'),/Memory tools are off/);assert.equal(off.$('[data-profile-action="setup-review"]'),null);
+});
+
+
+test('workshop renders untrusted proposals as text and exports only the inspected revision',async t=>{
+  const h=ui(t),digest='a'.repeat(64);
+  h.state.workshop={tools:[],catalog:[],items:[{digest,title:'<img src=x onerror=alert(1)>',kind:'tool',summary:'Synthetic proposal'}]};
+  h.state.improvement={digest,proposal:{source:'<script>window.hacked=true</script>',tests:[{input:3,expected:3}]}};
+  h.win.URL.createObjectURL=()=> 'blob:fixture';h.win.URL.revokeObjectURL=()=>{};
+  let download='';h.win.HTMLAnchorElement.prototype.click=function(){download=this.download;};
+  await h.show();await h.click(h.$('#bp-tab-workshop'));
+  assert.equal(h.$('[data-profile-action="export-improvement"]'),null);
+  assert.equal(h.$('#bp-panel img'),null);
+  await h.click(h.$('[data-profile-action="review-improvement"]'));
+  assert.match(h.$('.bp-workshop-source').textContent,/<script>/);assert.equal(h.win.hacked,undefined);
+  await h.click(h.$('[data-profile-action="export-improvement"]'));
+  const exported=h.requests.find(x=>x.method==='POST'&&x.path.includes('/improvements/'));
+  assert.deepEqual(exported.body,{digest,reviewedDigest:digest,includeSource:true});assert.equal(download,'tupies-contribution-aaaaaaaaaaaa.json');
+});
+test('workshop grants show the shared count and revoke the exact grant with escaped endpoint text',async t=>{
+  const h=ui(t),id='grant_000000000000000000';
+  h.state.workshop={tools:[],catalog:[],items:[],grants:[{id,tool:'read',status:'active',endpoint:'https://example.com/<script>bad</script>',used:2,maxRequests:3,expiresAt:'2026-11-01T20:00:00Z',botIds:['bot_atlas','bot_nova']}]};
+  await h.show();await h.click(h.$('#bp-tab-workshop'));
+  assert.match(h.text('#bp-panel'),/2 \/ 3 requests reserved/);assert.match(h.text('#bp-panel'),/Atlas, Nova/);assert.equal(h.$('#bp-panel script'),null);
+  await h.click(h.$('[data-profile-action="revoke-workshop-grant"]'));
+  assert.ok(h.requests.some(x=>x.method==='POST'&&x.path===`/api/bots/bot_atlas/workshop-grants/${id}/revoke`));
+});
+test('Engine candidates show limited check evidence instead of implying full Engine verification',async t=>{
+  const h=ui(t,{tools:['engine_workshop']});h.state.workshop={tools:[],catalog:[],items:[{digest:'b'.repeat(64),title:'Candidate',kind:'engine',summary:'Synthetic edit',checks:{syntax:1,tests:2,fullSuite:false}}]};
+  await h.show();await h.click(h.$('#bp-tab-workshop'));assert.match(h.text('#bp-panel'),/Engine workshop is enabled/);assert.match(h.text('#bp-panel'),/1 syntax checks · 2 pure-function tests · Full Engine suite not run/);
 });

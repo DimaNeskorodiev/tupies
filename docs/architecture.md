@@ -124,3 +124,7 @@ Native Mac/iOS computer actions need a separate device boundary: explicit device
 ## Mac-local coding workers
 
 The optional local coding coordinator owns approved external Claude runs, separate repository copies, independent verification and Azure draft PR publication. Its local account/job directory never enters sync. Codex execution and remote Mac dispatch remain unavailable. See [local coding](local-coding.md).
+
+## Engine source candidates
+
+`lib/engine-workshop.mjs` owns the separately enabled source allowlist, exact revision reads, focused replacements, immutable local snapshots and generated proposal evidence. `lib/engine-candidate-checks.mjs` parses JS with a fixed syntax-only Node invocation and supervises `lib/engine-candidate-worker.mjs`, whose QuickJS loader can return only selected in-memory source. No candidate module is imported by the host or applied to the installed tree. Workshop inbox/export and maintainer reconstruction share exact edits/base hashes; full Engine builds and arbitrary dependency execution remain outside this sandbox. See [Tool workshop](tool-workshop.md).

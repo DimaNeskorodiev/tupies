@@ -525,3 +525,14 @@ body.pearl-studio .bot-profile .bp-task-body small{font-size:12px;line-height:1.
   body.pearl-studio .bot-profile .bp-tabs{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:3;background:color-mix(in srgb,var(--pearl-base) 88%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:14px 14px 0 0}
   body.pearl-studio .bot-profile :is(.bp-reader-wrap,.bp-script-detail,.bot-settings-section>header h2){scroll-margin-top:calc(132px + env(safe-area-inset-top,0px))}
 }
+
+/* The workshop reuses profile surfaces; long source text stays within the phone viewport. */
+.bp-workshop-card{padding:24px;margin-top:18px;min-width:0;overflow-wrap:anywhere}
+.bp-workshop-card h2{font-size:18px;font-weight:600;line-height:1.4;margin:0 0 12px}
+.bp-workshop-card p{font-size:13px;line-height:1.65;margin:10px 0;color:var(--ink)}
+.bp-workshop-card .secondary-button{margin-top:12px}
+.bp-workshop-source{max-height:420px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border-radius:12px;background:var(--pearl-soft,#edf1f6);font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;margin:16px 0}
+@media(max-width:600px){.bp-workshop-card{padding:18px}.bp-workshop-source{font-size:11px;padding:12px}}
+
+.bp-workshop-grant { padding-block: 14px; border-bottom: 1px solid var(--border, rgba(128,128,128,.18)); overflow-wrap: anywhere; }
+.bp-workshop-grant:last-child { border-bottom: 0; }

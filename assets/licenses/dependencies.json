@@ -162,6 +162,36 @@
     "homepage": "https://sharp.pixelplumbing.com"
   },
   {
+    "name": "@jitl/quickjs-ffi-types",
+    "version": "0.32.0",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
+    "name": "@jitl/quickjs-wasmfile-debug-asyncify",
+    "version": "0.32.0",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
+    "name": "@jitl/quickjs-wasmfile-debug-sync",
+    "version": "0.32.0",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
+    "name": "@jitl/quickjs-wasmfile-release-asyncify",
+    "version": "0.32.0",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
+    "name": "@jitl/quickjs-wasmfile-release-sync",
+    "version": "0.32.0",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
     "name": "@kurkle/color",
     "version": "0.3.4",
     "license": "MIT",
@@ -1886,6 +1916,18 @@
   {
     "name": "qrcode-generator",
     "version": "2.0.4",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
+    "name": "quickjs-emscripten",
+    "version": "0.32.0",
+    "license": "MIT",
+    "homepage": ""
+  },
+  {
+    "name": "quickjs-emscripten-core",
+    "version": "0.32.0",
     "license": "MIT",
     "homepage": ""
   },

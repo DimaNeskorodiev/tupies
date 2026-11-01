@@ -2,9 +2,25 @@
 
 ## Prompt-injection boundaries (1 November 2026, source only)
 
+Published as [PR23](https://github.com/DimaNeskorodiev/tupies/pull/23), commit `4fb4dd7ecced8e139e35df568008302467c2c68c`, merged into main as `5264a15c4e73347200a8ed5c4de318a4b3cef948`. The merge tree is identical to the tested PR head. The isolated publication excludes unpublished Workshop work and passes **1592/1592 tests in159 files**, **139 syntax checks** and **27 rebuilt guide pages** on Node22.23.4, with310 stable source/test/package hashes. GitHub reported no status checks, check runs or workflows for this head; validation is local. Operational Mac/VPS/native releases remain unchanged.
+
 New tasks separate core memory, assigned skill descriptions and teammate profiles from system instructions into a frozen, escaped JSON reference snapshot in the turn context. Checkpoints retain that snapshot; summary guidance preserves source provenance. Deterministic adversarial fixtures drive a compromised model into existing exact-approval, denial, tool-capability and filesystem boundaries. These tests validate Engine behavior, not universal model resistance.
 
 The owner explicitly chose to preserve autonomous web access and accept its residual exfiltration risk. No new web confirmations or inferred URL grants are introduced. Scoped egress grants, stronger host-process isolation and real-model multilingual/multimodal attack evaluation remain future work. Source changes do not update running Mac/VPS engines or native apps; legacy continuations keep their saved prompt snapshots. See [security](security.md), [working context](context.md) and [verification](verification.md).
+
+
+## Isolated extension work (1 November 2026)
+
+The extension task has five implementation stages. Source completion and operational installation are separate; no live rollout is implied. See [Tool workshop](tool-workshop.md).
+
+1. **Isolated local tools — implemented in source.** Owner-opt-in synchronous JS/JSON in QuickJS/Wasm, bounded tests and execution, immutable versions, local proposal review/export and initial maintainer/catalog reuse.
+2. **Controlled API access — implemented in source.** One exact-approved, assigned REST GET through Engine, bounded JSON passed to a tested transform, credentials kept in Engine, configuration binding and current-access checks. No standing grants or automatic retries.
+3. **Bounded autonomous external actions — partially implemented in source.** Owner-issued grants now cover repeated exact REST GETs within one task family: selected bots share a durable request counter and interval, with expiry, revocation, Stop, failure blocking and no restoration of authority after restart. Owner review and grant management are available in chat/Workshop. Monetary budgets, external writes and transactions still need action-specific adapters, outcome checks and uncertain-effect recovery; no guaranteed-profit behavior.
+4. **Engine improvement workflow — partially implemented in source.** Separate owner-only source access, exact base hashes, isolated candidate snapshots, fixed syntax checks and bounded QuickJS tests of actual edited pure modules feed the review/export inbox. Maintainers can independently reconstruct/recheck exact edits without applying them. An operator-only pinned-image container verifier now implements fixed syntax/full-suite/web-build steps, isolation preflights, bounded receipts and exact cleanup. Actual container/Linux acceptance is pending because no runtime is installed on the development Mac; automatic bot dispatch and controlled release/rollback remain pending. Legacy free-form patches remain unverified; running Engine source is never modified.
+5. **Shared contribution delivery — partially implemented.** Local inbox, reviewed export, maintainer re-testing and catalog shipping exist. Hosted opt-in intake, deduplication and reviewed distribution outside product releases remain pending; packages never carry execution grants.
+
+Linux runtime acceptance, independent security review and broader real-model usefulness remain cross-stage verification work. Each release still needs its own operational checks and deployment scope.
+
 
 This is intended future scope, not a list of shipped features. Consult `capabilities.md` and `verification.md` for what actually exists.
 
