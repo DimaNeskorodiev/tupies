@@ -33,14 +33,51 @@ test('Bots sorts by message recency, with deterministic ties and empty chats aft
   h.run("data.botLastMessageAt.b=data.botLastMessageAt.a;showPage()");assert.deepEqual(names(),['Aster','Birch','Clover']);
 });
 
+test('Bots opens profiles from cards and phone rows while Chat stays a separate action',t=>{
+  const h=harness(t);
+  for(const selector of ['.bot-card .bot-description','.bot-card-avatar','.bot-card-link','.bot-row-main']){
+    h.$(selector).click();assert.equal(h.window.location.hash,'#/bots/b',selector);
+  }
+  for(const selector of ['.bot-card .open-chat','.bot-row-chat']){
+    h.$(selector).click();assert.equal(h.window.location.hash,'#/bot/b',selector);
+  }
+  h.window.location.hash='#/bots';h.run('window.getSelection=()=>"Selected description"');
+  h.$('.bot-card .bot-description').click();assert.equal(h.window.location.hash,'#/bots','selecting card text does not navigate');
+});
+
+test('Bots options are scoped to quick actions and mobile Favorites without profile section duplicates',async t=>{
+  const h=harness(t),items=()=>h.$$('.popover-menu [role="menuitem"]').map(item=>item.textContent.trim());
+  h.$('.bot-card [data-action="bot-menu"]').click();
+  assert.deepEqual(items(),['Open chat','Start Mission','Delete bot']);
+  assert.equal(h.$('.bot-card [data-action="bot-menu"]').getAttribute('aria-expanded'),'true');
+  h.run('closeMenu()');
+  const trigger=h.$('.bot-row-more');trigger.click();
+  assert.deepEqual(items(),['Open chat','Start Mission','Remove from Favorites','Delete bot']);
+  const favorite=h.$('.popover-menu [data-action="toggle-bot-favorite"]');favorite.focus();favorite.click();await tick();
+  assert.equal(h.$('.popover-menu'),null);assert.equal(h.window.location.hash,'#/bots');
+  assert.equal(h.window.document.activeElement,h.$('.bot-row-more'),'keyboard focus returns to the row options after saving');
+  assert.deepEqual(h.requests,[{route:'/api/bots/b',options:{method:'PATCH',body:{favorite:false}}}]);
+  h.run('data.missionsAdmission=false;showPage()');h.$('.bot-row-more').click();
+  assert.deepEqual(items(),['Open chat','Add to Favorites','Delete bot']);
+});
+
+test('Memory and Files entry points navigate to profile tabs without opening legacy dialogs',async t=>{
+  const h=harness(t);h.run('openDialog=()=>{throw new Error("Unexpected popup");}');
+  for(const tab of ['memory','files']){
+    h.$('#main-content').innerHTML=`<button data-action="bot-${tab}" data-id="a">${tab}</button>`;
+    h.$('button').click();assert.equal(h.window.location.hash,`#/bots/a/${tab}`);
+  }
+  assert.deepEqual(h.requests,[],'resource data loads through the profile');
+});
+
 test('Favorites can be added and removed without opening chat; hidden favorites stay under Hidden',async t=>{
   const h=harness(t);h.$('[data-filter="favorites"]').click();await tick();
   assert.deepEqual(h.$$('.bot-row-main strong').map(node=>node.textContent),['Birch']);
-  const button=h.$('.bot-list .bot-favorite');assert.equal(button.getAttribute('aria-pressed'),'true');h.run('globalThis.staleStateRequest=++workspaceStateRequest');button.focus();button.click();await tick();
+  const button=h.$('.bot-grid .bot-favorite');assert.equal(button.getAttribute('aria-pressed'),'true');h.run('globalThis.staleStateRequest=++workspaceStateRequest');button.focus();button.click();await tick();
   assert.deepEqual(h.requests,[{route:'/api/bots/b',options:{method:'PATCH',body:{favorite:false}}}]);
   assert.match(h.$('#main-content').textContent,/No favorites yet/);assert.equal(h.window.location.hash,'#/bots');
   assert.equal(h.window.document.activeElement,h.$('[data-filter="favorites"]'));assert.equal(h.run('applyWorkspaceState({...data,bots:[]},staleStateRequest)'),false,'a poll started before the saved preference cannot overwrite it');
-  h.$('[data-filter="all"]').click();await tick();h.$('.bot-list [data-id="a"]').click();await tick();
+  h.$('[data-filter="all"]').click();await tick();h.$('.bot-grid .bot-favorite[data-id="a"]').click();await tick();
   h.$('[data-filter="favorites"]').click();await tick();assert.deepEqual(h.$$('.bot-row-main strong').map(node=>node.textContent),['Aster']);
   h.$('[data-filter="hidden"]').click();await tick();assert.deepEqual(h.$$('.bot-row-main strong').map(node=>node.textContent),['Hidden']);
 });
