@@ -107,3 +107,7 @@ Build and verify first. Releases include source, package/lock, built public asse
 ## Local coding verification
 
 Use `node --test test/coding-*.test.mjs test/local-coding*.test.mjs test/azure-devops.test.mjs` for focused deterministic acceptance, then the complete suite. The optional `TUPIES_CLAUDE_ACCEPTANCE` absolute executable path enables installed-Claude tests against a local fake Anthropic endpoint inside an OS network sandbox; no real accounts or inference are used. Source implementation, isolated release checks and live account/task acceptance must be reported separately. See [local coding](local-coding.md).
+
+## Onboarding
+
+New-workspace defaults, Ops’ bundled product guide and the resumable setup UI are described in [Onboarding](onboarding.md). Use `node scripts/e2e-fixture.mjs --onboarding` for an empty-model setup walkthrough; the printed synthetic endpoint uses the OpenAI Responses protocol. `test/onboarding.test.mjs` covers authentication, persistence, existing-workspace preservation, real reply completion, template editing and draft-only prompts. Keep native engine startup and pairing on their existing path.

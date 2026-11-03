@@ -1,0 +1,66 @@
+/* Use the shell's shared light/dark tokens; all controls wrap on a narrow screen. */
+.onboarding-page{max-width:1020px;margin-inline:auto;padding-bottom:48px}
+.onboarding-topline,.onboarding-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.onboarding-topline{justify-content:space-between;margin-bottom:24px}
+.onboarding-hero{max-width:760px;margin-bottom:28px}
+.onboarding-eyebrow{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--muted)}
+.onboarding-hero h1{font-size:clamp(28px,4vw,42px);letter-spacing:-.045em;line-height:1.12;margin:10px 0 16px}
+.onboarding-hero>p{font-size:16px;line-height:1.7;color:var(--muted)}
+.onboarding-engine-note{display:flex;align-items:flex-start;gap:10px;padding:15px 0;font-size:12px;line-height:1.6;color:var(--muted)}
+.onboarding-engine-note svg,.onboarding-chat-tips svg{width:18px;height:18px;flex-shrink:0}
+.onboarding-progress{display:flex;gap:18px;list-style:none;padding:0;margin:0 0 26px;flex-wrap:wrap}
+.onboarding-progress li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.onboarding-progress li>span{display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;font-size:11px}
+.onboarding-progress svg{width:14px;height:14px}
+.onboarding-progress .is-done>span,.onboarding-number.is-done{background:var(--pearl-blue-soft);color:var(--pearl-blue);border-color:transparent}
+.onboarding-step{padding:26px;margin-bottom:18px;border-radius:24px}
+.onboarding-step>header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.onboarding-step h2,.onboarding-next h2{font-size:18px;letter-spacing:-.02em;margin:0}
+.onboarding-number{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid var(--line);border-radius:50%;font-size:13px}
+.onboarding-number svg{width:18px;height:18px}
+.onboarding-complete{margin-left:auto;font-size:11px;color:var(--muted)}
+.onboarding-step>p{font-size:14px;line-height:1.65;color:var(--muted);margin:12px 0}
+.onboarding-step .onboarding-note,.onboarding-note{font-size:12px;line-height:1.65;color:var(--muted)}
+.onboarding-team{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:22px 0}
+.onboarding-bot{padding:20px;border:1px solid var(--line);border-radius:20px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.onboarding-bot h3{font-size:22px;letter-spacing:-.025em;margin:8px 0 3px;overflow-wrap:anywhere}
+.onboarding-bot strong{font-size:13px}
+.onboarding-bot p{font-size:13px;line-height:1.65;color:var(--muted);margin:8px 0 0}
+.onboarding-bot .onboarding-actions{margin-top:auto}
+.onboarding-prompt{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0;border-bottom:1px solid var(--line)}
+.onboarding-prompt>div{min-width:0;flex:1}
+.onboarding-prompt strong{font-size:13px}
+.onboarding-prompt p{font-size:13px;line-height:1.65;color:var(--muted);margin:6px 0 0}
+.onboarding-prompt button{flex-shrink:0}
+.onboarding-chat-tips{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px;font-size:11px;color:var(--muted)}
+.onboarding-chat-tips>span{display:flex;align-items:center;gap:6px}
+.onboarding-next{padding:18px 4px}
+.onboarding-map{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+.onboarding-map button{display:block;text-align:left;padding:16px;border:1px solid var(--line);border-radius:16px;background:transparent;color:var(--ink);cursor:pointer}
+.onboarding-map strong{display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.onboarding-map svg{width:16px;height:16px}
+.onboarding-map span{font-size:12px;line-height:1.6;color:var(--muted)}
+.onboarding-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:26px;margin:0 0 22px;border-radius:24px}
+.onboarding-banner h2{font-size:24px;letter-spacing:-.035em;margin:9px 0}
+.onboarding-banner p{font-size:13px;line-height:1.7;color:var(--muted);max-width:510px;margin:0}
+.onboarding-banner>.onboarding-actions{flex-shrink:0;flex-direction:column;align-items:stretch}
+.onboarding-return{text-align:right;margin-bottom:12px}
+.onboarding-chat-start{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px}
+.onboarding-chat-start small{font-size:11px;color:var(--muted)}
+.onboarding-template-picker{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.onboarding-template-picker button[aria-pressed=true]{border-color:var(--pearl-blue);background:var(--pearl-blue-soft)}
+.onboarding-page button:focus-visible,.onboarding-banner button:focus-visible{outline:2px solid var(--pearl-blue);outline-offset:4px}
+@media(max-width:700px){
+ .onboarding-team,.onboarding-map{grid-template-columns:1fr}
+ .onboarding-step{padding:18px;border-radius:20px}
+ .onboarding-banner{padding:20px;align-items:stretch;flex-direction:column;gap:18px}
+ .onboarding-banner>.onboarding-actions{flex-direction:row;align-items:center;flex-shrink:1}
+ .onboarding-prompt{align-items:flex-start;flex-direction:column;gap:12px}
+ .onboarding-progress{gap:10px;flex-direction:column}
+ .onboarding-bot{padding:18px}
+}
+
+.pearl-studio .dash-card.onboarding-container{background:transparent;border:0;box-shadow:none;padding:0;margin:0;overflow:visible}
+.onboarding-container .onboarding-banner{margin-bottom:0}
+.onboarding-step>header h2{flex:1;min-width:0}
+.onboarding-complete{flex-shrink:0;white-space:nowrap}

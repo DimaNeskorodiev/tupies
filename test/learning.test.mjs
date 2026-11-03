@@ -135,7 +135,7 @@ test('a skill improvement needs the current sha256, applies exact edits and is r
   const result=await proposeSkill(store,context,args);assert.equal(result.status,'pending');
   assert.equal(await skillText(store),current,'the skill is untouched while pending');
   const listed=(await listProposals(store,'bot_atlas')).proposals[0];
-  assert.equal(listed.current,true);assert.deepEqual(listed.usedBy,[{id:'bot_nova',name:'Nova'}]);
+  assert.equal(listed.current,true);assert.deepEqual(listed.usedBy,[{id:'bot_nova',name:'Ops'}]);
   assert.equal(listed.skill.before.content,current);assert.match(listed.skill.after.content,/access dates/);
 
   // Every bot that uses the skill must be idle.

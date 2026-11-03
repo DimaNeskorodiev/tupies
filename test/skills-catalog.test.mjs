@@ -29,7 +29,7 @@ test('offline catalog provides useful packaged resources and deterministic exact
 test('owner install preserves exact bytes, assigns one bot and survives store reload',async t=>{
   const {store,service,botId}=await fixture(t),args=argsFor(service,botId),entry=service.catalog[0],result=await service.install(args);
   assert.ok(result.skill.immutable);assert.match(result.skill.id,/^tp-[a-z0-9-]+$/);assert.notEqual(result.skill.id,entry.name);
-  assert.equal(result.skill.name,entry.name);assert.deepEqual(store.state.bots[0].skills,[result.skill.id]);assert.deepEqual(store.state.bots[1].skills,[]);
+  assert.equal(result.skill.name,entry.name);assert.deepEqual(store.state.bots[0].skills,[result.skill.id]);assert.deepEqual(store.state.bots[1].skills,['tupies-product']);
   const verified=await assertSkillIntegrity(store,result.skill);assert.equal(verified.verified,true);
   for(const file of entry.files)assert.deepEqual(verified.files.get(file.path),file.data);
   const reloaded=await new Store(store.directory).init();assert.equal(reloaded.state.skills.find(skill=>skill.id===result.skill.id).packageDigest,args.digest);
@@ -132,7 +132,7 @@ test('catalog updates replace only the selected bot assignment and retain rollba
   await service.assign({skillId:old.skill.id,botId:other});
   const entry=service.catalog[0];entry.version='1.1.0';entry.content+='\nA revised checklist.\n';entry.files[0].data=Buffer.from(entry.content);Object.assign(entry,skillPackageManifest(entry.files));
   const updated=await service.install(argsFor(service,botId));assert.notEqual(updated.skill.id,old.skill.id);assert.deepEqual(updated.replacedSkillIds,[old.skill.id]);
-  assert.deepEqual(store.state.bots[0].skills,[updated.skill.id]);assert.deepEqual(store.state.bots[1].skills,[old.skill.id]);
+  assert.deepEqual(store.state.bots[0].skills,[updated.skill.id]);assert.deepEqual(store.state.bots[1].skills,['tupies-product',old.skill.id]);
   const library=await service.installed({botId});assert.ok(library.skills.some(skill=>skill.id===old.skill.id && !skill.assigned));
   await service.assign({skillId:old.skill.id,botId});assert.deepEqual(store.state.bots[0].skills,[old.skill.id]);assert.ok(store.state.skills.some(skill=>skill.id===updated.skill.id));
 });
