@@ -16,7 +16,7 @@ const plain=value=>JSON.parse(JSON.stringify(value));
 function ui(t,{phone=false,bot={},inferenceRequest,speechCatalog}={}) {
   const dom=new JSDOM('<!doctype html><div id="app"></div><div id="dialog-root"></div><div id="toasts"></div>',{url:'http://studio.local/#/bot/bot_atlas',runScripts:'outside-only',pretendToBeVisual:true});
   const win=dom.window,doc=win.document,requests=[],toasts=[];
-  win.setInterval=()=>1;win.clearInterval=()=>{};
+  win.setInterval=()=>1;win.clearInterval=()=>{};win.scrollTo=()=>{};
   win.matchMedia=()=>({matches:phone,addEventListener(){},removeEventListener(){}});
   win.fetch=()=>{throw new Error('This UI fixture must not use the network.');};
   win.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
@@ -227,31 +227,31 @@ test('closed room collaboration settings preserve membership and the bounded han
   assert.deepEqual(h.requests[0].body,{name:'Product room',botIds:['bot_atlas','bot_nova'],autoCollaborate:true,maxRounds:6});
 });
 
-test('quick details supports keyboard menu navigation and Escape returns focus to chat options',async t=>{
+test('the chat profile menu supports keyboard navigation and Escape returns focus to chat options',async t=>{
   const h=ui(t);h.chat();const anchor=h.doc.querySelector('.chat-more');anchor.focus();await h.click(anchor);
   const menu=h.doc.querySelector('[role=menu]'),items=[...menu.querySelectorAll('[role=menuitem]')];
   assert.equal(anchor.getAttribute('aria-expanded'),'true');assert.equal(h.doc.activeElement,items[0]);
+  assert.equal(items[0].dataset.nav,'/bots/bot_atlas');assert.match(items[0].textContent,/Bot profile/);
   h.key(h.doc.activeElement,'End');assert.equal(h.doc.activeElement,items.at(-1));
   h.key(h.doc.activeElement,'Home');assert.equal(h.doc.activeElement,items[0]);
-  const detailsIndex=items.findIndex(item=>item.dataset.action==='toggle-inspector');assert.ok(detailsIndex>0);
-  for(let index=1;index<=detailsIndex;index++){h.key(h.doc.activeElement,'ArrowDown');assert.equal(h.doc.activeElement,items[index]);}
-  assert.equal(h.doc.activeElement.dataset.action,'toggle-inspector');await h.click(h.doc.activeElement);
-  const inspector=h.doc.querySelector('.bot-inspector');
-  assert.equal(h.doc.querySelector('[role=menu]'),null);assert.equal(anchor.getAttribute('aria-expanded'),'false');
-  assert.equal(inspector.classList.contains('open'),true);assert.equal(h.doc.activeElement,inspector);
-  h.key(inspector,'Escape');assert.equal(inspector.classList.contains('open'),false);assert.equal(h.doc.activeElement,anchor);
-  await h.click(anchor);h.key(h.doc.activeElement,'Escape');
-  assert.equal(h.doc.querySelector('[role=menu]'),null);assert.equal(h.doc.activeElement,anchor);
+  for(let index=1;index<items.length;index++){h.key(h.doc.activeElement,'ArrowDown');assert.equal(h.doc.activeElement,items[index]);}
+  h.key(h.doc.activeElement,'ArrowDown');assert.equal(h.doc.activeElement,items[0]);
+  h.key(h.doc.activeElement,'ArrowUp');assert.equal(h.doc.activeElement,items.at(-1));
+  h.key(h.doc.activeElement,'Escape');
+  assert.equal(h.doc.querySelector('[role=menu]'),null);assert.equal(anchor.getAttribute('aria-expanded'),'false');assert.equal(h.doc.activeElement,anchor);
+  await h.click(anchor);await h.click(h.doc.activeElement);
+  assert.equal(h.win.location.hash,'#/bots/bot_atlas');assert.equal(h.doc.querySelector('[role=menu]'),null);
+  assert.equal(anchor.getAttribute('aria-expanded'),'false');assert.equal(h.requests.length,0,'opening a profile does not change bot settings');
 });
 
-test('phone quick details opens a dismissible dialog while preserving the message draft',async t=>{
-  const h=ui(t,{phone:true});h.chat();h.doc.querySelector('#message-input').value='Keep this draft.';
-  await h.click(h.doc.querySelector('.chat-more'));
-  await h.click(h.doc.querySelector('[data-action=toggle-inspector]'));
-  const dialog=h.doc.querySelector('dialog');assert.ok(dialog);assert.equal(dialog.getAttribute('aria-label'),'About your teammate');
-  const dismiss=dialog.querySelector('[aria-label="Close bot details"]');assert.equal(dismiss.dataset.action,'close-dialog');
-  await h.click(dismiss);assert.equal(h.doc.querySelector('dialog'),null);
-  assert.equal(h.doc.querySelector('#message-input').value,'Keep this draft.');assert.equal(h.requests.length,0);
+test('phone chat menu dismissal and profile navigation preserve the message draft',async t=>{
+  const h=ui(t,{phone:true});h.chat();const composer=h.doc.querySelector('#message-input');composer.value='Keep this draft.';
+  const anchor=h.doc.querySelector('.chat-more');anchor.focus();await h.click(anchor);
+  h.key(h.doc.activeElement,'Escape');assert.equal(h.doc.querySelector('[role=menu]'),null);assert.equal(h.doc.activeElement,anchor);
+  assert.equal(composer.value,'Keep this draft.');
+  await h.click(anchor);await h.click(h.doc.querySelector('[role=menu] [data-nav="/bots/bot_atlas"]'));
+  assert.equal(h.win.location.hash,'#/bots/bot_atlas');assert.equal(h.doc.querySelector('[role=menu]'),null);
+  assert.equal(composer.value,'Keep this draft.');assert.equal(h.requests.length,0);
 });
 
 for(const [route,disclosure,label] of [['settings','settings-more','More settings'],['connections','settings-sections','Models']]) {
