@@ -263,7 +263,7 @@ export async function createStudioServer(options={}) {
         if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access}))return;
         if(await notificationsApi(req,res,url,{session,notifications,body,json}))return;
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
-        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),sync:sync.summary(),browser:runtime.browsers.status()});
+        if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
         if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,sync,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
