@@ -106,7 +106,7 @@ struct ConnectChoices: View {
                 ChoiceCard(
                     systemImage: "desktopcomputer",
                     title: "Use this Mac",
-                    subtitle: store.isConnectingThisMac ? "Connecting to Tupies on this Mac…" : "Connect to Tupies running here, or start it.",
+                    subtitle: store.isConnectingThisMac ? "Connecting to Tupies on this Mac…" : "Start your own engine here. Then connect a model and meet your bots.",
                     prominent: true,
                     isBusy: store.isConnectingThisMac,
                     action: onThisMac

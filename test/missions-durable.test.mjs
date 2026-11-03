@@ -86,7 +86,7 @@ test('Pause waits for the active provider boundary and Resume preserves the same
 test('a real checked child completes before the coordinator independent Mission acceptance',async t=>{
  let parent=0,child=0;
  const h=await fixture(t,request=>{
-  if(request.messages[0].content.startsWith('You are Nova,')){
+  if(request.messages[0].content.startsWith('You are Ops,')){
    child++;if(child===1)return tools(call('child_check','task_outcome_set',{checks:[{id:'file',kind:'file_exists',path:'checked-child.md'}]}));
    if(child===2)return tools(call('child_write','workspace_write',{path:'checked-child.md',content:'A real checked child output.'}));
    return answer('Created and checked the requested child file.');
@@ -149,7 +149,7 @@ test('250ms scheduler ticks cannot postpone a one-second file observation foreve
 async function waitingTeam(t) {
  let parent=0,child=0,held=false,release;
  const h=await fixture(t,request=>{
-  if(request.messages[0].content.startsWith('You are Nova,')){
+  if(request.messages[0].content.startsWith('You are Ops,')){
    child++;if(child===1)return tools(call('child_check','task_outcome_set',{checks:[{id:'file',kind:'file_exists',path:'family-child.md'}]}));
    if(child===2)return tools(call('child_write','workspace_write',{path:'family-child.md',content:'Committed exactly once before the tree paused.'}));
    if(child===3){held=true;return new Promise(resolve=>{release=resolve;});}
@@ -190,7 +190,7 @@ test('paused child tree survives restart and preflights every participant before
 
 test('queued child permission changes during dispatch publication refuse every actual child call',async t=>{
  let parent=0,childCalls=0;
- const h=await fixture(t,request=>{if(request.messages[0].content.startsWith('You are Nova,')){childCalls++;return answer('This child must not start.');}parent++;const context=missionContext(request);if(parent===1)return tools(call('criteria','mission_contract_set',{requirements:[requirement(context,'team',{kind:'rubric',rubric:'The exact authorized child produces its checked result.',rubricVersion:'queue-race-v1'})]}));if(parent===2)return tools(call('queue','delegate_task',{botId:'bot_nova',task:'Create a checked child result.',expectedOutput:'A checked result.',wait:false}));if(parent===3)return tools(call('collect','delegation_status',{wait:true}));return answer('No checked child result is available.');});
+ const h=await fixture(t,request=>{if(request.messages[0].content.startsWith('You are Ops,')){childCalls++;return answer('This child must not start.');}parent++;const context=missionContext(request);if(parent===1)return tools(call('criteria','mission_contract_set',{requirements:[requirement(context,'team',{kind:'rubric',rubric:'The exact authorized child produces its checked result.',rubricVersion:'queue-race-v1'})]}));if(parent===2)return tools(call('queue','delegate_task',{botId:'bot_nova',task:'Create a checked child result.',expectedOutput:'A checked result.',wait:false}));if(parent===3)return tools(call('collect','delegation_status',{wait:true}));return answer('No checked child result is available.');});
  const event=h.engine.event.bind(h.engine);let changed=false;
  h.engine.event=async(context,type,data)=>{const result=await event(context,type,data);if(type==='delegation.started'&&!changed){changed=true;await h.store.mutate(state=>{state.bots.find(bot=>bot.id==='bot_nova').tools=['workspace','delegation','web'];});}return result;};
  const created=await h.create('Use only the currently authorized teammate snapshot.');await h.settled();assert.equal(changed,true);assert.equal(childCalls,0);assert.notEqual(h.store.state.missions[created.mission.id].outcome,'achieved');assert.equal(h.store.state.runs.bot_nova,undefined);
@@ -209,7 +209,7 @@ test('adding a compute cap to a saved watcher blocks the next read before dispat
 test('child approvals remain reachable by the existing bot route and Pause invalidates the old identity',async t=>{
  let parent=0,child=0;
  const h=await fixture(t,request=>{
-  if(request.messages[0].content.startsWith('You are Nova,')){child++;if(child===1)return tools(call('check','task_outcome_set',{checks:[{id:'file',kind:'file_exists',path:'approved-child.md'}]}));if(child===2||child===3)return tools(call(`write_${child}`,'workspace_write',{path:'approved-child.md',content:'Written after exact fresh owner approval.'}));return answer('The exact approved child file is checked.');}
+  if(request.messages[0].content.startsWith('You are Ops,')){child++;if(child===1)return tools(call('check','task_outcome_set',{checks:[{id:'file',kind:'file_exists',path:'approved-child.md'}]}));if(child===2||child===3)return tools(call(`write_${child}`,'workspace_write',{path:'approved-child.md',content:'Written after exact fresh owner approval.'}));return answer('The exact approved child file is checked.');}
   parent++;const context=missionContext(request);if(parent===1)return tools(call('criteria','mission_contract_set',{requirements:[requirement(context,'team',{kind:'rubric',rubric:'Require the checked file and exact owner approval.',rubricVersion:'approval-tree-v1'})]}));if(parent===2)return tools(call('queue','delegate_task',{botId:'bot_nova',task:'Create and mechanically check approved-child.md.',expectedOutput:'The exact owner-approved checked file.',wait:false}));const ids=h.store.state.runs[BOT].delegationJobs.map(job=>job.id);if(parent===3)return tools(call('wait','mission_wait',{kind:'dependency',delegationIds:ids}));if(parent===4)return tools(call('collect','delegation_status',{delegationIds:ids,wait:true}));return answer('The child created the actual checked file after owner approval.');
  });
  await h.store.mutate(state=>{state.bots.find(bot=>bot.id==='bot_nova').approvalPolicy='strict';});const created=await h.create('Have the teammate make the approved checked file.');await until(()=>h.store.state.runs.bot_nova?.status==='waiting_for_approval'&&h.store.state.runs[BOT]?.missionSuspended);

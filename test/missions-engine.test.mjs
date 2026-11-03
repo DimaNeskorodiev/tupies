@@ -97,7 +97,7 @@ test('malformed independent review leaves retained output unaccepted', async t =
 test('partial required teammate work cannot be bypassed by the Mission reviewer', async t => {
   let parentTurns = 0;
   const h = await fixture(t, request => {
-    if (request.messages[0].content.startsWith('You are Nova,')) return answer('A child self-report without a checked deliverable.');
+    if (request.messages[0].content.startsWith('You are Ops,')) return answer('A child self-report without a checked deliverable.');
     const context = missionContext(request); parentTurns++;
     if (parentTurns === 1) return tools(call('criteria', 'mission_contract_set', { requirements: [requirement(context, 'summary', { kind: 'rubric', rubric: 'The required teammate produces and verifies the requested document.', rubricVersion: 'team-v1' })] }));
     if (parentTurns === 2) return tools(call('child', 'delegate_task', { botId: 'bot_nova', task: 'Produce the synthetic document.', expectedOutput: 'A verified synthetic document.' }));

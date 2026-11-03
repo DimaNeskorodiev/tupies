@@ -20,6 +20,7 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 
 | Area | Main files |
 | --- | --- |
+| First-run guidance and starter bots | `lib/bot-templates.mjs`, `lib/store.mjs`, `public/onboarding.js` + `.css`, Apple onboarding views; see `docs/onboarding.md` |
 | HTTP, sessions, security headers, lifecycle | `server.mjs` |
 | Resource/provider/inference/document APIs | `lib/api-native.mjs` |
 | Agent loop, approvals, snapshots, cancellation, delegation | `lib/engine.mjs`, `lib/delegation-jobs.mjs` (queued handoffs and collection), `lib/delegated-deliverables.mjs` (required-result identity/repair); `lib/runtime.mjs` is its compatibility entrypoint |
@@ -57,6 +58,9 @@ Priorities: reliable real bot actions; easy direct provider and ChatGPT/Codex su
 Use temporary data directories and deterministic local fixtures for tests. Do not run duplicate schedulers against copies of the real account data. Do not delete user bots, chats or provider connections during testing.
 
 ## Verification and handoff
+
+**First-run guidance checkpoint (3 November 2026, source only):** Apple welcome/Start my engine copy leads into a resumable Engine guide, editable Chief of Staff/Ops templates and draft-only first prompts. New workspaces assign the immutable four-resource product guide to Ops; existing profiles/permissions remain unchanged. First-reply progress uses actual direct-chat output; dismissal is engine-local presentation state. Official Node22.23.4 passes1920/1920 tests183files,170syntax checks,398stable checked hashes, targeted assets/30guide pages and8deterministic eval cases. Actual disposable Chromium covers320/390/834/1280px, setup→reply, persistence and template review; unsigned Mac/iOS Simulator compile checks pass. Native visual/physical-device and real-model usefulness remain unverified. This work is not installed; installed Engine/native ownership remains unchanged. See `docs/onboarding.md` and `docs/verification.md`.
+
 
 **Missions VPS installation checkpoint (2 November 2026, current):** The VPS now runs immutable `missions-20261101-4e1a5b48`, with2191 payload files and manifest SHA256 `4e1a5b488e944a19f97500decad5ae7340ea0b4127770592eef0c7cbfc054db3`. Installation was accepted on2November2026 (Europe/Warsaw); the release filename retains its1November build date. The frozen runtime/source/test bytes match the376-file official Node22.23.4 verification manifest `2aabc23086b1afb646d096c5cbffc93ba90fe7f2b29d5f478c01a715b71d3b3e`. Linux passes1913/1913 tests in182files,168syntax checks, the deterministic evaluation and targeted assets/guide/notices builds. Mac notices remain406; the installed Linux notices are409 (402common exact,4Darwin-only replaced by7Linux-only). Only `assets/licenses/dependencies.json` and `assets/licenses/THIRD_PARTY_LICENSES.txt` differ for that platform correction; no runtime/source/test change was made.
 

@@ -23,7 +23,7 @@ struct ThisMacSetupView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Use Tupies on this Mac")
                             .font(.title2.weight(.bold))
-                        Text("Tupies connects to the engine on this Mac automatically. If it isn’t running, start it here.")
+                        Text("Your engine is the home for your bots, chats and files. Start it here; Tupies connects automatically.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -31,6 +31,20 @@ struct ThisMacSetupView: View {
                 }
 
                 LocalEngineStatusRow()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Next: connect a model", systemImage: "sparkles")
+                        .font(.headline)
+                    Text("Use an eligible ChatGPT / Codex subscription, a provider API key or a local model. The in-app guide will help you choose, then introduce Chief of Staff and Ops.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Text("Keep your Mac awake and the engine running for background work. You can pair a phone later from Devices & sync.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(16)
+                .cardSurface(cornerRadius: 16)
 
                 LocalEnginePathsForm()
 
@@ -74,7 +88,7 @@ struct ThisMacSetupView: View {
     private var primaryTitle: String {
         if working { return local.state == .starting ? "Starting…" : "Connecting…" }
         if local.runningURL != nil { return "Connect" }
-        return "Start Local Engine"
+        return "Start my engine"
     }
 
     private func startAndPair() {

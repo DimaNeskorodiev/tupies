@@ -20,6 +20,8 @@ Enable **Workspace** and **Terminal** for a coding bot before asking it to launc
 
 **New here?** [Set up Tupies and sign in](docs/setup/README.md) has plain step-by-step guides: Mac and iPhone without a server, adding another Mac, and moving a Mac workspace to a server.
 
+In the Mac app, choose **Use this Mac → Start my engine**, then follow **Continue setup** on Dashboard. Connect a model, meet **Roki · Chief of Staff** and **Ops · Tupies operator**, and try a first task. The guide stays available from Dashboard and Settings → Help. See [the in-app onboarding guide](docs/onboarding.md).
+
 Requires Node.js 22.16 or newer. The release includes the browser assets and fonts; install the pinned runtime libraries once.
 
 ```sh

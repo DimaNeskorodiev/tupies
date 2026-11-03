@@ -1,5 +1,13 @@
 # Tupies — project context
 
+## First-run guidance — 3 November 2026 (source only)
+
+New Mac welcome/setup copy explains the engine, models and the first team. The Engine UI adds a resumable three-step guide: connect a model, review Chief of Staff and Ops, then receive a first direct-chat reply. Example prompts populate editable drafts; Send remains explicit. Dashboard and Help keep a return path after dismissal. New workspaces seed the two roles (plus the existing Scout specialist) and assign the immutable bundled product guide to Ops. Existing bot profiles and assignments are preserved. Normal permissions, exact approvals, account setup and engine ownership are unchanged.
+
+Final Node22.23.4 passes1,920/1,920 tests in183files,170syntax checks,398stable checked source hashes, targeted assets/30guide pages and8deterministic agent evaluation cases. Actual disposable browser checks cover320/390/834/1280px, model setup, prompt→reply, dismissal/reload and template review.
+
+The editable templates, reply-derived progress, engine-local dismissal API and verification workflow are documented in [onboarding](docs/onboarding.md). The new Apple views compile for macOS and iOS; physical/native visual acceptance and real-model usefulness remain separate. This source change is separate from the installed Mac release; no installed app, running engine, profile, pairing or real account data was changed by onboarding work. Exact final checks are recorded in [verification](docs/verification.md).
+
 ## Missions VPS installation (2 November 2026, current)
 
 The VPS now runs immutable `missions-20261101-4e1a5b48`, with2191 payload files and manifest SHA256 `4e1a5b488e944a19f97500decad5ae7340ea0b4127770592eef0c7cbfc054db3`. Installation was accepted on2November2026 (Europe/Warsaw); the release filename retains its1November build date. The frozen runtime/source/test bytes match the376-file official Node22.23.4 verification manifest `2aabc23086b1afb646d096c5cbffc93ba90fe7f2b29d5f478c01a715b71d3b3e`. Linux passes1913/1913 tests in182files,168syntax checks, the deterministic evaluation and targeted assets/guide/notices builds. Mac notices remain406; the installed Linux notices are409 (402common exact,4Darwin-only replaced by7Linux-only). Only `assets/licenses/dependencies.json` and `assets/licenses/THIRD_PARTY_LICENSES.txt` differ for that platform correction; no runtime/source/test change was made.
@@ -78,7 +86,7 @@ Owner-opt-in Tool workshop lets bots create, test, install and run synchronous J
 Bot → Workshop exposes local tools and a review/export inbox for verified tools or inert, explicitly unverified Engine patches. Export includes only the selected proposal/source/synthetic fixtures, with exact review identity; author-supplied material still requires privacy and sharing-permission review. Maintainer intake re-tests exact tools into the shipped `assets/tool-catalog/`, so future product releases provide reuse across installations. No hosted submission, automatic upload, automatic patch application, Python/dependency support or live-engine installation is included. See [Tool workshop](docs/tool-workshop.md) and verification for evidence. Operational Mac/VPS/native releases remain unchanged. Final source verification: 1607/1607 tests across 161 files (61 sequential, 1546 at concurrency four), 143 syntax checks, complete web build/28 guide pages/406 dependency notices, and actual desktop/390px Chrome review. No live-model, Linux runtime or native-app acceptance is claimed.
 
 
-Last updated: 2 November 2026. Current application version: 0.5.0.
+Last updated: 3 November 2026. Current application version: 0.5.0.
 
 ## Bot profile UI refinement (1 November 2026, installed on VPS)
 

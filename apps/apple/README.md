@@ -1,5 +1,9 @@
 # Tupies for iPhone, iPad and Mac
 
+## First-run guidance — 3 November 2026 (source only)
+
+The welcome view now introduces Tupies, Chief of Staff and Ops before the engine choice. **Use this Mac → Start my engine** explains the included engine, the following model connection and the requirement to keep the Mac awake for background work. The connected Engine supplies the resumable [getting-started guide](../../docs/onboarding.md). Only presentation changes: startup, pairing, keys, permissions and existing connections retain their current behavior. Unsigned macOS and iOS Simulator compile checks pass; native visual/physical-device acceptance and installation are not included in this source checkpoint.
+
 ## Installed GitHub release — 30 October 2026
 
 Signed macOS and iPhone apps are **0.5.0 (10)**, built from pinned GitHub main `02aaf2e` with `CURRENT_PROJECT_VERSION=10`, unchanged bundle/team/Keychain identities, `TUPIES_REQUIRE_TRANSFER=YES` and existing embedded profiles. Mac profile bytes are unchanged. The Mac fallback Engine and both operational engines use the same commit. Both apps were installed in place and launched; saved connection identities and notification preferences were verified. Mutable project defaults now also use build 10. Native version describes the shell; the selected engine supplies the live UI, and its source commit must be recorded separately. This checkpoint supersedes older installed-build statements below. See `../../PROJECT_CONTEXT.md` for verification and boundaries, and ignored `../../docs/local-workspace.md` for rollback/ownership.
