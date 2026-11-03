@@ -62,7 +62,7 @@
   function downloadLink(ctx,file) {return `<a class="icon-button dash-download" href="${ctx.esc(downloadUrl(file))}" download title="Download" aria-label="Download ${ctx.esc(file.name)}">${svg(glyphs.download)}</a>`;}
 
   function teamSection(ctx) {
-    const e=ctx.esc,bots=(ctx.data?.bots || []).filter(bot=>!bot.hidden),shown=bots.slice(0,4);
+    const e=ctx.esc,bots=ctx.sortBotsByMessage((ctx.data?.bots || []).filter(bot=>!bot.hidden)),shown=bots.slice(0,4);
     const cards=shown.map(bot=>`<button type="button" class="pearl-resource-card pearl-home-teammate" data-nav="/bot/${e(bot.id)}">${ctx.avatar(bot,'large',keyOf('dash-teammate',bot.id))}<span><strong>${e(bot.name)}</strong><small>${e(bot.title || 'Your teammate')}</small></span>${svg(glyphs.arrow)}</button>`).join('');
     return `<header class="dash-card-head"><div class="dash-card-title"><h2 id="dash-team-title">Your team</h2><p>Choose a teammate and start with a message.</p></div><button type="button" class="text-button dash-head-link" data-nav="/bots">View team${svg(glyphs.arrow)}</button></header><div class="pearl-home-actions">${cards || `<button type="button" class="pearl-resource-card" data-nav="/bots">${ctx.icon('bots')}<span><strong>Find your first teammate</strong><small>Give a bot a name and a role.</small></span>${svg(glyphs.arrow)}</button>`}</div>`;
   }

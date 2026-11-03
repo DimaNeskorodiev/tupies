@@ -1,5 +1,15 @@
 # Tupies — project context
 
+## Bot removal, attention and list consistency — 3 November 2026 (source only)
+
+Bot options expose **Delete bot**, and profile Settings has a visible **Remove bot** section outside Advanced. The existing authenticated deletion and active-task/room-turn refusal remain authoritative. A named confirmation explains that conversations, memory and routines are removed while saved workspace files remain on the engine; refusal stays visible in the confirmation with retry available.
+
+Desktop and phone **Bots** navigation now counts attention items instead of total bots: one latest unread final-reply conversation, each distinct current question/approval/browser-help prompt, and exact local Mission blockers. Hidden bots count, mirrored Mission approvals do not duplicate, and zero hides the badge. Five-second metadata polling and prompt changes refresh counts while preserving drafts, focus, scroll and exact read receipts. Pending requests remain until resolved or stopped. The authenticated state/unread endpoints add numeric `pendingBotItems` presentation metadata without prompt contents or authority.
+
+**My Tupies** and Dashboard's first four visible teammates use the same message-recency sorter as Bots. Sidebar refreshes follow message timestamps, keep vertical scroll and bound long labels with ellipsis; horizontal scrolling is disabled. Dashboard labels are also contained. Actual disposable Chromium checks cover deletion/Cancel/busy refusal, unread/question/approval counts through Stop/read/reload, shared order and measured320/390/834/1280px layouts. Final regression evidence is recorded in [verification](docs/verification.md). This source work does not change installed Engine/native ownership or real account data; concurrent profile-navigation work has its own checkpoint.
+
+Final official Node22.23.4 passes1,932/1,932 tests in185 files,170syntax checks and30guide pages;388checked source/test/UI/package hashes stay unchanged throughout the final complete regression run. The generated guide is refreshed afterward from these receipts.
+
 ## Bots profile navigation — 3 November 2026 (source only)
 
 Bots cards, names, avatars and phone rows open Bot Profile; explicit Chat controls open the conversation. Bots options are separate from chat options, with Open chat, Start Mission when available and confirmed deletion. Phone Favorites lives in options, while desktop cards keep their hearts. Chat and long-press menus use a single profile entry for bot resources; Memory/Files shortcuts open profile tabs, and the duplicate popup editors are removed. Sidebar/Dashboard chat shortcuts retain their existing destinations. Keyboard focus returns to the updated favorite control or row options.

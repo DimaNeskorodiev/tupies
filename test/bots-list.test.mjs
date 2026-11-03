@@ -33,6 +33,19 @@ test('Bots sorts by message recency, with deterministic ties and empty chats aft
   h.run("data.botLastMessageAt.b=data.botLastMessageAt.a;showPage()");assert.deepEqual(names(),['Aster','Birch','Clover']);
 });
 
+test('My Tupies follows Bots message order on first paint and live refresh while retaining vertical scroll',t=>{
+  const h=harness(t),ids=()=>h.$$('.sidebar .roster-item').map(node=>node.dataset.nav);
+  h.run("document.getElementById('app').insertAdjacentHTML('afterbegin',sidebarMarkup(route()));updateSidebar()");
+  assert.deepEqual(ids(),['/bot/b','/bot/a','/bot/c']);
+  assert.equal(h.run('studioContext().sortBotsByMessage===sortBotsByMessage'),true,'Dashboard receives the same sorter used by Bots');
+  h.$('.sidebar .roster').scrollTop=72;
+  h.run("data.botLastMessageAt.c='2026-11-01T11:00:00Z';updateSidebar()");
+  assert.deepEqual(ids(),['/bot/c','/bot/b','/bot/a']);
+  assert.equal(h.$('.sidebar .roster').scrollTop,72);
+  h.run("data.bots.find(bot=>bot.id==='b').hidden=true;updateSidebar()");
+  assert.deepEqual(ids(),['/bot/c','/bot/a']);
+});
+
 test('Bots opens profiles from cards and phone rows while Chat stays a separate action',t=>{
   const h=harness(t);
   for(const selector of ['.bot-card .bot-description','.bot-card-avatar','.bot-card-link','.bot-row-main']){

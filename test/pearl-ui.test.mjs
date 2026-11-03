@@ -88,7 +88,9 @@ function showBotSettings(h){
 test('bot Settings keeps memory controls visible and saves one complete configuration',async t=>{
   const h=ui(t),before=plain(h.saved),form=showBotSettings(h);
   assert.equal(h.doc.querySelector('[role=tab][aria-selected=true]').dataset.tab,'settings');
-  assert.deepEqual([...form.querySelectorAll('[data-bot-settings-section]')].map(section=>section.dataset.botSettingsSection),['instructions','memory','tools','model']);
+  assert.deepEqual([...form.querySelectorAll('[data-bot-settings-section]')].map(section=>section.dataset.botSettingsSection),['instructions','memory','tools','model','remove']);
+  const removal=form.querySelector('[data-bot-settings-section=remove] [data-action=delete-bot]');
+  assert.ok(removal);assert.equal(removal.closest('details'),null);assert.equal(removal.type,'button');
   const memory=form.querySelector('[name=tool][value=memory]'),episodes=form.querySelector('[name=episodicMemory]');
   assert.equal(form.querySelectorAll('[name=tool][value=memory]').length,1);
   assert.equal(memory.closest('details'),null);assert.equal(episodes.closest('details'),null);
