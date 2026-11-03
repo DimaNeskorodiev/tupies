@@ -1,5 +1,13 @@
 # Verification — Tupies Engine 0.5
 
+## Bots profile navigation — 3 November 2026 (source only)
+
+Official Node22.23.4 passes **61/61 focused regressions** across `bots-list`, `navigation-ui`, `bot-profile`, `mobile-motion`, with no skips or cancellations; **170 JavaScript modules** pass syntax checks. Coverage includes card/row profile navigation, separate Chat controls, menu contents, admission-disabled Missions, profile resource routing, Favorites persistence/filtering and keyboard focus, profile drafts. The initial sandboxed run could not open its temporary loopback server; the final permitted run passes without changing product boundaries. The publication is isolated on GitHub main and excludes concurrent removal, notification, attention-badge and sidebar work; this is focused verification, not a new complete-suite receipt.
+
+All **24 actual disposable Chrome checks** pass at **320/390/834/1280px**: settled card/avatar/name/row navigation, explicit Chat, Memory/Files/Settings within the profile, scoped options and Escape, chat menu consolidation, Hidden profiles, Favorites filters and existing confirmation/Cancel. Phone secondary-click acceptance exercises the same menu as long-press; DOM gesture regressions also cover touch hold and cancellation. Captures wait for navigation layers to settle, and the fixture respects the existing700ms post-context-menu click suppression. No horizontal overflow or uncaught JavaScript errors is observed. Receipts/screenshots are retained in ignored `.runtime/bots-profile-ux-20261103/`.
+
+The30-page guide is rebuilt from documentation sources. These checks use temporary stores and synthetic connections without inference. Installed Mac/Home Engines, native apps, pairings and real account data are unchanged; physical-device/WebKit acceptance remains separate.
+
 ## First-run guidance — 3 November 2026 (source only)
 
 Final official **Node22.23.4** verification passes **1,920/1,920 tests in183 files**: 91 sequential in six files (27.855s) and 1,829 at concurrency four (181.811s), with zero failures, skips, cancellations or TODOs. All **398 checked source/test/evaluation/UI/native/package hashes** stay unchanged. **170 syntax checks**, the targeted browser asset build, **30 guide pages** and all **8 deterministic agent evaluation cases** pass. The guide is regenerated after this receipt; generated guide bytes are excluded from the frozen source count. No image regeneration or dependency-notice change is included.

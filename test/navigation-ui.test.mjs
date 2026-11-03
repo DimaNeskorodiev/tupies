@@ -100,16 +100,17 @@ test('phones get a five-tab bar and a navigation bar with Settings in the top-ri
   assert.match(h.app.innerHTML,/class="tab active" data-nav="\/bots"/);
 });
 
-test('bots are narrow rows: the row opens the chat and ••• opens the details',()=>{
+test('Bots rows open profiles, with separate Chat and options controls',()=>{
   const h=harness('#/bots');h.run('renderApp()');
   const list=h.app.innerHTML.match(/<ul class="bot-list"[\s\S]*?<\/ul>/)[0];
-  assert.match(list,/<button class="bot-row-main" data-nav="\/bot\/bot_nova" aria-label="Chat with Nova">/);
-  assert.match(list,/<button class="bot-row-more" data-nav="\/bots\/bot_nova" aria-label="Nova details"/);
+  assert.match(list,/<button class="bot-row-main" data-nav="\/bots\/bot_nova" aria-label="Open Nova’s profile">/);
+  assert.match(list,/<button class="icon-button bot-row-chat" data-nav="\/bot\/bot_nova" aria-label="Chat with Nova"/);
+  assert.match(list,/<button class="bot-row-more" data-action="bot-menu" data-id="bot_nova" aria-haspopup="menu"/);
   assert.match(list,/<strong>Nova<\/strong><small>Writer<\/small>/);assert.doesNotMatch(list,/>Ready</);
   assert.match(list,/data-action="create-bot"/);
 });
 
-test('chat has one universal action menu and keeps everyday resources reachable',()=>{
+test('chat has one action menu and a single entry to bot resources through the profile',()=>{
   const h=harness('#/bots');h.run('renderApp()');
   h.setHash('#/bot/bot_nova');h.run('renderApp()');
   const header=h.app.innerHTML.match(/<header class="chat-header">[\s\S]*?<\/header>/)[0];
@@ -123,9 +124,10 @@ test('chat has one universal action menu and keeps everyday resources reachable'
   // Menus need a real page to open; capture their items instead.
   h.run('openMenu=(anchor,items)=>{globalThis.menuItems=items;}');
   h.run('chatMenu({},"bot_nova")');const menu=h.run('menuItems');
-  for(const [label,attrs] of [['Chat options','data-action="chat-options" data-id="bot_nova"'],['Memory','data-action="bot-memory" data-id="bot_nova"'],['Files','data-action="bot-files" data-id="bot_nova"'],['Quick details','data-action="toggle-inspector" data-id="bot_nova"'],['Bot profile','data-nav="/bots/bot_nova"'],['Bot settings','data-action="edit-bot" data-id="bot_nova"']])
+  for(const [label,attrs] of [['Chat options','data-action="chat-options" data-id="bot_nova"'],['Bot profile','data-nav="/bots/bot_nova"']])
     assert.match(menu,new RegExp(`${attrs.replace(/[/]/g,'\\/')}><span class="menu-text"><span>${label}<\/span>`),label);
   assert.ok(!menu.includes('fixture-model'),'provider metadata is inside Chat options');
+  assert.doesNotMatch(menu,/data-action="(?:bot-memory|bot-files|toggle-inspector|edit-bot)"/);
   h.run('botSwitcherMenu({},"bot_nova")');const switcher=h.run('menuItems');
   assert.ok(switcher.indexOf('/bot/bot_nova')<switcher.indexOf('/bot/bot_atlas'),'the current bot comes first');
   assert.match(switcher,/aria-checked="true" data-nav="\/bot\/bot_nova"/);
