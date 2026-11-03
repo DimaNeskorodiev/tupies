@@ -138,7 +138,11 @@ test('hidden bots leave the sidebar and the Bots grid but stay one filter away',
   const h=ui('#/bots');h.run('renderApp()');
   const sidebar=h.app.innerHTML.match(/<aside[\s\S]*<\/aside>/)[0];
   assert.match(sidebar,/roster-name">Nova</);assert.doesNotMatch(sidebar,/Echo/);
-  assert.match(sidebar,/data-nav="\/bots"[\s\S]*?nav-count">2</);
+  assert.doesNotMatch(sidebar,/data-bots-attention-count/,'the Bots badge stays empty when no reply or request needs attention');
+  h.run("data.unreadBots={bot_echo:'hidden_reply'};renderApp()");
+  const attentionSidebar=h.app.innerHTML.match(/<aside[\s\S]*<\/aside>/)[0];
+  assert.match(attentionSidebar,/data-bots-attention-count[^>]*aria-label="1 item needs your attention"[^>]*>1</);
+  assert.doesNotMatch(attentionSidebar,/roster-name">Echo</,'hidden replies count without adding their bot to My Tupies');
   const grid=h.run('renderBots()');
   assert.match(grid,/data-filter="all">All <span>2<\/span>/);assert.match(grid,/data-filter="hidden">Hidden <span>1<\/span>/);
   assert.doesNotMatch(grid,/Echo/);

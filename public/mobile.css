@@ -3,6 +3,8 @@
    The desktop layout is unchanged. In the iPhone app the page runs edge to edge, so env(safe-area-inset-*)
    keeps controls clear of the status bar and home indicator; in a browser those insets are usually 0. */
 .tabbar,.topbar-back,.topbar-settings,.bot-list,.chat-back,.chat-switcher,.chat-more,.sheet-grabber,.mobile-search{display:none}
+.tabbar .tab{position:relative}
+.tabbar .tab .tab-count{position:absolute;top:1px;left:calc(50% + 7px);min-width:16px;max-width:calc(50% - 4px);height:16px;padding:0 4px;border-radius:8px;background:var(--accent-ink,#5155bd);color:#fff;font-family:var(--ios-font,system-ui);font-size:10px;font-weight:600;line-height:16px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
 .chat-tools{display:contents}
 
 /* Bound the page itself, including the translated screen during push/pop. Keep
