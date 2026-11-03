@@ -47,7 +47,8 @@ try {
     await store.mutate(state=>{
       state.connections.push({id:'verification-provider',type:'openai',name:'Fixture',model:'fixture-model',contextWindow:8000,secret:store.seal(secret)});
       state.bots.push({...structuredClone(state.bots[0]),id:'bot_echo',name:'Echo'});
-      for(const bot of state.bots){bot.connectionId='verification-provider';bot.model='fixture-model';bot.tools=['workspace'];bot.approvalPolicy='balanced';}
+      // Keep this 8K no-replay workload independent of product starter roles and their optional skills.
+      for(const bot of state.bots){bot.connectionId='verification-provider';bot.model='fixture-model';bot.instructions='Complete the requested disposable workspace verification and report the observed result.';bot.skills=[];bot.tools=['workspace'];bot.approvalPolicy='balanced';}
       const count=Math.ceil(mib*1024**2/(transcriptText.length*2));
       state.messages.bot_atlas=Array.from({length:count},(_,index)=>({id:`historical_${index}`,role:index%2?'assistant':'user',content:transcriptText,createdAt:new Date(1_700_000_000_000+index).toISOString()}));
       state.conversations.bot_atlas=state.messages.bot_atlas.map(({role,content})=>({role,content}));
@@ -69,7 +70,7 @@ try {
         const accepted=await Promise.all(bots.map(bot=>app.runtime.submit(bot.id,`RUNTIME_LOAD batch_${batch}_${bot.id}`,{clientMessageId:`load_${batch}_${bot.id}`})));
         await Promise.all([...app.runtime.tasks.values()]);
         for(let index=0;index<bots.length;index++) {
-          const bot=bots[index],run=app.store.state.runs[bot.id];assert.equal(run.status,'completed');
+          const bot=bots[index],run=app.store.state.runs[bot.id];assert.equal(run.status,'completed',`${bot.id}: ${run.error||run.status}`);
           assert.equal(await fs.readFile(path.join(directory,'workspaces',bot.id,'verification',`batch_${batch}_${bot.id}.txt`),'utf8'),`Verified batch_${batch}_${bot.id}\n`);
           const duplicate=await app.runtime.submit(bot.id,`RUNTIME_LOAD batch_${batch}_${bot.id}`,{clientMessageId:`load_${batch}_${bot.id}`});assert.equal(duplicate.duplicate,true);assert.equal(duplicate.run.id,accepted[index].run.id);
         }

@@ -39,7 +39,7 @@ test('a bot knows the whole team by default and really talks with a teammate it 
   await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
   const system=requests[0].messages[0].content,reference=requests[0].turnContext;
   assert.match(system,/Your team \(every other bot in this workspace\)/);
-  assert.match(reference,/- bot_nova: Nova/);assert.match(reference,/- bot_scout: Scout/);assert.doesNotMatch(reference,/- bot_atlas:/);
+  assert.match(reference,/- bot_nova: Ops/);assert.match(reference,/- bot_scout: Scout/);assert.doesNotMatch(reference,/- bot_atlas:/);
   assert.match(system,/Talk to a teammate with delegate_task/);
   assert.equal(store.state.runs.bot_scout.output,'The primary source is most reliable.');
   const asked=store.state.messages.bot_scout.find(message=>message.role==='user');
@@ -94,7 +94,7 @@ test('selected team mode limits who a bot knows and refuses everyone else',async
   await engine.start('bot_atlas','Get help.');
   await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
   const system=requests[0].messages[0].content,reference=requests[0].turnContext;
-  assert.match(system,/Your owner chose these teammates for you/);assert.match(reference,/- bot_nova: Nova/);assert.doesNotMatch(reference,/bot_scout/);
+  assert.match(system,/Your owner chose these teammates for you/);assert.match(reference,/- bot_nova: Ops/);assert.doesNotMatch(reference,/bot_scout/);
   assert.equal(store.state.runs.bot_scout,undefined);
   assert.ok(store.state.conversations.bot_atlas.some(message=>message.role==='tool'&&message.content.includes('explicitly selected collaborators')));
 });
@@ -105,7 +105,7 @@ test('a bot without the collaboration tool still knows its team but is told it c
   await engine.start('bot_atlas','Who should write this?');
   await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
   const system=requests[0].messages[0].content,reference=requests[0].turnContext;
-  assert.match(reference,/- bot_nova: Nova/);assert.match(system,/Bot collaboration is turned off for you/);
+  assert.match(reference,/- bot_nova: Ops/);assert.match(system,/Bot collaboration is turned off for you/);
   assert.ok(!(requests[0].tools||[]).some(tool=>tool.name==='delegate_task'));
 });
 

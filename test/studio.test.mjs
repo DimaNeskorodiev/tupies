@@ -362,7 +362,7 @@ test('bots save their team setting and can be hidden even while they work',async
   // Editing still waits for the task; hiding only changes where the bot is listed.
   assert.equal((await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{title:'Changed mid-task'}})).status,409);
   const hidden=await f.request('/api/bots/bot_atlas',{method:'PATCH',data:{hidden:true}});
-  assert.equal(hidden.status,200);assert.equal(hidden.body.hidden,true);assert.equal(hidden.body.title,'Chief of staff');
+  assert.equal(hidden.status,200);assert.equal(hidden.body.hidden,true);assert.equal(hidden.body.title,'Chief of Staff');
   assert.equal(f.app.store.state.runs.bot_atlas.status,'waiting_for_approval');
   assert.equal((await f.request('/api/state')).body.bots.find(bot=>bot.id==='bot_atlas').hidden,true);
   const identity={runId:pending.id,remoteRunId:pending.remoteRunId,request_id:pending.pending_controls[0].prompt_id,execution_generation:pending.execution_generation};

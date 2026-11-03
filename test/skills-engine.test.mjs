@@ -33,7 +33,7 @@ test('a bot discovers, installs and reads a trusted catalog skill in one run wit
   await engine.start('bot_atlas','Find a reusable workflow and use it.');await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
   assert.equal(requests.length,5);const run=store.state.runs.bot_atlas;
   assert.ok(!run.events.some(event=>event.type==='approval.request'));assert.equal(run.skillInstallCount,1);
-  assert.deepEqual(store.state.bots[0].tools,groups);assert.deepEqual(store.state.bots[1].skills,[]);
+  assert.deepEqual(store.state.bots[0].tools,groups);assert.deepEqual(store.state.bots[1].skills,['tupies-product']);
   const toolMessages=store.state.conversations.bot_atlas.filter(message=>message.role==='tool').map(message=>JSON.parse(message.content));
   assert.ok(toolMessages[2].skill.packageDigest);assert.equal(toolMessages[3].packageDigest,toolMessages[2].skill.packageDigest);
   assert.match(toolMessages[3].content,/^---/);assert.match(requests[4].turnContext,/Skills assigned during this task/);
@@ -99,12 +99,12 @@ test('catalog API installs exact versions, rejects CSRF and stale digests, and a
   assert.equal((await request('/api/skills/install',{method:'POST',data:args,security:false})).status,403);
   assert.equal((await request('/api/skills/install',{method:'POST',data:{...args,digest:'0'.repeat(64)}})).status,409);
   const installed=await request('/api/skills/install',{method:'POST',data:args});assert.equal(installed.status,201,JSON.stringify(installed.body));
-  assert.deepEqual(app.store.state.bots[0].skills,[installed.body.skill.id]);assert.deepEqual(app.store.state.bots[1].skills,[]);
+  assert.deepEqual(app.store.state.bots[0].skills,[installed.body.skill.id]);assert.deepEqual(app.store.state.bots[1].skills,['tupies-product']);
   const second=await request('/api/skills/assign',{method:'POST',data:{skillId:installed.body.skill.id,botId:'bot_nova'}});assert.equal(second.status,200,JSON.stringify(second.body));
   assert.equal((await request('/api/bots/bot_atlas',{method:'PATCH',data:{skillInstallPolicy:'anything'}})).status,400);
   assert.equal((await request('/api/bots/bot_atlas',{method:'PATCH',data:{skillInstallPolicy:'trusted'}})).status,200);
   assert.equal((await request('/api/skills/assign',{method:'POST',data:{skillId:installed.body.skill.id,botId:'bot_atlas',enabled:false}})).status,200);
-  assert.deepEqual(app.store.state.bots[0].skills,[]);assert.equal(app.store.state.bots[1].skills.length,1);
+  assert.deepEqual(app.store.state.bots[0].skills,[]);assert.deepEqual(app.store.state.bots[1].skills,['tupies-product',installed.body.skill.id]);
 });
 
 test('import API previews inert bytes, pins the selected bot, installs once and exports the original package',async t=>{

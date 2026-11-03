@@ -32,6 +32,9 @@ async function fixture(t) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-product-skill-'));
   const store=await new Store(directory).init(),service=new SkillsService(store),tools=new AgentTools(store,{skills:service});
   t.after(async()=>{await store.queue;await fs.rm(directory,{recursive:true,force:true});});
+  // Exercise discovery/install for an existing workspace without the new starter guide.
+  await store.mutate(state=>{state.skills=state.skills.filter(skill=>skill.id!=='tupies-product');for(const bot of state.bots)bot.skills=bot.skills.filter(id=>id!=='tupies-product');});
+  await fs.rm(path.join(directory,'skills','tupies-product'),{recursive:true,force:true});
   return {store,service,tools,botId:store.state.bots[0].id};
 }
 

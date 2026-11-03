@@ -31,7 +31,7 @@ async function fixture(t) {
 
 test('offline backup and restore preserve complete runtime bytes, sealed credentials and private modes',async t=>{
   const {source,snapshot,target,store}=await fixture(t),state=await fs.readFile(store.file),key=await fs.readFile(path.join(source,'vault.key'));
-  const result=await createRuntimeSnapshot({source,target:snapshot});assert.equal(result.files,12);
+  const result=await createRuntimeSnapshot({source,target:snapshot});assert.equal(result.files,16);
   const inspection=await inspectRuntimeSnapshot({source:snapshot});assert.equal(inspection.summary.files,result.files);
   const restored=await restoreRuntimeSnapshot({source:snapshot,target});assert.deepEqual(restored,result);
   assert.deepEqual(await fs.readFile(path.join(target,'state.json')),state);assert.deepEqual(await fs.readFile(path.join(target,'vault.key')),key);
