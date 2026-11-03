@@ -253,7 +253,7 @@ function uiHarness(t,responses) {
   vm.runInContext(dashboardSource,dom.getInternalVMContext(),{filename:'dashboard.js'});
   const bots=[{id:'bot_nova',name:'Nova'},{id:'bot_atlas',name:'Atlas'}];
   let view='dashboard';
-  const ctx={data:{bots},esc:escape,icon:name=>`<svg data-icon="${name}"></svg>`,avatar:(bot,size,key)=>`<span class="avatar creature-avatar ${size}" data-key="${key||''}">${escape(bot.name)}</span>`,
+  const ctx={data:{bots},sortBotsByMessage:items=>items,esc:escape,icon:name=>`<svg data-icon="${name}"></svg>`,avatar:(bot,size,key)=>`<span class="avatar creature-avatar ${size}" data-key="${key||''}">${escape(bot.name)}</span>`,
     botById:id=>bots.find(bot=>bot.id===id),relative:()=>'4m ago',timeLabel:value=>new Date(value).toISOString().slice(11,16),shortDate:()=>'Oct 1',toast:(message,error)=>toasts.push([message,error]),errorText:error=>error?.message || 'Failed',
     documentPreview:async(botId,filePath)=>{previews.push([botId,filePath]);},fileEditor:async()=>{},previewFormats:/\.(?:pdf|md)$/i,navigate:()=>{},route:()=>({view}),openDialog:()=>{},closeDialog:()=>{},
     api:(route,options)=>{requests.push({route,options});const next=responses.shift();return typeof next==='function'?next():next instanceof Error?Promise.reject(next):Promise.resolve(next);}};
@@ -339,6 +339,16 @@ test('range control, conditional refresh, stale replies and leaving the route be
   h.intervals[0]();await h.settle();
   assert.equal(h.requests.length,5,'the timer stops once the dashboard is gone');
   assert.equal(h.root.textContent,'Bots');
+});
+
+test('Dashboard sorts visible teammates with the shared Bots sorter before selecting the first four',async t=>{
+  const h=uiHarness(t,[{body:{counts:{},files:[],activity:[],needs:[],working:[],routines:[]},etag:'"team"'}]);
+  h.ctx.data.bots.push({id:'bot_c',name:'Clover'},{id:'bot_d',name:'Dahlia'},{id:'bot_e',name:'Elm'},{id:'bot_hidden',name:'Hidden',hidden:true});
+  let supplied=[];
+  h.ctx.sortBotsByMessage=items=>{supplied=items.map(bot=>bot.id);return [...items].reverse();};
+  h.mount();await h.settle();
+  assert.deepEqual(supplied,['bot_nova','bot_atlas','bot_c','bot_d','bot_e']);
+  assert.deepEqual([...h.root.querySelectorAll('.pearl-home-teammate')].map(node=>node.dataset.nav),['/bot/bot_e','/bot/bot_d','/bot/bot_c','/bot/bot_atlas']);
 });
 
 test('a quiet dashboard keeps direct teammate entry and one honest empty state',async t=>{
