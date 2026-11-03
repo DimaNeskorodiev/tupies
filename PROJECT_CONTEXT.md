@@ -1,5 +1,11 @@
 # Tupies — project context
 
+## Bots profile navigation — 3 November 2026 (source only)
+
+Bots cards, names, avatars and phone rows open Bot Profile; explicit Chat controls open the conversation. Bots options are separate from chat options, with Open chat, Start Mission when available and confirmed deletion. Phone Favorites lives in options, while desktop cards keep their hearts. Chat and long-press menus use a single profile entry for bot resources; Memory/Files shortcuts open profile tabs, and the duplicate popup editors are removed. Sidebar/Dashboard chat shortcuts retain their existing destinations. Keyboard focus returns to the updated favorite control or row options.
+
+Focused navigation/profile/motion regressions pass61/61 on Node22.23.4; syntax covers170modules. Actual disposable Chrome covers320/390/834/1280px with no JavaScript errors; see [verification](docs/verification.md). This is mutable source work; installed Engine/native ownership is unchanged.
+
 ## First-run guidance — 3 November 2026 (source only)
 
 New Mac welcome/setup copy explains the engine, models and the first team. The Engine UI adds a resumable three-step guide: connect a model, review Chief of Staff and Ops, then receive a first direct-chat reply. Example prompts populate editable drafts; Send remains explicit. Dashboard and Help keep a return path after dismissal. New workspaces seed the two roles (plus the existing Scout specialist) and assign the immutable bundled product guide to Ops. Existing bot profiles and assignments are preserved. Normal permissions, exact approvals, account setup and engine ownership are unchanged.

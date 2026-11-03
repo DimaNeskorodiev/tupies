@@ -113,6 +113,7 @@
   .bot-row-more{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin-right:8px;border-radius:50%;background:none;color:#5b6474}
   .bot-row-more svg{width:22px;height:22px;stroke-width:3.2}
   .bot-row-more:active{background:rgba(30,40,70,.08)}
+  .bot-row-chat{flex:none;width:44px;min-width:44px;height:44px;color:var(--accent-ink)}
   .bot-row.is-hidden .avatar{opacity:.6;filter:saturate(.4)}
   .bot-row-new .add-circle{width:42px;height:42px;margin:0;flex:none;color:var(--accent-ink);border-color:rgba(91,92,246,.35)}
   .bot-row-new strong{color:var(--accent-ink)}

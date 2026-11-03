@@ -854,7 +854,7 @@
   // Messages offer Copy, Select text and Read aloud (when the reply has it); bots offer the actions their
   // own menus already have. Items carry the same data-nav/data-action attributes app.js handles.
   const MENU_TARGETS = '#app .chat-thread .chat-message:not(.thinking-message):not(.partial-message), #app .bot-row:not(.bot-row-new), #app .pearl-home-teammate[data-nav^="/bot/"]';
-  const ICONS = {copy:'M8 8h13v13H8zM16 4V2H2v14h2', select:'M9 4h6M9 20h6M12 4v16', speaker:'M4 9h4l5-5v16l-5-5H4V9Zm13-2a7 7 0 0 1 0 10m2-13a11 11 0 0 1 0 16', chat:'M4 3h16v14H8l-4 4V3Z', heart:'m12 21-8-8C-2 7 6-2 12 5c6-7 14 2 8 8l-8 8Z', book:'M3 4h6c2 0 3 1 3 2 0-1 1-2 3-2h6v16h-6c-2 0-3 1-3 2 0-1-1-2-3-2H3V4Zm9 2v16', file:'M5 3h9l5 5v13H5V3Zm9 0v6h5M8 13h8M8 17h5', edit:'m15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z', link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'};
+  const ICONS = {bots:'M8 4h8M12 2v2M5 8h14v12H5zM2 12h3m14 0h3M9 12h.01M15 12h.01M9 16h6',copy:'M8 8h13v13H8zM16 4V2H2v14h2', select:'M9 4h6M9 20h6M12 4v16', speaker:'M4 9h4l5-5v16l-5-5H4V9Zm13-2a7 7 0 0 1 0 10m2-13a11 11 0 0 1 0 16', chat:'M4 3h16v14H8l-4 4V3Z', heart:'m12 21-8-8C-2 7 6-2 12 5c6-7 14 2 8 8l-8 8Z', book:'M3 4h6c2 0 3 1 3 2 0-1 1-2 3-2h6v16h-6c-2 0-3 1-3 2 0-1-1-2-3-2H3V4Zm9 2v16', file:'M5 3h9l5 5v13H5V3Zm9 0v6h5M8 13h8M8 17h5', edit:'m15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z', link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'};
   const textOf = element => (element?.innerText ?? element?.textContent ?? '').trim();
   const escape = value => String(value).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`);
   const menuItem = (label, icon, attributes) => `<button type="button" class="menu-item" role="menuitem" ${attributes}><span class="menu-text"><span>${escape(label)}</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[icon]}"/></svg></button>`;
@@ -877,14 +877,12 @@
     return items.length ? {label:'Message actions', html:items.join('')} : null;
   }
   function botActions(target) {
-    const nav = target.matches('[data-nav]') ? target.dataset.nav : target.querySelector('[data-nav^="/bot/"]')?.dataset.nav;
-    const id = /^\/bot\/([^/]+)$/.exec(nav || '')?.[1];
+    const nav = target.matches('[data-nav]') ? target.dataset.nav : target.querySelector('[data-nav^="/bots/"],[data-nav^="/bot/"]')?.dataset.nav;
+    const id = /^\/bots?\/([^/]+)$/.exec(nav || '')?.[1];
     if (!id) return null;
     const name = target.querySelector('strong')?.textContent.trim() || 'Bot', key = `data-id="${escape(id)}"`;
-    return {label:`${name} options`, html:menuItem('Chat', 'chat', `data-nav="/bot/${escape(id)}"`) + menuItem('Bot profile', 'heart', `data-nav="/bots/${escape(id)}"`)
-      + menuItem('Memory', 'book', `data-action="bot-memory" ${key}`) + menuItem('Files', 'file', `data-action="bot-files" ${key}`)
-      + (target.hasAttribute('data-bot-favorite') ? menuItem(target.dataset.botFavorite==='true'?'Remove from Favorites':'Add to Favorites', 'heart', `data-action="toggle-bot-favorite" ${key}`) : '')
-      + '<hr>' + menuItem('Bot settings', 'sliders', `data-action="edit-bot" ${key}`)};
+    return {label:`${name} options`, html:menuItem('Bot profile', 'bots', `data-nav="/bots/${escape(id)}"`) + menuItem('Chat', 'chat', `data-nav="/bot/${escape(id)}"`)
+      + (target.hasAttribute('data-bot-favorite') ? menuItem(target.dataset.botFavorite==='true'?'Remove from Favorites':'Add to Favorites', 'heart', `data-action="toggle-bot-favorite" ${key}`) : '')};
   }
   async function copyText(text) {
     try {await window.navigator.clipboard.writeText(text); return true;} catch {}

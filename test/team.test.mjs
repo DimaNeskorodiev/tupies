@@ -142,12 +142,12 @@ test('hidden bots leave the sidebar and the Bots grid but stay one filter away',
   const grid=h.run('renderBots()');
   assert.match(grid,/data-filter="all">All <span>2<\/span>/);assert.match(grid,/data-filter="hidden">Hidden <span>1<\/span>/);
   assert.doesNotMatch(grid,/Echo/);
-  // The whole tile and Chat open the conversation; secondary actions live in More.
-  assert.match(grid,/<article class="glass-card bot-card " data-nav="\/bot\/bot_nova"/);
+  // The tile opens the profile, Chat opens the conversation, and secondary actions live in More.
+  assert.match(grid,/<article class="glass-card bot-card " data-nav="\/bots\/bot_nova"/);
   assert.match(grid,/class="open-chat" data-nav="\/bot\/bot_nova"/);
-  assert.match(grid,/data-action="chat-menu" data-id="bot_nova" aria-haspopup="menu"/);
+  assert.match(grid,/data-action="bot-menu" data-id="bot_nova" aria-haspopup="menu"/);
   h.run("filter='hidden'");const hidden=h.run('renderBots()');
-  assert.match(hidden,/bot-card is-hidden" data-nav="\/bot\/bot_echo"/);assert.match(hidden,/data-action="chat-menu" data-id="bot_echo"/);
+  assert.match(hidden,/bot-card is-hidden" data-nav="\/bots\/bot_echo"/);assert.match(hidden,/data-action="bot-menu" data-id="bot_echo"/);
   assert.doesNotMatch(hidden,/bot_nova/);assert.match(hidden,/Hidden bots keep their chats, routines and team roles/);
   // With nothing hidden the Hidden filter disappears and falls back to every bot.
   h.run("data.bots=data.bots.map(bot=>({...bot,hidden:false}))");const shown=h.run('renderBots()');
