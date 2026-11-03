@@ -63,7 +63,7 @@ test('exact learning installation preserves resources, provenance and bot scope 
   const {skill}=await service.install(args),verified=await assertSkillIntegrity(store,skill);
   assert.equal(skill.immutable,true);assert.equal(skill.catalogVersion,'1.0.0');
   assert.deepEqual(skill.provenance,{source:'tupies',catalogId,version:entry.version,digest:entry.digest});
-  assert.deepEqual(store.state.bots[0].skills,[skill.id]);assert.deepEqual(store.state.bots[1].skills,[]);
+  assert.deepEqual(store.state.bots[0].skills,[skill.id]);assert.deepEqual(store.state.bots[1].skills,['tupies-product']);
   for(const file of entry.files) {
     assert.deepEqual(verified.files.get(file.path),file.data);
     const result=await tools.execute(store.state.bots[0],file.path==='SKILL.md'?'skills_read':'skills_file',{skillId:skill.id,...(file.path==='SKILL.md'?{}:{path:file.path})});

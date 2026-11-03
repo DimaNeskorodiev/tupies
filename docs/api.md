@@ -404,3 +404,7 @@ Balanced allows requested private knowledge publication; Strict needs the exact 
 ## Local coding API
 
 `GET /api/local-coding` returns actual Mac availability, detected/configured agent metadata, project access and job progress. `POST /api/local-coding/discover` performs an owner-requested bounded metadata search. `PUT /api/local-coding/agents/:agent` selects an executable and existing/dedicated account mode. `POST /api/local-coding/projects` saves an explicit repository/bot connection and optional sealed Azure credential. `GET /api/local-coding/projects/:id/work-items` reads assigned Azure items. Normal authentication/CSRF and proxy-aware loopback restrictions apply. No route directly bypasses task approvals to launch a worker. The `coding_*` tools require a direct owner chat and opt-in Coding group. See [local coding](local-coding.md).
+
+## Onboarding presentation
+
+`GET /api/state` includes `botTemplates`, an engine-local `onboarding` preference (null for older workspaces), and derived `onboardingProgress.firstReply`. `PATCH /api/onboarding` accepts exactly `{dismissed: boolean}` under the normal owner session/CSRF rules. It changes only the guidance preference. It does not create bots, run tasks, configure providers or grant tools. Existing bot and provider endpoints handle those explicit owner actions.

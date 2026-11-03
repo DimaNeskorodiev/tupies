@@ -94,6 +94,7 @@ const {url}=await app.listen(0);
 const setup=await fetch(`${url}/api/setup`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:app.bootstrapToken,password})});
 if(setup.status!==201)throw new Error('Disposable fixture setup failed.');
 await app.store.mutate(state=>{
+  if(process.argv.includes('--onboarding'))return;
   state.connections.push({id:'qa-provider',name:'Local QA fixture',type:'openai',baseUrl:`http://127.0.0.1:${provider.address().port}/v1`,secret:app.store.seal('disposable-qa-key'),defaultModel:'qa-model',status:'connected',models:[{id:'qa-model',name:'QA model'}]});
   for(const bot of state.bots){bot.connectionId='qa-provider';bot.model='qa-model';bot.approvalPolicy=bot.id==='bot_nova'?'strict':'balanced';bot.collaborators=state.bots.filter(other=>other.id!==bot.id).map(other=>other.id);}
   if(process.argv.includes('--layout-stress')) {
@@ -110,4 +111,6 @@ for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>close().then(()=>
 process.on('SIGUSR1',()=>{fault=fault==='http'?'':'http';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGUSR2',()=>{fault=fault==='connection'?'':'connection';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGALRM',()=>{dropNextSubmission=true;console.log('QA transport: next accepted message acknowledgement will be dropped');});
-console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Nova requires approval)','E2E steer','E2E stop','E2E fail','E2E Mission document','E2E Mission timer','E2E Mission pause','E2E Mission watch']}));
+console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Ops requires approval)','E2E steer','E2E stop','E2E fail','E2E Mission document','E2E Mission timer','E2E Mission pause','E2E Mission watch']}));
+
+if(process.argv.includes('--onboarding'))console.log(`Onboarding model endpoint: http://127.0.0.1:${provider.address().port}/v1 (key: disposable-qa-key, model: qa-model)`);

@@ -84,7 +84,7 @@ test('a real document run shows its verified file and a readable timeline entry;
   assert.deepEqual({botId:body.files[0].botId,name:body.files[0].name,path:body.files[0].path,format:body.files[0].format,runId:body.files[0].runId},{botId:'bot_nova',name:'launch-brief.md',path:'reports/launch-brief.md',format:'md',runId:run.id});
   assert.equal(body.files[0].downloadUrl,'/api/bots/bot_nova/files/download?path=reports%2Flaunch-brief.md');
   const created=body.activity.find(item=>item.kind==='file');
-  assert.equal(created.subject,'Nova');assert.equal(created.text,'created launch-brief.md');assert.equal(created.detail,'Draft the launch brief');
+  assert.equal(created.subject,'Ops');assert.equal(created.text,'created launch-brief.md');assert.equal(created.detail,'Draft the launch brief');
   assert.equal(created.files[0].path,'reports/launch-brief.md');
   assert.ok(!body.activity.some(item=>item.text==='started a task'),'a finished run is shown once');
   assert.ok(!JSON.stringify(body).includes(f.app.store.directory),'no host paths');

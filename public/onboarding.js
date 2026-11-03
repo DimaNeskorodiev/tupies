@@ -1,0 +1,43 @@
+/* Short, resumable guidance. Progress comes from saved workspace facts, never optimistic clicks. */
+(()=>{
+  'use strict';
+  function botFor(ctx,template) {
+    return ctx.data.bots.find(bot=>bot.starterTemplate===template.id) || ctx.data.bots.find(bot=>bot.title?.toLowerCase()===template.title.toLowerCase());
+  }
+  function ready(ctx,bot) {
+    if(!bot || bot.enabled===false)return false;
+    const connection=ctx.data.connections.find(item=>item.id===bot.connectionId);
+    return Boolean(connection && connection.type!=='legacy-hermes' && connection.status==='connected' && (bot.model||connection.defaultModel||connection.model) && (connection.type!=='chatgpt'||connection.hasOAuth && connection.oauthAccount?.planEnabled && !connection.oauthAccount?.needsLogin));
+  }
+  function progress(ctx) {
+    const templates=ctx.data.botTemplates||[],team=templates.map(template=>botFor(ctx,template));
+    const model=ctx.data.bots.some(bot=>ready(ctx,bot)),introduced=Boolean(templates.length && team.every(Boolean));
+    const conversation=ctx.data.onboardingProgress?.firstReply===true;
+    return {model,introduced,conversation,count:[model,introduced,conversation].filter(Boolean).length};
+  }
+  const button=(action,label,extra='',kind='secondary-button')=>`<button type="button" class="${kind}" data-action="${action}" ${extra}>${label}</button>`;
+  function dashboard(ctx) {
+    if(!ctx.data.onboarding || ctx.data.onboarding.dismissed)return `<div class="onboarding-return" id="dash-onboarding-title"><button type="button" class="text-button" data-nav="/welcome">${ctx.icon('book')}Getting started</button></div>`;
+    const p=progress(ctx),finished=p.count===3;
+    return `<aside class="onboarding-banner glass-card" aria-label="Getting started"><div class="onboarding-banner-copy"><span class="onboarding-eyebrow">WELCOME TO TUPIES · ${p.count} OF 3 STEPS</span><h2 id="dash-onboarding-title">${finished?'Your team is taking shape':'A small team. A useful first step.'}</h2><p>${finished?'Keep going with your bots, or explore what your workspace can do.':'Connect a model, meet Chief of Staff and Ops, then give your team something to do.'}</p></div><div class="onboarding-actions"><button type="button" class="primary-button" data-nav="/welcome">${finished?'Explore the basics':'Continue setup'}${ctx.icon('arrow')}</button>${button('onboarding-dismiss',finished?'Done':'Set up later','','text-button')}</div></aside>`;
+  }
+  function render(ctx) {
+    const e=ctx.esc,p=progress(ctx),templates=ctx.data.botTemplates||[];
+    const step=(number,title,done,body)=>`<section class="onboarding-step glass-card" aria-labelledby="onboarding-step-${number}"><header><span class="onboarding-number${done?' is-done':''}" aria-label="${done?'Complete':'Step '+number}">${done?ctx.icon('check'):number}</span><h2 id="onboarding-step-${number}">${title}</h2>${done?'<span class="onboarding-complete">Done</span>':''}</header>${body}</section>`;
+    const cards=templates.map(template=>{
+      const bot=botFor(ctx,template),display=bot||template;
+      return `<article class="onboarding-bot">${ctx.avatar(display,'large','onboarding-'+template.id)}<div><span class="onboarding-eyebrow">${template.id==='ops'?'SET UP YOUR TEAM':'START HERE'}</span><h3>${e(display.name)}</h3><strong>${e(template.title)}</strong><p>${e(template.description)}</p></div><div class="onboarding-actions">${bot?`<button type="button" class="secondary-button" data-nav="/bots/${e(bot.id)}/settings">Review bot</button>`:button('starter-template','Review template',`data-template="${e(template.id)}"`)}${bot?`<span class="onboarding-note">${ready(ctx,bot)?'Model connected':bot.enabled===false?'Paused · enable in bot settings':'Needs a connected model'}</span>`:''}</div></article>`;
+    }).join('');
+    const prompts=templates.map(template=>{
+      const bot=botFor(ctx,template);
+      return `<div class="onboarding-prompt"><div><strong>${e(template.id==='ops'?'Learn Tupies with Ops':'Plan your week with Chief of Staff')}</strong><p>“${e(template.prompt)}”</p></div>${bot?button('onboarding-prompt','Try this prompt',`data-id="${e(bot.id)}" data-template="${e(template.id)}" ${ready(ctx,bot)?'':'disabled'}`):button('starter-template','Add this bot',`data-template="${e(template.id)}"`)}</div>`;
+    }).join('');
+    return `<section class="page onboarding-page"><div class="onboarding-topline"><button type="button" class="text-button" data-nav="/dashboard">${ctx.icon('back')}Dashboard</button>${button('onboarding-dismiss','Set up later','','text-button')}</div><header class="onboarding-hero"><span class="onboarding-eyebrow">YOUR WORKSPACE, YOUR TEAM</span><h1>Meet your new teammates.</h1><p>Tupies is a home for AI bots that can plan, research, make documents and work together. Give each bot a role, then talk to it like a teammate.</p><div class="onboarding-engine-note">${ctx.icon('server')}<span><strong>Your engine is running.</strong> It keeps your chats, memory and files. Your chosen model provider processes requests you send to it.</span></div></header><ol class="onboarding-progress" aria-label="Setup progress">${[['Connect a model',p.model],['Meet your team',p.introduced],['Get your first reply',p.conversation]].map(([label,done],i)=>`<li class="${done?'is-done':''}"><span>${done?ctx.icon('check'):i+1}</span>${label}</li>`).join('')}</ol>${step(1,'Connect a model',p.model,`<p>Bots need a model to think with. Sign in with an eligible ChatGPT / Codex subscription, add a provider API key, or connect a local model.</p><p class="onboarding-note">Choose a default model after connecting. Model usage follows your provider’s plan or API pricing. Keep passwords and API keys in Models settings, never in chat.</p><div class="onboarding-actions">${p.model?'<button type="button" class="secondary-button" data-nav="/connections">Manage models</button>':ctx.data.connections.some(c=>c.type!=='legacy-hermes')?'<button type="button" class="primary-button" data-nav="/connections">Finish model setup</button>':button('create-connection','Connect a model','','primary-button')}</div>`)}${step(2,'Meet Chief of Staff and Ops',p.introduced,`<p>Start with these two roles. You can change their names, instructions and tools at any time. Each bot has its own chat, memory and files.</p><div class="onboarding-team">${cards}</div><p class="onboarding-note">Ops uses Manage Tupies to propose bot, skill and routine changes. You review the exact change before it runs. Other specialists are in Bots.</p>`)}${step(3,'Give your team a first task',p.conversation,`<p>Start small: say what you want, add useful context, and describe the result. These examples open an editable draft; you choose when to send.</p>${!p.model?'<p class="onboarding-note">Connect a model in step 1 to try a prompt.</p>':''}${prompts}<div class="onboarding-chat-tips"><span>${ctx.icon('chat')}Answer questions in chat.</span><span>${ctx.icon('shield')}Review approval cards.</span><span>${ctx.icon('stop')}Use Stop to cancel work.</span></div>`)}<section class="onboarding-next"><h2>Find your way around</h2><div class="onboarding-map">${[['dashboard','Dashboard','Follow progress, questions and finished files.'],['bots','Bots','Chat with a bot; open its profile for memory, files and settings.'],['missions','Missions','Give a bot a goal and track its checked outcomes.'],['routines','Routines','Schedule repeat work while your home engine is online.']].map(([view,title,description])=>`<button type="button" data-nav="/${view}"><strong>${title}${ctx.icon('arrow')}</strong><span>${description}</span></button>`).join('')}</div><p class="onboarding-note">On a Mac, keep the engine running and the Mac awake for background work. Pair a phone later in Settings → Devices & sync.</p><div class="onboarding-actions">${button('onboarding-dismiss',p.count===3?'Finish setup':'Go to my workspace','','primary-button')}<a class="text-button" href="/guide.html" target="_blank" rel="noopener">Read the full guide</a></div><p class="onboarding-note">You can always return from Dashboard or Settings → Help.</p></section></section>`;
+  }
+  function chatTips(ctx,bot) {
+    const template=(ctx.data.botTemplates||[]).find(item=>botFor(ctx,item)?.id===bot.id);
+    if(!template)return '';
+    return `<div class="onboarding-chat-start">${button('onboarding-prompt',template.id==='ops'?'Show me around Tupies':'Help me plan my week',`data-id="${ctx.esc(bot.id)}" data-template="${ctx.esc(template.id)}"`)}<small>Opens a draft for you to edit and send.</small><button type="button" class="text-button" data-nav="/welcome">Getting started</button></div>`;
+  }
+  window.StudioOnboarding={dashboard,render,progress,ready,chatTips};
+})();

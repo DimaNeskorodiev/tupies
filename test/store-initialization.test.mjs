@@ -16,7 +16,7 @@ test('fresh workspaces start with Roki and reopening preserves the owner’s exi
   assert.equal(fresh.state.bots[0].icon,'roki');
   assert.equal(fresh.state.bots[0].color,'slate');
   assert.match(fresh.state.bots[0].instructions,/^You are Roki,/);
-  assert.deepEqual(fresh.state.bots.slice(1).map(bot=>bot.name),['Nova','Scout']);
+  assert.deepEqual(fresh.state.bots.slice(1).map(bot=>bot.name),['Ops','Scout']);
 
   // Existing first-run defaults are owner data, not a migration target.
   await fresh.mutate(state=>Object.assign(state.bots[0],{

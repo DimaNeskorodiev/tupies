@@ -74,7 +74,7 @@ test('all six adaptations install and read their exact resources without creatin
       assert.equal(read.content,file.data.toString('utf8'));assert.equal(read.packageDigest,entry.digest);
     }
   }
-  assert.equal(store.state.bots[0].skills.length,6);assert.deepEqual(store.state.bots[1].skills,[]);
+  assert.equal(store.state.bots[0].skills.length,6);assert.deepEqual(store.state.bots[1].skills,['tupies-product']);
   assert.deepEqual(store.state.bots[0].tools,before.tools);assert.deepEqual(store.state.connections,before.connections);assert.deepEqual(store.state.integrations,before.integrations);assert.deepEqual(store.state.routines,before.routines);
 });
 

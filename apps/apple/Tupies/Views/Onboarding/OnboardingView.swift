@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// First-run welcome: "Connect to your Tupies".
+/// Product introduction and the first engine choice.
 struct OnboardingView: View {
     @EnvironmentObject private var store: ConnectionStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -36,7 +36,7 @@ struct OnboardingView: View {
                         }
                         #endif
 
-                        Text("In Tupies, open Devices & sync and choose Pair a phone or Mac. It shows a QR code and a pairing link.")
+                        Text("Already have an engine? Open Settings → Devices & sync there and choose Pair a phone or Mac.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -46,7 +46,7 @@ struct OnboardingView: View {
 
                         Spacer(minLength: 32)
 
-                        Label("Your data stays on your engines. Device keys never leave this \(DeviceInfo.kindLabel).", systemImage: "lock.shield")
+                        Label("Your workspace stays on your engines. Your chosen model provider processes the requests you send.", systemImage: "lock.shield")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -70,16 +70,29 @@ struct OnboardingView: View {
             BrandMark(size: 80)
                 .scaleEffect(appeared || reduceMotion ? 1 : 0.86)
                 .padding(.bottom, 8)
-            Text("Connect to your Tupies")
+            Text("A little team for your everyday work.")
                 .font(.largeTitle.weight(.bold))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            Text("Your bots run on your own Mac or server. Pair this \(DeviceInfo.kindLabel) once and it stays signed in.")
+            Text("Tupies gives your AI bots a home: their own chats, memory and files. Start with Chief of Staff for your goals and Ops to help set up your team.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+            #if os(macOS)
+            Text("1. Start your engine   ·   2. Connect a model   ·   3. Meet your team")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            #else
+            Text("Your bots run on a Mac or server. Pair this device to bring your team with you.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            #endif
         }
     }
 
