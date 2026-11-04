@@ -160,13 +160,13 @@ apps/apple/
 
 Requirements: Xcode 16 or newer (verified with Xcode 26.4.1 / Swift 6.3, with the project in Swift 5 language mode).
 
-**Xcode:** open `apps/apple/Tupies.xcodeproj`, choose the `Tupies` scheme, choose *My Mac* or an iPhone simulator, and run. To run on a physical iPhone or iPad, set your team under *Signing & Capabilities*, or pass it on the command line as below.
+**Xcode:** open `apps/apple/Tupies.xcodeproj`, choose `Tupies` for *My Mac* or `Tupies-iOS` for an iPhone simulator, and run. To run on a physical iPhone or iPad, set your team under *Signing & Capabilities*, or pass it on the command line as below.
 
 **Command line** (DerivedData stays under `apps/apple/build/`, which is git-ignored):
 
 ```sh
 # Compile-only checks (no signing)
-xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies \
+xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath apps/apple/build/DerivedData \
   CODE_SIGNING_ALLOWED=NO build
 xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies \
@@ -175,7 +175,7 @@ xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies \
 
 # Run in the simulator. Build WITH the default ad-hoc signing: without it the
 # simulator app gets no entitlements and the Keychain refuses to store device keys.
-xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies \
+xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -derivedDataPath apps/apple/build/DerivedData-signed build
 xcrun simctl boot "iPhone 17 Pro"; open -a Simulator
@@ -186,7 +186,7 @@ xcrun simctl openurl booted 'hermes-studio://pair?v=1&url=…'   # test the URL 
 # Run on a physical iPhone (paired with this Mac, Developer Mode on). The team stays out of
 # the project file; -allowProvisioningUpdates lets Xcode create the provisioning profile.
 xcrun devicectl list devices
-xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies \
+xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS \
   -destination 'id=<device UDID>' -derivedDataPath apps/apple/build/DerivedData-device \
   -allowProvisioningUpdates DEVELOPMENT_TEAM=<team ID> build
 xcrun devicectl device install app --device <device UDID> \
