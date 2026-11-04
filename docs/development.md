@@ -1,5 +1,8 @@
 # Development and project handoff
 
+Saved action review is implemented in `lib/action-review.mjs` and the central `NativeEngine.approve` path. Test with `node --test test/action-review.test.mjs test/pearl-ui.test.mjs test/setup-tools.test.mjs`, then `test/browser-actions.test.mjs` separately and the complete release test runner. Keep both policy snapshots, exact browser identities, denied-call replay protection and Stop/resource barriers. Test only disposable workspaces; a source edit does not change the operational Engine.
+
+
 ## Engine candidate verification
 
 Maintainers can plan and explicitly run exported Engine candidates with `scripts/verify-engine-candidate.mjs`, a separately prepared pinned Docker image and a new local receipt. This is operator-only; no Engine tool gains Docker access. See [Tool workshop](tool-workshop.md#operator-container-verification-source-only) for clean-image preparation, exact CLI flags, isolation policy and the real-container CI acceptance procedure. Do not build the image from live data or treat protocol-fixture success as Linux/container validation.

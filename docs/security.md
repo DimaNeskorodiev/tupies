@@ -1,5 +1,16 @@
 # Security and execution permissions · 0.5.0
 
+## Approve for me
+
+Bot Settings → General → Action review saves one of `auto`, `balanced`, or `strict` on the bot. New bots and old profiles without an explicit choice default to `auto`; saved Balanced/Strict choices are preserved. This is an owner preference replicated with the bot, not a model-supplied grant. Both the active task snapshot and current bot must say `auto` for an automatic decision. Existing task/room idle guards protect owner edits, and old checkpoints never acquire this authority implicitly.
+
+The closed action table in `lib/action-review.mjs` authorizes routine navigation/tabs, non-private form edits/selects, hover/movement keys, dialog dismissal, new playbooks, inert script registration and assigned search fallback through `NativeEngine.approve`. Verified native web links use direct navigation to their bound href instead of page click handlers (in the current tab). Model arguments, page labels, skill text and MCP read-only hints cannot add actions to this table. Browser identities, URL/SSRF validation, private-field handoff, capabilities, exact denials, Stop, Mission limits and no-replay rules still apply. `approval.automatic` is a receipt of policy review, not proof of execution or a reusable grant.
+
+Unknown effects require manual review. Generic buttons/submission, checkbox changes/dragging, uploads/downloads, accepting site dialogs, host commands/scripts/coding workers, deletion, protected configuration, all API/MCP calls, workshop reads/grants and team/schedule changes keep exact approvals. Catalog installs retain the separate owner-selected install policy. Ordinary private writes/exports and isolated workshop storage keep their existing non-Strict rules. Direct tool execution still needs its internal approved identity; only the Engine can make the automatic decision.
+
+This mode reduces interruptions, not website or code risk to zero: page loads and form input/change handlers can cause external effects, and search/navigation can disclose query data. It adds no model classifier or provider request. Existing descriptions below of exact approvals continue to describe the manual/high-risk path; the closed automatic exceptions above are the only additions.
+
+
 
 ## Prompt injection: Engine responsibility
 

@@ -11,7 +11,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitFor(predicate){const until=Date.now()+5000;while(Date.now()<until){const value=predicate();if(value)return value;await delay(5);}throw new Error('Search engine fixture timed out.');}
 async function fixture(t,args={integrationId:'search_fixture',query:'primary source',count:2}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-search-engine-')),store=await new Store(directory).init(),integrations=new Integrations(store),template=integrations.catalog().find(item=>item.id==='brave');
-  await store.mutate(state=>{state.connections=[{id:'provider_fixture',type:'custom',defaultModel:'test-model'}];state.integrations=[{...integrations.validate({...template,apiKey:'fixture-search-key'}),id:'search_fixture'}];for(const bot of state.bots){bot.connectionId='provider_fixture';bot.tools=['web','integrations'];bot.integrationIds=['search_fixture'];}});
+  await store.mutate(state=>{state.connections=[{id:'provider_fixture',type:'custom',defaultModel:'test-model'}];state.integrations=[{...integrations.validate({...template,apiKey:'fixture-search-key'}),id:'search_fixture'}];for(const bot of state.bots){bot.connectionId='provider_fixture';bot.approvalPolicy='balanced';bot.tools=['web','integrations'];bot.integrationIds=['search_fixture'];}});
   const dispatched=[],requests=[];integrations.request=async(integration,request)=>{dispatched.push({integrationId:integration.id,...request});return {data:{web:{results:[{url:'https://example.com/primary',title:'Primary source',description:'Discovery snippet.'}]},query:{more_results_available:false}}};};
   const publicReads=[];
   const engine=new NativeEngine(store,{integrations,runTimeout:5000,publicFetch:async(url,options)=>{publicReads.push({url,options});return {status:200,text:'<a class="result__a" href="https://example.com/primary">Primary source</a><div class="result__snippet">Discovery candidate.</div>'};},providers:{async complete(_connection,request){requests.push(request);return requests.length===1?{text:'',toolCalls:[{id:'search_call',name:'web_search',arguments:args}]}:{text:'The search returned discovery candidates; the source still needs reading.',toolCalls:[]};}}});
@@ -47,4 +47,20 @@ test('keyless DuckDuckGo is a Web read with no integration authority or approval
   f.engine.approve=async()=>{approvals++;throw new Error('A keyless Web read must not request integration approval.');};
   await f.engine.start('bot_atlas','Search DuckDuckGo.');await waitFor(()=>!isActive(f.store.state.runs.bot_atlas));
   const result=JSON.parse(f.requests[1].messages.findLast(message=>message.role==='tool').content);assert.equal(result.provider,'DuckDuckGo');assert.equal(result.results[0].url,'https://example.com/primary');assert.equal(approvals,0);assert.equal(f.dispatched.length,0);assert.equal(f.publicReads.length,1);assert.equal(new URL(f.publicReads[0].url).hostname,'html.duckduckgo.com');
+});
+
+
+test('Approve for me dispatches the assigned search once without an owner prompt',async t=>{
+  const f=await fixture(t);await f.store.mutate(state=>{state.bots[0].approvalPolicy='auto';});
+  const started=await f.engine.start('bot_atlas','Search the configured service.');await f.engine.tasks.get(started.id);
+  assert.equal(f.store.state.runs.bot_atlas.status,'completed');assert.equal(f.dispatched.length,1);
+  assert.equal(f.store.state.runs.bot_atlas.events.filter(event=>event.type==='approval.automatic').length,1);
+  assert.equal(f.store.state.runs.bot_atlas.events.some(event=>event.type==='approval.request'),false);
+});
+
+test('automatic search still refuses a changed credential identity before dispatch',async t=>{
+  const f=await fixture(t);await f.store.mutate(state=>{state.bots[0].approvalPolicy='auto';});
+  const event=f.engine.event.bind(f.engine);f.engine.event=async(context,type,details)=>{await event(context,type,details);if(type==='approval.automatic')await f.store.mutate(state=>{state.integrations[0].secret=f.store.seal('replacement-fixture');});};
+  const started=await f.engine.start('bot_atlas','Search the configured service.');await f.engine.tasks.get(started.id);
+  assert.equal(f.dispatched.length,0);assert.match(JSON.parse(f.requests[1].messages.findLast(message=>message.role==='tool').content).error,/changed after approval/);
 });
