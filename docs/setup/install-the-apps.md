@@ -4,7 +4,7 @@
 
 Use an **Apple Silicon Mac (M-series) with macOS 14 or later**. The complete Mac app includes Tupies Engine, Node.js and its libraries. You do not need Terminal, Xcode, Homebrew or Docker.
 
-**Beta status, 3 November 2026:** the first Apple Silicon package is Developer ID signed and Apple notarization is accepted. The GitHub prerelease is a draft while the colleague tests it on a clean Mac with their own provider. Public download is pending that acceptance. Use the final `Tupies.dmg`; `Tupies-UNSIGNED.dmg` remains an internal intermediate.
+**Beta 2, 4 November 2026:** [Download Tupies.dmg](https://github.com/DimaNeskorodiev/tupies/releases/download/v0.5.0-beta.2/Tupies.dmg). This build is Developer ID signed, Apple notarized and includes automatic updates. It remains an early beta; clean-Mac colleague acceptance and real-provider usefulness are still being checked. Use the final `Tupies.dmg`.
 
 1. Download **Tupies.dmg** from [Tupies Releases](https://github.com/DimaNeskorodiev/tupies/releases).
 2. Open it, drag **Tupies** into **Applications**, then eject the disk image.
@@ -23,7 +23,7 @@ Closing the window keeps Tupies running. **Quit (⌘Q)** stops the engine starte
 3. Download the new notarized disk image and replace Tupies in Applications.
 4. Open it again. Your saved connection, bots, chats and files should remain.
 
-The app and its bundled engine update together. Data lives separately in `~/Library/Application Support/Tupies/Engine`; do not delete this folder when replacing the app. Updates must retain the signing team and Keychain group. Older development/legacy installations need the [maintainer migration guide](../../apps/apple/README.md), not an unreviewed replacement. The existing beta DMG has no automatic updater. The next updater-enabled release adds **Check for Updates…** and automatic downloads with installation on safe quit; existing testers install it manually once. See [Automatic updates](../updates.md). Do not roll back by restoring old user data.
+The app and its bundled engine update together. Data lives separately in `~/Library/Application Support/Tupies/Engine`; do not delete this folder when replacing the app. Updates must retain the signing team and Keychain group. Older development/legacy installations need the [maintainer migration guide](../../apps/apple/README.md), not an unreviewed replacement. Versions before beta 2 need one manual replacement. Beta 2 adds **Tupies → Check for Updates…** and **Settings → Updates** for automatic checks/downloads and installation on safe quit. Existing testers install this updater-enabled build once; future releases use its signed feed. See [Automatic updates](../updates.md). Do not roll back by restoring old user data.
 
 If macOS reports an unverified developer or a damaged app, obtain the official notarized release and report its version. Do not disable Gatekeeper or strip quarantine attributes as an installation step.
 

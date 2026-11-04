@@ -53,4 +53,4 @@ Record separately:
 4. Record actual provider/model and human outcome without tokens, account identifiers or transcripts. The colleague uses their own provider. Never seed a package from the owner's workspace.
 5. Publish only the accepted DMG, checksum and truthful release notes with version/build, architecture and minimum macOS. Exclude private logs, account data and credentials. Disclose outstanding clean-Mac or real-provider acceptance; never claim those gates passed from synthetic checks.
 
-The first beta updates by replacing the app after active tasks finish and Tupies quits. Data stays outside the bundle; no automatic updater is included. Updating the owner's installed app/engine is a separate action.
+Versions before beta 2 update by replacing the app after active tasks finish and Tupies quits. Beta 2 includes signed Sparkle updates; existing testers replace the app once to enable them. Data stays outside the bundle. Operational installation and source rollback with current data retain their own preservation checks.
