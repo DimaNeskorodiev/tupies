@@ -61,7 +61,7 @@ test('a bot creates a new bot through the same checks as the bot API, after appr
   assert.equal(created.name,'Satoshi');assert.equal(created.title,'Crypto market watcher');assert.equal(created.color,'amber');assert.equal(created.icon,'companion:blue');
   assert.deepEqual(created.tools,DEFAULT_BOT_TOOLS);assert.equal(created.toolGroupsVersion,2);
   assert.equal(created.connectionId,'fixture-provider','a new bot uses the owner’s default provider');
-  assert.equal(created.approvalPolicy,'balanced');assert.deepEqual(created.integrationIds,[]);
+  assert.equal(created.approvalPolicy,'auto');assert.deepEqual(created.integrationIds,[]);
   assert.ok(store.state.activity.some(item=>item.type==='bot.created' && item.botId===created.id && item.source==='agent' && item.createdBy==='bot_atlas'));
   const listed=await tools.execute(atlas,'bots_list',{});
   assert.ok(listed.bots.some(item=>item.id===created.id && item.title==='Crypto market watcher'));

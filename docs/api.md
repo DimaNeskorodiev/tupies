@@ -1,5 +1,12 @@
 # Tupies HTTP API · 0.5.0
 
+## Bot action review
+
+`POST /api/bots` and `PATCH /api/bots/:id` accept `approvalPolicy: "auto" | "balanced" | "strict"`. New bots default to `auto` (Approve for me); omitted PATCH fields preserve the existing choice. Store initialization persists `auto` only for missing policies, preserving explicit choices. Authentication, CSRF/Origin and active-task edit guards apply. The bot preference is replicated normally; execution reviews and run receipts remain engine-local. Both current and snapshotted policy must be automatic; new settings do not loosen active tasks.
+
+Automatic decisions produce `approval.automatic` run events with tool/call identity, policy and reason, without a pending owner control. Manual controls retain all exact identities and add `review.riskReason` when automatic mode refuses a high-risk or unclassified action. Existing `once`, `deny` and bounded-read grant controls are unchanged. See [action review](security.md#approve-for-me).
+
+
 ## Tool workshop and improvements
 
 Owner bot settings accept the separate opt-in `engine_workshop` group. It provides task tools `engine_source_list`, `engine_source_read` and `engine_candidate_build`; setup tools cannot grant it. Candidates reuse the authenticated improvements review/export routes below. Workshop list items include bounded syntax/test counts with `fullSuite:false`; exact proposal detail includes the edit/test request and base hashes. No HTTP route applies or executes a candidate. See [Tool workshop](tool-workshop.md) for the complete schema and limits.

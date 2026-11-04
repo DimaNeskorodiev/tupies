@@ -1,5 +1,12 @@
 # Tupies Engine tool use
 
+## Action review
+
+Choose **Bot Settings → General → Action review**. **Approve for me** is the default and stays with the bot across chats, restarts and linked engines until changed. It handles ordinary private work plus playbook creation, inert script registration, configured search and routine browser interaction. **Balanced** reviews outside actions and commands; **Strict** also reviews private file changes. Explicit existing choices are preserved; profiles without a choice acquire the automatic default. Settings changes apply to new tasks.
+
+Automatic browser work includes navigation, native web links, tabs, non-private fill/type/select, hover, movement keys and dismissing dialogs. Links navigate directly to their verified href in the current tab without dispatching click handlers. Buttons/submissions, uploads/downloads, destructive changes, arbitrary code, API/MCP calls and changes to access or schedules still ask. Unclassified effects also ask. See [security](security.md#approve-for-me) for the exact boundary and remaining site-event risks. Task details distinguish automatic reviews; manual cards explain the risk. There is no added classifier model call.
+
+
 Tupies owns its model/tool loop. A bot can discover files, search text, read selected lines, edit exact text, run foreground or managed background commands, query real language servers and update a visible task plan. Tool results feed the next model turn. No Claude Code, Hermes Agent or host Codex installation is needed at runtime.
 
 ## Provider tool catalog
