@@ -1,5 +1,15 @@
 # Verification — Tupies Engine 0.5
 
+## Conservative Mission recognition — 4 November 2026 (source only)
+
+`lib/mission-intent.mjs` replaces the bare automatic `clear_goal` decision with bounded source evidence for at least three distinct requested outcomes, forward connected dependencies and a separate durable-process requirement. Admission rejects missing/invented/overlapping evidence before creating a Mission, retains accepted evidence in the origin and lets a refused task continue in the same chat. Explicit model intent needs an exact quote naming Mission mode; authenticated owner UI creation/promotion retains its existing behavior.
+
+The new unit and Engine cases deliberately submit mistaken `clear_goal` and `explicit` decisions for a sanitized Ukrainian Tupies/Cloudflare domain request; both create zero Missions and complete the same ordinary run, without independent Mission review. Positive cases cover an explicitly requested Mission and a substantive staged launch. Existing same-run adoption, first-step provenance, imported-source refusal, context fallback, Stop, evidence and recovery regressions remain in the suite.
+
+Publication candidate based on main `f661448`: official **Node22.23.4** passes **1,967/1,967 tests in187files** (91 sequential,1,876 at concurrency4), with zero failures, skips, cancellations or TODOs. All **386** checked code/test/package/UI hashes remain unchanged throughout verification. **171 syntax checks**, the22-row deterministic Mission evaluation and the30-page guide pass. This isolated candidate includes only Mission recognition changes; the earlier1,992-case combined-checkout diagnostic is separate. The guide is regenerated after final documentation; no operational Engine/native update is performed.
+
+The version2 deterministic Mission evaluation passes all22 rows, including15/15 intent agreements, zero activations among11 ordinary labels, two deliberately refused domain admissions and successful large-process admission. These are local synthetic mechanism checks, not real-model semantic classification or human usefulness measurements. No paid inference, real Cloudflare/account access, operational Engine restart, native installation or real-data mutation is included. Source publication verification is recorded separately from the earlier combined-checkout receipt. Installed Engine/native ownership is unchanged.
+
 ## Browser handoff recovery — 4 November 2026 (source only)
 
 The old handoff rejects an otherwise unchanged image when hidden verification bookkeeping changes during capture or before input. A new actual-Chrome regression reproduces that failure before the production edit, then verifies owner clicks in a cross-origin synthetic widget despite hidden token/telemetry updates. Rendered text, control identity/labels/destinations/state/layout/coverage, focus, document epochs and exact one-use handoff/view identities remain checked. The model approval path is unchanged. A single post-dispatch capture replaces the redundant read; capture loss reports `inputSent:true,viewUnavailable:true`, invalidates input controls and requires a fresh inspection without replay.
