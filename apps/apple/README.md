@@ -1,8 +1,21 @@
 # Tupies for iPhone, iPad and Mac
 
+## Automatic Mac updates — 4 November 2026 (source only)
+
+The macOS target pins Sparkle 2.10.1, embeds signed-feed/pre-extraction requirements and exposes Check for Updates plus opt-in automatic checks/downloads. Installation waits for draft readiness and an idle owned bundled Engine, verifies an encrypted stopped backup and blocks Engine relaunch until installation/cancellation resolves. The Mac reconnect bridge retains bounded unsent message/attachment drafts in memory across Engine reauthentication. Update preparation never sends them. Existing external engines retain their launcher. [Automatic updates](../../docs/updates.md) describes first manual bootstrap, keys, publication and remaining native/operational acceptance. iPhone distribution is unchanged.
+
+## Mac notarized beta (3 November 2026)
+
+Complete arm64/macOS14+ **0.5.0(12)** includes Engine, pinned Node22.23.4 and first-run guidance. App and DMG are Developer ID signed with the matching all-Mac Keychain profile; Apple notarization is **Accepted**, the ticket is stapled/validated and Gatekeeper accepts the image. Native data-protection Keychain/Secure Enclave create/reopen/sign/cleanup and signed packaged chat/PDF/relaunch/replacement pass on synthetic data. All22673signed-image files/links match. GitHub `v0.5.0-beta.1` is a draft; the colleague will perform independent clean-Mac native first launch, real-provider and manual-replacement acceptance. See the [user install guide](../../docs/setup/install-the-apps.md), [maintainer runbook](../../docs/macos-release.md) and [verification](../../docs/verification.md). Installed build11 and its operational Engine are unchanged.
+
 ## First-run guidance — 3 November 2026 (source only)
 
 The welcome view now introduces Tupies, Chief of Staff and Ops before the engine choice. **Use this Mac → Start my engine** explains the included engine, the following model connection and the requirement to keep the Mac awake for background work. The connected Engine supplies the resumable [getting-started guide](../../docs/onboarding.md). Only presentation changes: startup, pairing, keys, permissions and existing connections retain their current behavior. Unsigned macOS and iOS Simulator compile checks pass; native visual/physical-device acceptance and installation are not included in this source checkpoint.
+
+## Mac update — 3 November 2026
+
+Installed Mac app is **0.5.0 (11)**, built from isolated GitHub main `421bf89` with `CURRENT_PROJECT_VERSION=11`; project defaults remain10. The Mac operational Engine and 1,502-file bundled fallback source set use that commit with rebuilt web assets/guide/Darwin notices. Existing signing certificate, explicit Keychain scope, exact embedded profile, both saved connections and notification preferences are preserved. No profile installation/refresh/change, iPhone update or Home deployment occurred. Build10 is retained for rollback. Engine1913tests/168syntax, twelve disposable Chrome checks, Swift logic, strict signature and signed runtime/document smoke pass. The installed app was relaunched and process/version/preferences verified; installed-window visual acceptance is unavailable through the stale/ambiguous UI resolver. See [project context](../../PROJECT_CONTEXT.md), [verification](../../docs/verification.md) and ignored local ownership handoff. Older checkpoints below remain historical.
+
 
 ## Installed GitHub release — 30 October 2026
 
@@ -223,7 +236,7 @@ node scripts/package-apple-engine.mjs \
   --output /path/to/new-apple-resources --arch arm64
 ```
 
-The output must not already exist. Its `Engine`, `Runtime` and `payload-manifest.json` belong inside the built app's Resources folder before final signing. The explicit checksum file must also agree with pinned official release digests in the builder. It uses a trusted installed npm CLI (or explicit `--npm-cli`) through the verified packaged Node, runs locked `npm ci --omit=dev --ignore-scripts` with an isolated home/config, then starts the packaged engine, creates a PDF and verifies an approved named `node` command uses the packaged executable, all on temporary data. The three operational scripts `pair.mjs`, `link-engine.mjs` and `runtime-backup.mjs` are included; evaluation and test scripts are excluded. Operational data, `.env`, installed source dependencies, tests, prototypes and symlinks from the source allowlist do not enter the payload.
+The output must not already exist. Its `Engine`, `Runtime` and `payload-manifest.json` belong inside the built app's Resources folder before final signing. The explicit checksum file must also agree with pinned official release digests in the builder. It uses a trusted installed npm CLI (or explicit `--npm-cli`) through the verified packaged Node, runs locked `npm ci --omit=dev --ignore-scripts` with an isolated home/config, then starts the packaged engine, creates a PDF and verifies an approved named `node` command uses the packaged executable, all on temporary data. Operational scripts `pair.mjs`, `link-engine.mjs`, `runtime-backup.mjs`, `prepare-mac-update.mjs` and `update-backup.mjs` are included; evaluation and test scripts are excluded. Operational data, `.env`, installed source dependencies, tests, prototypes and symlinks from the source allowlist do not enter the payload.
 
 For the included engine, code stays in the app and data lives in `~/Library/Application Support/Tupies/Engine/data`. A private `managed-engine-v1.json` marker identifies this layout; an existing unmarked data directory or symbolic link is refused rather than adopted or reset. The app listens only on loopback, normally port 4310, and keeps the existing `~/Library/Application Support/Hermes Studio/local-engine.json` discovery identity. An already-running engine, including the owner's 4311 installation, wins over starting the included engine. Explicit saved developer paths retain their existing `.env` and data behavior. Advanced engine settings can return to the included engine. Release builds missing a payload fail with a readable error; source Debug builds may use the existing developer checkout fallback.
 

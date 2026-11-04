@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the Tupies Engine update channel
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=30min
+RandomizedDelaySec=5min
+Unit=tupies-update.service
+
+[Install]
+WantedBy=timers.target

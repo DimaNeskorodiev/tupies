@@ -1,0 +1,33 @@
+Tupies for Mac — quick start
+
+Apple Silicon (M-series), macOS 14 or later.
+
+1. Download the notarized Tupies.dmg from the official Tupies release.
+2. Open it and drag Tupies into Applications. Eject the disk image.
+3. Open Tupies from Applications. Choose Use this Mac → Start my engine.
+4. Follow Continue setup: connect your own eligible ChatGPT / Codex account,
+   provider API key, or separately configured local model.
+5. Meet Chief of Staff and Ops, choose an example, and press Send.
+
+No Terminal, Xcode, Homebrew, Docker or separate Node.js installation is needed.
+Cloud models need internet access and use your provider's limits and billing.
+Browser actions additionally require Chrome, Chromium or Edge on this Mac.
+
+Your bots, chats and files belong to your own workspace on this Mac.
+Closing the window keeps Tupies running. Quit (Command-Q) stops the engine
+started by Tupies. Keep the Mac awake for background tasks and routines.
+
+Updates: finish or stop active tasks, quit Tupies, then replace the app in
+Applications with the new notarized version. Reopen it. Your workspace lives
+separately in ~/Library/Application Support/Tupies/Engine and stays in place.
+Do not remove that folder. Keep a protected backup before updating; see
+Settings → Help → Backups & operations. There is no automatic updater yet.
+
+If macOS says the developer cannot be verified or the app is damaged, stop
+and obtain the official notarized release. Do not disable Gatekeeper.
+
+Downloads: https://github.com/DimaNeskorodiev/tupies/releases
+Support: https://github.com/DimaNeskorodiev/tupies/issues
+
+Tupies-UNSIGNED.dmg is an internal packaging candidate, not a release for
+normal installation. It has not passed the distribution gates.

@@ -61,6 +61,11 @@ let providerCatalog=[], providerFeatures={}, loginPollTimer=null;
 const offeredDefaultModels=new Set();
 let importedSkillFiles=null;
 const composerAttachments=new Map(), attachmentUploads=new Set();
+const updateDraftBridge=window.StudioUpdateDrafts?.create({window,getAttachments:()=>composerAttachments,setAttachments:(id,files)=>composerAttachments.set(id,files),onRestore:()=>{if(activeBot)refreshComposerAttachments(activeBot);}}) || {capture:()=>null,restore:()=>false,clear:()=>{}};
+window.tupiesCaptureDrafts=updateDraftBridge.capture;
+window.tupiesRestoreDrafts=updateDraftBridge.restore;
+// Presentation-only readiness. This can postpone a native update; it never authorizes Engine actions.
+window.tupiesReadyForAppUpdate=()=>!attachmentUploads.size && ![...composerAttachments.values()].some(items=>items.length) && !pendingBotDraft && !document.querySelector('dialog[open]') && ![...document.querySelectorAll('textarea, [contenteditable="true"]')].some(field=>(field.value ?? field.textContent ?? '').trim()) && ![...document.querySelectorAll('input')].some(field=>field.type==='file'?field.files?.length:!['checkbox','radio','button','submit','hidden','search'].includes(field.type)&&field.value!==field.defaultValue) && !window.StudioMobile?.hasDrafts?.();
 // Whether each bot's current model is shown attached images, checked when an image is attached.
 const imageSight=new Map();const imageFile=/\.(?:png|jpe?g|webp)$/i;
 let data = {...initialState}, auth = null, search = '', filter = 'all', chat = {messages:[],run:null}, activeBot = null, messageRequest = 0, pollBusy = false, roomChat={messages:[],drive:null,activeRun:null};
@@ -293,6 +298,7 @@ async function start(){
   }catch(error){if(!current())return;bootPending=false;tellApp({type:'chrome',ownsChrome:false});$('#app').innerHTML=`<main class="loading-screen">${brandMark()}<p>${esc(errorText(error))}</p><button class="secondary-button" data-action="retry">Try again</button></main>`;}
 }
 function renderAuth(){
+  if(!auth?.authenticated)updateDraftBridge.clear();
   if(document.querySelector('.browser-control-panel'))closeDialog();
   window.StudioBrowser?.reset();
   bootPending=false;sendSessionGeneration++;window.StudioMissions?.reset();window.StudioSkills?.reset();window.TupiesCoding?.reset();window.StudioStudyLearning?.clear();pendingSends.clear();pendingSearchMessage=null;pendingBotDraft=null;conversationSearchRequest++;conversationRouteResolution=null;

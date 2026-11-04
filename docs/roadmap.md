@@ -1,5 +1,14 @@
 # Product roadmap
 
+## Automatic Mac/VPS updates — 4 November 2026 (source only)
+
+Implemented Sparkle integration, idle maintenance protocol, signed Engine bundles, encrypted stopped backup verification, same-epoch code rollback, guarded activation and release-event publication workflows. Remaining: reviewed first bootstrap, GitHub signing environments/feeds, actual VPS/systemd and two-notarized-build Mac updater acceptance. Existing operational ownership is unchanged. See [updates](updates.md).
+
+## Mac release checkpoint — 3 November 2026
+
+Installed GitHub main `421bf89` on the Mac Engine and Mac app fallback, with signed app0.5.0(11), preserved connections/security/configuration and an authenticated encrypted stopped backup/offline restore. The exact candidate passes1913tests/168syntax checks, targeted web build, disposable browser and signed native-runtime smoke. Home and iPhone were not changed. Installed native visual acceptance remains open because UI automation resolves the legacy/ambiguous app identity. This deployment does not close deferred Mission adapters/workers, real-model quality or distribution gates. See [verification](verification.md) and [project context](../PROJECT_CONTEXT.md).
+
+
 ## Mission (1 November 2026, proposed)
 
 The owner requested **Mission** as a separate main tab for goals, verified progress, participants, current work and results. The same Mission can start in that tab or from direct owner chat through explicit intent or conservative recognition of a clear autonomous goal. Promoting an active chat task attaches its existing run and evidence; it must not restart the request or duplicate effects.
