@@ -29,7 +29,10 @@ test('linked idle sync long polls do not starve updates or resume after reservat
  const pairing=hub.app.sync.devices.createPairing({kind:'engine',baseUrl:hub.url});await replica.app.sync.connect(pairing.link);
  const until=Date.now()+8000;while(!hub.app.sync.waiters.size&&Date.now()<until)await new Promise(resolve=>setTimeout(resolve,20));
  assert.ok(hub.app.sync.waiters.size,'real authenticated engine exchange is waiting');
- const claim=await updateControl(hub.directory,'update-claim');
+ // Pairing may still be committing initial sync writes when its first read waiter appears.
+ // Retry admission until that real bootstrap activity settles; a live long poll stays open.
+ let claim;const idleDeadline=Date.now()+8000;
+ do {claim=await updateControl(hub.directory,'update-claim');if(!claim.ready)await new Promise(resolve=>setTimeout(resolve,20));} while(!claim.ready&&Date.now()<idleDeadline);
  try {
   assert.equal(claim.ready,true,'a settled read wait must not keep an otherwise idle home server busy');
   for(const wake of [...hub.app.sync.waiters])wake();
