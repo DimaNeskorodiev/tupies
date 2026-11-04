@@ -142,3 +142,9 @@ test('retry cancels stale expiry attention and an actual final reply remains the
  const f=await fixture(t,{graceMs:8000});await f.store.mutate(expire);await f.notifications.flush();await f.store.mutate(state=>{Object.assign(state.missions[MISSION],{state:'queued',outcome:null,stopRequested:false,expiryRequested:false});});f.advance(8001);await f.notifications.flush();assert.equal(f.sent.length,0);assert.equal(f.notifications.state.outbox[0].status,'cancelled');
  await f.store.mutate(state=>{const m=expire(state);m.attempt=1;});await f.notifications.flush();await f.store.mutate(state=>{state.messages[BOT]=[{id:'expired_owner',role:'user',source:'mission',missionId:MISSION,runId:'run_mission',createdAt:new Date(BASE+8001).toISOString()},{id:'expired_final',role:'assistant',runId:'run_mission',content:'The deadline expired; saved partial work remains.',createdAt:new Date(BASE+8001).toISOString()}];});assert.equal(currentMissionAttention(f.store.state,MISSION),null);await f.notifications.flush();f.advance(8001);await f.notifications.flush();assert.equal(f.sent.length,1);assert.equal(f.sent[0].payload.aps.alert.body,'The deadline expired; saved partial work remains.');
 });
+
+test('effort exhaustion is actionable attention while an ordinary owner pause stays quiet',async t=>{
+ const f=await fixture(t);await f.store.mutate(state=>{const mission=install(state,'blocker');Object.assign(mission,{state:'paused',outcome:'budget_exhausted',pauseRequested:true,waitCondition:null,effort:{exhausted:true}});state.runs[BOT].status='interrupted';});
+ const attention=currentMissionAttention(f.store.state,MISSION);assert.equal(attention.kind,'blocker');await f.notifications.flush();assert.ok(currentMissionAttention(f.store.state,MISSION));
+ await f.store.mutate(state=>{const mission=state.missions[MISSION];mission.effort.exhausted=false;mission.outcome=null;});assert.equal(currentMissionAttention(f.store.state,MISSION),null);
+});

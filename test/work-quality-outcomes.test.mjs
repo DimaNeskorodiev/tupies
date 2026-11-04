@@ -22,6 +22,39 @@ const source=(id,callId=id)=>({id,kind:'source_read',callId});
 const teammate=delegationId=>({id:'teammate',kind:'teammate_completed',delegationId});
 const verifiedJob=()=>({id:'delegation_fixture',botId:'bot_scout',callId:'start_fixture',status:'completed',childRunId:'child_fixture',result:{botId:'bot_scout',runId:'child_fixture',status:'completed',deliverable:{status:'completed'}}});
 
+async function historicalObservation(h,{sessionId='bot_atlas',content='Exact historical observation. '.repeat(500)}={}){
+  await h.store.mutate(state=>{
+    state.runHistory ||= {};state.conversations ||= {};
+    (state.runHistory.bot_atlas ||= []).push({id:'historical_run',source:'chat',sessionId,status:'completed',workRecords:[{callId:'historical_call',tool:'http_fetch',status:'succeeded',resultDigest:'a'.repeat(64)}]});
+    (state.messages.bot_atlas ||= []).push({id:'historical_owner',role:'user',runId:'historical_run',sessionId,content:'Earlier source research.'});
+    state.conversations[sessionId]=[{role:'tool',runId:'historical_run',tool_call_id:'historical_call',content}];
+  });
+}
+
+test('historical tool observations are paged from exact scoped storage without replay',async t=>{
+  const h=await fixture(t);await historicalObservation(h);
+  const args={runId:'historical_run',resultCallId:'historical_call'};
+  const first=await executeQualityTool(h.engine,h.context,'work_records_read',args);
+  assert.equal(first.content.length,6000);assert.equal(first.nextResultOffset,6000);assert.match(first.notice,/No action was dispatched/);
+  const next=await executeQualityTool(h.engine,h.context,'work_records_read',{...args,resultOffset:first.nextResultOffset,resultVersion:first.resultVersion});
+  assert.equal(next.resultOffset,6000);assert.equal(next.status,'succeeded');assert.equal(h.run().workRecords.length,0);
+  await assert.rejects(executeQualityTool(h.engine,h.context,'work_records_read',{...args,resultOffset:6000}),error=>error.status===409);
+});
+
+test('historical observation pages reject changed bytes and explicit missing/expired content',async t=>{
+  const h=await fixture(t);await historicalObservation(h);
+  const args={runId:'historical_run',resultCallId:'historical_call'},first=await executeQualityTool(h.engine,h.context,'work_records_read',args);
+  await h.store.mutate(state=>{state.conversations.bot_atlas[0].content+='changed';});
+  await assert.rejects(executeQualityTool(h.engine,h.context,'work_records_read',{...args,resultOffset:6000,resultVersion:first.resultVersion}),error=>error.status===409);
+  await h.store.mutate(state=>{state.conversations.bot_atlas=[];});
+  await assert.rejects(executeQualityTool(h.engine,h.context,'work_records_read',args),/missing, expired/);
+});
+
+for(const sessionId of ['bot_atlas--telegram-private','bot_scout'])test(`historical payload scope refuses ${sessionId}`,async t=>{
+  const h=await fixture(t);await historicalObservation(h,{sessionId,content:'Private synthetic history.'});
+  await assert.rejects(executeQualityTool(h.engine,h.context,'work_records_read',{runId:'historical_run',resultCallId:'historical_call'}),error=>error.status===404);
+});
+
 test('script inventories prove their exact observations while script execution proves only a real completed command',async t=>{
   const h=await fixture(t),inventory=['workspace_structure','scripts_list','scripts_inspect'];
   for(const name of inventory)await recordWork(h.engine,h.context,call(name,name),{items:[]});
