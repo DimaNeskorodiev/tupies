@@ -24,8 +24,9 @@ async function fixture(t,type){
   if(type==='chatgpt')providers.headers=async()=>({Authorization:'Bearer synthetic-catalog-key'});
   await store.mutate(state=>{state.connections.push(connection);Object.assign(state.bots[0],{connectionId:connection.id,model:'fixture-model',tools:[...TOOL_GROUPS]});});
   const engine=new NativeEngine(store,{providers,executionMode:'bounded'});
-  // Availability only shapes the catalog. These tests never launch a browser or coding process.
+  // Availability only shapes the catalog. These tests never launch browser, desktop or coding processes.
   engine.browsers.available=()=>true;engine.localCoding.available=()=>true;
+  engine.desktop.available=()=>true;engine.desktop.ready=()=>true;engine.desktop.config.apps=[{id:'desktop_fixture',botIds:[store.state.bots[0].id]}];
   t.after(async()=>{await engine.close();await providers.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await rm(directory,{recursive:true,force:true});});
   const offered=(body=requests.at(-1))=>{
     const tools=type==='chatgpt'?body.tools[0].tools:body.tools;
@@ -37,7 +38,7 @@ async function fixture(t,type){
 
 test('complete native chat and Mission catalogs reach every provider protocol without truncation',async t=>{
   for(const type of protocols)await t.test(type,async t=>{
-    const f=await fixture(t,type),bot=f.store.state.bots[0],runId='catalog_run';
+    const f=await fixture(t,type),bot=f.store.state.bots[0],runId='catalog_run';await f.engine.desktop.admit(runId,bot.id);
     for(const mission of [false,true])for(const images of [false,true])for(const coding of [false,true]){
       f.engine.localCoding.available=()=>coding;
       f.store.state.runs[bot.id]={id:runId,botId:bot.id,status:'completed',...(mission?{missionId:'catalog_mission'}:{})};

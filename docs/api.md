@@ -417,3 +417,7 @@ Balanced allows requested private knowledge publication; Strict needs the exact 
 ## Onboarding presentation
 
 `GET /api/state` includes `botTemplates`, an engine-local `onboarding` preference (null for older workspaces), and derived `onboardingProgress.firstReply`. `PATCH /api/onboarding` accepts exactly `{dismissed: boolean}` under the normal owner session/CSRF rules. It changes only the guidance preference. It does not create bots, run tasks, configure providers or grant tools. Existing bot and provider endpoints handle those explicit owner actions.
+
+## Local Mac desktop setup
+
+`GET /api/desktop` returns local configuration/readiness metadata; non-local proxy-aware clients receive only unavailable metadata. `PUT /api/desktop` accepts `{enabled, executable, apps:[{name,botIds}]}` and pins the owner-selected agent-desktop driver and helper. `POST /api/desktop/check` accepts `{}` and checks actual driver/OS permission status. Normal workspace authentication, CSRF and Origin/Host checks apply, with local-client enforcement for configuration/checks. No route accepts arbitrary commands or dispatches desktop input; model actions use the task-bound Engine tools and exact approval path. See [Desktop on this Mac](desktop.md).

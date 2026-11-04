@@ -213,7 +213,7 @@ Shipped in 0.5: home-server sync between engines, device pairing with P-256 keys
 ## Device actions
 
 - Retain Tupies Engine as the independent core and formalize a versioned client API.
-- Integrate OS permissions and declared Mac/iOS actions through a separate device worker. Model text cannot grant itself device access.
+- Local Mac source now includes a pinned agent-desktop adapter, application/bot assignments, exact action review, result verification, Stop and engine-local restart receipts; see [Desktop on this Mac](desktop.md). Remote Mac and iOS device-worker dispatch remains future work. Model text cannot grant itself device access.
 - Design screen capture/streaming and action review as explicit capabilities; do not expose general remote shell access as a substitute for a device protocol.
 
 ## Operational maturity
