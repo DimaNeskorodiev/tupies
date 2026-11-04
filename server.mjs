@@ -228,12 +228,26 @@ export async function createStudioServer(options={}) {
     const key=addressBucket(access.client(req));
     ensure(attempts.count(key)<10,429,'Too many sign-in attempts. Wait 15 minutes.');attempts.add(key,15*60*1000);
   }
+  // Only a verified sync exchange's settled read wait may leave the in-flight count.
+  // It must reacquire admission before doing any post-wait work.
+  function trackUpdateRequest(res) {
+    maintenance.assertAdmission();updateWrites++;
+    let counted=true,busy=true;
+    const settled=()=>{if(counted){counted=false;if(busy)updateWrites--;}};
+    res.once('finish',settled);res.once('close',settled);
+    return async wait=>{
+      if(counted&&busy){busy=false;updateWrites--;}
+      try {return await wait();}
+      finally {maintenance.assertAdmission();if(counted&&!busy){busy=true;updateWrites++;}}
+    };
+  }
   const handler=async(req,res)=>{
     headers(res);
     try {
       verifyHost(req);verifyOrigin(req);
       const url=new URL(req.url,`http://${req.headers.host}`),pathname=url.pathname;
       const method=req.method;
+      if(method==='POST'&&['/api/pair','/api/device/session','/api/setup','/api/login'].includes(pathname)||method==='GET'&&['/auth/device','/auth/callback'].includes(pathname))trackUpdateRequest(res);
       if(method==='GET' && pathname==='/auth/callback'){await oauthCallback(req,res,url,providers);return;}
       if(await syncPublicApi(req,res,url,{sync,body,json,login,rateLimit,access}))return;
       if(method==='GET' && pathname==='/api/auth') {
@@ -264,14 +278,10 @@ export async function createStudioServer(options={}) {
       }
       if(pathname.startsWith('/api/')) {
         const session=auth(req,!['GET','HEAD'].includes(method));
-        {
-          maintenance.assertAdmission();updateWrites++;
-          let counted=true;const settled=()=>{if(counted){counted=false;updateWrites--;}};
-          res.once('finish',settled);res.once('close',settled);
-        }
+        const idleUpdateWait=trackUpdateRequest(res);
         ensure(session.kind!=='engine' || isEngineRoute(pathname),403,'Linked engines can only use sync routes.');
         const requestOrigin=publicOrigin && req.headers.host===new URL(publicOrigin).host ? publicOrigin : `${scheme}://${req.headers.host}`;
-        if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access}))return;
+        if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access,idleUpdateWait}))return;
         if(await notificationsApi(req,res,url,{session,notifications,body,json}))return;
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
         if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),sync:sync.summary(),browser:runtime.browsers.status()});
