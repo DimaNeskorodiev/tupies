@@ -75,6 +75,7 @@ final class LocalEngineController: ObservableObject {
     @Published private(set) var logLines: [String] = []
     @Published private(set) var ownsProcess = false
     @Published private(set) var usesBundledEngine = false
+    @Published private(set) var preparingAppUpdate = false
     @Published var studioFolder: String {
         didSet {
             if !selectingBundledEngine { UserDefaults.standard.set(studioFolder, forKey: Keys.folder); usesBundledEngine = false }
@@ -272,6 +273,7 @@ final class LocalEngineController: ObservableObject {
     /// Starts `node --env-file-if-exists=.env server.mjs` in the Tupies folder, unless an
     /// engine already answers — this never starts a second engine.
     func start(expectedConnection: Connection? = nil, extra: [URL] = [], bundledPort: Int? = nil) async throws {
+        guard !preparingAppUpdate && !MacUpdates.shared.blocksEngineStart else { throw MacUpdateError.postponed("Tupies is preparing an update. Wait for it to finish.") }
         if let expected = expectedConnection {
             if try await checkExpected(expected) {
                 state = .running(expected.baseURL)
@@ -372,6 +374,42 @@ final class LocalEngineController: ObservableObject {
         }
         throw LocalEngineError.timedOut
     }
+
+    /// Stop only our managed bundled process, then verify an encrypted complete data backup.
+    func prepareForAppUpdate() async throws {
+        guard !preparingAppUpdate else { throw MacUpdateError.postponed("An update is already being prepared.") }
+        guard usesBundledEngine, let payload = bundledPayload else {
+            if ownsProcess && isProcessRunning { throw MacUpdateError.postponed("Stop the developer Engine before updating Tupies.") }
+            return
+        }
+        guard FileManager.default.fileExists(atPath: payload.dataDirectory.appendingPathComponent("state.json").path) else { return }
+        preparingAppUpdate = true
+        var verified = false
+        defer { if !verified { preparingAppUpdate = false } }
+        let ownedPID = ownsProcess && isProcessRunning ? process?.processIdentifier ?? 0 : 0
+        let executable = payload.nodeExecutable
+        let script = payload.engineDirectory.appendingPathComponent("scripts/prepare-mac-update.mjs")
+        let support = payload.supportDirectory.deletingLastPathComponent()
+        let arguments = [script.path, "--data", payload.dataDirectory.path, "--pid", String(ownedPID),
+                         "--backup-dir", support.appendingPathComponent("UpdateBackups").path,
+                         "--key-file", support.appendingPathComponent("update-backup.key").path]
+        let environment = Self.childEnvironment(nodeDirectory: executable.deletingLastPathComponent().path, bundled: true)
+        try await Task.detached(priority: .utility) {
+            let helper = Process(), output = Pipe()
+            helper.executableURL = executable; helper.arguments = arguments; helper.environment = environment
+            helper.currentDirectoryURL = script.deletingLastPathComponent()
+            helper.standardOutput = FileHandle.nullDevice; helper.standardError = output
+            try helper.run()
+            let message = output.fileHandleForReading.readDataToEndOfFile()
+            helper.waitUntilExit()
+            guard helper.terminationStatus == 0 else {
+                throw MacUpdateError.postponed(String(data: message.prefix(4096), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Couldn’t verify the local Engine backup. The update was postponed.")
+            }
+        }.value
+        verified = true
+    }
+
+    func cancelAppUpdatePreparation() { preparingAppUpdate = false }
 
     /// Stops the engine only if this app started it.
     func stop() {

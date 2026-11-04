@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        4853A0030000000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 4853A0030000000000000002; platformFilter = macos; };
         4853A0020000000000000002 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 4853A0020000000000000001; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -43,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                4853A0030000000000000001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +104,7 @@
 			);
 			name = Tupies;
 			packageProductDependencies = (
+                4853A0030000000000000002 /* Sparkle */,
 			);
 			productName = Tupies;
 			productReference = 4853A0010000000000000001 /* Tupies.app */;
@@ -137,6 +140,7 @@
 			mainGroup = 4853A0010000000000000030;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+            packageReferences = (4853A0030000000000000003 /* Sparkle */, );
 			productRefGroup = 4853A0010000000000000031 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -172,6 +176,14 @@
 /* Begin PBXTargetDependency section */
         4853A0020000000000000004 = {isa = PBXTargetDependency; platformFilter = ios; target = 4853A0020000000000000040; targetProxy = 4853A0020000000000000003; };
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+        4853A0030000000000000003 /* Sparkle */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/sparkle-project/Sparkle"; requirement = {kind = exactVersion; version = 2.10.1; }; };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        4853A0030000000000000002 /* Sparkle */ = {isa = XCSwiftPackageProductDependency; package = 4853A0030000000000000003; productName = Sparkle; };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4853A0010000000000000070 /* Debug */ = {
@@ -322,6 +334,8 @@
 				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.tupies.app;
 				TUPIES_REQUIRE_TRANSFER = NO;
+                TUPIES_UPDATE_FEED_URL = "https://github.com/DimaNeskorodiev/tupies/releases/download/update-feeds/mac-beta.xml";
+                TUPIES_UPDATE_PUBLIC_KEY = "3k7SrHFMVn7VroVbE6DigYlkFIFhU6m5s+YLNUcs4B8=";
 				PRODUCT_MODULE_NAME = Tupies;
 				PRODUCT_NAME = "Tupies";
 				SDKROOT = auto;
@@ -369,6 +383,8 @@
 				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.tupies.app;
 				TUPIES_REQUIRE_TRANSFER = NO;
+                TUPIES_UPDATE_FEED_URL = "https://github.com/DimaNeskorodiev/tupies/releases/download/update-feeds/mac-beta.xml";
+                TUPIES_UPDATE_PUBLIC_KEY = "3k7SrHFMVn7VroVbE6DigYlkFIFhU6m5s+YLNUcs4B8=";
 				PRODUCT_MODULE_NAME = Tupies;
 				PRODUCT_NAME = "Tupies";
 				SDKROOT = auto;

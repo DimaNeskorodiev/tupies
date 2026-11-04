@@ -19,6 +19,7 @@ final class AppRuntime: ObservableObject {
         #if os(macOS)
         local = LocalEngineController.shared
         AppLifecycle.localEngine = local
+        AppLifecycle.connectionStore = store
         #endif
     }
 }
@@ -165,5 +166,6 @@ struct PairingTransferView: View {
 @MainActor
 enum AppLifecycle {
     static weak var localEngine: LocalEngineController?
+    static weak var connectionStore: ConnectionStore?
 }
 #endif

@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Used only by the macOS Sparkle integration. iOS does not link Sparkle. -->
+    <key>SUFeedURL</key><string>$(TUPIES_UPDATE_FEED_URL)</string>
+    <key>SUPublicEDKey</key><string>$(TUPIES_UPDATE_PUBLIC_KEY)</string>
+    <key>SURequireSignedFeed</key><true/>
+    <key>SUVerifyUpdateBeforeExtraction</key><true/>
+    <key>SUEnableInstallerLauncherService</key><true/>
+    <key>SUScheduledCheckInterval</key><integer>3600</integer>
     <key>NSUserActivityTypes</key><array><string>INSendMessageIntent</string></array>
     <key>TupiesKeychainGroup</key><string>$(AppIdentifierPrefix)dev.tupies.app</string>
     <key>TupiesLegacyKeychainGroup</key><string>$(AppIdentifierPrefix)dev.hermesstudio.app</string>
