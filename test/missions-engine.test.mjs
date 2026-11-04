@@ -274,16 +274,35 @@ for (const fetched of [true, false]) test(`research review receives ${fetched ? 
 });
 
 for (const intent of ['explicit', 'clear_goal']) test(`first-step ${intent} owner intent adopts the real owner message once`, async t => {
+  const process = 'Run the launch as a staged process with review checkpoints.';
+  const outcomes = ['Produce a market research report.', 'Build a release candidate using the report.', 'Deliver a verified rollout package using the candidate.'];
+  const goal = intent === 'explicit' ? 'Create a Mission to answer this concrete synthetic goal.' : [process, ...outcomes].join(' ');
   const h = await fixture(t, (request, turn) => {
     const context = missionContext(request);
-    if (turn === 1) return tools(call('adopt', 'mission_start', { intent, ownerMessageId: context.ownerMessageId }));
+    if (turn === 1) return tools(call('adopt', 'mission_start', { intent, ownerMessageId: context.ownerMessageId, ...(intent === 'explicit' ? { explicitRequest: goal } : { scope: { outcomes: outcomes.map((quote, index) => ({ quote, kind: 'deliverable', dependsOn: index ? [index - 1] : [] })), process: { kind: 'staged_execution', quote: process } } }) }));
     if (turn === 2) return tools(call('criteria', 'mission_contract_set', { requirements: [requirement(context, 'answer', { kind: 'rubric', rubric: 'Answer the owner goal with explicit limitations.', rubricVersion: 'answer-v1' })] }));
     return answer('Completed the synthetic owner goal with explicit limitations.');
   });
-  const run = await h.engine.start(BOT, intent === 'explicit' ? 'Create a Mission to answer this concrete synthetic goal.' : 'Carry this concrete research goal through its stages to a verified final answer.');
+  const run = await h.engine.start(BOT, goal);
   await h.settled(); const missions = Object.values(h.store.state.missions || {});
   assert.equal(missions.length, 1); assert.equal(missions[0].origin.intent, intent); assert.equal(missions[0].episodeRefs[0].runId, run.id);
+  assert.equal(missions[0].origin.admission.intent, intent);
   assert.equal(missions[0].outcome, 'achieved', missions[0].reason);
+});
+
+for (const intent of ['clear_goal', 'explicit']) test(`a mistaken ${intent} decision for domain research is refused and the same chat continues`, async t => {
+  const goal = 'Я зараз шукаю домен для Tupies. Пошукай тут https://dash.cloudflare.com/domains/registrations/purchase?query=tupies який домен краще підійде.';
+  const h = await fixture(t, (request, turn) => {
+    if (turn === 1) return tools(call('wrong_adoption', 'mission_start', { intent, ownerMessageId: missionContext(request).ownerMessageId, ...(intent === 'explicit' ? { explicitRequest: goal } : {}) }));
+    assert.equal(request.tools.some(tool => tool.name === 'mission_start'), false, 'refused admission does not repeatedly offer promotion');
+    return answer('A normal domain comparison would be returned here; this fixture uses no real Cloudflare account.');
+  });
+  const run = await h.engine.start(BOT, goal); await h.settled();
+  assert.equal(Object.keys(h.store.state.missions || {}).length, 0);
+  assert.equal(h.store.state.runs[BOT].id, run.id); assert.equal(h.store.state.runs[BOT].status, 'completed');
+  assert.equal(h.reviewRequests.length, 0); assert.equal(h.requests.length, 2);
+  const refusal = h.store.state.runs[BOT].workRecords.find(row => row.callId === 'wrong_adoption');
+  assert.equal(refusal.status, 'failed'); assert.match(refusal.error, /ordinary chat/);
 });
 
 for (const prompt of ['Do not create a Mission; answer this in ordinary chat.', 'What does “create a Mission” mean?', 'If someone said “Create a Mission to research this,” what would happen?', 'Only give me a plan for a possible Mission.']) test(`ordinary intent fixture preserves owner chat: ${prompt}`, async t => {
