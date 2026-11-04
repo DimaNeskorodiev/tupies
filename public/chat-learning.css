@@ -1,0 +1,22 @@
+/* Quiet, finite save acknowledgements. Text and links remain without motion. */
+.chat-learning{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 20px 44px;min-width:0;max-width:calc(100% - 44px)}
+.learning-chip{--save-accent:var(--rich-teal,#367b72);position:relative;display:inline-flex;align-items:center;gap:10px;min-height:52px;min-width:0;max-width:min(100%,310px);padding:9px 12px;border:1px solid color-mix(in srgb,var(--save-accent) 20%,transparent);border-radius:16px;background:color-mix(in srgb,var(--save-accent) 5%,var(--rich-surface,#f5f9ff));color:var(--rich-ink,var(--ink,#25344b));text-decoration:none;box-shadow:0 2px 8px #142b3b04;transition:background .18s ease,border-color .18s ease}
+.learning-chip.is-memory{--save-accent:var(--rich-accent,#547ca6)}.learning-chip.is-skill{--save-accent:var(--rich-violet,#8a6ab1)}.learning-chip.is-suggestion{--save-accent:var(--rich-muted,#8b7c66)}
+.learning-chip:hover{border-color:color-mix(in srgb,var(--save-accent) 45%,transparent);background:color-mix(in srgb,var(--save-accent) 10%,var(--rich-surface,#f5f9ff))}
+.learning-chip:focus-visible{outline:2px solid var(--save-accent);outline-offset:3px}
+.learning-glyph{position:relative;display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--save-accent) 9%,transparent);color:var(--save-accent)}
+.learning-glyph>svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.learning-check{position:absolute;right:-4px;bottom:-3px;display:grid;place-items:center;width:14px;height:14px;border-radius:50%;font-size:9px;font-weight:700;color:white;background:var(--save-accent);border:2px solid var(--rich-surface,#fff)}
+.learning-copy{display:flex;flex-direction:column;min-width:0;gap:3px}.learning-copy strong{font-size:11px;font-weight:600;line-height:1.3;letter-spacing:.01em}.learning-copy>span{font-size:11px;line-height:1.3;color:var(--rich-muted,var(--muted,#718096));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.learning-arrow{width:13px;height:13px;flex:none;margin-left:3px;fill:none;stroke:var(--rich-muted,var(--muted,#718096));stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
+.learning-chip.is-arriving{animation:learning-arrive .65s cubic-bezier(.18,.8,.25,1) both}
+.learning-chip.is-arriving .learning-glyph{animation:learning-bloom .9s ease-out both}
+.learning-chip.is-arriving .learning-glyph path{animation:learning-draw .65s ease-out both}
+.learning-chip.is-arriving .learning-check{animation:learning-check .55s .15s cubic-bezier(.2,.9,.3,1.3) both}
+.learning-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@keyframes learning-arrive{from{opacity:0;transform:translateY(5px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes learning-bloom{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--save-accent) 22%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+@keyframes learning-draw{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
+@keyframes learning-check{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@media(max-width:600px){.chat-learning{margin-left:0;max-width:100%;gap:6px}.learning-chip{flex:1 1 145px;max-width:100%;padding:9px 10px}.learning-copy{flex:1}}
+@media(prefers-reduced-motion:reduce){.learning-chip,.learning-chip *{animation:none!important;transition:none!important}}
