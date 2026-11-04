@@ -48,6 +48,19 @@ Retained failed attempts distinguish fixture/staging errors from product behavio
 
 No operational deployment, native rebuild, account mutation, real provider call or production CAPTCHA interaction occurred. Read-only Home diagnostics show an active service with zero automatic restarts and no active browser handoff. [Cloudflare does not support automated browsers for production challenges](https://developers.cloudflare.com/cloudflare-challenges/reference/supported-browsers/); repaired Tupies controls do not establish site acceptance. Operational ownership remains unchanged.
 
+## Bot details and settings UX — 4 November 2026 (source only)
+
+
+The publication is prepared independently on `28a314c` main, excluding parallel Action review, Mission and browser recovery changes. It preserves the existing Balanced/Strict modes and defaults. The later `db7fd49` main documentation update is reconciled without changing the tested UI sources or focused tests.
+
+Official Node **22.23.4** passes **166/166 focused regressions across ten files** (`bot-settings-ux`, `bot-profile`, `pearl-ui`, `bot-deletion`, `navigation-ui`, `speech-ui`, `onboarding`, `mobile-ui`, `mobile-motion`, `skills-store-ui`). Syntax checking passes **187 JavaScript modules**. Documentation regenerates **31 guide pages**. These are focused UI checks, not a new full Engine-suite or deployment claim.
+
+Actual disposable IAB checks every settings panel at **320/390/834/1280px**: **36/36 layout checks** show one visible panel and no document horizontal overflow. A real synthetic settings save returns to the clean disabled-save state; Tools retains three collapsed groups and the existing two action-review choices. Earlier working-copy browser checks additionally cover light/dark accent contrast, expanded permission rows, skill search/no-match/assigned filtering, preservation of filtered-out assignments, skill previews and the large Instructions editor. Pending-save, detached-success/refusal and modal-search regressions run on this isolated publication tree.
+
+Only synthetic accounts and temporary stores are used. No real provider calls, operational Mac/VPS/native installation, pairing or account data change is included. Physical iPhone keyboard/safe-area/VoiceOver acceptance remains unverified.
+
+
+
 ## Automatic update beta 2 — 4 November 2026
 
 PR34 merged as `28a314c`, tree-equal to final `e5835c2`. Its isolated official Node22.23.4 run passes **1,969/1,969 tests in193files** (91 sequential,1,878 at concurrency4), **187 syntax checks**, rebuilt assets and31guide pages; all2,245 committed files remain exact. Exact-head Linux-container CI passes. Three additional real HTTP/sync cases reproduce/fix idle long-poll starvation and uncounted public setup/sign-in while preserving active-write admission. Real disposable systemd acceptance of the final source passes signed replacement, complete encrypted offline restore, held activation, no-op and CURRENT-data rollback. Retained setup failures are separate.

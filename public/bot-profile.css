@@ -536,3 +536,120 @@ body.pearl-studio .bot-profile .bp-task-body small{font-size:12px;line-height:1.
 
 .bp-workshop-grant { padding-block: 14px; border-bottom: 1px solid var(--border, rgba(128,128,128,.18)); overflow-wrap: anywhere; }
 .bp-workshop-grant:last-child { border-bottom: 0; }
+
+/* Bot settings: one focused section at a time, with an always reachable save action.
+   Pearl's semantic tokens also follow the native light/dark appearance. */
+body.pearl-studio .bot-settings-form{max-width:1100px;width:100%;gap:20px;align-items:start}
+body.pearl-studio .bot-settings-form.is-page{grid-template-columns:168px minmax(0,1fr)}
+body.pearl-studio .bot-settings-form .bot-settings-content{min-width:0;display:grid;gap:20px}
+body.pearl-studio .bot-settings-form .bot-settings-section[hidden],
+body.pearl-studio .bot-settings-form [data-skill-option][hidden],
+body.pearl-studio .bot-settings-form [data-skill-access-notice][hidden],
+body.pearl-studio .bot-settings-form [data-settings-skill-empty][hidden]{display:none}
+body.pearl-studio .bot-settings-form .bot-settings-nav{position:sticky;top:24px;display:flex;flex-direction:column;gap:5px;margin:0;padding:7px;border:1px solid var(--line);border-radius:20px;background:var(--pearl-soft);min-width:0}
+body.pearl-studio .bot-settings-form .bot-settings-nav button{justify-content:flex-start;gap:10px;min-height:44px;padding:10px 12px;font-size:13px;color:var(--muted);border:1px solid transparent;background:none;box-shadow:none;white-space:nowrap;transform:none}
+body.pearl-studio .bot-settings-form .bot-settings-nav button svg{width:16px;height:16px;flex:none}
+body.pearl-studio .bot-settings-form .bot-settings-nav button[aria-pressed=true]{background:var(--pearl-raised);border-color:var(--line);color:var(--pearl-blue);box-shadow:var(--pearl-shadow)}
+body.pearl-studio .bot-settings-form .bot-settings-nav button:hover:not(:disabled){background:var(--pearl-surface);color:var(--ink)}
+body.pearl-studio .bot-settings-form .bot-settings-nav button[data-section=remove]{margin-top:12px;border-top:1px solid var(--line)}
+body.pearl-studio .bot-settings-form .bot-settings-section{padding:26px;min-width:0}
+body.pearl-studio .bot-settings-form .bot-settings-section>header{margin-bottom:24px}
+body.pearl-studio .bot-settings-form .bot-settings-section>header h2{font-size:22px;line-height:1.3;letter-spacing:-.6px}
+body.pearl-studio .bot-settings-form .bot-settings-section>header p{max-width:60ch;font-size:13px;line-height:1.65}
+body.pearl-studio .bot-settings-form .field{min-width:0}
+body.pearl-studio .bot-settings-form .field :is(input,textarea,select){max-width:100%;min-width:0}
+body.pearl-studio .bot-settings-form .field :is(label,.field-label,small){padding:0}
+body.pearl-studio .bot-settings-form #bot-instructions{min-height:360px;height:clamp(360px,48vh,560px);max-height:none;resize:vertical;font-size:15px;line-height:1.8;padding:18px;tab-size:2}
+body.pearl-studio .bot-settings-form .bot-appearance{margin:22px 0 0}
+body.pearl-studio .bot-settings-form .bot-capabilities{margin:0 0 12px;border:1px solid var(--line);border-radius:18px;background:var(--pearl-soft);overflow:hidden}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary{display:flex;align-items:center;gap:12px;min-height:76px;padding:16px;list-style:none;cursor:pointer;color:var(--ink)}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary::-webkit-details-marker{display:none}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary::after{display:none}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary>span:first-child{flex:1;min-width:0;display:grid;gap:4px}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary strong{font-size:14px;font-weight:550;line-height:1.4}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary small{font-size:12px;font-weight:400;line-height:1.5;color:var(--muted)}
+body.pearl-studio .bot-settings-form .bot-capabilities>summary>svg{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .18s}
+body.pearl-studio .bot-settings-form .bot-capabilities[open]>summary>svg{transform:rotate(180deg)}
+body.pearl-studio .bot-settings-form .bot-group-count{font-size:11px;line-height:1.5;white-space:nowrap;padding:4px 8px;border-radius:999px;background:var(--pearl-raised);color:var(--muted)}
+body.pearl-studio .bot-settings-form .bot-capability-body{padding:0 14px 16px;max-height:560px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+body.pearl-studio .bot-settings-form .permissions-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:0}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option){display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:18px;min-height:68px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--pearl-raised);cursor:pointer;min-width:0}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option)>span{display:grid;flex:1;min-width:0;gap:4px;overflow-wrap:anywhere}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option) strong{font-size:14px;font-weight:550;color:var(--ink);line-height:1.45}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option) small{font-size:12px;color:var(--muted);line-height:1.6}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option)>input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:42px;height:26px;min-height:0;margin:0;padding:0;border:1px solid var(--line);border-radius:30px;background:radial-gradient(circle at 12px 12px,var(--pearl-solid) 0 9px,transparent 10px) 0 0/42px 24px no-repeat;background-color:color-mix(in srgb,var(--muted) 25%,var(--pearl-base));transition:background-position .18s,background-color .18s;cursor:pointer}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option)>input[type=checkbox]:checked{background-color:var(--pearl-blue);background-position:16px 0}
+body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option):has(input:checked){border-color:color-mix(in srgb,var(--pearl-blue) 28%,var(--line))}
+body.pearl-studio .bot-settings-form .bot-settings-toolbar{display:flex;align-items:stretch;gap:10px;margin:22px 0 10px;min-width:0}
+body.pearl-studio .bot-settings-form .bot-settings-toolbar .bp-search{padding:10px 12px;flex:1;min-width:0}
+body.pearl-studio .bot-settings-form .bot-settings-toolbar input{min-width:0;width:100%;font-size:14px}
+body.pearl-studio .bot-settings-form .bot-settings-toolbar select{font-size:13px;min-width:0;max-width:46%}
+body.pearl-studio .bot-settings-form .bot-skill-options{display:grid;gap:8px;max-height:370px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:4px 5px 4px 2px;margin:8px -5px 16px -2px}
+body.pearl-studio .bot-settings-form .bot-skill-option small{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+body.pearl-studio .bot-settings-form .bot-settings-note{font-size:12px;color:var(--muted);line-height:1.7;margin:14px 0}
+body.pearl-studio .bot-settings-form .bot-library-link{margin:0 0 12px;min-height:44px}
+body.pearl-studio .bot-settings-form .bot-integration-list{max-height:260px;overflow-y:auto;overscroll-behavior:contain}
+body.pearl-studio .bot-settings-form .team-mode-options{grid-template-columns:minmax(0,1fr)}
+body.pearl-studio .bot-settings-form .team-checklist{max-height:260px;overflow-y:auto;overscroll-behavior:contain}
+body.pearl-studio .bot-settings-form .bot-settings-save{grid-column:2;position:sticky;bottom:18px;z-index:4;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:20px;background:var(--pearl-solid);box-shadow:var(--pearl-shadow);min-width:0}
+body.pearl-studio .bot-settings-form:not([data-settings-dirty=true]) .bot-settings-save{position:static;background:var(--pearl-soft);box-shadow:none}
+body.pearl-studio .bot-settings-form[data-settings-dirty=true] .bot-settings-save{border-color:color-mix(in srgb,var(--pearl-blue) 35%,var(--line));box-shadow:0 8px 30px color-mix(in srgb,var(--ink) 10%,transparent)}
+body.pearl-studio .bot-settings-form .bot-settings-save .form-error:empty{display:none}
+body.pearl-studio .bot-settings-form .bot-settings-save-copy{display:grid;gap:2px;flex:1;min-width:150px}
+body.pearl-studio .bot-settings-form .bot-settings-save-copy strong{font-size:13px;font-weight:550;color:var(--ink)}
+body.pearl-studio .bot-settings-form .bot-settings-save-copy span{font-size:11px;color:var(--muted)}
+body.pearl-studio .bot-settings-form .bot-settings-save button{min-height:44px;font-size:13px}
+body.pearl-studio .bot-settings-form .bot-save-button:not(:disabled){color:var(--pearl-base);background:var(--pearl-blue);border-color:transparent;box-shadow:0 4px 12px color-mix(in srgb,var(--pearl-blue) 22%,transparent);--sheen:transparent}
+body.pearl-studio .bot-settings-form .bot-save-button:hover:not(:disabled){color:var(--pearl-base);background:var(--pearl-blue);box-shadow:0 6px 18px color-mix(in srgb,var(--pearl-blue) 30%,transparent)}
+body.pearl-studio .bot-profile .bp-skills-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+body.pearl-studio .bot-profile .bp-skill-card{padding:22px;min-width:0;overflow-wrap:anywhere}
+body.pearl-studio .bot-profile .bp-skill-card h3{font-size:16px;text-transform:none;letter-spacing:-.2px;color:var(--ink);margin:0 0 8px}
+body.pearl-studio .bot-profile .bp-skill-card p{font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:16px}
+@media(min-width:761px) and (max-width:1100px){
+  body.pearl-studio .bot-settings-form.is-page{grid-template-columns:minmax(0,1fr);gap:14px}
+  body.pearl-studio .bot-settings-form .bot-settings-nav{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%;padding:5px;top:16px;z-index:3;background:var(--pearl-solid)}
+  body.pearl-studio .bot-settings-form .bot-settings-nav button{flex:0 0 auto}
+  body.pearl-studio .bot-settings-form .bot-settings-nav button[data-section=remove]{margin:0;border:1px solid transparent}
+  body.pearl-studio .bot-settings-form .bot-settings-save{grid-column:1}
+  body.pearl-studio .bot-settings-form .bot-settings-section{padding:20px}
+  body.pearl-studio .bot-settings-form .field-row{grid-template-columns:minmax(0,1fr);gap:0}
+  body.pearl-studio .bot-settings-form .bot-settings-save-copy{flex-basis:100%}
+}
+@media(max-width:760px){
+  body.pearl-studio .bot-settings-form.is-page{grid-template-columns:minmax(0,1fr);gap:14px}
+  body.pearl-studio .bot-settings-form .bot-settings-nav{position:sticky;top:calc(112px + env(safe-area-inset-top,0px));z-index:3;background:var(--pearl-solid);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%;padding:5px;gap:4px;border-radius:16px}
+  body.pearl-studio .bot-settings-form .bot-settings-nav button{flex:0 0 auto;min-height:44px;padding:9px 12px;font-size:13px}
+  body.pearl-studio .bot-settings-form .bot-settings-nav button[data-section=remove]{margin:0;border:1px solid transparent}
+  body.pearl-studio .bot-settings-form .bot-settings-nav button svg{display:none}
+  body.pearl-studio .bot-settings-form .bot-settings-section{padding:20px 16px;border-radius:22px}
+  body.pearl-studio .bot-settings-form .bot-settings-section>header{margin-bottom:18px}
+  body.pearl-studio .bot-settings-form .bot-settings-section>header h2{font-size:21px}
+  body.pearl-studio .bot-settings-form #bot-instructions{min-height:320px;height:46vh;font-size:16px;line-height:1.7;padding:14px}
+  body.pearl-studio .bot-settings-form .bot-settings-section>.field:first-of-type{margin-top:0}
+  body.pearl-studio .bot-settings-form .bot-capabilities>summary{padding:14px 12px;gap:8px;flex-wrap:wrap}
+  body.pearl-studio .bot-settings-form .bot-capabilities>summary>span:first-child{flex-basis:calc(100% - 24px);order:0}
+  body.pearl-studio .bot-settings-form .bot-capabilities>summary>svg{order:1}
+  body.pearl-studio .bot-settings-form .bot-group-count{order:2}
+  body.pearl-studio .bot-settings-form .bot-capability-body{padding:0 8px 10px}
+  body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option){gap:12px;padding:12px}
+  body.pearl-studio .bot-settings-form .bot-settings-toolbar{flex-wrap:wrap}
+  body.pearl-studio .bot-settings-form .bot-settings-toolbar .bp-search{flex-basis:100%;min-height:44px}
+  body.pearl-studio .bot-settings-form .bot-settings-toolbar input{font-size:16px}
+  body.pearl-studio .bot-settings-form .bot-settings-toolbar select{max-width:100%;width:100%;font-size:16px;min-height:44px}
+  body.pearl-studio .bot-settings-form .bot-settings-save{grid-column:1;bottom:calc(90px + env(safe-area-inset-bottom,0px));padding:12px;gap:8px}
+  body.pearl-studio .bot-settings-form .bot-settings-save-copy{flex-basis:100%;gap:1px}
+  body.pearl-studio .bot-settings-form .bot-settings-save button{flex:1;min-width:0;font-size:13px;padding:10px}
+  body.pearl-studio .bot-settings-form .bot-settings-save-copy span{font-size:11px}
+  :root[data-keyboard=open] body.pearl-studio .bot-settings-form .bot-settings-save{bottom:8px}
+  body.pearl-studio .bot-profile .bp-skills-list{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){body.pearl-studio .bot-settings-form :is(input,summary>svg){transition:none}}
+
+body.pearl-studio .bot-settings-form .permission-option:has(>input[type=checkbox]){border-radius:14px;background:var(--pearl-raised)}
+body.pearl-studio .bot-settings-form .permission-option:has(>input[type=checkbox])+.permission-option::before{display:none}
+body.pearl-studio .bot-profile .bp-skill-card h2{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+body.pearl-studio .bot-profile .bp-skill-card small{display:block;color:var(--muted);font-size:12px;margin:0 0 16px}
+@media(max-width:760px){body.pearl-studio .bot-profile .bot-settings-section>header h2{scroll-margin-top:calc(190px + env(safe-area-inset-top,0px))}}
+
+body.pearl-studio .bot-settings-form .bot-skill-option:has(>input:disabled){opacity:.6;cursor:default}
+body.pearl-studio .bot-settings-form .bot-skill-option>input:disabled{cursor:not-allowed}
