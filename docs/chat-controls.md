@@ -136,3 +136,7 @@ Automatic reading starts off. When enabled, it reads new completed replies witho
 This is recorded dictation and reply playback, not a continuous realtime audio conversation. Browser microphone accuracy and paid provider voice quality require representative live testing; deterministic fixtures only verify the app's lifecycle and protocol behavior.
 
 References: [OpenRouter TTS](https://openrouter.ai/docs/guides/overview/multimodal/tts), [OpenRouter transcription](https://openrouter.ai/docs/guides/overview/multimodal/stt), [Fish Drama 3](https://fish.audio/blog/fish-audio-drama-3/), [MDN SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+
+## Saved knowledge in the conversation
+
+After actual Brain or core-memory writes and skill creation/installation, the chat shows small linked save cards with a finite icon/checkmark animation. Cards remain beside the task's conversation after reload; live polling does not replay their entrance. Suggestions use a separate label and link to Learning. Keyboard focus, narrow phone layouts, the shared light/dark rich-chat palette and Reduced Motion are supported. A failed or denied action cannot produce a successful-save card; a committed save survives a later task failure or Stop. Cards record historical actions, not current item availability. See [memory](memory.md#save-acknowledgements-in-chat).
