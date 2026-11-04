@@ -68,6 +68,24 @@ test('uncertain input is never retried and requires a fresh view before another 
   assert.equal(h.$('[data-browser-action=key]').disabled,false);
 });
 
+test('input sent with an unavailable view requires inspection and never resends input',async t=>{
+  const h=fixture(t,{api:async(path)=>path.endsWith('/action')?{inputSent:true,viewUnavailable:true}:view('fresh')});
+  await h.open();h.loaded();await h.click('[data-browser-action=key][data-key=Enter]');
+  assert.match(h.$('[data-browser-status]').textContent,/Input sent.*Refresh to inspect the result/);
+  assert.equal(h.$('[data-browser-status]').classList.contains('has-error'),false);
+  assert.equal(h.$('[data-browser-action=key]').disabled,true);assert.equal(h.$('[data-browser-action=refresh]').disabled,false);
+  await h.click('[data-browser-action=refresh]');h.loaded();
+  assert.equal(h.$('[data-browser-action=key]').disabled,false);assert.equal(h.requests.filter(item=>item.path.endsWith('/action')).length,1);
+});
+
+test('a stale view is distinguished from an uncertain input without exposing API details',async t=>{
+  const h=fixture(t,{api:async(path)=>{if(path.endsWith('/action'))throw Object.assign(new Error('Private URL and form input'),{status:409});return view();}});
+  await h.open();h.loaded();await h.click('[data-browser-action=key][data-key=Enter]');
+  assert.match(h.$('[data-browser-status]').textContent,/browser view changed/);
+  assert.ok(!h.$('[data-browser-status]').textContent.includes('Private URL'));
+  assert.equal(h.requests.filter(item=>item.path.endsWith('/action')).length,1);
+});
+
 test('scaled pointer clicks and drags use screenshot pixel coordinates',async t=>{
   const h=fixture(t);await h.open();const image=h.loaded();
   image.getBoundingClientRect=()=>({left:10,top:20,width:640,height:450});
