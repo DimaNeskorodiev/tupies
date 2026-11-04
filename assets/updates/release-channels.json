@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "channel": "beta",
+  "mac": {
+    "feedURL": "https://github.com/DimaNeskorodiev/tupies/releases/download/update-feeds/mac-beta.xml",
+    "publicKey": "3k7SrHFMVn7VroVbE6DigYlkFIFhU6m5s+YLNUcs4B8=",
+    "signingTeamSha256": "2f82a250a258badd73ce821df2a6e4301c893d26c111e1e8b98770c43fc94972"
+  },
+  "engine": {
+    "feedURL": "https://github.com/DimaNeskorodiev/tupies/releases/download/update-feeds/engine-beta-linux-x64.json",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAlwBiM0zye1Ci3z67/GuqtZgJquU3W/0pXhBBIqpog8o=\n-----END PUBLIC KEY-----\n"
+  }
+}

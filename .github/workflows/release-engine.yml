@@ -1,0 +1,44 @@
+name: Publish Engine update
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+concurrency:
+  group: engine-update-publication
+  cancel-in-progress: false
+jobs:
+  linux-x64:
+    if: github.event.release.tag_name != 'update-feeds'
+    runs-on: ubuntu-22.04
+    environment: engine-updates
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Verify and prepare shipped assets
+        run: |
+          npm ci
+          npm run check
+          node scripts/verify-release-tests.mjs
+          npm run assets:build
+          npm run docs:build
+          npm run licenses:build
+      - name: Stage production Engine
+        run: |
+          node scripts/stage-engine-release.mjs --output "$RUNNER_TEMP/engine-source"
+          npm ci --prefix "$RUNNER_TEMP/engine-source" --omit=dev --ignore-scripts
+      - name: Sign and publish exact release, then advance channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_KEY: ${{ secrets.TUPIES_ENGINE_RELEASE_PRIVATE_KEY }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PUBLISHED: ${{ github.event.release.published_at }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/publish-engine-update.mjs

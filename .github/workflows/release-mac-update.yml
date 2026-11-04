@@ -1,0 +1,30 @@
+name: Publish Mac update feed
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+concurrency:
+  group: mac-update-publication
+  cancel-in-progress: false
+jobs:
+  mac-feed:
+    if: github.event.release.tag_name != 'update-feeds' && contains(github.event.release.assets.*.name, 'Tupies.dmg')
+    runs-on: macos-14
+    environment: mac-updates
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Verify notarized release and publish its signed feed last
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_KEY: ${{ secrets.TUPIES_SPARKLE_PRIVATE_KEY }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/publish-mac-update.mjs

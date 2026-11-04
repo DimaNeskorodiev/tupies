@@ -65,6 +65,8 @@ These commands produce unencrypted backup material. Protect it with your existin
 
 ## Restore and upgrades
 
+The opt-in [Mac/VPS updater](updates.md) adds idle reservation, signed releases, encrypted backup verification and guarded activation. Existing installations need one reviewed bootstrap. Keep updater keys/configuration outside bot workspaces and releases; preserve the separate backup key independently.
+
 Keep Tupies stopped. Preserve the current data before restoring a backup. Restore the complete tree together with ownership matching the Tupies account, directories mode 0700 and key/state files mode 0600. Docker runs as UID/GID 1000. Do not generate a new vault key over old state. Startup now refuses a missing vault key or a missing state file when retained runtime data exists; restore the matching complete tree instead of resetting files.
 
 A restored routine may be due immediately. First review a recovery in an environment without provider network access, disable/reconfigure schedules, then reconnect. Never operate the production data and its restored copy as concurrent schedulers against the same outside services.

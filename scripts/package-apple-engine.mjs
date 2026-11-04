@@ -69,7 +69,7 @@ export async function stageEngineSource(repo,destination) {
   }
   if(await exists(path.join(repo,'NOTICE')))await copyTree(path.join(repo,'NOTICE'),path.join(destination,'NOTICE'),()=>true);
   await fs.mkdir(path.join(destination,'scripts'),{recursive:true,mode:0o755});
-  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs']) {
+  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs']) {
     const source=path.join(repo,'scripts',name),stat=await fs.lstat(source);
     if(!stat.isFile()||stat.isSymbolicLink())fail(`Operational script ${name} must be a regular file.`);
     await fs.copyFile(source,path.join(destination,'scripts',name));await fs.chmod(path.join(destination,'scripts',name),0o644);

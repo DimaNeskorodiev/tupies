@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {JSDOM} from 'jsdom';
+import {readFile} from 'node:fs/promises';
+const source=await readFile(new URL('../public/update-drafts.js',import.meta.url),'utf8');
+function fixture(t,html='',route=''){const dom=new JSDOM(`<body>${html}</body>`,{url:`https://engine.example/${route}`,runScripts:'outside-only'});t.after(()=>dom.window.close());dom.window.eval(source);const attachments=new Map(),bridge=dom.window.StudioUpdateDrafts.create({window:dom.window,getAttachments:()=>attachments,setAttachments:(id,files)=>attachments.set(id,files),onRestore:()=>{}});return {dom,window:dom.window,attachments,bridge};}
+const composer='<form id="message-form" data-id="bot_fixture"><textarea></textarea><button type="submit">Send</button></form>';
+test('a Mac reconnect retains message text and selected file metadata without capturing account inputs or sending',async t=>{
+ const before=fixture(t,composer+'<input type="password" value="SYNTHETIC_ACCOUNT_INPUT">','#/bot/bot_fixture');before.window.document.querySelector('textarea').value='Чернетка <script>unsafe()</script> 🐱';before.attachments.set('bot_fixture',[{path:'Attachments/report.pdf',name:'report.pdf'}]);const snapshot=JSON.parse(JSON.stringify(before.bridge.capture()));assert.doesNotMatch(JSON.stringify(snapshot),/SYNTHETIC_ACCOUNT_INPUT/);
+ const after=fixture(t);let sent=0;after.window.document.addEventListener('submit',()=>sent++);assert.equal(after.bridge.restore(snapshot),true);after.window.document.body.innerHTML=composer;await new Promise(resolve=>after.window.setTimeout(resolve,0));assert.equal(after.window.document.querySelector('textarea').value,'Чернетка <script>unsafe()</script> 🐱');assert.equal(after.window.document.querySelector('script'),null);assert.deepEqual(JSON.parse(JSON.stringify(after.attachments.get('bot_fixture'))),[{path:'Attachments/report.pdf',name:'report.pdf'}]);assert.equal(sent,0);assert.equal(after.window.location.hash,'#/bot/bot_fixture');
+});
+test('reconnect recovery refuses unsafe paths, bounds records, preserves newer input and clears on sign-out',async t=>{
+ const f=fixture(t,composer,'#/bot/bot_fixture');f.window.document.querySelector('textarea').value='newer input';assert.equal(f.bridge.restore({v:1,route:'#/settings',forms:[{form:'message-form',id:'bot_fixture',text:'older draft'}],attachments:[{id:'bot_fixture',files:[{path:'../../vault.key',name:'unsafe'},{path:'https://evil.example/file',name:'unsafe'}]}]}),true);await new Promise(resolve=>f.window.setTimeout(resolve,0));assert.equal(f.window.document.querySelector('textarea').value,'newer input');assert.equal(f.attachments.size,0);assert.equal(f.window.location.hash,'#/bot/bot_fixture');assert.equal(f.bridge.restore({v:1,forms:Array(31).fill({}),attachments:[]}),false);f.bridge.clear();f.window.document.querySelector('textarea').value='';assert.equal(f.bridge.capture(),null);
+});
