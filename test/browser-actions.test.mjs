@@ -4,6 +4,8 @@ import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { Store } from '../lib/store.mjs';
+import { NativeEngine } from '../lib/engine.mjs';
 import { BrowserSession, Browsers, EgressProxy, findBrowser, prepareBrowserAction, executeBrowserTool, browserActionRequiresApproval, browserToolDefinitions } from '../lib/browser.mjs';
 
 const executable=await findBrowser();
@@ -12,6 +14,7 @@ async function fixture(t) {
   const requests=[];
   const server=http.createServer((request,response)=>{
     requests.push({url:request.url,cookie:request.headers.cookie || ''});response.setHeader('content-type','text/html; charset=utf-8');
+    if(request.url==='/auto')return response.end('<title>Review fixture</title><label>Search<input name="q"></label><a href="/account" onclick="fetch(\'/click-effect\')">Browse account</a><button onclick="fetch(\'/commit-effect\')">Submit order</button>');
     if(request.url==='/done' || request.url.startsWith('/done?')){response.setHeader('Set-Cookie','session=verified; Path=/; Max-Age=86400; SameSite=Lax');return response.end('<title>Complete</title><h1>Reservation request received</h1><a href="/account">Account</a>');}
     if(request.url==='/account')return response.end(`<title>Account</title><h1>${request.headers.cookie?.includes('session=verified')?'Signed in':'Signed out'}</h1>`);
     if(request.url==='/cross')return response.end(`<title>Cross origin</title><iframe src="http://localhost:${server.address().port}/frame" title="Cross origin frame" style="width:600px;height:300px"></iframe>`);
@@ -188,4 +191,43 @@ test('late browser results keep their private redaction after the task removes t
   session.keepPrivate('late-owner-secret');session.text=async()=>{f.browsers.sessions.delete(f.context.runId);return 'Page echoed late-owner-secret';};
   try {const result=await executeBrowserTool(f.browsers,f.context,'browser_text',{});assert.equal(result.text,'Page echoed [private]');}
   finally {session.text=text;f.browsers.sessions.set(f.context.runId,session);}
+});
+
+test('Approve for me edits a field and follows a link automatically, but stops before a committing button',chrome,async t=>{
+  const f=await fixture(t),store=await new Store(f.directory).init();
+  await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture'});Object.assign(state.bots[0],{connectionId:'fixture',tools:['browser'],approvalPolicy:'auto',collaborators:[]});});
+  let turn=0;
+  const engine=new NativeEngine(store,{runTimeout:30000,providers:{async complete(_connection,request){
+    turn++;const page=turn>1?JSON.parse(request.messages.filter(m=>m.role==='tool').at(-1).content):null;
+    const tool=(name,args)=>({text:'',toolCalls:[{id:`auto-${turn}`,name,arguments:args}]});
+    if(turn===1)return tool('browser_open',{url:`${f.base}/auto`});
+    if(turn===2)return tool('browser_fill',{ref:find(page.outline,'Search'),revision:page.revision,text:'A routine query'});
+    if(turn===3)return tool('browser_click',{ref:find(page.outline,'Browse account'),revision:page.revision});
+    if(turn===4){assert.match(page.title,/Account/);return tool('browser_open',{url:`${f.base}/auto`});}
+    if(turn===5)return tool('browser_click',{ref:find(page.outline,'Submit order'),revision:page.revision});
+    return {text:'The site action was denied.',toolCalls:[]};
+  }}});
+  engine.browsers=f.browsers;await engine.recover();t.after(()=>engine.close());
+  const started=await engine.start('bot_atlas','Research this fixture and inspect the proposed order.');
+  for(let i=0;i<3000&&store.state.runs.bot_atlas?.status!=='waiting_for_approval';i++)await new Promise(resolve=>setTimeout(resolve,10));
+  const run=store.state.runs.bot_atlas;assert.equal(run.status,'waiting_for_approval');
+  assert.deepEqual(run.events.filter(e=>e.type==='approval.automatic').map(e=>e.tool),['browser_fill','browser_click']);
+  assert.equal(f.requests.some(r=>r.url==='/click-effect'||r.url==='/commit-effect'),false,'automatic links use navigation, never page click handlers');
+  const prompt=run.pending_controls[0];assert.equal(prompt.tool,'browser_click');assert.match(prompt.review.riskReason,/consequences/);
+  await engine.control('bot_atlas','approval',{runId:run.id,remoteRunId:run.remoteRunId,request_id:prompt.prompt_id,execution_generation:run.execution_generation,choice:'deny'});
+  await engine.tasks.get(started.id);assert.equal(store.state.runs.bot_atlas.status,'completed');
+  assert.equal(f.requests.some(r=>r.url==='/commit-effect'),false);
+});
+
+test('automatic link navigation still binds href, download state and exact view identity',chrome,async t=>{
+  const f=await fixture(t);let page=await run(f,'browser_open',{url:`${f.base}/auto`});
+  let args={ref:find(page.outline,'Browse account'),revision:page.revision};
+  let prepared=await prepareBrowserAction(f.browsers,f.context,'browser_click',args);
+  assert.equal(prepared.identity.navigation,`${f.base}/account`);
+  const session=f.browsers.sessions.get(f.context.runId);
+  await session.evaluate(function(){document.querySelector('a').setAttribute('download','file');},{});
+  await assert.rejects(executeBrowserTool(f.browsers,{...f.context,approvedAction:{...prepared.identity,followLink:true}},'browser_click',args),/changed/);
+  page=await run(f,'browser_snapshot',{});args={ref:find(page.outline,'Browse account'),revision:page.revision};
+  prepared=await prepareBrowserAction(f.browsers,f.context,'browser_click',args);assert.equal(prepared.identity.navigation,null,'downloads cannot become automatic links');
+  assert.equal(f.requests.some(r=>r.url==='/account'),false);
 });
