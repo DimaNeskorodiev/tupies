@@ -21,6 +21,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22.23.4
+      - name: Initialize the runner browser before timed regressions
+        run: |
+          TUPIES_RELEASE_BROWSER="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium)"
+          timeout 60 "$TUPIES_RELEASE_BROWSER" --headless --no-first-run --no-default-browser-check --user-data-dir="$RUNNER_TEMP/tupies-browser-warmup" --dump-dom about:blank > "$RUNNER_TEMP/tupies-browser-warmup.html"
       - name: Verify and prepare shipped assets
         run: |
           npm ci

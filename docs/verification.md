@@ -3,7 +3,7 @@
 ## Bot details and settings UX — 4 November 2026 (source only)
 
 
-The publication is prepared independently on `28a314c` main, excluding parallel Action review, Mission and browser recovery changes. It preserves the existing Balanced/Strict modes and defaults.
+The publication is prepared independently on `28a314c` main, excluding parallel Action review, Mission and browser recovery changes. It preserves the existing Balanced/Strict modes and defaults. The later `db7fd49` main documentation update is reconciled without changing the tested UI sources or focused tests.
 
 Official Node **22.23.4** passes **166/166 focused regressions across ten files** (`bot-settings-ux`, `bot-profile`, `pearl-ui`, `bot-deletion`, `navigation-ui`, `speech-ui`, `onboarding`, `mobile-ui`, `mobile-motion`, `skills-store-ui`). Syntax checking passes **187 JavaScript modules**. Documentation regenerates **31 guide pages**. These are focused UI checks, not a new full Engine-suite or deployment claim.
 
@@ -11,6 +11,17 @@ Actual disposable IAB checks every settings panel at **320/390/834/1280px**: **3
 
 Only synthetic accounts and temporary stores are used. No real provider calls, operational Mac/VPS/native installation, pairing or account data change is included. Physical iPhone keyboard/safe-area/VoiceOver acceptance remains unverified.
 
+
+
+## Automatic update beta 2 — 4 November 2026
+
+PR34 merged as `28a314c`, tree-equal to final `e5835c2`. Its isolated official Node22.23.4 run passes **1,969/1,969 tests in193files** (91 sequential,1,878 at concurrency4), **187 syntax checks**, rebuilt assets and31guide pages; all2,245 committed files remain exact. Exact-head Linux-container CI passes. Three additional real HTTP/sync cases reproduce/fix idle long-poll starvation and uncounted public setup/sign-in while preserving active-write admission. Real disposable systemd acceptance of the final source passes signed replacement, complete encrypted offline restore, held activation, no-op and CURRENT-data rollback. Retained setup failures are separate.
+
+Two distinct Developer ID signed fixture apps are Apple Accepted, stapled and Gatekeeper accepted. Their actual product `MacUpdates.swift` downloads/verifies a signed feed/archive, prepares installation, replaces build1 with build2, relaunches and retains a synthetic preference. The actual Engine backup helper has separate real-process/backup coverage. The test app is closed and only its two public fixture assets are removed. This is an isolated native integration test, not a clean-Mac/real-provider acceptance claim.
+
+Public beta2 is notarized Mac **0.5.0(15)**, Apple Silicon/macOS14+. Exact GitHub download matches300004825bytes/SHA256`27a71dbc19fb4f579b31dc219842d300d6579392f5621d01ee4a9f2f3a3fc1c3`; the signed Mac feed points to those immutable bytes/build15. Darwin attribution is regenerated in two files (406 notices, all386 installed packages covered). Signed Node/Sharp/PDF/fonts/named-Node smoke passes. Installed Mac15 preserves two connection identities, notifications and effective Team/Keychain entitlements; the existing Developer ID/all-Mac profile replaces development signing while previous build13/profile remain preserved. A false sandbox marker is omitted without changing effective scope. Owner performed normal CmdQ because native automation resolves legacy/ambiguous app identities; installed-window visual acceptance remains unclaimed. Mac Engine e5835c2 bootstrap passes complete authenticated encrypted stopped backup/exact raw offline restore, identity/vault/security/config/state and eight served assets. No paid inference, iPhone/re-pairing or certificate/profile revocation occurs.
+
+The first bare-runner Engine publication stops before signing/upload because the first Chrome startup misses its existing deadline; other sequential browser cases pass. A retry reaches a separate pre-existing wall-clock test: its nominal750ms exceeds1s under filesystem/runner latency, so the Mission correctly wakes before an intermediate assertion. Both failed attempts create no Engine artifacts/feed. The test now advances only Date deterministically while retaining real I/O/timers and every behavioral assertion; no production clock/timeout changes. Future publication initializes a sandboxed `about:blank` browser before timed regressions; actual unprivileged Linux Chromium warm-up passes without disabling sandbox. Operational VPS activation is recorded separately after signed package verification.
 
 ## Mac/VPS automatic update implementation — 4 November 2026 (source only)
 

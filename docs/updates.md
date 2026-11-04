@@ -2,7 +2,7 @@
 
 ## Status and trust roots
 
-Source implementation, 4 November 2026. Mac uses pinned **Sparkle 2.10.1**; VPS uses an independent operator-installed Node 22 updater and signed Engine bundles. Existing Mac/VPS installations need one reviewed bootstrap release. iPhone distribution is unchanged. No operational installation is implied by this source checkpoint.
+Published beta 2, 4 November 2026. Mac uses pinned **Sparkle 2.10.1**; VPS uses an independent operator-installed Node 22 updater and signed Engine bundles. Existing Mac/VPS installations need one reviewed bootstrap release. iPhone distribution is unchanged. The notarized beta DMG and signed Mac feed are public; each existing installation needs its own bootstrap.
 
 The existing Mac signing team is pinned by a domain-separated SHA-256 identifier; release signing and publication refuse a different team. Public keys and beta feed addresses are in `assets/updates/release-channels.json`. New private update-signing keys were generated outside shipped source; no existing Apple private key was exported. Keep a separately protected key backup. The Engine private signing key stays on the maintainer/signing runner, never on the VPS. Only its public key goes to the updater. `scripts/create-update-keys.mjs --output /absolute/new/private-directory` creates fresh separate Engine and Sparkle keys without reading/exporting Apple certificates. Never overwrite a deployed trust root or generate replacements during an ordinary release.
 
@@ -80,7 +80,7 @@ Create persistent public **update-feeds** once. Configure GitHub environment **e
 
 When a versioned GitHub release already contains the final `Tupies.dmg` at publication time, the Mac workflow independently downloads it, checks stapling/Gatekeeper/inner-app signatures and pinned identity/update metadata, signs/verifies its feed using checksum-pinned official Sparkle tools, refuses non-increasing Mac builds and advances the configured feed last. Attach the DMG to the draft before publishing it; adding an asset later does not trigger this release event. Apple certificate export is not required.
 
-The Engine release workflow pins Node 22.23.4, runs all regressions/syntax checks, builds assets/guide/licenses, stages allowlisted source and installs Linux x64 production dependencies. It signs and uploads immutable package/manifest/metadata to the published versioned release, then advances the matching channel **last**. Prereleases publish beta, ordinary releases stable. Publication time supplies the increasing sequence; do not republish old releases to move a channel backward. Beta servers do not implicitly switch to stable.
+The Engine release workflow pins Node 22.23.4, initializes the runner’s sandboxed browser before timing-sensitive tests, runs all regressions/syntax checks, builds assets/guide/licenses, stages allowlisted source and installs Linux x64 production dependencies. It signs and uploads immutable package/manifest/metadata to the published versioned release, then advances the matching channel **last**. Prereleases publish beta, ordinary releases stable. Publication time supplies the increasing sequence; do not republish old releases to move a channel backward. Beta servers do not implicitly switch to stable.
 
 For a separately verified platform/manual pipeline:
 
