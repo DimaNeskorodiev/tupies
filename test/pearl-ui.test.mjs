@@ -13,7 +13,7 @@ const plain=value=>JSON.parse(JSON.stringify(value));
 
 // Run the actual forms and delegated events. Every request is deterministic and
 // local to this DOM; no workspace, account, model or engine is contacted.
-function ui(t,{phone=false,bot={},inferenceRequest,speechCatalog}={}) {
+function ui(t,{phone=false,bot={},inferenceRequest,speechCatalog,botPatchRequest}={}) {
   const dom=new JSDOM('<!doctype html><div id="app"></div><div id="dialog-root"></div><div id="toasts"></div>',{url:'http://studio.local/#/bot/bot_atlas',runScripts:'outside-only',pretendToBeVisual:true});
   const win=dom.window,doc=win.document,requests=[],toasts=[];
   win.setInterval=()=>1;win.clearInterval=()=>{};win.scrollTo=()=>{};
@@ -34,7 +34,7 @@ function ui(t,{phone=false,bot={},inferenceRequest,speechCatalog}={}) {
       return {model:'model-a',effectiveModel:'model-a',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A',reasoning:{supported:true,efforts:['low','high']}}],reasoning:{supported:true,efforts:['low','high']},context:{window:128000,compactAt:115200,source:'provider'},conversation:{tokens:12000}};
     }
     if(path.endsWith('/inference')&&options.method==='PATCH')return {bot:{...saved,...options.body}};
-    if(path==='/api/bots/bot_atlas'&&options.method==='PATCH')return {...saved,...options.body};
+    if(path==='/api/bots/bot_atlas'&&options.method==='PATCH')return botPatchRequest?botPatchRequest(options.body):{...saved,...options.body};
     if(path==='/api/rooms/room_fixture'&&options.method==='PATCH')return {...fixture.rooms[0],...options.body};
     throw new Error(`Unexpected fixture request: ${path}`);
   };
@@ -73,7 +73,7 @@ test('a closed new-bot editor keeps inherited provider, safe tools and enabled v
   const h=ui(t);h.run('botDialog()');const form=h.doc.querySelector('#bot-form'),data=new h.win.FormData(form);
   assert.equal(form.querySelector('.bot-advanced').open,false);
   assert.equal(data.get('connectionId'),'provider');assert.equal(data.get('model'),'');
-  assert.equal(data.get('approvalPolicy'),'balanced');assert.equal(data.get('teamMode'),'all');
+  assert.equal(data.get('approvalPolicy'),'auto');assert.equal(data.get('teamMode'),'all');
   assert.deepEqual(data.getAll('tool').sort(),['workspace','memory','skills','web','integrations','delegation','automation','setup'].sort());
   assert.equal(data.has('enabled'),true);assert.equal(data.has('hidden'),false);assert.equal(data.get('icon'),'companion:blue');
 });
@@ -351,3 +351,67 @@ for(const [route,disclosure,label] of [['settings','settings-more','More setting
     assert.equal(h.requests.length,0);
   });
 }
+
+test('Action review is visible in General, saves per bot and survives reopening',async t=>{
+  const h=ui(t,{bot:{approvalPolicy:'auto'}}),form=showBotSettings(h);
+  const policy=form.querySelector('[name=approvalPolicy]');
+  assert.equal(policy.closest('[data-bot-settings-section]').dataset.botSettingsSection,'general');
+  assert.equal(policy.closest('[data-bot-settings-section]').hidden,false);
+  assert.equal(policy.value,'auto');assert.match(policy.selectedOptions[0].textContent,/Approve for me/);
+  assert.match(form.querySelector('#bot-approval-help').textContent,/across chats and restarts/);
+  policy.value='balanced';policy.dispatchEvent(new h.win.Event('change',{bubbles:true}));
+  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  const save=h.requests.find(request=>request.method==='PATCH');assert.equal(save.body.approvalPolicy,'balanced');
+  h.saved.approvalPolicy='balanced';h.run("data.bots[0].approvalPolicy='balanced'");
+  const reopened=showBotSettings(h);assert.equal(reopened.querySelector('[name=approvalPolicy]').value,'balanced');
+  const timeline=h.run("renderTimeline({id:'auto-test',events:[{type:'approval.automatic'}]})");assert.match(timeline,/Approved automatically/);
+});
+
+
+test('chat review selector saves the same bot setting without touching the message draft or attachments',async t=>{
+  const h=ui(t,{bot:{approvalPolicy:'auto'}});h.chat();
+  const field=h.doc.querySelector('#chat-approval-policy'),draft=h.doc.querySelector('#message-input');
+  assert.equal(field.value,'auto');assert.equal(field.getAttribute('aria-label'),'Action review');
+  draft.value='Keep my unfinished message.';
+  h.run("composerAttachments.set('bot_atlas',[{path:'input.txt',name:'input.txt'}])");
+  field.value='strict';field.dispatchEvent(new h.win.Event('change',{bubbles:true}));await tick();
+  assert.equal(h.requests.length,1);assert.deepEqual(h.requests[0].body,{approvalPolicy:'strict'});
+  assert.equal(h.run("botById('bot_atlas').approvalPolicy"),'strict');assert.equal(field.value,'strict');
+  assert.equal(h.doc.querySelector('#message-input'),draft);assert.equal(draft.value,'Keep my unfinished message.');
+  assert.equal(h.run("composerAttachments.get('bot_atlas').length"),1);
+  const form=showBotSettings(h);assert.equal(form.querySelector('[name=approvalPolicy]').value,'strict');
+  h.chat();assert.equal(h.doc.querySelector('#chat-approval-policy').value,'strict');
+});
+
+test('chat review locks while saving and blocks Send until acknowledgement',async t=>{
+  let finish;const h=ui(t,{bot:{approvalPolicy:'balanced'},botPatchRequest:()=>new Promise(resolve=>{finish=resolve;})});h.chat();
+  const field=h.doc.querySelector('#chat-approval-policy'),draft=h.doc.querySelector('#message-input');draft.value='Wait for the saved mode.';
+  field.value='auto';field.dispatchEvent(new h.win.Event('change',{bubbles:true}));await tick();
+  assert.equal(field.disabled,true);assert.match(h.doc.querySelector('#chat-approval-status').textContent,/Saving/);
+  await h.run("saveChatReview('bot_atlas','strict')");assert.equal(h.requests.length,1);
+  h.doc.querySelector('#message-form').dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  assert.equal(h.requests.length,1);assert.equal(draft.value,'Wait for the saved mode.');
+  assert.ok(h.toasts.some(item=>/action review.*saving/.test(item.message)));
+  finish({...h.saved,approvalPolicy:'auto'});await tick();assert.equal(field.disabled,false);assert.equal(field.value,'auto');
+  assert.equal(h.doc.querySelector('#chat-approval-status').hidden,true);
+});
+
+test('chat review preserves the saved mode after refusal and refuses changes during active work',async t=>{
+  const h=ui(t,{botPatchRequest:()=>{throw Object.assign(new Error('Wait for this bot to finish.'),{status:409});}});h.chat();
+  const field=h.doc.querySelector('#chat-approval-policy');field.value='auto';field.dispatchEvent(new h.win.Event('change',{bubbles:true}));await tick();
+  assert.equal(field.value,'strict');assert.match(h.doc.querySelector('#chat-approval-status').textContent,/Wait for this bot/);
+  h.run("chat.run={id:'active',status:'waiting_for_approval'};updateChatReview(botById('bot_atlas'))");assert.equal(field.disabled,true);
+  await h.run("saveChatReview('bot_atlas','auto')");assert.equal(h.requests.length,1);
+  h.run("chat.run={id:'active',status:'completed'};chatReviewErrors.clear();updateChatReview(botById('bot_atlas'))");assert.equal(field.disabled,false);
+  h.run("chat.elsewhere={name:'Home'};updateChatReview(botById('bot_atlas'))");assert.equal(field.disabled,true);
+});
+
+test('chat review ignores late sign-out responses and stale workspace snapshots',async t=>{
+  let finish;const h=ui(t,{botPatchRequest:()=>new Promise(resolve=>{finish=resolve;})});h.chat();
+  const promise=h.run("saveChatReview('bot_atlas','auto')");await tick();finish({...h.saved,approvalPolicy:'auto'});await promise;
+  assert.equal(h.run("applyWorkspaceState(fixtureData,0)"),false);assert.equal(h.run("botById('bot_atlas').approvalPolicy"),'auto');
+  const late=h.run("saveChatReview('bot_atlas','balanced')");await tick();h.run('renderAuth()');
+  finish({...h.saved,approvalPolicy:'balanced'});await late;
+  assert.equal(h.run("botById('bot_atlas')?.approvalPolicy"),'auto','late response cannot overwrite the retained cached mode after sign-out');
+  assert.equal(h.doc.querySelector('#chat-approval-policy'),null);
+});
