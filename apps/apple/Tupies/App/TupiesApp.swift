@@ -33,7 +33,7 @@ struct TupiesApp: App {
         }
         .defaultSize(width: 1200, height: 820)
         .windowToolbarStyle(.unified(showsTitle: false))
-        .commands { if let runtime = gate.runtime { StudioCommands(store: runtime.store) } }
+        .commands { MacUpdateCommands(); if let runtime = gate.runtime { StudioCommands(store: runtime.store) } }
 
         Settings {
             if let runtime = gate.runtime {
@@ -55,6 +55,12 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) { _ = MacUpdates.shared }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard MacUpdates.shared.hasDownloadedUpdate else { return .terminateNow }
+        Task { let ready = await MacUpdates.shared.prepare(); sender.reply(toApplicationShouldTerminate: ready) }
+        return .terminateLater
+    }
     /// Closing the window keeps the app running, as Mail and Messages do: each engine's live web view and an engine
     /// this app started stay up. The Dock icon or a pairing link reopens the window; Quit (⌘Q) quits.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

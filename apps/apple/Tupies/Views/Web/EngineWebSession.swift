@@ -44,6 +44,28 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
 
     let id: UUID
     let webView: WKWebView
+    #if os(macOS)
+    func lockForAppUpdate() async throws {
+        guard hasLoadedEngine else {
+            if phase == .idle || phase.isError { return }
+            throw MacUpdateError.postponed("Wait for your servers to finish connecting before updating.")
+        }
+        guard popup == nil, downloadNames.isEmpty, !isNavigating,
+              let url = webView.url, isEngineOrigin(url),
+              let ready = try? await webView.evaluateJavaScript("""
+              (() => {
+                if (typeof window.tupiesReadyForAppUpdate !== 'function' || !window.tupiesReadyForAppUpdate()) return false;
+                document.documentElement.inert = true;
+                return true;
+              })()
+              """), ready as? Bool == true else {
+            throw MacUpdateError.postponed("Finish or save drafts, close open dialogs and downloads, then install the update. Older servers need an Engine update first.")
+        }
+    }
+    func unlockAfterAppUpdate() {
+        webView.evaluateJavaScript("document.documentElement.inert = false", completionHandler: nil)
+    }
+    #endif
     @Published private(set) var phase: Phase = .idle {
         didSet {
             // After an error, wait for the next page to draw again before showing it.
@@ -85,6 +107,16 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     private var cancellables: Set<AnyCancellable> = []
     private var lastNotificationAttendance = Date.distantPast
     private var downloadNames: [ObjectIdentifier: URL] = [:]
+    #if os(macOS)
+    private var reconnectDrafts: [String: Any]?
+    private var draftRestoreTask: Task<Void, Never>?
+    private var signInPreparationTask: Task<Void, Never>?
+    private func retainReconnectDrafts(_ value: Any?) {
+        guard let drafts = value as? [String: Any], drafts["v"] as? Int == 1,
+              JSONSerialization.isValidJSONObject(drafts), let bytes = try? JSONSerialization.data(withJSONObject: drafts), bytes.count <= 1_000_000 else { return }
+        reconnectDrafts = drafts
+    }
+    #endif
     private var notificationNavigation = NotificationNavigation()
     private var readiness = WebSessionReadiness()
     private var authenticationCheckTask: Task<Void, Never>?
@@ -198,6 +230,13 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     }
 
     func updateConnection(_ connection: Connection) {
+        #if os(macOS)
+        if connection.baseURL != self.connection.baseURL || connection.fingerprint != self.connection.fingerprint || connection.deviceId != self.connection.deviceId {
+            reconnectDrafts = nil
+            draftRestoreTask?.cancel()
+            signInPreparationTask?.cancel()
+        }
+        #endif
         self.connection = connection
     }
 
@@ -211,6 +250,24 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
 
     /// Mints a device session + web ticket and loads `/auth/device?ticket=…`.
     func signIn() {
+        #if os(macOS)
+        if hasLoadedEngine, let url = webView.url, isEngineOrigin(url), url.path != "/auth/device" {
+            guard signInPreparationTask == nil else { return }
+            let context = readiness.context
+            signInPreparationTask = Task { [weak self] in
+                guard let self else { return }
+                defer { self.signInPreparationTask = nil }
+                let snapshot = try? await self.webView.evaluateJavaScript("(() => { const snapshot = window.tupiesCaptureDrafts?.() ?? null; document.documentElement.inert = true; return snapshot; })()")
+                guard !Task.isCancelled, context == self.readiness.context else { return }
+                self.retainReconnectDrafts(snapshot)
+                self.beginSignIn()
+            }
+            return
+        }
+        #endif
+        beginSignIn()
+    }
+    private func beginSignIn() {
         tlsFailure = nil
         let context = readiness.beginSignIn()
         authenticationCheckTask?.cancel()
@@ -350,6 +407,9 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
 
     func tearDown() {
         #if os(macOS)
+        reconnectDrafts = nil
+        draftRestoreTask?.cancel()
+        signInPreparationTask?.cancel()
         uploadPanel?.cancel(nil)
         uploadPanel = nil
         #endif
@@ -372,6 +432,9 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     /// so a still-valid web cookie can't keep the engine open.
     func markRevoked(_ message: String) {
         #if os(macOS)
+        reconnectDrafts = nil
+        draftRestoreTask?.cancel()
+        signInPreparationTask?.cancel()
         uploadPanel?.cancel(nil)
         uploadPanel = nil
         #endif
@@ -561,6 +624,27 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
         updatePageAppearance()
         StudioHaptics.prepare()
         #endif
+        #if os(macOS)
+        if let snapshot = reconnectDrafts {
+            guard draftRestoreTask == nil else { return }
+            let context = readiness.context
+            draftRestoreTask = Task { [weak self] in
+                guard let self else { return }
+                defer { self.draftRestoreTask = nil }
+                do {
+                    let restored = try await self.webView.callAsyncJavaScript("return window.tupiesRestoreDrafts?.(snapshot) ?? false", arguments: ["snapshot": snapshot], in: nil, contentWorld: .page)
+                    guard context == self.readiness.context else { return }
+                    if restored as? Bool == true { self.reconnectDrafts = nil }
+                    else { self.store?.alert = AppAlert(title: "Your draft is saved on this Mac", message: "Tupies reconnected, but this page couldn’t restore the message draft. Try Reload while keeping this app open.") }
+                } catch {
+                    guard context == self.readiness.context else { return }
+                    self.store?.alert = AppAlert(title: "Your draft is saved on this Mac", message: "Try Reload to restore it while keeping this app open.")
+                }
+                if context == self.readiness.context { self.isPageVisible = true }
+            }
+            return
+        }
+        #endif
         isPageVisible = true
     }
 
@@ -728,7 +812,9 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
             const target = new URL(response.url || (args[0] && args[0].url) || String(args[0]), location.href);
             const ignored = ['/api/login', '/api/setup', '/api/logout'];
             if (target.origin === location.origin && target.pathname.startsWith('/api/') && !ignored.includes(target.pathname)) {
-              post({ type: 'unauthorized', path: target.pathname });
+              let drafts = null;
+              if ('\(platform)' === 'macos') { try { drafts = window.tupiesCaptureDrafts?.() ?? null; document.documentElement.inert = true; } catch (_) {} }
+              post({ type: 'unauthorized', path: target.pathname, drafts });
             }
           }
         } catch (_) {}
@@ -748,6 +834,9 @@ extension EngineWebSession: WKScriptMessageHandler {
               let body = message.body as? [String: Any] else { return }
         switch body["type"] as? String {
         case "unauthorized":
+            #if os(macOS)
+            retainReconnectDrafts(body["drafts"])
+            #endif
             reauthenticate()
         case "chrome":
             webOwnsChrome = (body["ownsChrome"] as? Bool) == true

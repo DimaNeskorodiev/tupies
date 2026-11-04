@@ -33,6 +33,7 @@ import { APNs } from './lib/apns.mjs';
 import { Notifications, notificationsApi } from './lib/notifications.mjs';
 import { SkillsService, assertSkillIntegrity } from './lib/skills.mjs';
 import { prepareSkillImport } from './lib/skill-import.mjs';
+import { UpdateMaintenance } from './lib/update-maintenance.mjs';
 
 export { controlSocketPath, controlSocketLive };
 
@@ -111,6 +112,8 @@ async function validateSkillAssignments(store,state,bot) {
 }
 
 export async function createStudioServer(options={}) {
+  const updateHold=options.updateHold ?? (process.env.STUDIO_UPDATE_HOLD_FILE ? !!await fs.stat(process.env.STUDIO_UPDATE_HOLD_FILE).catch(error=>{if(error.code==='ENOENT')return null;throw error;}) : false);
+  let updatePaused=()=>updateHold;
   const dataDir=options.dataDir || process.env.STUDIO_DATA_DIR || path.join(ROOT,'data');
   const store=await new Store(dataDir).init();
   const missionPricing=await loadMissionPricing({file:options.missionPricingFile ?? process.env.STUDIO_MISSION_PRICES_FILE,dataDir:store.directory,state:store.state});
@@ -122,7 +125,7 @@ export async function createStudioServer(options={}) {
   ensure(['','off','engine'].includes(tlsSetting),500,'STUDIO_TLS must be engine or off.');
   const tlsMode=tlsSetting==='engine',scheme=tlsMode?'https':'http';
   const allowedHosts=new Set(String(options.allowedHosts ?? process.env.STUDIO_ALLOWED_HOSTS ?? '').split(',').map(host=>host.trim().toLowerCase()).filter(Boolean));
-  const sync=await new Sync(store,{publicUrl:publicOrigin,tls:tlsMode,logErrors:options.logErrors,...options.sync}).init();
+  const sync=await new Sync(store,{publicUrl:publicOrigin,tls:tlsMode,logErrors:options.logErrors,...options.sync,updateHeld:()=>updatePaused()}).init();
   // Nothing sits in front of an engine that terminates TLS itself, so no proxy may report client addresses.
   const access=await new Access(dataDir,{publicHost:publicOrigin?new URL(publicOrigin).host:'',...(tlsMode?{trustProxy:'none'}:options.trustProxy?{trustProxy:options.trustProxy}:{})}).init();
   const providers=options.providers || new Providers(store,options);
@@ -137,16 +140,19 @@ export async function createStudioServer(options={}) {
     createBot:(input,{actor})=>store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);await ensureWorkspaceLayout(await getWorkspaceRoot(store,bot.id));state.bots.push(bot);store.audit('bot.created',`${actor.name} added ${bot.name} to your team`,bot.id,{source:'agent',createdBy:actor.id});return structuredClone(bot);}),
     updateBot:(botId,input,{actor})=>{botIdle(botId);return store.mutate(async state=>{botIdle(botId);const index=state.bots.findIndex(b=>b.id===botId);ensure(index>=0,404,'Bot not found.');const updated=validateBot(input,state.bots[index]);validateBinding(updated,state,integrations);await validateSkillAssignments(store,state,updated);botIdle(botId);state.bots[index]=updated;store.audit('bot.updated',`${actor.name} updated ${updated.name}`,botId,{source:'agent'});return structuredClone(updated);});},
   };
-  const runtime=new Runtime(store,{...options,missionPriceFor:options.missionPriceFor || missionPricing.priceFor,missionPricingConfigured:missionPricing.configured,missionPricingCount:missionPricing.count,providers,integrations,skills,setup,speech,ownerEngineId:()=>sync.nodeId,ownerEngineName:()=>sync.identity.name,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>sync.runsAutomation(),assertAdmission:()=>sync.assertAdmission(),admissionPaused:()=>!!sync.topologyChanging});
+  let updateWrites=0;
+  const maintenance=new UpdateMaintenance({held:updateHold,busy:()=>updateWrites>0 || ticking || sync.topologyChanging || runtime.starting.size>0 || runtime.submitting.size>0 || runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || runtime.tasks.size>0 || runtime.polling.size>0 || rooms.working.size>0 || rooms.submitting.size>0 || Object.values(store.state.runs).some(isActive) || Object.values(store.state.roomDrives || {}).some(isDriveActive) || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging'||attempt.status==='pending'&&attempt.expiresAt>Date.now()) || channels.receiving.size>0 || [...channels.requests.keys()].some(operation=>channels.requestMethods.get(operation)!=='getUpdates') || !!channels.tickPromise || !!notifications.delivery});
+  updatePaused=()=>maintenance.paused;
+  const runtime=new Runtime(store,{...options,missionPriceFor:options.missionPriceFor || missionPricing.priceFor,missionPricingConfigured:missionPricing.configured,missionPricingCount:missionPricing.count,providers,integrations,skills,setup,speech,ownerEngineId:()=>sync.nodeId,ownerEngineName:()=>sync.identity.name,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>!maintenance.paused && sync.runsAutomation(),assertAdmission:()=>{maintenance.assertAdmission();sync.assertAdmission();},admissionPaused:()=>maintenance.paused || !!sync.topologyChanging});
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();
-  const channels=new Channels(store,runtime,{...options,automation:()=>sync.runsAutomation()});
+  const channels=new Channels(store,runtime,{...options,automation:()=>!maintenance.paused && sync.runsAutomation()});
   sync.options.linkBusy=()=>runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging');
   sync.prepareLinkChange=()=>channels.pauseAutomation();
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
-  const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport}).init();
+  const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport,updateHeld:()=>maintenance.paused}).init();
   await runtime.recoverAutonomous();
   sync.onNotificationReads = ids => notifications.markRead(ids);
   const bootstrapToken=options.bootstrapToken || randomBytes(24).toString('base64url');
@@ -222,12 +228,26 @@ export async function createStudioServer(options={}) {
     const key=addressBucket(access.client(req));
     ensure(attempts.count(key)<10,429,'Too many sign-in attempts. Wait 15 minutes.');attempts.add(key,15*60*1000);
   }
+  // Only a verified sync exchange's settled read wait may leave the in-flight count.
+  // It must reacquire admission before doing any post-wait work.
+  function trackUpdateRequest(res) {
+    maintenance.assertAdmission();updateWrites++;
+    let counted=true,busy=true;
+    const settled=()=>{if(counted){counted=false;if(busy)updateWrites--;}};
+    res.once('finish',settled);res.once('close',settled);
+    return async wait=>{
+      if(counted&&busy){busy=false;updateWrites--;}
+      try {return await wait();}
+      finally {maintenance.assertAdmission();if(counted&&!busy){busy=true;updateWrites++;}}
+    };
+  }
   const handler=async(req,res)=>{
     headers(res);
     try {
       verifyHost(req);verifyOrigin(req);
       const url=new URL(req.url,`http://${req.headers.host}`),pathname=url.pathname;
       const method=req.method;
+      if(method==='POST'&&['/api/pair','/api/device/session','/api/setup','/api/login'].includes(pathname)||method==='GET'&&['/auth/device','/auth/callback'].includes(pathname))trackUpdateRequest(res);
       if(method==='GET' && pathname==='/auth/callback'){await oauthCallback(req,res,url,providers);return;}
       if(await syncPublicApi(req,res,url,{sync,body,json,login,rateLimit,access}))return;
       if(method==='GET' && pathname==='/api/auth') {
@@ -258,9 +278,10 @@ export async function createStudioServer(options={}) {
       }
       if(pathname.startsWith('/api/')) {
         const session=auth(req,!['GET','HEAD'].includes(method));
+        const idleUpdateWait=trackUpdateRequest(res);
         ensure(session.kind!=='engine' || isEngineRoute(pathname),403,'Linked engines can only use sync routes.');
         const requestOrigin=publicOrigin && req.headers.host===new URL(publicOrigin).host ? publicOrigin : `${scheme}://${req.headers.host}`;
-        if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access}))return;
+        if(await syncApi(req,res,url,{sync,session,body,json,providers,requestOrigin,access,idleUpdateWait}))return;
         if(await notificationsApi(req,res,url,{session,notifications,body,json}))return;
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
         if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),sync:sync.summary(),browser:runtime.browsers.status()});
@@ -473,6 +494,13 @@ export async function createStudioServer(options={}) {
   timer?.unref();
   async function controlCommand(request,localUrl) {
     ensure(request?.v===1,400,'Update Tupies: unsupported command version.');
+    if(['update-status','update-claim','update-release','update-activate'].includes(request.command)) {
+      ensure(Object.keys(request).every(key=>['v','command','token'].includes(key)),400,'Unsupported update control fields.');
+      if(request.command==='update-status')return {update:{...maintenance.status(),release:await fs.readFile(path.join(ROOT,'engine-release.json'),'utf8').then(JSON.parse).catch(error=>{if(error.code==='ENOENT')return null;throw error;})}};
+      if(request.command==='update-claim') {await store.queue;return {update:maintenance.claim()};}
+      if(request.command==='update-release')return {update:maintenance.release(request.token)};
+      const status=maintenance.activate();if(sync.config.hub)sync.startPeer();return {update:status};
+    }
     if(request.command==='pair') {
       const kind=request.kind==='engine'?'engine':'device',baseUrl=request.url?validateEngineUrl(request.url):publicOrigin || localUrl;
       const {qrSvg,...pairing}=sync.devices.createPairing({kind,baseUrl});

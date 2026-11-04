@@ -1136,5 +1136,5 @@
   document.addEventListener('focusin', scheduleViewport);
   // The keyboard finishes hiding after focus leaves; measure again once it has.
   document.addEventListener('focusout', () => {scheduleViewport(); window.setTimeout(scheduleViewport, 350);});
-  window.StudioMobile = {beforeRender, afterRender, mountDialog, closeSheet, sent, reset, sizeComposer, haptic};
+  window.StudioMobile = {beforeRender, afterRender, mountDialog, closeSheet, sent, reset, sizeComposer, haptic, hasDrafts:()=>[...drafts.values()].some(Boolean)};
 })();

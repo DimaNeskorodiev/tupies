@@ -1,0 +1,25 @@
+[Unit]
+Description=Install verified Tupies Engine releases when idle
+Wants=network-online.target
+After=network-online.target tupies.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/node /usr/local/lib/tupies-updater/scripts/update-engine.mjs --config /etc/tupies-updater/config.json
+UMask=0077
+TimeoutStartSec=30min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# Match these operator-owned paths to the reviewed config before enabling.
+ReadWritePaths=/opt/tupies /var/lib/tupies /var/backups/tupies /var/lib/tupies-updater
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+

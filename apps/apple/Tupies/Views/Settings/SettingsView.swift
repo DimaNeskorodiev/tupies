@@ -159,6 +159,9 @@ struct SettingsView: View {
                 }
                 #endif
 
+                #if os(macOS)
+                MacUpdateSettings()
+                #endif
                 Section("About") {
                     LabeledContent("Version", value: DeviceInfo.appVersion)
                     Label {

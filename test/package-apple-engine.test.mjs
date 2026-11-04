@@ -28,11 +28,11 @@ test('Apple engine source staging includes runtime fonts and notices but exclude
   for(const folder of ['lib','public','assets/fonts','assets/licenses','assets/tool-catalog','scripts','data','node_modules','test','prototypes'])await fs.mkdir(path.join(repo,folder),{recursive:true});
   const files={'assets/tool-catalog/fixture.json':'{"format":"tupies-tool-v1"}','assets/tool-catalog/private.txt':'PRIVATE','server.mjs':'// server','package.json':'{"name":"fixture"}','package-lock.json':'{"packages":{}}','LICENSE':'MIT','NOTICE':'notice','lib/engine.mjs':'// engine','public/app.js':'// app','assets/fonts/NotoSans-Regular.ttf':'font','assets/fonts/OFL.txt':'font license','assets/licenses/THIRD_PARTY_LICENSES.txt':'dependency notices','.env':'SECRET','data/state.json':'SECRET','data/vault.key':'SECRET','node_modules/private':'SECRET','test/private':'SECRET','prototypes/private':'SECRET','lib/.env':'SECRET','public/state.json':'SECRET','public/.private':'SECRET'};
   for(const [name,value] of Object.entries(files))await fs.writeFile(path.join(repo,name),value);
-  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','eval-private.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
+  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs','eval-private.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
   await stageEngineSource(repo,out);
   for(const name of ['assets/tool-catalog/fixture.json','server.mjs','lib/engine.mjs','public/app.js','assets/fonts/NotoSans-Regular.ttf','assets/fonts/OFL.txt','assets/licenses/THIRD_PARTY_LICENSES.txt','LICENSE','NOTICE'])assert.ok(await fs.stat(path.join(out,name)));
   for(const name of ['assets/tool-catalog/private.txt','.env','data','node_modules','test','prototypes','lib/.env','public/state.json','public/.private'])await assert.rejects(fs.lstat(path.join(out,name)),{code:'ENOENT'});
-  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs'])assert.ok(await fs.stat(path.join(out,'scripts',name)));
+  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs'])assert.ok(await fs.stat(path.join(out,'scripts',name)));
   await assert.rejects(fs.lstat(path.join(out,'scripts','eval-private.mjs')),{code:'ENOENT'});
   await fs.symlink(path.join(repo,'.env'),path.join(repo,'public','leak.txt'));
   await assert.rejects(stageEngineSource(repo,path.join(dir,'symlink-output')),/symlinks/);
@@ -42,7 +42,7 @@ test('Apple staging preserves complete reviewed skill packages and their loadabl
   const dir=await temporary(t),repo=path.join(dir,'repo'),out=path.join(dir,'output'),skillRoot='lib/skills/tupies-product';
   for(const folder of ['public','assets/fonts','assets/licenses','scripts','lib/skills/other',`${skillRoot}/references`])await fs.mkdir(path.join(repo,folder),{recursive:true});
   for(const [name,value] of Object.entries({'server.mjs':'// server','package.json':'{"name":"fixture","type":"module"}','package-lock.json':'{"packages":{}}','LICENSE':'MIT','lib/private.md':'PRIVATE','lib/skills/other/SKILL.md':'PRIVATE',[`${skillRoot}/.env`]:'PRIVATE',[`${skillRoot}/vault.key`]:'PRIVATE',[`${skillRoot}/private.json`]:'PRIVATE',[`${skillRoot}/private.txt`]:'PRIVATE'}))await fs.writeFile(path.join(repo,name),value);
-  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
+  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs'])await fs.writeFile(path.join(repo,'scripts',name),'// script fixture');
   for(const name of ['skill-catalog.mjs','skill-grok-catalog.mjs','skill-tupies-catalog.mjs','skill-learning-catalog.mjs'])await fs.copyFile(new URL(`../lib/${name}`,import.meta.url),path.join(repo,'lib',name));
   const packages=[['tupies-product',skillRoot],['tupies-learn-from-material','lib/skills/tupies-learning']].map(([catalogId,root])=>({entry:bundledSkills().find(skill=>skill.catalogId===catalogId),root}));
   for(const {entry,root} of packages)for(const file of entry.files) {

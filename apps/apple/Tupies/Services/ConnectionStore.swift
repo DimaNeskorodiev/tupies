@@ -117,6 +117,16 @@ final class ConnectionStore: ObservableObject {
 
     // MARK: - Web sessions
 
+    #if os(macOS)
+    func lockPagesForUpdate() async throws {
+        guard pairingSheet == nil else { throw MacUpdateError.postponed("Finish pairing before updating Tupies.") }
+        do {
+            for session in webSessions.values { try await session.lockForAppUpdate() }
+        } catch { unlockPagesAfterUpdate(); throw error }
+    }
+    func unlockPagesAfterUpdate() { for session in webSessions.values { session.unlockAfterAppUpdate() } }
+    #endif
+
     func webSession(for id: UUID) -> EngineWebSession {
         if let session = webSessions[id] { return session }
         let connection = self.connection(id) ?? Connection(
