@@ -1,5 +1,17 @@
 # Verification — Tupies Engine 0.5
 
+## Bot details and settings UX — 4 November 2026 (source only)
+
+
+The publication is prepared independently on `28a314c` main, excluding parallel Action review, Mission and browser recovery changes. It preserves the existing Balanced/Strict modes and defaults.
+
+Official Node **22.23.4** passes **166/166 focused regressions across ten files** (`bot-settings-ux`, `bot-profile`, `pearl-ui`, `bot-deletion`, `navigation-ui`, `speech-ui`, `onboarding`, `mobile-ui`, `mobile-motion`, `skills-store-ui`). Syntax checking passes **187 JavaScript modules**. Documentation regenerates **31 guide pages**. These are focused UI checks, not a new full Engine-suite or deployment claim.
+
+Actual disposable IAB checks every settings panel at **320/390/834/1280px**: **36/36 layout checks** show one visible panel and no document horizontal overflow. A real synthetic settings save returns to the clean disabled-save state; Tools retains three collapsed groups and the existing two action-review choices. Earlier working-copy browser checks additionally cover light/dark accent contrast, expanded permission rows, skill search/no-match/assigned filtering, preservation of filtered-out assignments, skill previews and the large Instructions editor. Pending-save, detached-success/refusal and modal-search regressions run on this isolated publication tree.
+
+Only synthetic accounts and temporary stores are used. No real provider calls, operational Mac/VPS/native installation, pairing or account data change is included. Physical iPhone keyboard/safe-area/VoiceOver acceptance remains unverified.
+
+
 ## Mac/VPS automatic update implementation — 4 November 2026 (source only)
 
 The initial isolated activation candidate excludes unrelated browser/Mission work. Its official Node22.23.4 run passes **1,966/1,966 tests in193files**,91 sequential and1,875 at concurrency4, zero skips/failures; **187 syntax checks**, rebuilt browser assets and31guide pages pass. The final candidate adds three real HTTP/sync regressions: settled read waits do not starve reservation, active sync writes still block it, and public setup/sign-in requests are counted/refused. Both initially reproduced defects fail before the fix; the focused sync/security run passes36/36, then all7 maintenance cases pass. A fresh complete final receipt is required before publication. GitHub now has release-tag-restricted signing environments with matching updater keys and the public persistent feed release. Versioned publication and operational activation remain pending.
