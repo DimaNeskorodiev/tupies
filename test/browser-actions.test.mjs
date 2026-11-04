@@ -70,6 +70,47 @@ test('owner takeover input never appears in model outlines and stale screenshots
   const text=await run(f,'browser_text',{});assert.ok(!text.text.includes('a-private-owner-secret'));
 });
 
+test('owner views and clicks survive invisible verification bookkeeping in the page and cross-origin frame',chrome,async t=>{
+  const f=await fixture(t);await run(f,'browser_open',{url:`${f.base}/cross`});const session=f.browsers.sessions.get(f.context.runId);
+  const frames=await session.frames(),child=frames.find(frame=>frame.parentId);assert.ok(child);
+  const update=function(){
+    let token=document.querySelector('[name=verification_token]');
+    if(!token){token=document.createElement('input');token.type='hidden';token.name='verification_token';document.body.append(token);}
+    token.value=String(Number(token.value || 0)+1);document.body.dataset.verificationTick=token.value;
+  };
+  await session.evaluate(update,{},session.mainFrame);await session.evaluate(update,{},child.id);
+  const screenshot=session.screenshot.bind(session);
+  session.screenshot=async()=>{const bytes=await screenshot();await session.evaluate(update,{},session.mainFrame);await session.evaluate(update,{},child.id);return bytes;};
+  const view=await session.ownerView();assert.ok(view.imageBase64.length>1000);
+  await session.evaluate(update,{},child.id);
+  const point=await session.evaluate(function(){const r=document.querySelector('iframe').getBoundingClientRect();return {x:r.x,y:r.y};},{},session.mainFrame);
+  const button=await session.evaluate(function(){const r=document.querySelector('button').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};},{},child.id);
+  await session.ownerAction({type:'click',x:point.x+2+button.x,y:point.y+2+button.y},view.identity);
+  assert.match(await session.evaluate(function(){return document.body.innerText;},{},child.id),/Frame clicked/);
+  await assert.rejects(session.ownerAction({type:'click',x:20,y:20},view.identity),/image changed/,'a consumed view cannot send input twice');
+});
+
+test('owner views still refuse changed labels, destinations, replacement controls, focus and overlays before dispatch',chrome,async t=>{
+  const f=await fixture(t);await run(f,'browser_open',{url:f.base});const session=f.browsers.sessions.get(f.context.runId);
+  for(const change of ['label','destination','replacement','focus','overlay','disabled','opacity','moved']) {
+    await session.navigate(f.base);
+    const view=await session.ownerView(),before=session.dispatchCount;
+    await session.evaluate(function({change}){
+      const button=document.querySelector('button[type=submit]');
+      if(change==='label')button.textContent='Pay now';
+      if(change==='destination')document.querySelector('a').href='/different-account';
+      if(change==='replacement')button.replaceWith(button.cloneNode(true));
+      if(change==='focus')document.querySelector('[name=password]').focus();
+      if(change==='disabled')document.querySelector('button[type=submit]').disabled=true;
+      if(change==='opacity')button.style.opacity='0';
+      if(change==='moved')button.style.transform='translateX(50px)';
+      if(change==='overlay'){const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:transparent';document.body.append(overlay);}
+    },{change});
+    await assert.rejects(session.ownerAction({type:'key',key:'Enter'},view.identity),/image changed/,change);
+    assert.equal(session.dispatchCount,before,`${change} must not dispatch input`);
+  }
+});
+
 test('tabs, embedded frames and JavaScript dialogs have explicit bounded controls',chrome,async t=>{
   const f=await fixture(t);let page=await run(f,'browser_open',{url:f.base});
   page=await run(f,'browser_click',{ref:find(page.outline,'Open account'),revision:page.revision});
