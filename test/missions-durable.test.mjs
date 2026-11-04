@@ -140,10 +140,13 @@ test('250ms scheduler ticks cannot postpone a one-second file observation foreve
  const root=path.join(h.directory,'workspaces',BOT);await fs.mkdir(root,{recursive:true});await fs.writeFile(path.join(root,'watched.md'),'original');
  const created=await h.create('Watch the exact private file and report its actual changed contents.');await until(()=>h.store.state.runs[BOT]?.missionSuspended);await until(()=>!h.engine.tasks.size);
  const mission=h.store.state.missions[created.mission.id],originalWake=mission.waitCondition.nextWakeAt;
- await delay(250);await h.engine.tick();assert.equal(mission.waitCondition.nextWakeAt,originalWake);
- await delay(250);await fs.writeFile(path.join(root,'watched.md'),'changed by the owner');await h.engine.tick();assert.equal(mission.waitCondition.nextWakeAt,originalWake);
- await delay(250);await h.engine.tick();assert.equal(mission.waitCondition.nextWakeAt,originalWake);
- await delay(300);await h.engine.tick();await h.settled();assert.equal(mission.outcome,'achieved',mission.reason);assert.equal(mission.waitHistory.length,1);assert.equal(mission.lastWake.cursor,1);
+ // Filesystem/runner latency must not turn a nominal 750ms assertion into a legitimate >1s wake.
+ // Keep real I/O and async timers; advance only the scheduler's wall clock deterministically.
+ t.mock.timers.enable({apis:['Date'],now:Date.parse(originalWake)-1000});
+ t.mock.timers.tick(250);await h.engine.tick();assert.equal(mission.waitCondition.nextWakeAt,originalWake);
+ t.mock.timers.tick(250);await fs.writeFile(path.join(root,'watched.md'),'changed by the owner');await h.engine.tick();assert.equal(mission.waitCondition.nextWakeAt,originalWake);
+ t.mock.timers.tick(250);await h.engine.tick();assert.equal(mission.waitCondition.nextWakeAt,originalWake);
+ t.mock.timers.tick(300);await h.engine.tick();await h.settled();assert.equal(mission.outcome,'achieved',mission.reason);assert.equal(mission.waitHistory.length,1);assert.equal(mission.lastWake.cursor,1);
 });
 
 async function waitingTeam(t) {
