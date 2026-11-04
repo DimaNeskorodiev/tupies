@@ -125,3 +125,7 @@ Use `node --test test/coding-*.test.mjs test/local-coding*.test.mjs test/azure-d
 ## Onboarding
 
 New-workspace defaults, Ops’ bundled product guide and the resumable setup UI are described in [Onboarding](onboarding.md). Use `node scripts/e2e-fixture.mjs --onboarding` for an empty-model setup walkthrough; the printed synthetic endpoint uses the OpenAI Responses protocol. `test/onboarding.test.mjs` covers authentication, persistence, existing-workspace preservation, real reply completion, template editing and draft-only prompts. Keep native engine startup and pairing on their existing path.
+
+## Chat learning and save receipts
+
+`lib/skill-review.mjs` owns the bounded final ordinary-chat skill review; `lib/learning-changes.mjs` records verified save presentation metadata. `public/chat-learning.js` and `.css` render linked cards with finite, reduced-motion-aware animation. Keep the review on the normal inference/admission/tool/approval path, and never infer a save from model prose. `test/skill-review.test.mjs` covers actual files, policy, evidence, duplicate/lifecycle boundaries and provider failures; `test/chat-learning.test.mjs` covers safe labels, links and animation replay. Run the complete suite for Engine changes. `node scripts/e2e-fixture.mjs --learning` plus **E2E learning** exercises real Brain/Memory writes and automatic creation against the deterministic local provider. No production data or paid provider is used.

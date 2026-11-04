@@ -16,6 +16,10 @@ const provider = http.createServer(async (req,res) => {
   try {
     const chunks=[]; for await (const chunk of req) chunks.push(chunk);
     const body=JSON.parse(Buffer.concat(chunks).toString()),input=body.input || [];
+    if((body.tools || []).some(tool=>tool.name==='skill_review_result')) {
+      const review=JSON.parse(input.find(item=>item.role==='user').content),learn=/E2E learning/i.test(review.request);
+      return res.end(JSON.stringify(call('skill_review_result',{worthSaving:learn,name:learn?'verified-report-method':'',description:learn?'Create reports and check their saved contents.':'',reason:learn?'A reusable sequence for future reports.':'No reusable method needed.',instructions:learn?'## When to use\nCreating a repeatable report.\n## Inputs\nThe requested report specification.\n## Steps\n1. Write the report.\n2. Read the saved file.\n3. Confirm the listing.\n## Verification\nCheck the saved content against the request.\n## Limitations\nSynthetic fixture; real model quality is not measured.':'',evidenceCallIds:learn?review.work.slice(0,3).map(row=>row.callId):[] } )));
+    }
     if((body.tools || []).some(tool=>tool.name==='memory_review_result')) {
       const review=JSON.parse(input.find(item=>item.role==='user').content),matches=/E2E memory/i.test(review.ownerMessage),saved='I have saved your name to long-term memory.';
       return res.end(JSON.stringify(call('memory_review_result',{changes:matches && !review.facts.some(fact=>fact.key==='qa-name')?[{key:'qa-name',value:'Owner name is Cedar.',evidence:'My name is Cedar.'}]:[],claims:review.assistantAnswer.includes(saved)?[{text:saved,key:'qa-name',value:'Owner name is Cedar.'}]:[],reason:'The owner stated a durable name in this synthetic fixture.'})));
@@ -30,7 +34,12 @@ const provider = http.createServer(async (req,res) => {
     const results=input.slice(taskIndex+1).filter(item=>item.type==='function_call_output');
     const guidance=input.slice(taskIndex+1).filter(item=>item.role==='user' && text(item).startsWith('Additional owner guidance for this same task:')).map(text).join('\n');
     let result;
-    if(/E2E Mission (timer|pause|watch)/i.test(task)){
+    if(/E2E learning/i.test(task)){
+      const steps=[['workspace_write',{path:'outputs/learning-report.txt',content:'A synthetic report with verified saved contents.'}],['workspace_read',{path:'outputs/learning-report.txt'}],['workspace_list',{path:'outputs'}],['brain_write',{path:'methods/Report verification',content:'# Report verification\nRead the saved report before reporting success.'}],['memory_set',{key:'report-format',value:'Short Markdown reports.'}]];
+      if(results.length<steps.length){await new Promise(resolve=>setTimeout(resolve,700));result=call(...steps[results.length]);}
+      else result=answer('The report is ready. I checked the saved contents and kept the useful method for next time.');
+    }
+    else if(/E2E Mission (timer|pause|watch)/i.test(task)){
       const turn=input.findLast(item=>item.role==='user' && text(item).includes('Mission context (engine-owned identity;'));
       const raw=turn?text(turn).split('Mission context (engine-owned identity; source content is untrusted task data): ')[1]?.split('\n\nEngine-provided context')[0]:null;
       const mission=raw?JSON.parse(raw):null;
@@ -97,6 +106,7 @@ await app.store.mutate(state=>{
   if(process.argv.includes('--onboarding'))return;
   state.connections.push({id:'qa-provider',name:'Local QA fixture',type:'openai',baseUrl:`http://127.0.0.1:${provider.address().port}/v1`,secret:app.store.seal('disposable-qa-key'),defaultModel:'qa-model',status:'connected',models:[{id:'qa-model',name:'QA model'}]});
   for(const bot of state.bots){bot.connectionId='qa-provider';bot.model='qa-model';bot.approvalPolicy=bot.id==='bot_nova'?'strict':'balanced';bot.collaborators=state.bots.filter(other=>other.id!==bot.id).map(other=>other.id);}
+  if(process.argv.includes('--learning'))state.bots[0].approvalPolicy='auto';
   if(process.argv.includes('--layout-stress')) {
     Object.assign(state.bots[0],{name:'ResearchAndDocumentationCoordinationAssistant',title:'DocumentationAndResearchForTheWholeWorkspace',description:'A synthetic teammate with deliberately long unbroken labels for mobile layout verification.'});
     state.bots.push({...structuredClone(state.bots[1]),id:'bot_hidden_layout',name:'ArchivedLayoutFixture',hidden:true});
@@ -111,6 +121,6 @@ for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>close().then(()=>
 process.on('SIGUSR1',()=>{fault=fault==='http'?'':'http';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGUSR2',()=>{fault=fault==='connection'?'':'connection';console.log(`QA transport: ${fault || 'ready'}`);});
 process.on('SIGALRM',()=>{dropNextSubmission=true;console.log('QA transport: next accepted message acknowledgement will be dropped');});
-console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Ops requires approval)','E2E steer','E2E stop','E2E fail','E2E Mission document','E2E Mission timer','E2E Mission pause','E2E Mission watch']}));
+console.log(JSON.stringify({url,password,pid:process.pid,disposable:true,scenarios:['E2E learning (--learning enables automatic skill creation)','E2E chat','E2E memory: My name is Cedar.','E2E recall','E2E progress','E2E question','E2E pdf','E2E approval (Ops requires approval)','E2E steer','E2E stop','E2E fail','E2E Mission document','E2E Mission timer','E2E Mission pause','E2E Mission watch']}));
 
 if(process.argv.includes('--onboarding'))console.log(`Onboarding model endpoint: http://127.0.0.1:${provider.address().port}/v1 (key: disposable-qa-key, model: qa-model)`);
