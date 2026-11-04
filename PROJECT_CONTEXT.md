@@ -1,5 +1,12 @@
 # Tupies — project context
 
+## Provider tool catalog capacity — 4 November 2026 (source only)
+
+The provider adapter's old 100-tool guard rejected valid native catalogs before inference: a fully enabled bot offers105 tools in a direct chat or112 in a Mission when Mac-local coding is unavailable, and113/120 with coding available (vision enabled). `lib/providers.mjs` now keeps a finite128-definition bound, preserves the complete catalog and reports the actual count/maximum plus an actionable new-task workaround on overflow. No capability, exact approval, continuation snapshot or working-context limit changes. Disabling unused tool groups and starting a new task is the temporary recovery on older engines; changing the task URL or compacting chat history does not affect this count.
+
+`test/provider-tool-catalog.test.mjs` exercises the assembled native chat/Mission catalog across image/coding availability through real local HTTP fixtures for Responses, ChatGPT subscription namespaces, Anthropic and Chat Completions, checks128/129 and malformed catalog refusal, and completes a full Engine task with all groups. See [tool use](docs/tool-use.md#provider-tool-catalog) and [verification](docs/verification.md). The isolated publication candidate from main `8b4abd3` passes1,943/1,943 tests in186files,170syntax checks,384stable checked hashes, browser assets and30guide pages on Node22.23.4. Operational VPS/Mac engines and installed apps have not been updated by this source fix; no real provider calls or account data were used.
+
+
 ## Bot removal, attention and list consistency — 3 November 2026 (source only)
 
 Bot options expose **Delete bot**, and profile Settings has a visible **Remove bot** section outside Advanced. The existing authenticated deletion and active-task/room-turn refusal remain authoritative. A named confirmation explains that conversations, memory and routines are removed while saved workspace files remain on the engine; refusal stays visible in the confirmation with retry available.
