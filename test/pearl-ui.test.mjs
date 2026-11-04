@@ -78,6 +78,18 @@ test('a closed new-bot editor keeps inherited provider, safe tools and enabled v
   assert.equal(data.has('enabled'),true);assert.equal(data.has('hidden'),false);assert.equal(data.get('icon'),'companion:blue');
 });
 
+test('the new-bot dialog skill search and access notice respond without losing selected skills',t=>{
+  const h=ui(t);h.run('botDialog()');const form=h.doc.querySelector('#bot-form'),search=form.querySelector('[data-settings-skill-search]');
+  search.value='No matching playbook';search.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  assert.equal([...form.querySelectorAll('[data-skill-option]')].filter(row=>!row.hidden).length,0);
+  assert.match(form.querySelector('[data-settings-skill-results]').textContent,/No matching skills/);
+  search.value='';search.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  const skill=form.querySelector('[name=skill]');skill.checked=true;skill.dispatchEvent(new h.win.Event('change',{bubbles:true}));
+  const access=form.querySelector('[name=tool][value=skills]');access.checked=false;access.dispatchEvent(new h.win.Event('change',{bubbles:true}));
+  assert.equal(form.querySelector('[data-skill-access-notice]').hidden,false);
+  assert.deepEqual(new h.win.FormData(form).getAll('skill'),['skill_brief']);
+});
+
 function showBotSettings(h){
   h.win.history.replaceState(null,'','#/bots/bot_atlas/settings');
   h.doc.querySelector('#app').innerHTML=h.run("renderBotProfile('bot_atlas')");
@@ -85,10 +97,10 @@ function showBotSettings(h){
   return h.doc.querySelector('#bot-form');
 }
 
-test('bot Settings keeps memory controls visible and saves one complete configuration',async t=>{
+test('bot Settings separates sections and saves one complete configuration including hidden sections',async t=>{
   const h=ui(t),before=plain(h.saved),form=showBotSettings(h);
   assert.equal(h.doc.querySelector('[role=tab][aria-selected=true]').dataset.tab,'settings');
-  assert.deepEqual([...form.querySelectorAll('[data-bot-settings-section]')].map(section=>section.dataset.botSettingsSection),['instructions','memory','tools','model','remove']);
+  assert.deepEqual([...form.querySelectorAll('[data-bot-settings-section]')].map(section=>section.dataset.botSettingsSection),['general','instructions','model','tools','skills','memory','team','advanced','remove']);
   const removal=form.querySelector('[data-bot-settings-section=remove] [data-action=delete-bot]');
   assert.ok(removal);assert.equal(removal.closest('details'),null);assert.equal(removal.type,'button');
   const memory=form.querySelector('[name=tool][value=memory]'),episodes=form.querySelector('[name=episodicMemory]');
@@ -103,7 +115,7 @@ test('bot Settings keeps memory controls visible and saves one complete configur
   assert.equal(save.body.instructions,instructions.value);assert.equal(save.body.episodicMemory,true);
   for(const key of ['connectionId','model','approvalPolicy','contextLimit','teamMode','enabled','hidden'])assert.equal(save.body[key],before[key]);
   for(const key of ['tools','skills','integrationIds','collaborators'])assert.deepEqual([...save.body[key]].sort(),[...before[key]].sort());
-  assert.equal(form.dataset.settingsDirty,undefined);
+  assert.notEqual(form.dataset.settingsDirty,'true');
   Object.assign(h.saved,save.body);const reopened=showBotSettings(h);
   assert.equal(reopened.querySelector('[name=instructions]').value,save.body.instructions);assert.equal(reopened.querySelector('[name=episodicMemory]').checked,true);
   h.run('openDialog("Quick details",`<button data-action="edit-bot" data-id="bot_atlas">Bot settings</button>`)');
@@ -113,6 +125,7 @@ test('bot Settings keeps memory controls visible and saves one complete configur
 
 test('unsaved Settings survive profile refreshes, tab switches and refused saves',async t=>{
   const h=ui(t);let form=showBotSettings(h),instructions=form.querySelector('[name=instructions]');
+  await h.click(form.querySelector('[data-profile-action=settings-section][data-section=instructions]'));
   instructions.value='Keep this unsaved direction.';instructions.focus();instructions.setSelectionRange(5,9);instructions.dispatchEvent(new h.win.Event('input',{bubbles:true}));
   form.querySelector('[name=episodicMemory]').checked=true;form.querySelector('[name=episodicMemory]').dispatchEvent(new h.win.Event('change',{bubbles:true}));
   form=showBotSettings(h);instructions=form.querySelector('[name=instructions]');
@@ -128,6 +141,72 @@ test('unsaved Settings survive profile refreshes, tab switches and refused saves
   assert.equal(h.saved.instructions,'Keep it concise.');
   h.doc.querySelector('[data-profile-action=discard-settings]').click();
   assert.equal(h.doc.querySelector('[name=instructions]').value,'Keep it concise.');assert.equal(h.doc.querySelector('[name=episodicMemory]').checked,false);
+});
+
+test('a pending bot Settings save locks edits, refuses duplicate submission and keeps failed changes retryable',async t=>{
+  const h=ui(t),form=showBotSettings(h),instructions=form.querySelector('[name=instructions]');
+  await h.click(form.querySelector('[data-profile-action=settings-section][data-section=instructions]'));
+  instructions.value='Keep these changes if saving fails.';instructions.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  h.run(`const beforePendingSettingsApi=api;let settingsSaveAttempts=0,rejectPendingSettings;
+    api=async(path,options={})=>{
+      if(path==='/api/bots/bot_atlas'&&options.method==='PATCH'){
+        settingsSaveAttempts++;
+        if(settingsSaveAttempts===1)await new Promise((resolve,reject)=>{rejectPendingSettings=reject;});
+      }
+      return beforePendingSettingsApi(path,options);
+    };`);
+  const submit=()=>form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));
+  submit();await tick();
+  assert.equal(instructions.disabled,true,'the submitted snapshot cannot be edited while saving');
+  assert.equal(form.querySelector('[data-profile-action=discard-settings]').disabled,true);
+  assert.equal(form.querySelector('[type=submit]').disabled,true);
+  await h.click(h.doc.querySelector('[role=tab][data-tab=memory]'));
+  assert.equal(h.doc.querySelector('[role=tab][aria-selected=true]').dataset.tab,'settings','profile tabs cannot abandon the pending form');
+  assert.equal(showBotSettings(h),form,'a shell refresh retains the exact pending form and its lock');
+  assert.equal(instructions.disabled,true);
+  submit();await tick();assert.equal(h.run('settingsSaveAttempts'),1,'a pending save is sent only once');
+  h.run('rejectPendingSettings(new Error("Temporary settings failure."))');await tick();
+  assert.match(form.querySelector('.form-error').textContent,/Temporary settings failure/);
+  assert.equal(instructions.value,'Keep these changes if saving fails.');assert.equal(instructions.disabled,false);
+  assert.equal(form.dataset.settingsDirty,'true');assert.equal(form.querySelector('[type=submit]').disabled,false);
+  assert.equal(form.querySelector('[data-profile-action=discard-settings]').disabled,false);
+  submit();await tick();
+  assert.equal(h.run('settingsSaveAttempts'),2);
+  assert.equal(h.requests.filter(request=>request.method==='PATCH').length,1);
+  assert.equal(h.requests.find(request=>request.method==='PATCH').body.instructions,'Keep these changes if saving fails.');
+  assert.notEqual(form.dataset.settingsDirty,'true');assert.equal(form.querySelector('[type=submit]').disabled,true);
+});
+
+test('saving from another page resets the originating form before returning during state refresh',async t=>{
+  const h=ui(t),form=showBotSettings(h),instructions=form.querySelector('[name=instructions]');
+  instructions.value='Saved while viewing another page.';instructions.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  h.run(`const beforeDetachedSettingsApi=api;let finishDetachedSettings,finishSettingsRefresh;
+    api=async(path,options={})=>{
+      if(path==='/api/bots/bot_atlas'&&options.method==='PATCH')await new Promise(resolve=>{finishDetachedSettings=resolve;});
+      return beforeDetachedSettingsApi(path,options);
+    };
+    refresh=()=>new Promise(resolve=>{finishSettingsRefresh=resolve;});`);
+  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  h.win.history.replaceState(null,'','#/bots');h.doc.querySelector('#app').innerHTML='<p>Another page</p>';
+  h.run('finishDetachedSettings()');await tick();
+  assert.equal(h.run('botById("bot_atlas").instructions'),'Saved while viewing another page.');
+  assert.equal(showBotSettings(h),form,'returning before refresh completes restores the original locked form');
+  h.run('finishSettingsRefresh()');await tick();
+  assert.notEqual(form.dataset.settingsDirty,'true');assert.equal(form.querySelector('[type=submit]').disabled,true);
+  assert.equal(form.querySelector('[data-settings-status]').textContent,'All changes saved');
+});
+
+test('a bot Settings refusal received on another page remains visible with its retryable draft',async t=>{
+  const h=ui(t),form=showBotSettings(h),instructions=form.querySelector('[name=instructions]');
+  instructions.value='Keep my refused draft.';instructions.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  h.run('let rejectDetachedSettings;api=()=>new Promise((resolve,reject)=>{rejectDetachedSettings=reject;});');
+  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  h.win.history.replaceState(null,'','#/bots');h.doc.querySelector('#app').innerHTML='<p>Another page</p>';
+  h.run('rejectDetachedSettings(new Error("The bot settings could not be saved."))');await tick();
+  const reopened=showBotSettings(h);
+  assert.equal(reopened.querySelector('[name=instructions]').value,'Keep my refused draft.');
+  assert.match(reopened.querySelector('.form-error').textContent,/The bot settings could not be saved/);
+  assert.equal(reopened.querySelector('[type=submit]').disabled,false);
 });
 
 test('asynchronous chat options expose model and reasoning while retaining form values',async t=>{

@@ -1,5 +1,12 @@
 # Tupies — project context
 
+## Bot details and settings UX — 4 November 2026 (source only)
+
+Bot Settings now presents one focused panel at a time with a desktop side rail and a horizontal picker on smaller screens. Instructions has a large resizable editor. Tools uses three counted, collapsible groups with bounded expanded lists; Skills has a separate searchable assignment panel and a profile tab with previews and a library link. Profile tool summaries include coding and both workshops. Pearl semantic colors govern the new surfaces, switches and an accent Save button, including dark appearance.
+
+Dirty state compares complete form values: filtering never drops assignments, reverting edits clears dirty state, and hidden required fields reveal their panel. Save/Discard remain reachable above phone navigation. Pending saves retain the exact locked form through refreshes, prevent duplicate submissions, and preserve success/refusal state after navigating away. The existing field/API contracts and Balanced/Strict action review behavior remain unchanged. See [chat controls](docs/chat-controls.md) and [verification](docs/verification.md) for the focused regression/browser receipt. This changes source only; installed Mac/VPS Engines, native apps and real account data are not updated.
+
+
 ## Mac/VPS automatic update source — 4 November 2026
 
 Pinned Sparkle 2.10.1 adds hourly checks, opt-in downloads, safe-quit installation, draft/readiness gating and encrypted local backup verification. Mac reconnects retain bounded message drafts/selected file metadata in memory without Send. The separate root/operator VPS updater verifies signed bounded immutable bundles, reserves only idle Engine admission, backs up complete stopped data with authenticated AES-256-GCM verification, starts the exact candidate held and activates only after local release checks. Same-epoch pre-activation rollback retains CURRENT data; uncertain activation/stale journals require inspection. Idle Telegram polling does not starve upgrades or consume new ingress while reserved.
