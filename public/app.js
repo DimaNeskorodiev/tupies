@@ -967,7 +967,7 @@ document.addEventListener('toggle',event=>{if(event.target.matches?.('.workshop-
 function renderTimeline(run,open=false){
   if(!run)return '';
   const steps=Array.isArray(run.plan?.steps)?run.plan.steps.slice(0,20):[],completed=steps.filter(step=>step.status==='completed').length,processes=renderManagedTools(run),activity=[];
-  const labels={'run.started':'Started the task','approval.request':'Waiting for approval','approval.automatic':'Approved automatically','delegation.started':'Asked a teammate','delegation.completed':'Received a teammate update','run.completed':'Task completed','run.failed':'Task failed','run.cancelled':'Task stopped'};
+  const labels={'run.started':'Started the task','skill.reviewing':'Reviewing a reusable method','approval.request':'Waiting for approval','approval.automatic':'Approved automatically','delegation.started':'Asked a teammate','delegation.completed':'Received a teammate update','run.completed':'Task completed','run.failed':'Task failed','run.cancelled':'Task stopped'};
   for(const event of (run.events||[]).slice(-160)){
     const label=event.type==='tool.started'&&!/^task_plan_/.test(event.tool)?activityLabel(event.tool,event.arguments):event.type==='tool.completed'&&event.error?'Action failed':labels[event.type];
     if(!label||activity.at(-1)?.label===label)continue;
@@ -1020,8 +1020,9 @@ function thinkingPhase(bot,run){
   const events=run.events||[];
   if(run.status==='waiting_for_delegate'){const handoff=events.findLast?.(event=>event.type==='delegation.started'),peer=botById(handoff?.targetBotId||handoff?.botId);return {energy:'talk',text:`is talking with ${peer?.name||'a teammate'}`,peer};}
   if(run.partialOutput)return {energy:'write',text:'is writing'};
-  const last=events.findLast?.(event=>['model.started','tool.started','tool.completed','memory.recalled','context.compacted','delegation.completed'].includes(event.type));
+  const last=events.findLast?.(event=>['model.started','tool.started','tool.completed','memory.recalled','context.compacted','delegation.completed','skill.reviewing'].includes(event.type));
   if(last?.type==='tool.started'){const match=toolPhrases.find(([pattern])=>pattern.test(String(last.tool||'')));return {energy:match?.[2]||'act',text:`is ${match?.[1]||'working'}`};}
+  if(last?.type==='skill.reviewing')return {energy:'think',text:'is reviewing what to keep'};
   if(last?.type==='memory.recalled')return {energy:'think',text:'is remembering'};
   if(last?.type==='delegation.completed')return {energy:'think',text:'is reading a teammate’s reply'};
   return {energy:'think',text:last?'is thinking':'is working'};
@@ -1036,15 +1037,23 @@ function thinkingMarkup(bot,run,{key,compact=false,phase=thinkingPhase(bot,run),
   const caption=flow?.caption||`${bot.name} ${phase.text}`;
   return `<article class="chat-message thinking-message ${compact?'is-compact':''}" data-message-key="${cardKey}">${avatar(bot,'tiny','thinking')}<div class="message-content"><div class="thinking-card" role="group" aria-label="${esc(flow?`${bot.name}: ${caption}`:`${bot.name} ${phase.text}`)}" data-thinking-card data-energy="${esc(phase.energy)}" data-colors="${esc(colors.join(','))}" ${peerColors.length?`data-peer-colors="${esc(peerColors.join(','))}"`:''} ${flow?`data-flow="${esc(JSON.stringify(flow))}" data-flow-kind="${esc(flow.kind)}"`:''} data-started="${esc(run.createdAt||'')}" style="${esc(tint)}"><canvas class="thinking-canvas" data-thinking="${esc(key)}" data-keep="thinking-${esc(key)}" aria-hidden="true"></canvas><div class="thinking-caption"><div class="thinking-copy"><span class="thinking-phase">${esc(caption)}</span></div><span class="thinking-elapsed" data-thinking-elapsed></span>${stop}</div></div></div></article>`;
 }
+function learningMessageMap(messages,bot,run){
+  const runs=new Map(),markup=new Map();
+  messages.forEach((message,index)=>{if(!message.runId)return;const entry=runs.get(message.runId)||{};entry.index=index;if(Array.isArray(message.learningChanges))entry.changes=message.learningChanges;runs.set(message.runId,entry);});
+  for(const [runId,entry] of runs){if(run?.id===runId&&!terminal.has(run.status))continue;markup.set(entry.index,window.StudioChatLearning?.render(entry.changes || (run?.id===runId?run.learningChanges:[]),bot.id)||'');}
+  return markup;
+}
 function renderThread(bot){
   if(!bot||route().id!==bot.id)return;const container=$('#chat-thread');if(!container)return;
   const nearBottom=container.scrollTop+container.clientHeight>=container.scrollHeight-80,messages=chat.messages||[],run=chat.run,timelineOpen=taskDetailsOpen(container,run);
   window.StudioBrowser?.observeRun(bot.id,run);
   data.runs ||= {};if(run)data.runs[bot.id]=run;else delete data.runs[bot.id];updateChatReview(bot);
   const headerStatus=$('.chat-header .chat-tools');if(headerStatus)headerStatus.innerHTML=statusPill(bot);const switcherLine=$('.chat-switcher-status');if(switcherLine)switcherLine.outerHTML=switcherStatus(bot);syncBotAvatarMotion(bot);
-  let html=messages.length?messages.map(m=>messageMarkup(m,bot,'thread-'+messageKey(m))).join(''):chat.loadError?'':`<div class="chat-welcome">${avatar(bot,'large','thread-welcome')}<h2>Say hello to ${esc(bot.name)}</h2><p>${esc(bot.description||'Your next great idea starts with a conversation.')}<br>${bot.connectionId?'What should we work on?':'Connect a model in Settings › Models to get started.'}</p>${window.StudioOnboarding?.chatTips(studioContext(),bot)||`<div class="starter-prompts">${prompts(bot).map(text=>`<button class="starter-prompt" data-action="starter" data-text="${esc(text)}">${icon('chat')}${esc(text)}</button>`).join('')}</div>`}${!bot.connectionId?`<button class="text-button" data-action="edit-bot" data-id="${esc(bot.id)}">Connect ${esc(bot.name)}${icon('arrow')}</button>`:''}</div>`;
+  const savedLearning=learningMessageMap(messages,bot,run);
+  let html=messages.length?messages.map((m,index)=>messageMarkup(m,bot,'thread-'+messageKey(m))+(savedLearning.get(index)||'')).join(''):chat.loadError?'':`<div class="chat-welcome">${avatar(bot,'large','thread-welcome')}<h2>Say hello to ${esc(bot.name)}</h2><p>${esc(bot.description||'Your next great idea starts with a conversation.')}<br>${bot.connectionId?'What should we work on?':'Connect a model in Settings › Models to get started.'}</p>${window.StudioOnboarding?.chatTips(studioContext(),bot)||`<div class="starter-prompts">${prompts(bot).map(text=>`<button class="starter-prompt" data-action="starter" data-text="${esc(text)}">${icon('chat')}${esc(text)}</button>`).join('')}</div>`}${!bot.connectionId?`<button class="text-button" data-action="edit-bot" data-id="${esc(bot.id)}">Connect ${esc(bot.name)}${icon('arrow')}</button>`:''}</div>`;
   const partial=run?.partialOutput||run?.output;
   if(partial&&run.status!=='completed'&&!messages.some(message=>message.runId===run.id&&message.partial))html+=`<article class="chat-message partial-message">${avatar(bot,'tiny','thread-partial')}<div class="message-content"><div class="message-label">${esc(bot.name)}<span class="streaming-label">${terminal.has(run.status)?'Partial response':'Working'}</span></div>${messageText(partial,{streaming:!terminal.has(run.status)})}</div></article>`;
+  if(run&&!terminal.has(run.status))html+=window.StudioChatLearning?.render(run.learningChanges,bot.id)||'';
   html+=renderTimeline(run,timelineOpen);
   if(run&&!terminal.has(run.status)){
     const stopData=esc(JSON.stringify({runId:run.id,remoteRunId:run.remoteRunId||run.id}));
@@ -1056,7 +1065,7 @@ function renderThread(bot){
   }else if(run&&terminal.has(run.status)&&run.status!=='completed'){if(runRecovery(run))html+=recoveryMarkup(run);else {const detail=run.status==='cancelled'?'Task stopped. Any available partial response is shown above.':run.error?.message||run.error||run.message||`This task ${run.status}. Open task details and check the provider settings before trying again.`;html+=`<div class="run-status ${run.status==='cancelled'?'':'run-error'}">${icon('info')}<span>${esc(typeof detail==='string'?detail:JSON.stringify(detail))}</span></div>`;}}
   if(run?.pollError)html+=`<div class="run-status run-error">${icon('info')}<span>${esc(run.pollError)}</span></div>`;
   html+=conversationErrorMarkup(chat.loadError,bot.id);
-  updateThreadContent(container,html);window.StudioThinking?.mount(container);if(nearBottom)container.scrollTop=container.scrollHeight;if(!chat.loadError)focusSearchMessage(container,'bot',bot.id);
+  updateThreadContent(container,html);window.StudioThinking?.mount(container);window.StudioChatLearning?.mount(container,{liveRunId:run?.id,active:!!run&&!terminal.has(run.status)});if(nearBottom)container.scrollTop=container.scrollHeight;if(!chat.loadError)focusSearchMessage(container,'bot',bot.id);
   observeSpeechReplies('bot/'+bot.id,messages);
   const button=$('#message-form .send');if(button)button.disabled=(!!run&&!terminal.has(run.status))||attachmentUploads.has(bot.id);updateDirectionComposer(bot.id,run);
 }
@@ -1171,7 +1180,7 @@ function botSettingsForm(id,{embedded=false,template=null}={}){
   const memory=`<label class="permission-option"><input type="checkbox" name="tool" value="memory" ${enabledTools.includes('memory')?'checked':''}><span><strong>Memory and Brain</strong><small>Let this bot find and update its private facts and long-term notes.</small></span></label>
     <label class="checkbox-field"><input type="checkbox" name="episodicMemory" ${bot.episodicMemory?'checked':''}>Save brief task notes</label>
     <p class="subtle-label">Automatically record the request, task status and verified output paths in Brain. Off by default. Requires Memory and Approve for me or Balanced action review; other people’s chats and teammate work are excluded.</p>
-    <div class="bot-memory-guide"><p><strong>Brain notes</strong> hold detailed knowledge. The bot is instructed to save useful findings, but a meaningful note after every task is not guaranteed.</p><p><strong>Learning</strong> holds suggested changes to facts and skills. Nothing is applied until you accept it.</p></div>
+    <div class="bot-memory-guide"><p><strong>Brain notes</strong> hold detailed knowledge. The bot is instructed to save useful findings, but a meaningful note after every task is not guaranteed.</p><p><strong>Learning</strong> holds suggested changes to facts and skills. Nothing is applied until you accept it.</p><p><strong>Reusable methods</strong> can become skills after substantial chat work. Approve for me saves them automatically; Balanced and Strict add a Learning suggestion.</p></div>
     ${id?`<nav class="bot-settings-links" aria-label="Memory content"><a href="#/bots/${esc(id)}/brain">Open Brain${icon('arrow')}</a><a href="#/bots/${esc(id)}/memory">Manage facts${icon('arrow')}</a><a href="#/bots/${esc(id)}/learning">Review Learning${icon('arrow')}</a></nav>`:''}`;
   const actionReview=`<div class="field bot-action-review"><label for="bot-approval-policy">Action review</label><select id="bot-approval-policy" name="approvalPolicy" aria-describedby="bot-approval-help"><option value="auto" ${(bot.approvalPolicy||'auto')==='auto'?'selected':''}>Approve for me · Automatic</option><option value="balanced" ${bot.approvalPolicy==='balanced'?'selected':''}>Balanced · Review outside actions and commands</option><option value="strict" ${bot.approvalPolicy==='strict'?'selected':''}>Strict · Also review every file change</option></select><small id="bot-approval-help">Approve for me handles private files, playbooks, search, browser navigation and non-private form edits. Deletions, code execution, submissions, uploads, account/API actions and changes to access or schedules still ask. Unclassified actions also ask. Saved for this bot across chats and restarts until you change it; applies to new tasks.</small></div>`;
   const footer=embedded?`<div class="bot-settings-save"><p class="form-error" role="alert"></p><span class="subtle-label" data-settings-status role="status">Changes apply to the next task.</span><button type="button" class="secondary-button" data-profile-action="discard-settings">Discard changes</button><button class="primary-button" type="submit">Save changes${icon('check')}</button></div>`:modalFooter(id?'Save changes':'Create bot',id?`<button class="danger-button" type="button" data-action="delete-bot" data-id="${esc(id)}">Delete bot</button>`:'');

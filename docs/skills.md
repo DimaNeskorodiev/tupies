@@ -88,6 +88,12 @@ A successful bot installation adds only that approved assignment to its active s
 
 Installation permission does not authorize script execution, dependency installation, account connections, terminal commands, messages or other external effects. Those keep their existing engine permissions and exact approvals. Imported instructions and `allowed-tools` metadata cannot expand access.
 
+## Learn a reusable method from completed work
+
+A substantial ordinary owner-chat task can receive a bounded final skill review. The model must identify a useful repeatable method and cite actual successful work; trivial work and methods already covered by existing skills should be skipped. With Skills on, **Approve for me** saves one new instruction-only skill automatically through `skills_create`; **Balanced** and **Strict** create a `skills_propose` suggestion for owner review. Existing catalog installation preferences are unchanged. A new skill adds instructions, never execution permissions, scripts or dependencies.
+
+Chat shows a linked **Skill created** acknowledgement only after the real creation succeeds. Pending proposals show **Skill suggested** and open Learning. See [reusable methods and save acknowledgements](memory.md#reusable-methods-after-a-chat-task) for review limits, source scope and lifecycle behavior.
+
 ## Import Hermes and Grok Bot skills
 
 The portable unit is an [Agent Skills](https://agentskills.io/specification) directory:

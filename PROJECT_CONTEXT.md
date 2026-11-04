@@ -1,5 +1,13 @@
 # Tupies — project context
 
+## Chat learning receipts and reusable methods — 4 November 2026 (source only)
+
+Successful Brain/core-memory writes and skill creation/installation now produce compact linked chat cards. Finite icon/check animations acknowledge live saves once, use the shared light/dark palette and respect Reduced Motion. Suggestions have distinct labels. Bounded inert receipts persist on the originating display message, including committed work followed by failure or Stop; they do not affect execution authority or transcript unread semantics.
+
+Substantial ordinary owner-chat work with Skills enabled gets at most one bounded final review using its original inference selection, successful work evidence and existing skill metadata. The model can decline; valid reusable methods use normal Engine admission and tools: Approve for me creates one instruction-only skill, Balanced/Strict propose it in Learning. Changed access, Stop, pending direction, malformed/unfounded output and matching skills/proposals prevent publication. No automatic script/dependency installation, new capabilities or restart replay. Missions/unattended/third-party work retain their explicit paths. See docs/memory.md, docs/skills.md and docs/verification.md. This does not install or restart operational Engines or native apps.
+
+Publication validation: stacked on PR #37; all1997 tests exercised, with five updater disk-space failures resolved by a6/6 affected-file rerun after reclaiming only duplicate dependency blocks. Focused37/37,191syntax,31guide pages and430stable source hashes; isolated browser save/link/reload checks pass. See docs/verification.md for the exact run distinction.
+
 ## Saved action review mode — 4 November 2026 (source only)
 
 The chat composer now duplicates the saved review selector (Approve for me / Balanced / Strict), with immediate per-bot save, preserved drafts/attachments, pending-save Send guard and active-task lock. Desktop and phone keep the selected label visible. This is the same setting as General, not a separate conversation override. Focused regressions and actual disposable in-app save/reload/Stop checks are recorded in docs/verification.md.
