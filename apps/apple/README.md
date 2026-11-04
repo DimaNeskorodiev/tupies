@@ -1,5 +1,11 @@
 # Tupies for iPhone, iPad and Mac
 
+## Platform build schemes
+
+Use the shared **Tupies** scheme for macOS and **Tupies-iOS** for iPhone, iPad and iOS Simulator. The targets share the same Swift sources, bundle identifier and Keychain configuration. The iOS target embeds NotificationService and has no Sparkle dependency; Sparkle remains pinned to 2.10.1 on the Mac target. A framework link's platform filter alone does not prevent Xcode from validating the macOS-only binary package during an iOS build.
+
+The split-target project builds Release/arm64 successfully for both macOS and a generic iOS device. The Mac binary still links Sparkle; the iOS binary does not. Existing signing certificates, profiles and application data do not need replacement for this project change.
+
 ## Automatic Mac updates — 4 November 2026 (source only)
 
 The macOS target pins Sparkle 2.10.1, embeds signed-feed/pre-extraction requirements and exposes Check for Updates plus opt-in automatic checks/downloads. Installation waits for draft readiness and an idle owned bundled Engine, verifies an encrypted stopped backup and blocks Engine relaunch until installation/cancellation resolves. The Mac reconnect bridge retains bounded unsent message/attachment drafts in memory across Engine reauthentication. Update preparation never sends them. Existing external engines retain their launcher. [Automatic updates](../../docs/updates.md) describes first manual bootstrap, keys, publication and remaining native/operational acceptance. iPhone distribution is unchanged.
@@ -92,7 +98,7 @@ Installed build 7 retains the build5 iOS Settings section for notification opt-i
 The project has an iOS-only `aps-environment` entitlement: development in Debug, production in Release. This needs an explicit Push Notifications app identifier and matching provisioning profile. The installed legacy build 3 was signed without push on 28 October 2026:
 
 ```sh
-xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies -configuration Release \
+xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS -configuration Release \
   -destination 'id=<device UDID>' -derivedDataPath apps/apple/build/DerivedData-device \
   CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=<team ID> \
   CODE_SIGN_ENTITLEMENTS=build/Tupies-iOS-nopush.entitlements build
