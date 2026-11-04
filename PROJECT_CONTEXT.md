@@ -1,11 +1,25 @@
 # Tupies — project context
 
+## Open PR integration — 4 November 2026 (source only)
+
+The browser handoff recovery (#32), conservative Mission admission (#33), bounded Mission effort and verified progress (#38), bot settings/Skills redesign (#36), saved automatic action review (#37) and chat learning receipts (#39) are integrated in dependency order. General retains identity/avatar controls and the shared Action review selector; the focused panels, complete hidden form values and pending-save guards remain. Successful tool calls retain learning receipts inside Mission resource admission, while finishing-effort refusals keep their non-dispatched outcome. Optional final learning review remains excluded while a Mission is finishing.
+
+Mixed parallel-read failures retain a non-budget error even when another read exhausts Mission effort, after every started call settles. An updater regression now waits for real initial linked-engine sync writes to settle before asserting idle reservation; live polling and pending-write refusal assertions remain. The disposable Mission provider includes the exact explicit owner quote required by conservative admission. Isolated Node22.23.4 verification passes **2,087/2,087 tests across201files** and **194 syntax checks**. Actual in-app synthetic acceptance confirms real learning cards, settings persistence and Mission DOCX creation through independent acceptance to Achieved. Per-PR Linux checks and full web-build evidence are recorded in [verification](docs/verification.md) and the linked PRs. Operational Mac/VPS/native installations and account data remain unchanged; this integration does not publish signed update feeds or deploy a release.
+
 ## Bot details and settings UX — 4 November 2026 (source only)
 
 Bot Settings now presents one focused panel at a time with a desktop side rail and a horizontal picker on smaller screens. Instructions has a large resizable editor. Tools uses three counted, collapsible groups with bounded expanded lists; Skills has a separate searchable assignment panel and a profile tab with previews and a library link. Profile tool summaries include coding and both workshops. Pearl semantic colors govern the new surfaces, switches and an accent Save button, including dark appearance.
 
 Dirty state compares complete form values: filtering never drops assignments, reverting edits clears dirty state, and hidden required fields reveal their panel. Save/Discard remain reachable above phone navigation. Pending saves retain the exact locked form through refreshes, prevent duplicate submissions, and preserve success/refusal state after navigating away. The existing field/API contracts and Balanced/Strict action review behavior remain unchanged. See [chat controls](docs/chat-controls.md) and [verification](docs/verification.md) for the focused regression/browser receipt. This changes source only; installed Mac/VPS Engines, native apps and real account data are not updated.
 
+
+## Chat learning receipts and reusable methods — 4 November 2026 (source only)
+
+Successful Brain/core-memory writes and skill creation/installation now produce compact linked chat cards. Finite icon/check animations acknowledge live saves once, use the shared light/dark palette and respect Reduced Motion. Suggestions have distinct labels. Bounded inert receipts persist on the originating display message, including committed work followed by failure or Stop; they do not affect execution authority or transcript unread semantics.
+
+Substantial ordinary owner-chat work with Skills enabled gets at most one bounded final review using its original inference selection, successful work evidence and existing skill metadata. The model can decline; valid reusable methods use normal Engine admission and tools: Approve for me creates one instruction-only skill, Balanced/Strict propose it in Learning. Changed access, Stop, pending direction, malformed/unfounded output and matching skills/proposals prevent publication. No automatic script/dependency installation, new capabilities or restart replay. Missions/unattended/third-party work retain their explicit paths. See docs/memory.md, docs/skills.md and docs/verification.md. This does not install or restart operational Engines or native apps.
+
+Publication validation: stacked on PR #37; all1997 tests exercised, with five updater disk-space failures resolved by a6/6 affected-file rerun after reclaiming only duplicate dependency blocks. Focused37/37,191syntax,31guide pages and430stable source hashes; isolated browser save/link/reload checks pass. See docs/verification.md for the exact run distinction.
 
 ## Saved action review mode — 4 November 2026 (source only)
 
