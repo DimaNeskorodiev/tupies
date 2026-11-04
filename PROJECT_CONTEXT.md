@@ -1,5 +1,11 @@
 # Tupies — project context
 
+## Open PR integration — 4 November 2026 (source only)
+
+The browser handoff recovery (#32), conservative Mission admission (#33), bounded Mission effort and verified progress (#38), bot settings/Skills redesign (#36), saved automatic action review (#37) and chat learning receipts (#39) are integrated in dependency order. General retains identity/avatar controls and the shared Action review selector; the focused panels, complete hidden form values and pending-save guards remain. Successful tool calls retain learning receipts inside Mission resource admission, while finishing-effort refusals keep their non-dispatched outcome. Optional final learning review remains excluded while a Mission is finishing.
+
+An updater regression now waits for real initial linked-engine sync writes to settle before asserting idle reservation; live polling and pending-write refusal assertions remain. The disposable Mission provider includes the exact explicit owner quote required by conservative admission. Isolated Node22.23.4 verification passes **2,086/2,086 tests across201files** and **194 syntax checks**. Actual in-app synthetic acceptance confirms real learning cards, settings persistence and Mission DOCX creation through independent acceptance to Achieved. Per-PR Linux checks and full web-build evidence are recorded in [verification](docs/verification.md) and the linked PRs. Operational Mac/VPS/native installations and account data remain unchanged; this integration does not publish signed update feeds or deploy a release.
+
 ## Bot details and settings UX — 4 November 2026 (source only)
 
 Bot Settings now presents one focused panel at a time with a desktop side rail and a horizontal picker on smaller screens. Instructions has a large resizable editor. Tools uses three counted, collapsible groups with bounded expanded lists; Skills has a separate searchable assignment panel and a profile tab with previews and a library link. Profile tool summaries include coding and both workshops. Pearl semantic colors govern the new surfaces, switches and an accent Save button, including dark appearance.

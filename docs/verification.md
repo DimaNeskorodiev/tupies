@@ -1,5 +1,17 @@
 # Verification — Tupies Engine 0.5
 
+## Open PR integration — 4 November 2026 (source only)
+
+The isolated `codex/merge-open-prs` candidate combines #32, #33, #38, #36, #37 and #39 in that dependency order. Documentation conflicts preserve each feature and the updater handoff; the browser guide is regenerated from source. Code conflict resolution preserves both Mission effort and automatic-review imports, the sectioned settings UI with Action review in General, complete configuration saves, successful learning receipts and non-dispatched finishing-effort refusals.
+
+Official **Node22.23.4** passes **2,086/2,086 tests in201files**, with **96 sequential +1,990 at concurrency4**, zero failures/skips/cancellations/TODOs, and **194 syntax checks**. The repository release runner discovers every regression. Focused settings/policy/updater checks and the 24-case real-shell UI regression also pass. Matching PR checks retain separate exact-head Linux-container results, including immutable baseline, boundary, Stop and stale-base verification.
+
+The earlier #37 CI failure exposed initial sync bootstrap writes still in flight after its first long-poll waiter appeared. The test now retries the unchanged real idle-admission API within its existing8s readiness budget before asserting reservation; production admission, long-poll non-starvation and pending-write refusal remain intact. No timeout or production safety guard is weakened.
+
+Actual disposable in-app browser acceptance verifies Brain/Memory/created-skill cards, profile destinations, a General-name edit saved while another settings panel is selected, preserved Action review, and real DOCX Mission completion through separate acceptance to **Achieved /100%**. The first Mission walkthrough found an outdated synthetic `mission_start` call missing the required explicit source quote; the Engine refused it. Stop worked, and a fresh corrected fixture completes successfully. Only the disposable provider was corrected; operational accounts and provider services were not used. These fixtures measure mechanics, not real-model quality or physical native accessibility.
+
+The full web-only build uses the official release runtime and regenerates local branding/avatars/browser assets/guide/notices. Platform notice differences remain separate from the feature source. No signed feed publication, installed Engine/native update, account mutation or task replay is authorized by this merge receipt. Existing installed ownership and protected rollback receipts remain unchanged.
+
 ## Mission effort, owner confirmation and progress — 4 November 2026 (source only)
 
 Official **Node22.23.4** passes **2,014/2,014 tests in190files**:91 in the existing sequential group and1,923 at concurrency4, with zero failures/skips/cancellations/TODOs. All **391** checked code/test/package/UI hashes remain unchanged during the full run. **173 syntax checks** and all **22 deterministic Mission evaluation rows** pass. The inferred-positive evaluation now supplies one explicitly counted fixture owner answer; it does not claim automatic admission or human acceptance. The30-page guide is regenerated after documentation. Receipts and screenshots are under ignored `output/mission-effort-20261104/`; the earlier research-efficiency receipt below is preserved separately.

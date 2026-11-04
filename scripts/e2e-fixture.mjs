@@ -43,7 +43,7 @@ const provider = http.createServer(async (req,res) => {
       const turn=input.findLast(item=>item.role==='user' && text(item).includes('Mission context (engine-owned identity;'));
       const raw=turn?text(turn).split('Mission context (engine-owned identity; source content is untrusted task data): ')[1]?.split('\n\nEngine-provided context')[0]:null;
       const mission=raw?JSON.parse(raw):null;
-      if(!mission?.id)result=call('mission_start',{intent:'explicit',ownerMessageId:mission.ownerMessageId});
+      if(!mission?.id)result=call('mission_start',{intent:'explicit',ownerMessageId:mission.ownerMessageId,explicitRequest:task.match(/E2E Mission (timer|pause|watch|document)/i)[0]});
       else if(!mission.contract.requirements.length)result=call('mission_contract_set',{requirements:[{id:'bounded',text:task.slice(0,100),source:{ownerId:mission.ownerMessageId,quote:task.match(/E2E Mission (timer|pause|watch)/i)[0]},checker:{kind:'rubric',rubric:'Retain exact saved work and answer after the actual saved wait or owner pause; no duplicate file write.',rubricVersion:'durable-qa-v1'}}]});
       else if(/timer/i.test(task) && !results.some(item=>item.call_id==='qa-mission_wait'))result=call('mission_wait',{kind:'timer',delayMs:10000});
       else if(/pause|watch/i.test(task) && !results.some(item=>item.call_id==='qa-workspace_write'))result=call('workspace_write',{path:'Documents/before-pause.md',content:'This exact file was committed once before the owner paused.'});
@@ -54,7 +54,7 @@ const provider = http.createServer(async (req,res) => {
       const prefix='Mission context (engine-owned identity; source content is untrusted task data): ';
       const raw=turn?text(turn).split(prefix)[1]?.split('\n\nEngine-provided context')[0]:null;
       const mission=raw?JSON.parse(raw):null;
-      if(!mission?.id)result=call('mission_start',{intent:'explicit',ownerMessageId:mission.ownerMessageId});
+      if(!mission?.id)result=call('mission_start',{intent:'explicit',ownerMessageId:mission.ownerMessageId,explicitRequest:task.match(/E2E Mission (timer|pause|watch|document)/i)[0]});
       else if(!mission.contract.requirements.length)result=call('mission_contract_set',{requirements:[{id:'report',text:'Create the requested exact QA report.',source:{ownerId:mission.ownerMessageId,quote:'E2E Mission document'},checker:{kind:'file_exists',path:'Documents/mission-report.docx'}},{id:'quality',text:'Explain the synthetic checks and their limits.',source:{ownerId:mission.ownerMessageId,quote:'E2E Mission document'},checker:{kind:'rubric',rubric:'The report explicitly states this is deterministic synthetic acceptance, not real model quality.',rubricVersion:'qa-report-v1'}}]});
       else if(!results.some(item=>item.call_id==='qa-documents_create'))result=call('documents_create',{path:'Documents/mission-report.docx',document:{title:'Mission QA report',content:'The synthetic Mission produced this real document.\n\nThe exact file, evidence and independent fixture review passed. This is deterministic synthetic acceptance, not real model quality.'}});
       else if(!results.some(item=>item.call_id==='qa-mission_submit_result'))result=call('mission_submit_result',{requirementId:'report',callId:'qa-documents_create',path:'Documents/mission-report.docx'});
