@@ -1,7 +1,7 @@
 /* Bot profile (#/bots/<botId>): Overview, Brain (long-term notes), Memory (core facts), Learning (suggested changes to review) and Files. app.js calls render(), sets the HTML, then mount(). */
 (()=>{
-const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code'],['workshop','Workshop','code']];
-const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser'};
+const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['skills','Skills','spark'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code'],['workshop','Workshop','code']];
+const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser',coding:'Coding on this Mac',workshop:'Tool workshop',engine_workshop:'Engine workshop'};
 const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
 const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
 const PALETTE=['#829f96','#9590b5','#81a0bd','#d0a47b','#bf92aa','#b7b17e'];
@@ -23,6 +23,7 @@ const OWN={
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const enc=encodeURIComponent;
 const views=new Map();
+const settingsBaselines=new WeakMap();
 let ctx=null;
 const icon=name=>OWN[name]?`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${OWN[name]}"/></svg>`:ctx.icon(name);
 const plural=(count,word,many=`${word}s`)=>`${count} ${count===1?word:many}`;
@@ -44,7 +45,7 @@ function view(botId){
   let v=views.get(botId);
   if(v){views.delete(botId);views.set(botId,v);return v;}
   v={id:botId,tab:'overview',tickets:{},loading:{},scroll:{},focus:null,brain:null,byPath:null,brainAt:0,brainError:'',layout:null,graphShown:false,noteTarget:'',note:null,noteHTML:'',noteAt:0,noteError:'',noteLoading:false,revealReader:false,query:'',folder:'',tag:'',sort:'recent',shown:LIST_PAGE,
-    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false,settingsDraft:null,
+    memory:null,memoryAt:0,memoryError:'',proposals:null,proposalsAt:0,proposalsError:'',proposalNotice:'',deciding:'',confirmingUndo:'',runs:null,runsAt:0,runsError:'',taskDetails:new Set(),memoryQuery:'',memoryNotice:'',adding:false,editing:'',confirming:'',draft:{},saving:false,files:new Map(),filesFolder:'',uploading:false,dirty:false,settingsOpen:false,settingsDraft:null,settingsSection:'general',settingsScroll:{},settingsDisclosures:[],settingsFilters:{query:'',scope:'all'},
     workspace:null,workspaceAt:0,workspaceError:'',workspaceSaving:false,workspaceNotice:'',scripts:null,scriptsAt:0,scriptsError:'',scriptsTruncated:false,scriptTarget:'',script:null,scriptLoading:false,scriptError:'',scriptQuery:'',scriptArgs:new Map(),scriptNotice:'',revealScript:false};
   views.set(botId,v);while(views.size>8)views.delete(views.keys().next().value);
   return v;
@@ -165,11 +166,12 @@ function hero(bot){
   return `<header class="glass-card bp-hero"><div class="bp-hero-avatar">${ctx.avatar(bot,'large','profile-mascot')}</div><div class="bp-hero-text"><div class="bp-hero-name"><h1>${esc(bot.name)}</h1>${ctx.statusPill(bot)}</div><p class="bp-role">${esc(bot.title||'Your teammate')}</p><p class="bp-intro">${intro}</p></div><div class="bp-hero-actions"><button class="primary-button" data-nav="/bot/${esc(bot.id)}">${icon('chat')}Open chat</button><button class="secondary-button bp-configure" data-profile-action="tab" data-tab="settings" aria-label="Bot settings" title="Bot settings">${icon('sliders')}<span>Settings</span></button></div></header>`;
 }
 function tabs(bot,v){
-  const counts={brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length,scripts:v.scripts?.length};
+  const counts={skills:bot.skills?.length,brain:v.brain?.total,memory:v.memory?.length,learning:v.proposals?.filter(item=>item.status==='pending').length,scripts:v.scripts?.length};
   return `<div class="bp-tabs" id="bp-tabs" role="tablist" aria-label="${esc(bot.name)} profile">${TABS.map(([key,label,ico])=>`<button class="segment${v.tab===key?' active':''}" role="tab" id="bp-tab-${key}" aria-selected="${v.tab===key}" aria-controls="bp-panel" tabindex="${v.tab===key?0:-1}" data-profile-action="tab" data-tab="${key}">${icon(ico)}${label}${counts[key]?`<span>${counts[key]}</span>`:''}</button>`).join('')}</div>`;
 }
-function panelContent(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):v.tab==='workshop'?workshopPanel(bot,v):overviewPanel(bot,v);}
+function panelContent(bot,v){return v.tab==='settings'?settingsPanel(bot,v):v.tab==='skills'?skillsPanel(bot):v.tab==='brain'?brainPanel(bot,v):v.tab==='memory'?memoryPanel(bot,v):v.tab==='learning'?learningPanel(bot,v):v.tab==='files'?filesPanel(bot,v):v.tab==='scripts'?scriptsPanel(bot,v):v.tab==='workshop'?workshopPanel(bot,v):overviewPanel(bot,v);}
 const PANEL_INTRO={
+  skills:['Skills','Playbooks and reusable workflows assigned to this bot.'],
   brain:['Brain','Linked notes about people, projects and what this bot has learned.'],
   memory:['Memory','Key facts and preferences this bot carries into its tasks.'],
   files:['Files','Documents, sources and outputs in this bot’s workspace.'],
@@ -181,6 +183,14 @@ function panel(bot,v){
   return `${intro?`<header class="bp-panel-heading"><h2>${intro[0]}</h2><p>${intro[1]}</p></header>`:''}${panelContent(bot,v)}`;
 }
 function settingsPanel(bot){return ctx.botSettingsForm?.(bot.id,{embedded:true})||'<p class="bp-muted">Bot settings are unavailable. Reload this page to try again.</p>';}
+
+function skillsPanel(bot){
+  const skills=(bot.skills||[]).map(id=>({id,entry:(ctx.data.skills||[]).find(skill=>skill.id===id)}));
+  const controls=`<div class="bp-toolbar bp-skills-toolbar"><button type="button" class="secondary-button" data-profile-action="manage-skills">${icon('sliders')}Manage skills</button><a class="text-button" href="#/skills/${esc(bot.id)}">Browse skill library${icon('arrow')}</a></div>`;
+  const notice=!groupsOf(bot).includes('skills')?`<div class="bp-notice">${icon('info')}<p>Skills access is off. Assigned playbooks stay here; enable Skills in settings to let this bot read them.</p><button type="button" class="secondary-button" data-profile-action="manage-skills">Skill settings</button></div>`:'';
+  if(!skills.length)return `${controls}${notice}${empty('spark','No skills assigned yet','Add a playbook to give this bot a repeatable way to work. Skills provide instructions and resources; tool access is chosen separately.',`<button type="button" class="secondary-button" data-profile-action="manage-skills">Choose skills</button>`)}`;
+  return `${controls}${notice}<div class="bp-skills-list">${skills.map(({id,entry})=>`<article class="glass-card bp-card bp-skill-card"><div class="bp-skill-copy"><h2>${icon('spark')}${esc(entry?.title||entry?.name||id)}</h2><p>${esc(entry?.description||'A reusable playbook for this bot.')}</p><small>${entry?.catalogVersion||entry?.version?`Version ${esc(entry.catalogVersion||entry.version)} · `:''}${entry&&entry.available!==false?'Assigned to this bot':'Files unavailable on this engine'}</small></div><button type="button" class="secondary-button" data-profile-action="view-skill" data-id="${esc(id)}"${!entry||entry.available===false?' disabled':''}>View skill${icon('arrow')}</button></article>`).join('')}</div>`;
+}
 
 /* Overview */
 // The activity log titles name the bot ("Atlas: completed"); on its own profile the sentence reads better without it.
@@ -538,11 +548,62 @@ async function upload(bot,v,input){
   finally{v.uploading=false;refresh(bot.id);}
 }
 
+function settingsFields(form){return [...form.elements].filter(element=>element.name&&!['button','submit','reset','file'].includes(element.type)).map(element=>({name:element.name,type:element.type,value:element.value,checked:element.checked}));}
+function settingsIdentity(form){return JSON.stringify(settingsFields(form).map(field=>[field.name,field.type,field.value,['checkbox','radio'].includes(field.type)?Boolean(field.checked):null]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));}
+function settingsView(form){const botId=form.closest('.bot-profile')?.dataset.profileBot||(form.dataset.embedded==='true'?form.dataset.id:'');return botId?view(botId):null;}
+function syncSettings(form,{reset=false,status}={}){
+  if(!form?.matches?.('#bot-form'))return;
+  if(reset||!settingsBaselines.has(form))settingsBaselines.set(form,settingsIdentity(form));
+  const dirty=settingsIdentity(form)!==settingsBaselines.get(form),saving=form.dataset.settingsSaving==='true';
+  form.dataset.settingsDirty=String(dirty);
+  const label=form.querySelector('[data-settings-status]');
+  if(label){const partial=dirty&&label.textContent.startsWith('Bot settings saved;');label.textContent=status??(saving?'Saving changes…':partial?label.textContent:dirty?'Unsaved changes':'All changes saved');}
+  const save=form.querySelector('.bot-settings-save button[type="submit"]'),discard=form.querySelector('[data-profile-action="discard-settings"]');
+  if(save){save.disabled=!dirty||saving;save.setAttribute('aria-busy',String(saving));}
+  if(discard)discard.disabled=!dirty||saving;
+  for(const group of form.querySelectorAll('.bot-capabilities')){const count=group.querySelector('[data-tool-count]'),tools=[...group.querySelectorAll('input[name="tool"]')];if(count)count.textContent=`${tools.filter(input=>input.checked).length} of ${tools.length} enabled`;}
+  const query=fold(form.querySelector('[data-settings-skill-search]')?.value),scope=form.querySelector('[data-settings-skill-filter]')?.value||'all',rows=[...form.querySelectorAll('[data-skill-option]')];
+  for(const row of rows)row.hidden=Boolean((query&&!fold(row.textContent).includes(query))||(scope==='assigned'&&!row.querySelector('input[name="skill"]')?.checked));
+  const result=form.querySelector('[data-settings-skill-results]');if(result){const shown=rows.filter(row=>!row.hidden).length,assigned=rows.filter(row=>row.querySelector('input[name="skill"]')?.checked).length;result.hidden=rows.length===0;result.textContent=shown?`${shown} of ${rows.length} skills · ${assigned} assigned`:'No matching skills. Try another search or show all skills.';}
+  const emptySkills=form.querySelector('[data-settings-skill-empty]');if(emptySkills)emptySkills.hidden=rows.length!==0;
+  const notice=form.querySelector('[data-skill-access-notice]');if(notice)notice.hidden=Boolean(form.querySelector('input[name="tool"][value="skills"]')?.checked);
+  const v=settingsView(form);if(v){
+    if(saving)v.settingsSaveForm=form;else if(v.settingsSaveForm===form)v.settingsSaveForm=null;
+    v.settingsFilters={query:form.querySelector('[data-settings-skill-search]')?.value||'',scope};
+    // Save completion can arrive after navigation. Retain errors on the exact originating form too.
+    v.settingsDraft=dirty?{fields:settingsFields(form),error:form.querySelector('.form-error')?.textContent||'',status:label?.textContent||''}:null;
+  }
+}
+function selectSettingsSection(form,key,{focus=false,scroll=false}={}){
+  if(!form)return;
+  const sections=[...form.querySelectorAll('[data-bot-settings-section]')],section=sections.find(item=>item.dataset.botSettingsSection===key)||sections[0];if(!section)return;
+  const v=settingsView(form),previous=form.dataset.settingsSection,scroller=document.scrollingElement;
+  if(v&&previous&&scroller)v.settingsScroll[previous]=scroller.scrollTop;
+  key=section.dataset.botSettingsSection;form.dataset.settingsSection=key;if(v)v.settingsSection=key;
+  for(const item of sections)item.hidden=item!==section;
+  for(const button of form.querySelectorAll('[data-profile-action="settings-section"]'))button.setAttribute('aria-pressed',String(button.dataset.section===key));
+  const nav=form.querySelector('.bot-settings-nav');
+  if(nav&&(v?.settingsNavSection!==key||v?.settingsNavWidth!==nav.clientWidth)){
+    const selected=nav.querySelector('[aria-pressed="true"]'),outer=nav.getBoundingClientRect(),inner=selected?.getBoundingClientRect();
+    if(inner&&outer.width){if(inner.left<outer.left+8)nav.scrollLeft-=outer.left+8-inner.left;else if(inner.right>outer.right-8)nav.scrollLeft+=inner.right-outer.right+8;}
+    if(v){v.settingsNavSection=key;v.settingsNavWidth=nav.clientWidth;v.settingsNavScroll=nav.scrollLeft;}
+  }
+  const heading=section.querySelector('h2');if(scroll){if(scroller&&Number.isFinite(v?.settingsScroll[key]))scroller.scrollTop=v.settingsScroll[key];else heading?.scrollIntoView?.({block:'start',behavior:'instant'});}
+  if(focus)heading?.focus({preventScroll:true});
+}
+
 /* Rendering in place: keep focus, caret and inner scroll across app.js re-renders and data refreshes. */
 function capture(v){
   const page=document.querySelector('.bot-profile');if(page?.dataset.profileBot!==v.id)return;
   const form=page.querySelector('#bot-form[data-embedded]');
-  if(form?.dataset.settingsDirty==='true')v.settingsDraft={fields:[...form.elements].filter(element=>element.name).map(element=>({name:element.name,type:element.type,value:element.value,checked:element.checked})),error:form.querySelector('.form-error')?.textContent||'',disclosures:[...form.querySelectorAll('details')].map(element=>element.open)};
+  if(form){
+    if(form.dataset.settingsDirty==='true')v.settingsDraft={fields:settingsFields(form),error:form.querySelector('.form-error')?.textContent||'',status:form.querySelector('[data-settings-status]')?.textContent||''};else v.settingsDraft=null;
+    v.settingsDisclosures=[...form.querySelectorAll('details')].map(element=>element.open);
+    v.settingsFilters={query:form.querySelector('[data-settings-skill-search]')?.value||'',scope:form.querySelector('[data-settings-skill-filter]')?.value||'all'};
+    if(form.dataset.settingsSection)v.settingsSection=form.dataset.settingsSection;
+    v.settingsNavScroll=form.querySelector('.bot-settings-nav')?.scrollLeft||0;
+    if(document.scrollingElement)v.settingsScroll[v.settingsSection]=document.scrollingElement.scrollTop;
+  }
   const settings=page.querySelector('[data-profile-disclosure="settings"]');if(settings)v.settingsOpen=settings.open;
   const map=page.querySelector('[data-profile-disclosure="map"]');if(map)v.mapOpen=map.open;
   v.taskDetails=new Set([...page.querySelectorAll('details[data-task-evidence]')].filter(element=>element.open).map(element=>element.dataset.taskEvidence));
@@ -550,6 +611,8 @@ function capture(v){
   v.tabScroll=page.querySelector('#bp-tabs')?.scrollLeft||0;
   if(active?.matches?.('#bp-tabs [role=tab]'))v.focus={tab:active.dataset.tab};
   else if(form?.contains(active)&&active.name)v.focus={settings:true,name:active.name,value:active.value,start:active.selectionStart,end:active.selectionEnd};
+  else if(form?.contains(active)&&active.matches('[data-profile-action="settings-section"]'))v.focus={settingsSection:active.dataset.section};
+  else if(form?.contains(active)&&active.matches('[data-settings-skill-search],[data-settings-skill-filter]'))v.focus={settingsFilter:active.hasAttribute('data-settings-skill-search')?'search':'filter',start:active.selectionStart,end:active.selectionEnd};
   else if(page.contains(active)&&active.dataset?.profileInput)v.focus={key:active.dataset.profileInput,start:active.selectionStart,end:active.selectionEnd};
   else if(active?.matches?.('[data-profile-disclosure] > summary'))v.focus={disclosure:active.parentElement.dataset.profileDisclosure};
   for(const element of page.querySelectorAll('[data-profile-scroll]'))v.scroll[element.dataset.profileScroll]=element.scrollTop;
@@ -568,18 +631,26 @@ function after(root,v){
     }
   }
   if(v.tab==='learning'){const bot=ctx?.botById(v.id);if(bot)window.StudioStudyLearning?.mount(bot,studyContext(bot,v),root);}
-  const form=root.querySelector('#bot-form[data-embedded]');
+  let form=root.querySelector('#bot-form[data-embedded]');
+  // A shell refresh must keep the exact locked form that owns an in-flight save.
+  if(form&&v.settingsSaveForm?.dataset.settingsSaving==='true'&&form!==v.settingsSaveForm){form.replaceWith(v.settingsSaveForm);form=v.settingsSaveForm;}
+  if(form&&!settingsBaselines.has(form))settingsBaselines.set(form,settingsIdentity(form));
   if(form&&v.settingsDraft){
     for(const field of v.settingsDraft.fields){const element=[...form.elements].find(element=>element.name===field.name&&element.type===field.type&&(!['checkbox','radio'].includes(field.type)||element.value===field.value));if(!element)continue;if(['checkbox','radio'].includes(field.type))element.checked=field.checked;else element.value=field.value;}
-    [...form.querySelectorAll('details')].forEach((element,index)=>{element.open=v.settingsDraft.disclosures[index]||false;});
-    form.dataset.settingsDirty='true';form.querySelector('.form-error').textContent=v.settingsDraft.error;
-    form.querySelector('[data-settings-status]').textContent='Unsaved changes';
+    form.dataset.settingsDirty='true';const error=form.querySelector('.form-error');if(error)error.textContent=v.settingsDraft.error;
+    const status=form.querySelector('[data-settings-status]');if(status)status.textContent=v.settingsDraft.status||'Unsaved changes';
     const bot=ctx.botById(v.id),preview=form.querySelector('#bot-avatar-preview');if(preview)preview.innerHTML=ctx.avatar({...bot,icon:form.elements.icon.value,color:form.elements.color.value},'large');
     for(const button of form.querySelectorAll('.companion-choice'))button.setAttribute('aria-pressed',String(`companion:${button.dataset.variant}`===form.elements.icon.value));
     const team=form.querySelector('.team-checklist');if(team)team.hidden=form.elements.teamMode.value!=='selected';
   }
+  if(form){
+    [...form.querySelectorAll('details')].forEach((element,index)=>{if(index<v.settingsDisclosures.length)element.open=v.settingsDisclosures[index];});
+    const search=form.querySelector('[data-settings-skill-search]'),filter=form.querySelector('[data-settings-skill-filter]');if(search)search.value=v.settingsFilters.query;if(filter)filter.value=v.settingsFilters.scope;
+    const nav=form.querySelector('.bot-settings-nav');if(nav)nav.scrollLeft=v.settingsNavScroll||0;
+    selectSettingsSection(form,v.settingsSection);syncSettings(form);
+  }
   for(const element of root.querySelectorAll('[data-profile-scroll]')){const top=v.scroll[element.dataset.profileScroll];if(top)element.scrollTop=top;}
-  if(v.focus){const element=v.focus.tab?root.querySelector(`#bp-tab-${v.focus.tab}`):v.focus.settings?[...(form?.elements||[])].find(element=>element.name===v.focus.name&&(!['checkbox','radio'].includes(element.type)||element.value===v.focus.value)):v.focus.disclosure?root.querySelector(`[data-profile-disclosure="${v.focus.disclosure}"] > summary`):root.querySelector(`[data-profile-input="${v.focus.key}"]`);if(element&&document.activeElement!==element){element.focus({preventScroll:true});try{if(typeof v.focus.start==='number')element.setSelectionRange(v.focus.start,v.focus.end);}catch{}}v.focus=null;}
+  if(v.focus){const element=v.focus.tab?root.querySelector(`#bp-tab-${v.focus.tab}`):v.focus.settings?[...(form?.elements||[])].find(element=>element.name===v.focus.name&&(!['checkbox','radio'].includes(element.type)||element.value===v.focus.value)):v.focus.settingsSection?form?.querySelector(`[data-profile-action="settings-section"][data-section="${v.focus.settingsSection}"]`):v.focus.settingsFilter?form?.querySelector(`[data-settings-skill-${v.focus.settingsFilter}]`):v.focus.disclosure?root.querySelector(`[data-profile-disclosure="${v.focus.disclosure}"] > summary`):root.querySelector(`[data-profile-input="${v.focus.key}"]`);if(element&&document.activeElement!==element){element.focus({preventScroll:true});try{if(typeof v.focus.start==='number')element.setSelectionRange(v.focus.start,v.focus.end);}catch{}}v.focus=null;}
   const body=root.querySelector('.bp-note-body');if(body&&window.StudioRich?.hydrate)window.StudioRich.hydrate(body).catch(()=>{});
   const map=root.querySelector('.bp-graph');if(map&&!v.graphShown){v.graphShown=true;map.classList.add('bp-graph-enter');}
   if(v.revealReader&&!v.noteLoading){v.revealReader=false;const reader=root.querySelector('#bp-reader');if(reader&&window.matchMedia?.('(max-width: 1100px)').matches)reader.scrollIntoView?.({block:'start'});}
@@ -594,6 +665,7 @@ function refresh(botId){
 }
 function patch(bot,v,selector,renderHTML){const page=document.querySelector('.bot-profile'),target=page?.querySelector(selector);if(!target)return refresh(bot.id);capture(v);target.innerHTML=renderHTML();after(page,v);}
 function setTab(bot,v,tab,focus=false){
+  if(document.querySelector('.bot-profile #bot-form[data-settings-saving="true"]'))return;
   if(!TABS.some(([key])=>key===tab))return;v.tab=tab;
   const hash=`#/bots/${bot.id}${tab==='overview'?'':`/${tab}`}`;if(location.hash!==hash)history.replaceState(history.state,'',hash);
   refresh(bot.id);load(bot,v);
@@ -614,8 +686,10 @@ async function act(element){
   const v=view(bot.id),action=element.dataset.profileAction,id=element.dataset.id,fact=id&&v.memory?.find(entry=>entry.id===id);
   switch(action){
     case 'tab':setTab(bot,v,element.dataset.tab,element.getAttribute('role')==='tab');break;
-    case 'settings-section':{const heading=page.querySelector(`#bot-section-${element.dataset.section}`);heading?.scrollIntoView?.({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});heading?.focus({preventScroll:true});break;}
-    case 'discard-settings':settingsSaved(bot.id);page.querySelector('#bp-panel').innerHTML=settingsPanel(bot,v);break;
+    case 'settings-section':{const form=page.querySelector('#bot-form');if(form?.dataset.settingsSaving!=='true')selectSettingsSection(form,element.dataset.section,{focus:true,scroll:true});break;}
+    case 'discard-settings':{if(page.querySelector('#bot-form')?.dataset.settingsSaving==='true')break;settingsSaved(bot.id);page.querySelector('#bp-panel').innerHTML=settingsPanel(bot,v);after(page,v);break;}
+    case 'manage-skills':v.settingsSection='skills';setTab(bot,v,'settings');break;
+    case 'view-skill':{const skill=(ctx.data.skills||[]).find(item=>item.id===id);if(skill&&skill.available!==false&&bot.skills?.includes(id))await ctx.viewSkill?.(id);break;}
     case 'retry':load(bot,v,true);refresh(bot.id);break;
     case 'retry-workspace':ensureWorkspace(bot,v,true);refresh(bot.id);break;
     case 'initialize-workspace':await initializeWorkspace(bot,v);break;
@@ -714,6 +788,14 @@ document.addEventListener('change',event=>{
   if(key==='fact-pinned')v.draft.pinned=element.checked;
   if(element.dataset.profileUpload&&element.files?.length)upload(bot,v,element).catch(error=>ctx.toast(ctx.errorText(error),true));
 });
+document.addEventListener('invalid',event=>{
+  const form=event.target.closest?.('#bot-form[data-embedded]');if(!form)return;
+  const first=form.querySelector(':invalid');if(first!==event.target)return;
+  const section=first.closest('[data-bot-settings-section]');if(section)selectSettingsSection(form,section.dataset.botSettingsSection,{scroll:true});
+},true);
+window.addEventListener('resize',()=>{
+  const form=document.querySelector('#bot-form[data-embedded]');if(form)selectSettingsSection(form,form.dataset.settingsSection);
+});
 document.addEventListener('submit',async event=>{
   const form=event.target;if(!form?.matches?.('[data-profile-form="fact"]'))return;event.preventDefault();
   const page=form.closest('.bot-profile'),bot=page&&ctx?.botById(page.dataset.profileBot);if(!bot)return;
@@ -728,10 +810,11 @@ document.addEventListener('scroll',event=>{
 },true);
 
 function markSettingsDirty(element){
-  const form=element.closest?.('#bot-form[data-embedded]');if(!form)return;
-  form.dataset.settingsDirty='true';form.querySelector('[data-settings-status]').textContent='Unsaved changes';
+  const form=element.closest?.('#bot-form');if(!form)return;
+  if(form.dataset.settingsSaving==='true')return;
+  syncSettings(form);
   const page=form.closest('.bot-profile');if(page)capture(view(page.dataset.profileBot));
 }
-function settingsSaved(botId){const v=views.get(botId);if(v)v.settingsDraft=null;const form=document.querySelector('#bot-form[data-embedded]');if(form?.dataset.id===botId)delete form.dataset.settingsDirty;}
-window.StudioBotProfile={render,mount,settingsSaved};
+function settingsSaved(botId,originatingForm){const v=views.get(botId);if(v)v.settingsDraft=null;const form=originatingForm||v?.settingsSaveForm||document.querySelector('#bot-form[data-embedded]');if(form?.dataset.id===botId)syncSettings(form,{reset:true,status:'All changes saved'});}
+window.StudioBotProfile={render,mount,settingsSaved,syncSettings,selectSettingsSection};
 })();
