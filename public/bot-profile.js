@@ -1,7 +1,7 @@
 /* Bot profile (#/bots/<botId>): Overview, Brain (long-term notes), Memory (core facts), Learning (suggested changes to review) and Files. app.js calls render(), sets the HTML, then mount(). */
 (()=>{
 const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['skills','Skills','spark'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code'],['workshop','Workshop','code']];
-const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser',coding:'Coding on this Mac',workshop:'Tool workshop',engine_workshop:'Engine workshop'};
+const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser',desktop:'Desktop on this Mac',coding:'Coding on this Mac',workshop:'Tool workshop',engine_workshop:'Engine workshop'};
 const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
 const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
 const PALETTE=['#829f96','#9590b5','#81a0bd','#d0a47b','#bf92aa','#b7b17e'];

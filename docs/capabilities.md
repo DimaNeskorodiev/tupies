@@ -59,7 +59,7 @@ Tupies 0.5.0 runs independently. Model calls go directly to the selected provide
 
 See [Rich chat and documents](rich-chat.md) for attachment steps, natural-language examples, document specifications and preview limits. Document parsing/rendering runs in stripped-environment workers with Node filesystem read permissions, a 25-second deadline, a 256 MB V8 heap and at most two active workers. These limits reduce exposure; they are not an OS sandbox or security certification.
 
-See [Tool use](tool-use.md) for coding workflows and the comparison evidence. Tupies implements these capabilities in its own engine. Claude Code compatibility is not a runtime dependency or a claim of complete feature parity. Background commands and language servers are scoped to the current task; persistent cross-task services and browser/computer automation are separate work.
+See [Tool use](tool-use.md) for coding workflows and the comparison evidence. Tupies implements these capabilities in its own engine. Claude Code compatibility is not a runtime dependency or a claim of complete feature parity. Background commands and language servers are scoped to the current task; persistent cross-task services and browser automation uses the opt-in Browser tools; local Mac application actions use the separate opt-in [Desktop adapter](desktop.md). Remote device dispatch remains future work.
 
 Task side effects are never replayed automatically after a restart or ambiguous response. Interrupted tasks retain their transcript and workspace. Files already committed before failure/cancellation remain attached with explicit partial status; a task is not marked completed merely because one file was produced. Inspect the actual result before sending follow-up work. A Stop request cancels Tupies's active operation and child work; external services may already have completed an approved action.
 
@@ -68,3 +68,7 @@ Trusted script/terminal execution runs with the Tupies service account. It is no
 ## Coding on this Mac
 
 An opt-in Coding group lets a bot discover local repositories and Claude project locations, connect an optional installed Claude Code worker, supervise exact-approved background actions and require independent checks before successful completion. Azure assigned work items and verified draft PR publication use engine-local sealed credentials. Codex execution, real account/task acceptance and remote/iPhone dispatch remain outside the delivered boundary. See [local coding](local-coding.md).
+
+## Desktop on this Mac (source)
+
+The optional pinned agent-desktop adapter exposes assigned applications through direct-owner-chat tools for launch, window/menu observations, exact-reviewed input and independent verification. Driver and OS permissions are configured locally; no existing bot is granted Desktop automatically. Restart/Stop retain uncertain action receipts without replay. Remote Mac/iPhone dispatch, room/routine/delegation/Mission access and the supervised Codex coding worker remain unavailable. Actual installed-app and real-model acceptance are separate from deterministic fixtures. See [Desktop on this Mac](desktop.md).
