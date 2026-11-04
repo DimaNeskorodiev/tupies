@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { Store } from '../lib/store.mjs';
 import { NativeEngine, isActive } from '../lib/engine.mjs';
 import { ownerMissionContext } from '../lib/missions.mjs';
+import { estimateTokens } from '../lib/context-budget.mjs';
 
 const BOT = 'bot_atlas';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -50,6 +51,70 @@ async function fixture(t, author, { reviewer = reviewResponse, maxTurns = 10, pr
   return { directory, store, engine, engines, requests, reviewRequests, settled, create, provider };
 }
 
+for(const source of ['chat','delegation'])test(`${source} requests do not resend large earlier task trajectories`, async t => {
+  const h=await fixture(t,request=>{
+    assert.ok(estimateTokens(request.messages)<30000);
+    assert.ok(!JSON.stringify(request.messages).includes('STALE_SOURCE_PAYLOAD'));
+    return answer('A concise result for this request.');
+  });
+  const previous=[{role:'user',runId:'old_run',content:'Earlier preference: keep answers concise.'},{role:'assistant',runId:'old_run',tool_calls:[{id:'old_call',type:'function',function:{name:'workspace_read',arguments:'{}'}}]},{role:'tool',runId:'old_run',tool_call_id:'old_call',content:'STALE_SOURCE_PAYLOAD '.repeat(40000)},{role:'assistant',runId:'old_run',content:'Earlier task completed.'}];
+  await h.store.mutate(state=>{state.conversations[BOT]=structuredClone(previous);});
+  await h.engine.start(BOT,'Answer this independent synthetic research question.',{source});const run=await h.settled();
+  assert.equal(run.status,'completed',run.error);assert.equal(run.historyPolicy.schemaVersion,1);
+  assert.deepEqual(h.store.state.conversations[BOT].slice(0,previous.length),previous);
+});
+
+test('an explicit maximum context preference retains the full earlier model history',async t=>{
+  const h=await fixture(t,request=>{assert.ok(JSON.stringify(request.messages).includes('MAX_CONTEXT_FIXTURE'));return answer('A checked concise result.');});
+  await h.store.mutate(state=>{state.bots[0].contextLimit='max';state.conversations[BOT]=[{role:'user',runId:'old',content:'Earlier request.'},{role:'assistant',runId:'old',tool_calls:[{id:'old_call',type:'function',function:{name:'workspace_read',arguments:'{}'}}]},{role:'tool',runId:'old',tool_call_id:'old_call',content:'MAX_CONTEXT_FIXTURE '.repeat(5000)}];});
+  await h.engine.start(BOT,'Use my explicit context preference.');const run=await h.settled();assert.equal(run.status,'completed',run.error);assert.equal(run.historyPolicy,undefined);
+});
+
+test('large research reviews only exact cited observations once for shared rubric evidence',async t=>{
+  let sawSources=false,sawActivity=false;
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1){const context=missionContext(request);return tools(call('criteria','mission_contract_set',{requirements:['facts','comparison','limits'].map(id=>requirement(context,id,{kind:'rubric',rubric:'Support the requested answer with actual observations.',rubricVersion:'research-v1'}))}));}
+    if(turn<=6)return tools(...Array.from({length:8},(_,offset)=>{const index=(turn-2)*8+offset;return call(`source_${index}`,'http_fetch',{url:`https://example.com/source-${index}`});}));
+    const mission=Object.values(h.store.state.missions)[0],view=h.engine.missions.view(mission.id);assert.equal(view.progress.percent,0);assert.match(view.currentStep,/40 source reads/);sawActivity=true;
+    return answer('The exact observed comparison and limitations are supported by https://example.com/source-38 and https://example.com/source-39.');
+  },{maxTurns:8,reviewer(request){
+    const payload=JSON.parse(request.messages[1].content),responses=payload.evidence.map(value=>JSON.parse(value)).filter(row=>row.kind==='response');
+    assert.equal(responses.length,1,'identical text shared by rubric receipts is supplied once');
+    const packet=JSON.parse(responses[0].content);assert.equal(packet.observedSources.length,2);assert.equal(packet.omittedUncitedSources,38);assert.equal(packet.sourceCoverage,'retained_observations');
+    assert.ok(packet.observedSources.every(row=>row.resultDigest&&row.observation.includes('Synthetic exact source body')));sawSources=true;return reviewResponse(request);
+  }});
+  await h.store.mutate(state=>{state.bots[0].tools.push('web');});
+  h.engine.tools.options.publicFetch=async url=>({url,status:200,text:'Synthetic exact source body. '.repeat(220)});
+  const {mission}=await h.create('Compare the exact observations and explain their limitations.');await h.settled();
+  assert.equal(h.store.state.missions[mission.id].outcome,'achieved',h.store.state.missions[mission.id].reason);assert.equal(h.reviewRequests.length,1);assert.equal(sawSources&&sawActivity,true);
+});
+
+test('oversized aggregate source evidence is bounded and blocks without a raw size failure or author loop',async t=>{
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1)return tools(call('criteria','mission_contract_set',{requirements:[requirement(missionContext(request),'research',{kind:'rubric',rubric:'Support the complete source-based result.',rubricVersion:'research-v1'})]}));
+    if(turn<=5)return tools(...Array.from({length:Math.min(8,30-(turn-2)*8)},(_,offset)=>{const index=(turn-2)*8+offset;return call(`source_${index}`,'http_fetch',{url:`https://example.com/large-${index}`});}));
+    return answer('A source-based conclusion without selected references.');
+  },{maxTurns:8});
+  await h.store.mutate(state=>{state.bots[0].tools.push('web');});
+  h.engine.tools.options.publicFetch=async url=>({url,status:200,text:'Synthetic exact source body. '.repeat(220)});
+  const {mission}=await h.create('Research these synthetic sources with exact evidence.');const run=await h.settled();
+  assert.equal(run.status,'failed');assert.equal(h.store.state.missions[mission.id].outcome,'blocked');assert.match(run.error,/bounded|evidence/i);assert.ok(!run.error.includes('100000 bytes'));
+  assert.equal(h.requests.length,6);assert.equal(h.reviewRequests.length,1);assert.ok(run.output);
+});
+
+test('an unchanged failed acceptance is not sent through another paid review',async t=>{
+  const h=await fixture(t,(request,turn)=>turn===1?tools(call('criteria','mission_contract_set',{requirements:[requirement(missionContext(request),'answer',{kind:'rubric',rubric:'Support the exact requested answer.',rubricVersion:'answer-v1'})]})):answer('The same unsupported final answer.'),{maxTurns:8,reviewer(request){const result=reviewResponse(request),value=JSON.parse(result.text);value.coveragePassed=false;value.requirements.forEach(row=>{row.passed=false;row.reason='Missing concrete support.';});value.reason='Missing concrete support.';return answer(JSON.stringify(value));}});
+  const {mission}=await h.create('Give the requested answer with concrete support.');await h.settled();
+  assert.equal(h.reviewRequests.length,1);assert.equal(h.requests.length,3);assert.equal(h.store.state.missions[mission.id].outcome,'blocked');assert.match(h.store.state.missions[mission.id].reason,/same result and evidence/);
+});
+
+test('an oversized final evidence packet preserves the answer and requests attention before review',async t=>{
+  const output='я'.repeat(30000);
+  const h=await fixture(t,(request,turn)=>turn===1?tools(call('criteria','mission_contract_set',{requirements:[requirement(missionContext(request),'answer',{kind:'rubric',rubric:'Provide the requested checked result.',rubricVersion:'answer-v1'})]})):answer(output));
+  const {mission}=await h.create('Provide a checked synthetic answer.');const run=await h.settled();
+  assert.equal(h.reviewRequests.length,0);assert.equal(h.requests.length,2);assert.equal(run.output,output);assert.equal(h.store.state.missions[mission.id].outcome,'blocked');assert.match(run.error,/bounded Mission review packet/);
+});
+
 test('real Mission Engine creates a document and reaches Achieved only after separate bound acceptance', async t => {
   let observedBelow100 = false;
   const h = await fixture(t, (request, turn) => {
@@ -65,14 +130,14 @@ test('real Mission Engine creates a document and reaches Achieved only after sep
     const payload = JSON.parse(request.messages[1].content);
     assert.ok(payload.evidence.some(value => value.includes('A checked synthetic summary')));
     const mission = Object.values(h.store.state.missions)[0];
-    assert.equal(mission.state, 'verifying'); assert.notEqual(h.engine.missions.view(mission.id).progress.percent, 100); observedBelow100 = true;
+    assert.equal(mission.state, request.messages[0].content.includes('ONLY the supplied milestone')?'running':'verifying'); assert.notEqual(h.engine.missions.view(mission.id).progress.percent, 100); observedBelow100 = true;
     return reviewResponse(request);
   } });
   const created = await h.create('Create a document containing a checked synthetic summary and explicit limitations.');
   const run = await h.settled(), mission = h.store.state.missions[created.mission.id];
   assert.equal(run.status, 'completed', run.error); assert.equal(mission.outcome, 'achieved', mission.reason);
   assert.equal(h.engine.missions.view(mission.id).progress.percent, 100); assert.equal(observedBelow100, true);
-  assert.equal(h.reviewRequests.length, 1); assert.equal(mission.contractVersion, 2);
+  assert.equal(h.reviewRequests.length, 2, 'one milestone and one final acceptance'); assert.equal(mission.contractVersion, 2);
   assert.ok(mission.acceptance.acceptanceDigest); assert.ok(mission.evidenceRefs.length >= 3);
   assert.equal(run.workRecords.filter(row => row.tool === 'documents_create' && row.status === 'succeeded').length, 1);
   assert.equal(mission.results.some(row => row.file?.path === 'Documents/report.docx' && row.verified), true);
@@ -284,6 +349,11 @@ for (const intent of ['explicit', 'clear_goal']) test(`first-step ${intent} owne
     return answer('Completed the synthetic owner goal with explicit limitations.');
   });
   const run = await h.engine.start(BOT, goal);
+  if(intent==='clear_goal'){
+    await until(()=>h.store.state.runs[BOT]?.status==='waiting_for_input');assert.equal(Object.keys(h.store.state.missions || {}).length,0);assert.equal(h.requests.length,1);
+    const live=h.store.state.runs[BOT],prompt=live.pending_controls[0];assert.equal(prompt.missionProposal,true);
+    await h.engine.control(BOT,'answer',{runId:live.id,remoteRunId:live.remoteRunId,request_id:prompt.prompt_id,execution_generation:live.execution_generation,answers:[{questionId:'mission_effort',optionIds:['medium']}]});
+  }
   await h.settled(); const missions = Object.values(h.store.state.missions || {});
   assert.equal(missions.length, 1); assert.equal(missions[0].origin.intent, intent); assert.equal(missions[0].episodeRefs[0].runId, run.id);
   assert.equal(missions[0].origin.admission.intent, intent);
@@ -402,4 +472,103 @@ test('only the exact owner Mission coordinator receives questions and private br
   await assert.rejects(h.engine.browserControl.ask(context, { reason: 'Attempt foreign-engine handoff.' }), error => error.status === 403);
   await h.store.mutate(state => { state.missions[mission.id].ownerEngineId = h.engine.missions.ownerEngineId; });
   const current = h.store.state.missions[mission.id]; await h.engine.missions.control(mission.id, { action: 'stop', revision: current.revision }); await h.settled();
+});
+
+const proposalGoal='Run this as a staged process with review checkpoints. Produce a market report. Build a candidate from that report. Deliver a rollout package based on the candidate.';
+const proposalDecision=ownerMessageId=>({intent:'clear_goal',ownerMessageId,scope:{outcomes:['Produce a market report.','Build a candidate from that report.','Deliver a rollout package based on the candidate.'].map((quote,index)=>({quote,kind:'deliverable',dependsOn:index?[index-1]:[]})),process:{kind:'staged_execution',quote:'Run this as a staged process with review checkpoints.'}}});
+async function answerProposal(h,option){const run=h.store.state.runs[BOT],prompt=run.pending_controls[0];return h.engine.control(BOT,'answer',{runId:run.id,remoteRunId:run.remoteRunId,request_id:prompt.prompt_id,execution_generation:run.execution_generation,answers:[{questionId:'mission_effort',optionIds:[option]}]});}
+for(const choice of ['low','high','ultra','chat'])test(`inferred Mission waits for the exact owner choice: ${choice}`,async t=>{
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1)return tools(call('proposal','mission_start',proposalDecision(missionContext(request).ownerMessageId)));
+    if(choice==='chat')return answer('Continuing in ordinary chat.');
+    if(turn===2)return tools(call('contract','mission_contract_set',{requirements:[requirement(missionContext(request),'result',{kind:'rubric',rubric:'Satisfy the requested synthetic result.',rubricVersion:'v1'})]}));
+    return answer('The synthetic result and its limitations.');
+  });
+  const run=await h.engine.start(BOT,proposalGoal);await until(()=>h.store.state.runs[BOT]?.status==='waiting_for_input');await delay(25);
+  assert.equal(h.requests.length,1);assert.equal(Object.keys(h.store.state.missions || {}).length,0);assert.equal(h.store.state.runs[BOT].pending_controls[0].missionProposal,true);
+  await answerProposal(h,choice);await assert.rejects(answerProposal(h,choice));await h.settled();
+  if(choice==='chat'){assert.equal(Object.keys(h.store.state.missions || {}).length,0);assert.equal(h.store.state.runs[BOT].status,'completed');}
+  else{const mission=Object.values(h.store.state.missions)[0];assert.equal(mission.effort.level,choice);assert.equal(mission.episodeRefs[0].runId,run.id);assert.equal(mission.outcome,'achieved',mission.reason);assert.equal(h.engine.missions.view(mission.id).effort.used.modelCalls,4,'recognition, author and acceptance all count');}
+});
+test('Stop and unanswered proposal expiry never create a Mission or launch background work',async t=>{
+  for(const action of ['stop','expire']){
+    const h=await fixture(t,(request,turn)=>turn===1?tools(call('proposal','mission_start',proposalDecision(missionContext(request).ownerMessageId))):answer('No Mission was authorized.'));
+    if(action==='expire')h.engine.options.questionTimeoutMs=100;
+    const run=await h.engine.start(BOT,proposalGoal);await until(()=>h.store.state.runs[BOT]?.status==='waiting_for_input');
+    if(action==='stop')await h.engine.control(BOT,'stop',{runId:run.id,remoteRunId:run.remoteRunId});await h.settled();
+    assert.equal(Object.keys(h.store.state.missions || {}).length,0);assert.equal(h.store.state.runs[BOT].workRecords.some(row=>row.tool==='delegate_task'),false);
+  }
+});
+test('explicit named Mission effort starts without a redundant proposal and keeps inference choices',async t=>{
+  const goal='Create a Mission with Low effort to answer this synthetic question.';
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1)return tools(call('start','mission_start',{intent:'explicit',ownerMessageId:missionContext(request).ownerMessageId,explicitRequest:goal,effort:'low',effortQuote:'Low effort'}));
+    if(turn===2)return tools(call('contract','mission_contract_set',{requirements:[requirement(missionContext(request),'result',{kind:'rubric',rubric:'Answer the synthetic question.',rubricVersion:'v1'})]}));return answer('The requested answer.');
+  });
+  await h.engine.start(BOT,goal);await h.settled();const mission=Object.values(h.store.state.missions)[0];assert.equal(mission.effort.level,'low');assert.equal(mission.outcome,'achieved');assert.equal(h.store.state.runs[BOT].questionResponses,undefined);assert.ok(h.requests.every(row=>row.model==='mission-model'));
+});
+test('Low effort enters finishing mode with reserved synthesis and final acceptance',async t=>{
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1)return tools(call('contract','mission_contract_set',{requirements:[requirement(missionContext(request),'result',{kind:'rubric',rubric:'Produce the requested synthetic answer.',rubricVersion:'v1'})]}));
+    if(request.turnContext.includes('FINISHING:'))return answer('A checked final answer using retained work.');
+    return tools(call(`note_${turn}`,'workspace_write',{path:`notes/source-${turn}.md`,content:`Synthetic distinct finding ${turn}.`}));
+  },{maxTurns:20});
+  const {mission}=await h.engine.missions.create({leadBotId:BOT,goal:'Produce the synthetic answer.',effort:'low',clientMessageId:'effort_closure_fixture'});await h.settled();
+  const view=h.engine.missions.view(mission.id);assert.equal(view.status,'achieved',h.store.state.missions[mission.id].reason);assert.equal(view.effort.used.modelCalls,12);assert.equal(h.reviewRequests.length,1);assert.equal(view.progress.percent,100);
+});
+test('a late milestone preserves final-review reserve instead of failing the Mission',async t=>{
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1)return tools(call('criteria','mission_contract_set',{requirements:[requirement(missionContext(request),'result',{kind:'rubric',rubric:'The retained file contains the requested answer.',rubricVersion:'v1'})]}));
+    if(turn===2)return tools(call('saved','workspace_write',{path:'retained.md',content:'The requested synthetic answer.'}));
+    if(turn===10)return tools(call('late_milestone','mission_submit_result',{requirementId:'result',callId:'saved',path:'retained.md',summary:'The requested answer is saved.'}));
+    if(request.turnContext.includes('FINISHING:'))return answer('The requested answer is retained in retained.md.');
+    return tools(call(`finding_${turn}`,'workspace_write',{path:`notes/finding-${turn}.md`,content:`Distinct synthetic finding ${turn}.`}));
+  },{maxTurns:20});
+  const {mission}=await h.engine.missions.create({leadBotId:BOT,goal:'Produce the requested synthetic answer.',effort:'low',clientMessageId:'effort_late_milestone'});await h.settled();
+  assert.equal(h.engine.missions.view(mission.id).status,'achieved',h.store.state.missions[mission.id].reason);assert.equal(h.reviewRequests.length,1,'the reserved independent call performs complete final acceptance');assert.equal(h.engine.missions.view(mission.id).effort.used.modelCalls,12);
+});
+test('effort exhaustion saves partial work and upgrade resumes the same run without replay',async t=>{
+  let wrote=0;
+  const h=await fixture(t,(request,turn)=>{
+    if(turn===1)return tools(call('contract','mission_contract_set',{requirements:[requirement(missionContext(request),'file',{kind:'file_exists',path:'retained.md'})]}));
+    if(turn===2){wrote++;return tools(call('saved','workspace_write',{path:'retained.md',content:'Retain these exact bytes.'}));}
+    if(turn===3)return {...tools(call('status','task_status',{})),text:'A partial result is saved.',usage:{input_tokens:600000,output_tokens:1}};
+    return answer('Completed using the original saved file.');
+  },{maxTurns:20});
+  const {mission:created}=await h.engine.missions.create({leadBotId:BOT,goal:'Create and verify the retained file.',effort:'low',clientMessageId:'effort_resume_fixture'});
+  await until(()=>h.store.state.missions[created.id].state==='paused');await until(()=>h.engine.tasks.size===0);
+  const before=h.engine.missions.view(created.id),runId=h.store.state.runs[BOT].id;assert.equal(before.status,'budget_exhausted');assert.equal(before.effort.exhausted,true);assert.ok(before.results.some(row=>row.title==='Partial result'));assert.equal(before.progress.percent,50);
+  await assert.rejects(h.engine.missions.control(created.id,{action:'resume',revision:before.revision}),/Increase Mission effort/);
+  await h.engine.missions.control(created.id,{action:'effort',effort:'medium',resume:true,revision:h.store.state.missions[created.id].revision});await h.settled();
+  const after=h.engine.missions.view(created.id);assert.equal(after.status,'achieved',h.store.state.missions[created.id].reason);assert.equal(h.store.state.runs[BOT].id,runId);assert.equal(wrote,1);assert.ok(after.effort.used.estimatedTokens>=before.effort.used.estimatedTokens);assert.equal(after.effort.level,'medium');
+});
+test('finishing with available results is terminal partial, never Achieved',async t=>{
+  const h=await fixture(t,()=>({...tools(call('status','task_status',{})),text:'Partial research retained.',usage:{input_tokens:600000,output_tokens:1}}),{maxTurns:20});
+  const {mission}=await h.engine.missions.create({leadBotId:BOT,goal:'A synthetic long research goal.',effort:'low',clientMessageId:'effort_partial_fixture'});await until(()=>h.store.state.missions[mission.id].state==='paused');await until(()=>h.engine.tasks.size===0);
+  await h.engine.missions.control(mission.id,{action:'finish_partial',revision:h.store.state.missions[mission.id].revision});assert.equal(h.engine.missions.view(mission.id).status,'partial');assert.notEqual(h.engine.missions.view(mission.id).progress.percent,100);
+});
+test('mechanical and independently reviewed milestones advance progress before final acceptance',async t=>{
+  const seen=[];
+  const h=await fixture(t,(request,turn)=>{
+    const m=Object.values(h.store.state.missions)[0];seen.push(h.engine.missions.view(m.id).progress);
+    if(turn===1)return tools(call('criteria','mission_contract_set',{requirements:[requirement(missionContext(request),'file',{kind:'file_contains',path:'milestone.md',value:'Checked content'}),requirement(missionContext(request),'meaning',{kind:'rubric',rubric:'The saved file contains the requested checked content.',rubricVersion:'v1'})]}));
+    if(turn===2)return tools(call('write','workspace_write',{path:'milestone.md',content:'Checked content'}));
+    if(turn===3)return tools(call('milestone','mission_submit_result',{requirementId:'meaning',callId:'write',summary:'The requested checked content is in milestone.md.'}));
+    if(turn===4)return tools(call('repeat_milestone','mission_submit_result',{requirementId:'meaning',callId:'write',summary:'The requested checked content is in milestone.md.'}));
+    return answer('The requested file is saved and checked.');
+  });
+  const {mission}=await h.create('Save the requested checked content.');await h.settled();assert.equal(h.engine.missions.view(mission.id).status,'achieved');assert.deepEqual(seen.map(p=>p.percent),[0,0,33,66,66]);assert.equal(h.reviewRequests.length,2,'one exact milestone assessment and one final review, no repeated assessment');assert.equal(h.engine.missions.view(mission.id).progress.outcomesVerified,2);
+});
+
+test('Low effort queues teammates within its one-teammate allowance',async t=>{
+  let parent=0,activeChildren=0,peak=0;const h=await fixture(t,async request=>{
+    if(!request.messages[0].content.startsWith('You are Roki,')){
+      activeChildren++;peak=Math.max(peak,activeChildren);await delay(25);activeChildren--;return answer('A bounded synthetic teammate result.');
+    }
+    parent++;if(parent===1)return tools(call('contract','mission_contract_set',{requirements:[requirement(missionContext(request),'team',{kind:'rubric',rubric:'Collect the bounded teammate result.',rubricVersion:'v1'})]}));
+    if(parent===2)return tools(call('one','delegate_task',{botId:'bot_nova',task:'Return a synthetic result.',wait:false}),call('two','delegate_task',{botId:'bot_echo',task:'Return another synthetic result.',wait:false}));
+    const jobs=h.store.state.runs[BOT].delegationJobs || [];if(jobs.some(job=>!job.observed))return tools(call(`collect_${parent}`,'delegation_status',{delegationIds:jobs.map(job=>job.id),waitMs:1000}));
+    return answer('Collected the admitted teammate result. The second handoff was outside the Low allowance.');
+  },{maxTurns:20});
+  const {mission}=await h.engine.missions.create({leadBotId:BOT,goal:'Collect one useful teammate result.',effort:'low',clientMessageId:'effort_team_fixture'});await h.settled();assert.equal(peak,1);assert.equal(h.engine.missions.view(mission.id).effort.used.delegations,1);assert.ok(h.store.state.runs[BOT].workRecords.some(row=>row.callId==='two' && row.status==='failed'));
 });

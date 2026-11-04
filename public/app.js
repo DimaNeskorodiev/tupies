@@ -599,6 +599,7 @@ function questionCard(bot,run){
   const control=(run.pending_controls||[]).find(item=>item?.kind==='question');if(!control)return '';
   const questions=Array.isArray(control.questions)?control.questions:[],key=`question-${control.prompt_id}`;
   const identity=esc(JSON.stringify({runId:run.id,remoteRunId:run.remoteRunId||run.id,request_id:control.prompt_id,execution_generation:run.execution_generation})),stopData=esc(JSON.stringify({runId:run.id,remoteRunId:run.remoteRunId||run.id}));
+  if(control.missionProposal===true && window.StudioMissions)return `<div class="question-card mission-proposal-card" data-message-key="${esc(key)}" data-question="${identity}" data-notification-question-id="${esc(control.prompt_id)}"><h3>${icon('mission')}Run this as a Mission?</h3><p>This goal has several dependent outcomes. Keep the team's work, progress and results together. Work waits for your choice.</p>${window.StudioMissions.effortPicker(studioContext())}<div class="approval-actions"><button type="button" class="primary-button" data-action="answer-mission-proposal" data-id="${esc(bot.id)}" data-effort-start>Start Mission · Medium</button><button type="button" class="secondary-button" data-action="decline-mission-proposal" data-id="${esc(bot.id)}">Continue in chat</button><button type="button" class="text-button" data-action="stop-run" data-id="${esc(bot.id)}" data-run="${stopData}">Stop task</button></div></div>`;
   const items=questions.map(question=>{
     const options=Array.isArray(question.options)?question.options:[],name=esc(`${key}-${question.id}`);
     return `<fieldset class="question-item" data-question-id="${esc(question.id)}"><legend class="question-header">${esc(question.header)}</legend><p class="question-prompt">${esc(question.prompt)}</p>${options.length?`<div class="question-options">${options.map(option=>`<label class="question-option"><input type="${question.multiSelect?'checkbox':'radio'}" name="${name}" value="${esc(option.id)}"><span><strong>${esc(option.label)}</strong>${option.description?`<small>${esc(option.description)}</small>`:''}</span></label>`).join('')}</div>`:''}<textarea class="question-text" rows="${options.length?1:2}" maxlength="2000" aria-label="${options.length?'Another answer':'Your answer'}" placeholder="${options.length?'Or write your own answer':'Your answer'}"></textarea></fieldset>`;
@@ -1384,7 +1385,7 @@ document.addEventListener('click',async event=>{
       case 'switch-room':roomSwitcherMenu(el,id);break;
       case 'choose-companion':{const variant=el.dataset.variant;if(!window.StudioAvatars?.shapes.some(choice=>choice.id===`companion:${variant}`))break;const form=el.closest('form'),input=$('#bot-icon',form);if(!input)break;input.value=`companion:${variant}`;input.dispatchEvent(new Event('input',{bubbles:true}));const bot={...botById(form.dataset.id),icon:input.value,name:$('#bot-name',form)?.value||'',color:$('[name="color"]',form)?.value};$('#bot-avatar-preview',form).innerHTML=avatar(bot,'large');form.querySelectorAll('.companion-choice').forEach(button=>button.setAttribute('aria-pressed',String(button===el)));break;}
       case 'create-mission':window.StudioMissions?.create(studioContext(),id);break;
-      case 'adopt-mission':{const result=await api('/api/missions/adopt',{method:'POST',body:{botId:id,runId:el.dataset.runId}});if(result.mission){await refresh(false);navigate(`/missions/${encodeURIComponent(result.mission.id)}`);}break;}
+      case 'adopt-mission':window.StudioMissions?.adopt(studioContext(),id,el.dataset.runId);break;
       case 'chat-menu':chatMenu(el,id);break;
       case 'bot-menu':botMenu(el,id);break;
       case 'room-menu':roomMenu(el,id);break;
@@ -1467,9 +1468,9 @@ document.addEventListener('click',async event=>{
         const generation=sendSessionGeneration,missionPage=route().view==='missions'?route().id:null,identity=JSON.parse(el.dataset.browserIdentity||'{}');
         window.StudioBrowser?.open({api,openDialog,closeDialog,loadChat,toast,valid:()=>generation===sendSessionGeneration&&auth?.authenticated&&(route().view==='bot'&&route().id===id||route().view==='missions'&&route().id===missionPage&&el.isConnected&&!!el.closest('.mission-owner-controls'))},id,identity);break;
       }
-      case 'answer-question':case 'skip-question':{
+      case 'answer-mission-proposal':case 'decline-mission-proposal':case 'answer-question':case 'skip-question':{
         const card=el.closest('.question-card'),skip=el.dataset.action==='skip-question';
-        const answers=skip?null:[...card.querySelectorAll('.question-item')].map(item=>({questionId:item.dataset.questionId,optionIds:[...item.querySelectorAll('input:checked')].map(input=>input.value),text:item.querySelector('.question-text')?.value.trim()||''}));
+        const answers=el.dataset.action.endsWith('mission-proposal')?[{questionId:'mission_effort',optionIds:[el.dataset.action==='decline-mission-proposal'?'chat':card.querySelector('[name=effort]').value]}]:skip?null:[...card.querySelectorAll('.question-item')].map(item=>({questionId:item.dataset.questionId,optionIds:[...item.querySelectorAll('input:checked')].map(input=>input.value),text:item.querySelector('.question-text')?.value.trim()||''}));
         if(answers?.some(answer=>!answer.optionIds.length&&!answer.text)){toast('Answer each question, or choose Skip.',true);break;}
         el.disabled=true;await api(`/api/bots/${encodeURIComponent(id)}/answer`,{method:'POST',body:{...JSON.parse(card.dataset.question||'{}'),...(skip?{skip:true}:{answers})}});await loadChat(id);window.StudioMissions?.reload();toast(skip?'Question skipped.':'Answer sent.');break;
       }
@@ -1478,7 +1479,7 @@ document.addEventListener('click',async event=>{
   }catch(error){toast(errorText(error),true);}finally{if(el.isConnected)el.disabled=el.dataset.action==='process-output-more'&&(!managedOutputView||managedOutputView.nextOffset===null||managedOutputView.output.length>=250000);if(el.dataset.action==='send-direction')updateDirectionComposer(el.dataset.id,chat.run);}
 });
 document.addEventListener('submit',async event=>{
-  if(event.target.id==='conversation-search-form'||event.target.matches?.('[data-mission-create],[data-mission-direction],[data-mission-revise]'))return;
+  if(event.target.id==='conversation-search-form'||event.target.matches?.('[data-mission-create],[data-mission-direction],[data-mission-revise],[data-mission-effort-form],[data-mission-adopt]'))return;
   if(event.target.id==='workspace-search-form'){event.preventDefault();if(auth?.authenticated)conversationSearchDialog('','',$('#workspace-search',event.target).value);return;}
   const form=event.target;if(!(form instanceof HTMLFormElement))return;event.preventDefault();if(form.id==='message-form'){const direction=$('[data-action="send-direction"]',form);if(direction&&!direction.hidden){if(!direction.disabled)await sendDirectionFromComposer(form.dataset.id);return;}}if(['message-form','room-message-form'].includes(form.id))stopSpeechForSend();const f=new FormData(form);const values=Object.fromEntries(f);const submittedText=$('textarea[name=text]',form)?.value;const submit=$('button[type=submit]',form);if(submit)submit.disabled=true;const errorBox=$('.form-error',form);if(errorBox)errorBox.textContent='';
   try{
