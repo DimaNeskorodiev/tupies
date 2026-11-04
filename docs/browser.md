@@ -1,5 +1,12 @@
 # Browser use
 
+## Automatic action review
+
+**Approve for me** is a saved per-bot policy. The Engine automatically reviews routine navigation (including a retained session), tabs, hovering, non-private field fill/type/select, movement keys and dialog dismissal. A native HTTP(S) link may be followed automatically by navigating to its verified href in the current tab; its click handlers do not run. Download links and generic buttons are excluded. Exact page/target/argument fingerprints are still prepared and rechecked before dispatch, including the link's destination and download state. Private sign-in, verification and payment credentials stay in owner handoff.
+
+Form submissions/activation keys, checkbox/drag effects, uploads/downloads and accepting dialogs still ask. Page loads and field input/change handlers can themselves contact or modify the site; the setting is not a semantic guarantee about website behavior. Unknown actions ask. Balanced/Strict retain their manual interaction behavior. See [security](security.md#approve-for-me).
+
+
 This document describes the interactive browser in current source. Operational engines and signed Apple apps require a separately verified update. Source changes do not change an already running release.
 
 ## Use the browser
