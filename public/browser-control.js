@@ -60,11 +60,12 @@
       const result=await state.context.api(`/api/bots/${encodeURIComponent(state.botId)}/browser/${endpoint}`,{method:'POST',body:{...state.identity,...body},signal:state.abort.signal});
       if(!current(state))return;
       if(endpoint==='resume') {const ctx=state.context,botId=state.botId;ctx.closeDialog();await ctx.loadChat(botId);ctx.toast(body.skip?'Browser help skipped.':'Control returned to your bot.');return;}
+      if(endpoint==='action'&&result?.inputSent===true&&result.viewUnavailable===true){state.view=null;state.loading=false;status(state,'Input sent. The page is updating or its view is unavailable. Refresh to inspect the result before acting again.');return;}
       show(state,result);
     } catch(error) {
       if(!current(state)||state.abort.signal.aborted)return;
       state.view=null;state.loading=false;
-      status(state,endpoint==='action'?'The action could not be confirmed. Refresh the browser before deciding what to do next.':String(error?.message||'The browser view is unavailable. Refresh to try again.'),true);
+      status(state,endpoint==='action'?(error?.status===409?'The browser view changed. Refresh to inspect the page before acting again.':'The action could not be confirmed. Refresh the browser before deciding what to do next.'):String(error?.message||'The browser view is unavailable. Refresh to try again.'),true);
     } finally {if(current(state)){state.busy=false;controls(state);schedule(state);}}
   }
   async function refresh(state) {if(state.pointer||document.hidden)return;schedule(state);return request(state,'view');}
