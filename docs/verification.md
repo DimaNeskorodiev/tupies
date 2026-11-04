@@ -2,6 +2,8 @@
 
 ## Mac/VPS automatic update implementation — 4 November 2026 (source only)
 
+The isolated activation candidate excludes unrelated browser/Mission work. Its official Node22.23.4 run passes **1,966/1,966 tests in193files**,91 sequential and1,875 at concurrency4, zero skips/failures; **187 syntax checks**, rebuilt browser assets and31guide pages pass. This separate release receipt supersedes the combined-source diagnostic below for publication. GitHub now has release-tag-restricted signing environments with matching updater keys and the public persistent feed release. Versioned publication and operational activation remain pending.
+
 Official Node **22.23.4** passes **1995/1995 tests in 194 files**: **94** in the existing sequential fixture group and **1901** at concurrency four. The final run uses a stable **2003-file** combined source/asset/test snapshot; every checked file is unchanged afterward, and **152** current task/native source files match it. Separate syntax checking covers **188** JS modules. Parallel browser/Mission work in the shared checkout is not overwritten or claimed as a separately isolated publication. Documentation and the generated guide are refreshed after these receipts.
 
 The first isolated harness linked external development dependencies; Node's existing document-worker filesystem permission gate correctly refused those paths. A physical APFS dependency clone fixes the harness without policy/timeout changes. Its document/image/update subset passes **41/41**, then the complete unchanged-source run passes. Failed/interrupted setup logs remain separate from final evidence.
