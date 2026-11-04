@@ -1,5 +1,15 @@
 # Verification — Tupies Engine 0.5
 
+## Saved action review PR — 4 November 2026
+
+The isolated PR starts from main `db7fd49` and includes the saved automatic policy, exact browser review, General settings and the chat composer selector. Concurrent settings redesign, chat learning, Mission recognition and browser-handoff recovery are excluded. General adds the review field to the existing settings layout; the broader section-picker redesign remains separate. Prior combined-checkout receipts (2,024 tests, 96 focused follow-up checks, Chrome and in-app UI acceptance) are development evidence, not exact PR-tree receipts. No operational data or installed Engine/native app is changed.
+
+Final official Node **22.23.4** verification passes **1,986/1,986 tests in 194 files**, with no skipped/cancelled tests:100 sequential and1,886 at concurrency4. The repository's six timing-sensitive groups plus update-maintenance run separately; every other discovered test is included. **188 syntax checks**, the regenerated **31-page guide** and whitespace validation pass. All408 checked source/test/asset/package hashes remain unchanged across final verification; the final documentation receipt is then regenerated into the guide.
+
+Actual disposable in-app UI verifies chat → General → chat saves in both directions, reload persistence and retained unsent text. Measured320px dark and1280px light layouts show the complete mode label without horizontal overflow. The fixture and its browser tab are closed after verification.
+
+Earlier attempts are not passing receipts: the first selective transfer omitted the new approve parameters and focused tests caught it; the signature was restored before final verification. A dependency-free invocation could not load packages. Sharing node_modules through a symlink then triggered the document worker's filesystem boundary; a direct locked npm ci fixed the test environment without changing that boundary. The superseded test process tree was stopped; the complete final run uses the corrected source and direct dependencies.
+
 ## Automatic update beta 2 — 4 November 2026
 
 PR34 merged as `28a314c`, tree-equal to final `e5835c2`. Its isolated official Node22.23.4 run passes **1,969/1,969 tests in193files** (91 sequential,1,878 at concurrency4), **187 syntax checks**, rebuilt assets and31guide pages; all2,245 committed files remain exact. Exact-head Linux-container CI passes. Three additional real HTTP/sync cases reproduce/fix idle long-poll starvation and uncounted public setup/sign-in while preserving active-write admission. Real disposable systemd acceptance of the final source passes signed replacement, complete encrypted offline restore, held activation, no-op and CURRENT-data rollback. Retained setup failures are separate.
