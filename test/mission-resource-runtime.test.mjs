@@ -241,3 +241,15 @@ test('effort charges browser and web tools without enabling unsupported hard res
   f.mission().effort.finishing=true;
   await assert.rejects(f.runtime.tool(f.context,{id:'more_web',name:'http_fetch',arguments:{}},async()=>{throw new Error('must not dispatch');}),code('mission_effort_finishing'));
 });
+
+test('mixed parallel read failures drain every call and preserve a non-budget error in either order',async()=>{
+  const { NativeEngine }=await import('../lib/engine.mjs');
+  const budget=Object.assign(new Error('shared effort exhausted'),{code:'mission_effort_exhausted'}),failure=Object.assign(new Error('provider identity changed'),{code:'mission_resource_unavailable'});
+  for(const errors of [[budget,failure],[failure,budget]]){
+    let settled=0;
+    const engine={checkpointRoutine:async()=>{},executeTool:async(context,call)=>{await new Promise(resolve=>setImmediate(resolve));settled++;throw errors[call.id];},assertRunning:()=>assert.equal(settled,2)};
+    const calls=errors.map((_,id)=>({id,name:'workspace_read',arguments:{path:'synthetic.txt'}}));
+    await assert.rejects(NativeEngine.prototype.executeToolBatch.call(engine,{},calls),error=>error===failure);
+    assert.equal(settled,2);
+  }
+});
