@@ -21,7 +21,13 @@ When the bot calls `browser_handoff`, the chat displays **Open browser**. The ta
 
 These owner actions go directly to the browser control API. Their text and screenshots are not added as chat messages, tool arguments or activity records. The website itself receives the values you enter. The panel's views are transient and are never download artifacts. Use **Skip help** if the site cannot be completed; skipping does not establish that sign-in or verification succeeded.
 
+The current source binds each view to the tab/document, rendered text, visible controls, focus and frame state. Hidden verification tokens and telemetry updates do not invalidate an otherwise unchanged view. Changed controls, destinations, positions or covering elements still require a fresh view. This owner-view check is separate from exact bot-action approvals.
+
+If input was sent but the next image could not be captured, the panel says **Input sent** and asks you to **Refresh** to inspect the result. Refresh reads the page; it never repeats the input. An uncertain transport error still requires inspecting a fresh view before choosing another action.
+
 The handoff works through the same authenticated Tupies interface on desktop or phone, including when the browser is running on a VPS. CAPTCHA handling means owner interaction with the actual page. Tupies does not guarantee that a site will accept automation, that every challenge can be completed remotely, or that a successful verification will remain valid.
+
+Cloudflare explicitly lists automated browsers as [unsupported for production challenges](https://developers.cloudflare.com/cloudflare-challenges/reference/supported-browsers/). Repairing the handoff controls does not establish Cloudflare acceptance. If the site keeps refusing the task browser, skip browser help and complete that account step in a regular supported browser. A sign-in in your own browser does not transfer to the bot's isolated profile.
 
 ## Keep or discard sign-in
 

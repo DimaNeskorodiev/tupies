@@ -112,6 +112,19 @@ test('owner browser errors cannot echo typed secrets into API errors or persiste
   assert.ok(!JSON.stringify(f.store.state).includes(secret));await f.engine.browserControl.resume('bot_atlas',{...input,keepSession:false,skip:true});
 });
 
+test('a failed view after owner input reports input sent and never replays the action',async t=>{
+  const f=await fixture(t),waiting=await handoff(f),input=identity(waiting);
+  let captures=0;const ownerView=f.session.ownerView.bind(f.session);
+  f.session.ownerView=async()=>{if(++captures===2)throw new Error('Transient view failure with private site details');return ownerView();};
+  const view=await f.engine.browserControl.view('bot_atlas',input);
+  const request={...input,viewId:view.viewId,action:{type:'click',x:30,y:40}};
+  assert.deepEqual(await f.engine.browserControl.action('bot_atlas',request),{inputSent:true,viewUnavailable:true});
+  assert.equal(captures,2);assert.equal(f.session.actions.length,1);
+  await assert.rejects(f.engine.browserControl.action('bot_atlas',request),/view changed/);
+  const refreshed=await f.engine.browserControl.view('bot_atlas',input);assert.notEqual(refreshed.viewId,view.viewId);
+  assert.equal(f.session.actions.length,1);assert.ok(!JSON.stringify(f.store.state).includes('private site details'));
+});
+
 test('model browser actions require exact approval, recheck the target, and never replay an uncertain action',async t=>{
   for(const scenario of ['denied','stale','unknown','success','stopped','restarted'])await t.test(scenario,async t=>{
     const f=await fixture(t),session=f.session,requests=[],action={id:'fill_field',name:'browser_fill',arguments:{ref:'e1',revision:1,text:'Approved public search'}};

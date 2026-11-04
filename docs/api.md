@@ -201,7 +201,7 @@ All owner browser routes are authenticated POST requests under the normal CSRF, 
 | Endpoint | Extra input and result |
 | --- | --- |
 | `/api/bots/{id}/browser/view` | Returns `{imageBase64,url,title,width,height,viewId,tabs,tabId,retained,dialog?}`. The view is transient, `no-store`, and never a file artifact. |
-| `/api/bots/{id}/browser/action` | Adds `{viewId,action}`. Supports bounded owner click, text, key, scroll, navigate, tab, drag and JavaScript-dialog actions. Consumes the view identity once and returns a fresh view. Overlapping/stale actions fail; uncertain inputs are never automatically retried. |
+| `/api/bots/{id}/browser/action` | Adds `{viewId,action}`. Supports bounded owner click, text, key, scroll, navigate, tab, drag and JavaScript-dialog actions. Consumes the view identity once and returns a fresh view with `inputSent:true`. If input dispatch finishes but the following capture fails, returns `{inputSent:true,viewUnavailable:true}` without a usable view; the owner must refresh to inspect the result. This reports input dispatch, not website success. Overlapping/stale actions fail; uncertain inputs are never automatically retried. |
 | `/api/bots/{id}/browser/resume` | Adds `{keepSession:boolean,skip?:boolean}`. Owner-only profile retention is engine-local. Returns a resolution receipt, then the model verifies the page with a new snapshot. |
 
 Private text, screenshots and view identities remain outside persisted chat, activity and model inputs. Browser control errors do not echo supplied secret values. A retained profile is scoped to one bot on one engine, outside workspace/skill sync.
@@ -217,7 +217,7 @@ All owner browser routes are authenticated POST requests under the normal CSRF, 
 | Endpoint | Extra input and result |
 | --- | --- |
 | `/api/bots/{id}/browser/view` | Returns `{imageBase64,url,title,width,height,viewId,tabs,tabId,retained,dialog?}`. The view is transient, `no-store`, and never a file artifact. |
-| `/api/bots/{id}/browser/action` | Adds `{viewId,action}`. Supports bounded owner click, text, key, scroll, navigate, tab, drag and JavaScript-dialog actions. Consumes the view identity once and returns a fresh view. Overlapping/stale actions fail; uncertain inputs are never automatically retried. |
+| `/api/bots/{id}/browser/action` | Adds `{viewId,action}`. Supports bounded owner click, text, key, scroll, navigate, tab, drag and JavaScript-dialog actions. Consumes the view identity once and returns a fresh view with `inputSent:true`. If input dispatch finishes but the following capture fails, returns `{inputSent:true,viewUnavailable:true}` without a usable view; the owner must refresh to inspect the result. This reports input dispatch, not website success. Overlapping/stale actions fail; uncertain inputs are never automatically retried. |
 | `/api/bots/{id}/browser/resume` | Adds `{keepSession:boolean,skip?:boolean}`. Owner-only profile retention is engine-local. Returns a resolution receipt, then the model verifies the page with a new snapshot. |
 
 Private text, screenshots and view identities remain outside persisted chat, activity and model inputs. Browser control errors do not echo supplied secret values. A retained profile is scoped to one bot on one engine, outside workspace/skill sync.
