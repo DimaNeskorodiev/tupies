@@ -33,6 +33,29 @@
 .mission-progress-caption strong{font-size:calc(15px * var(--studio-text-scale,1));font-weight:550;color:var(--ink);font-variant-numeric:tabular-nums;flex:none}
 .mission-progress{height:6px;overflow:hidden;border-radius:10px;background:var(--mission-soft);box-shadow:inset 0 0 0 1px var(--line)}
 .mission-progress>span{display:block;height:100%;background:var(--mission-blue);border-radius:inherit}
+.mission-progress>span{transition:width .3s ease}
+.mission-effort-picker{border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0;margin:18px 0;color:var(--ink)}
+.mission-effort-picker legend{padding:0 6px;font-size:13px}
+.mission-effort-picker legend strong{margin-left:8px;color:var(--accent,#396dce)}
+.mission-effort-picker p,.mission-effort-picker details{font-size:12px;line-height:1.6;color:var(--muted)}
+.mission-effort-picker details p{margin:10px 0 0}
+.mission-effort-range{appearance:none;-webkit-appearance:none;display:block;width:100%;height:6px;padding:0;margin:18px 0;background:var(--line);border:0;border-radius:8px;cursor:pointer;accent-color:var(--accent,#396dce)}
+.mission-effort-range::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:23px;height:23px;border-radius:50%;border:1px solid var(--line);background:var(--surface,#fff);box-shadow:0 2px 7px #0003}
+.mission-effort-range::-moz-range-thumb{width:23px;height:23px;border-radius:50%;border:1px solid var(--line);background:var(--surface,#fff);box-shadow:0 2px 7px #0003}
+.mission-effort-range:focus-visible{outline:3px solid var(--accent,#396dce);outline-offset:8px}
+.mission-effort-levels{display:flex;justify-content:space-between;gap:4px}
+.mission-effort-levels button{font:inherit;font-size:12px;color:var(--muted);background:none;border:0;padding:8px 2px;min-height:36px;cursor:pointer}
+.mission-effort-levels button[aria-pressed=true]{color:var(--ink);font-weight:650}
+.mission-effort-usage{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;line-height:1.6}
+.mission-effort-usage span{color:var(--muted)}
+.mission-effort-meter{height:4px;background:var(--line);border-radius:8px;overflow:hidden;margin:12px 0}
+.mission-effort-meter>span{height:100%;display:block;background:var(--muted)}
+.mission-effort-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.mission-budget-details,.mission-advanced{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px}
+.mission-budget-details summary,.mission-advanced summary,.mission-effort-picker summary{cursor:pointer}
+.mission-advanced>.mission-panel{margin-top:12px}
+.mission-proposal-card>p{font-size:13px;line-height:1.6;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.mission-progress>span{transition:none}}
 .mission-progress.complete>span{background:var(--green,#287d5f)}
 .mission-card-step{margin:auto 0 0;display:flex;gap:8px;align-items:flex-start;color:var(--muted);font-size:calc(12px * var(--studio-text-scale,1));line-height:1.5}
 .mission-card footer{display:flex;gap:12px;align-items:center;border-top:1px solid var(--line);padding-top:16px;flex-wrap:wrap;font-size:calc(11px * var(--studio-text-scale,1));color:var(--muted)}

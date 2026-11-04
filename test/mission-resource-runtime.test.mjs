@@ -205,3 +205,51 @@ test('ChatGPT request cap refuses hidden OAuth renewal while uncapped request to
   const f=fixture({limits:{requests:2}});await assert.rejects(f.runtime.infer(f.context,{...f.connection,type:'chatgpt'},f.request),error=>{assert.equal(error.reason,'oauth_renewal_fanout');assert.match(error.message,/renewal/);return true;});
   const g=fixture();await g.runtime.infer(g.context,{...g.connection,type:'chatgpt'},g.request);const summary=missionResourceSummary(g.mission().resourceLedger);assert.equal(summary.settled.requests,0);assert.ok(summary.unknownUnbounded.includes('requests'));
 });
+
+test('effort counts actual Engine model attempts for subscription calls without pretending to cap billing',async()=>{
+  const {createMissionEffort,missionEffortSummary}=await import('../lib/mission-effort.mjs');let calls=0;
+  const f=fixture({complete:async()=>{calls++;if(calls===1)throw new Error('transport lost');return {text:'done'};}});
+  f.mission().effort=createMissionEffort('low');f.mission().leadBotId='lead';
+  await assert.rejects(f.runtime.infer(f.context,{...f.connection,type:'chatgpt'},f.request),/transport lost/);
+  await f.runtime.infer(f.context,{...f.connection,type:'chatgpt'},f.request);
+  const value=missionEffortSummary(f.mission());assert.equal(value.used.modelCalls,2);assert.ok(value.used.estimatedTokens>0);assert.equal(value.tokenBasis,'reported_or_local_estimate');assert.deepEqual(f.mission().resourceLedger.limits,{});
+});
+
+test('effort reserves globally before concurrent coordinator and child requests and retains final headroom',async()=>{
+  const {createMissionEffort,missionEffortSummary}=await import('../lib/mission-effort.mjs');let calls=0,release;const held=new Promise(resolve=>release=resolve);
+  const f=fixture({complete:async()=>{calls++;await held;return {usage:{input_tokens:1,output_tokens:1}};}});f.mission().leadBotId='lead';f.mission().effort=createMissionEffort('low');f.mission().effort.limits.modelCalls=3;
+  f.store.state.runs.child={id:'childrun',missionId:'mission',missionContractVersion:1};const child={...f.context,bot:{id:'child'},runId:'childrun',delegation:{depth:1}};
+  const results=Promise.allSettled([f.runtime.infer(f.context,f.connection,f.request),f.runtime.infer(child,f.connection,f.request)]);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,1);assert.equal(missionEffortSummary(f.mission()).reserved.modelCalls,1);release();const outcomes=await results;assert.equal(outcomes.filter(r=>r.status==='rejected').length,1);assert.equal(calls,1);
+  await assert.rejects(f.runtime.infer(f.context,f.connection,f.request),code('mission_effort_closing'));
+  await f.runtime.infer(f.context,f.connection,f.request); // coordinator synthesis
+  await f.runtime.infer(f.context,f.connection,f.request,{kind:'mission_review',phase:'verification'});
+  assert.equal(calls,3);assert.equal(missionEffortSummary(f.mission()).used.modelCalls,3);
+  await assert.rejects(f.runtime.infer(f.context,f.connection,f.request,{kind:'mission_review',phase:'verification'}),code('mission_effort_exhausted'));assert.equal(calls,3);
+});
+
+test('lower effort between reservation and dispatch blocks the request without consuming a model call',async()=>{
+  const {createMissionEffort,missionEffortSummary}=await import('../lib/mission-effort.mjs');let calls=0;
+  const f=fixture({complete:async()=>{calls++;return {text:'must not run'};}});f.mission().effort=createMissionEffort('high');f.mission().leadBotId='lead';
+  const mutate=f.store.mutate.bind(f.store);let commits=0;f.store.mutate=fn=>mutate(state=>{if(++commits===3)state.missions.mission.effort.limits.modelCalls=0;return fn(state);});
+  await assert.rejects(f.runtime.infer(f.context,f.connection,f.request));assert.equal(calls,0);assert.equal(missionEffortSummary(f.mission()).committed.modelCalls,0);
+});
+
+test('effort charges browser and web tools without enabling unsupported hard resource limits',async()=>{
+  const {createMissionEffort,missionEffortSummary}=await import('../lib/mission-effort.mjs');const f=fixture();f.mission().effort=createMissionEffort('low');
+  await f.runtime.tool(f.context,{id:'web',name:'http_fetch',arguments:{}},async()=>({status:200}));assert.equal(missionEffortSummary(f.mission()).used.toolCalls,1);
+  f.mission().effort.finishing=true;
+  await assert.rejects(f.runtime.tool(f.context,{id:'more_web',name:'http_fetch',arguments:{}},async()=>{throw new Error('must not dispatch');}),code('mission_effort_finishing'));
+});
+
+test('mixed parallel read failures drain every call and preserve a non-budget error in either order',async()=>{
+  const { NativeEngine }=await import('../lib/engine.mjs');
+  const budget=Object.assign(new Error('shared effort exhausted'),{code:'mission_effort_exhausted'}),failure=Object.assign(new Error('provider identity changed'),{code:'mission_resource_unavailable'});
+  for(const errors of [[budget,failure],[failure,budget]]){
+    let settled=0;
+    const engine={checkpointRoutine:async()=>{},executeTool:async(context,call)=>{await new Promise(resolve=>setImmediate(resolve));settled++;throw errors[call.id];},assertRunning:()=>assert.equal(settled,2)};
+    const calls=errors.map((_,id)=>({id,name:'workspace_read',arguments:{path:'synthetic.txt'}}));
+    await assert.rejects(NativeEngine.prototype.executeToolBatch.call(engine,{},calls),error=>error===failure);
+    assert.equal(settled,2);
+  }
+});
