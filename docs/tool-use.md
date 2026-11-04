@@ -2,6 +2,12 @@
 
 Tupies owns its model/tool loop. A bot can discover files, search text, read selected lines, edit exact text, run foreground or managed background commands, query real language servers and update a visible task plan. Tool results feed the next model turn. No Claude Code, Hermes Agent or host Codex installation is needed at runtime.
 
+## Provider tool catalog
+
+The Engine sends the selected bot's complete permitted tool catalog with each model request. `lib/providers.mjs` bounds this list at **128 definitions**, including functions inside the ChatGPT subscription namespace. This is an Engine transport bound, aligned with the [documented Chat Completions function limit](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create); a compatible service or individual model can impose its own restrictions. Tool schemas still count toward the working-context budget. Permissions, exact approvals and active-run snapshots remain unchanged.
+
+The former 100-definition guard could reject a legitimate combination of Browser, Terminal, Workshop and other native groups before contacting the model. This produced **The provider tool catalog is too large** even for an ordinary request. Current overflow errors include the actual count, maximum and recovery action. Disable unused groups in bot settings and start a new task as a temporary workaround on older engines; reducing a chat's history cannot fix a tool-count failure. The Engine never silently truncates the catalog. `test/provider-tool-catalog.test.mjs` sends assembled chat/Mission catalogs through all four protocol adapters and checks the 128/129 boundary with local synthetic servers.
+
 ## Working through a task
 
 For substantial work, the model records a plan with `task_plan_set`. The current plan is persisted with the run, displayed above the work log and included in subsequent model context. Stable step IDs and an optional `expectedVersion` prevent stale plan updates. Only one step can be in progress. Plans describe progress; they do not grant permissions or prove that actions succeeded. If the model ends its answer with unfinished plan steps, the run fails with an explicit incomplete-work notice and preserves the answer and plan. Stop and restart also preserve unfinished steps.

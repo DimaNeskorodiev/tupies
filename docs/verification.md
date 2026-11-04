@@ -1,5 +1,18 @@
 # Verification — Tupies Engine 0.5
 
+## Provider tool catalog capacity — 4 November 2026 (source only)
+
+Publication candidate based on main `8b4abd3`: **1,943/1,943 tests in186files** pass on official **Node22.23.4** (91 sequential,1,852 at concurrency4), with no failures/skips/cancellations/TODOs. All **384** checked source/test/package/UI hashes remain exact throughout this isolated run. **170 syntax checks**, rebuilt browser assets and the **30-page guide** pass. The unrelated in-progress Mac distribution files and tests in the shared checkout are excluded. This is the isolated PR/deployment-source receipt; the broader shared-checkout diagnostic below is retained separately.
+
+On official **Node22.23.4**, all **1,946/1,946 tests in187files** pass:91 sequential in the six timing-sensitive files and1,855 in the remaining181files at concurrency4, with zero failures, skips, cancellations or TODOs. Focused provider/catalog/failure/timeout checks pass **69/69**; syntax checks cover **171 modules**. The guide is regenerated from the final documentation. Logs, runner, source hashes and final receipt are in ignored `output/provider-tool-catalog-20261104/`.
+
+The new regression reproduces the old100-tool refusal before the production edit, then sends complete native chat/Mission catalogs through local HTTP fixtures for OpenAI Responses, ChatGPT namespace Responses, Anthropic Messages and compatible Chat Completions. The matrix covers vision and Mac-local coding availability, preserves every name/description/schema and checks unique names. With all groups and vision enabled, catalogs contain105/112 tools without coding or113/120 with coding (chat/Mission). Exactly128 functions pass;129 and non-array catalogs fail before credentialed transport. A real Engine task with all groups completes through the subscription adapter; its separate final-memory review retains its own one-tool catalog.
+
+The initial sandbox run could not bind localhost. Authorized local fixture execution reproduced the100-tool failure. During the six-file serial run, the new Engine test's final assertion was corrected to distinguish the separate memory-review call, before that test file ran in the parallel group. The original whole-run hash check correctly flagged only that test file; it is not a frozen-tree receipt. All **386** recorded source/test/package/UI hashes remain exact from the post-edit comparison through completion, and no production source changed during either group. Final focused and complete-suite test results above use the corrected assertion.
+
+This fixes the Engine's local count guard, not third-party model availability or quality. No live provider call, operational VPS/Mac update, installed app change, account mutation or real Cloudflare interaction was performed. Existing permission, approval, cancellation, context and snapshot checks remain unchanged. See [tool use](tool-use.md#provider-tool-catalog).
+
+
 ## Bot removal, attention and list consistency — 3 November 2026 (source only)
 
 Final official **Node22.23.4** passes **1,932/1,932 tests in185 files**, with zero failures, skips, cancellations or TODOs: **91 sequential** in six files (27.270s) and **1,841 at concurrency4** in179 files (181.015s). All **388 checked source/test/evaluation/UI/package hashes** remain unchanged throughout the complete final run. **170 JavaScript syntax checks** and the **30-page guide build** pass. The guide is regenerated after this receipt; no image/native/dependency regeneration is included. Receipts, exact expanded test runner, tested hashes and desktop/removal screenshots are in ignored `output/bot-management-verification-20261103/`.
