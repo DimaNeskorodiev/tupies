@@ -1,5 +1,14 @@
 # Verification — Tupies Engine 0.5
 
+## Approval/composer local installation — 5 November 2026
+
+The local Mac Engine now runs frozen source from **e363063** (PR42, stacked on Desktop PR41). All2,143 exact-candidate regressions,93 focused cases,201 syntax checks and32 guide pages pass; production-only staging separately boots with synthetic data and round-trips all8 document formats with the private API still401.
+
+The existing owner task finishes naturally before fresh idle reservation and one normal Stop. A complete AES-256-GCM stopped backup authenticates before raw extraction, preserves numeric owners/modes/directories/bytes and passes the supported sealed-credential/offline restore. The candidate starts held, verifies preservation and activates once. An independent post-activation check confirms the same process, unchanged original state/security/configuration and **8,822 original runtime entries**, **12 served assets** and one newer authenticated Home document update. Existing Desktop setup, model/provider metadata and app pairings remain intact.
+
+Installed provenance remains commit `e363063238d7660839f97eaf67343b6b62f41e62`,1527 allowlisted payload files and manifest SHA256 `d908f985bbaa4c7fd8a04b717739dbcd7ba133a1fd763903522680ef87cb0f86`; two separately generated Darwin notice files are the platform correction. Locked production dependencies have their own frozen manifest. Later publication-only documentation does not relabel or mutate the installed source. The old immutable source is retained; rollback uses a fresh backup of CURRENT DATA. The formerly missing Node executable is restored at its original path from the official22.23.4 archive with the exact recorded executable hash. No signed app/fallback, VPS, iPhone, new pairing, driver grant or maintenance-triggered paid inference change occurs. Protected locations and recovery receipts stay in the ignored local handoff.
+
+
 ## Publication candidate — 5 November 2026
 
 The approval/composer changes are reconciled onto Desktop publication `145e33e` (PR41), preserving its newer Mission effort/history policies and existing local Desktop setup. This is a scoped stacked change; unrelated edits in the original working checkout are excluded. Official Node22.23.4 passes **2,143/2,143** exact-candidate regressions (97 sequential +2,046 concurrency4), **93/93** focused UI/action/native-boundary cases, **201 syntax checks** and **32 guide pages**; targeted assets and platform notices build successfully.
