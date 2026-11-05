@@ -231,3 +231,19 @@ test('automatic link navigation still binds href, download state and exact view 
   prepared=await prepareBrowserAction(f.browsers,f.context,'browser_click',args);assert.equal(prepared.identity.navigation,null,'downloads cannot become automatic links');
   assert.equal(f.requests.some(r=>r.url==='/account'),false);
 });
+
+test('Approve for me submits an ordinary requested browser form through independent review',chrome,async t=>{
+  const f=await fixture(t),store=await new Store(f.directory).init(),reviews=[];
+  await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture'});Object.assign(state.bots[0],{connectionId:'fixture',tools:['browser'],approvalPolicy:'auto',collaborators:[]});});
+  let turn=0;const engine=new NativeEngine(store,{runTimeout:30000,providers:{complete:async(_c,request)=>{
+    turn++;const page=turn>1?JSON.parse(request.messages.findLast(row=>row.role==='tool').content):null;
+    const tool=(name,args)=>({toolCalls:[{id:`form-${turn}`,name,arguments:args}]});
+    if(turn===1)return tool('browser_open',{url:f.base});
+    if(turn===2)return tool('browser_fill',{ref:find(page.outline,'Destination'),revision:page.revision,text:'Kraków'});
+    if(turn===3)return tool('browser_click',{ref:find(page.outline,'Find apartments'),revision:page.revision});
+    return {text:'The requested search form was submitted.',toolCalls:[]};
+  },reviewAction:async(_c,request)=>{const payload=JSON.parse(request.messages[1].content);reviews.push(payload);return {toolCalls:[{name:'action_review_result',arguments:{actionDigest:payload.actionDigest,decision:'approve',risks:[],reason:'Submit the requested apartment search.'}}]};}}});
+  engine.browsers=f.browsers;await engine.recover();t.after(()=>engine.close());
+  const started=await engine.start('bot_atlas','Search apartments in Kraków using this fixture form.');await engine.tasks.get(started.id);
+  const actual=store.state.runs.bot_atlas;assert.equal(actual.status,'completed');assert.equal(actual.events.some(row=>row.type==='approval.request'),false);assert.equal(reviews.length,1);assert.equal(reviews[0].action.review.control,'Find apartments');assert.ok(f.requests.some(row=>row.url.startsWith('/done?city=Krak')));
+});

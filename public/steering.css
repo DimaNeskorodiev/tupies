@@ -1,5 +1,5 @@
-.direction-send{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:10px 16px;border:1px solid var(--line);border-radius:24px;background:var(--pearl-soft,#edf2f9);color:var(--ink);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
-.direction-send svg{width:17px;height:17px;flex:none}
+.direction-send{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;min-width:44px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--pearl-soft,#edf2f9);color:var(--ink);cursor:pointer}
+.direction-send svg{width:22px;height:22px;flex:none;stroke-width:1.8}
 .direction-send[hidden],.direction-hint[hidden]{display:none}
 .direction-send:disabled{opacity:.5;cursor:default}
 .direction-send:hover:not(:disabled){background:var(--pearl-raised,#e2eafa)}
@@ -10,10 +10,8 @@
 .chat-composer>:is(.direction-hint,.direction-result){grid-column:1/-1;min-width:0;overflow-wrap:anywhere}
 .direction-status{font-size:11px;font-weight:500;color:var(--muted);margin-left:8px}
 @media(max-width:760px),(max-height:500px) and (pointer:coarse){
-  body.pearl-studio .chat-composer:has(.direction-send:not([hidden])){grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"extra extra extra extra" "voice voice voice voice" "field field field field" "attach mic send send" "model model model model";border-radius:24px}
-  body.pearl-studio .chat-composer:has(.direction-send:not([hidden])) textarea{padding-inline:12px}
-  body.pearl-studio .chat-composer>.direction-hint{grid-row:6;margin:4px 12px 8px;color:var(--ios-label-2);font:var(--ios-caption1)}
-  body.pearl-studio .chat-composer>.direction-result{grid-row:7;margin:4px 12px 8px;color:var(--ios-label-2);font:var(--ios-caption1)}
-  body.pearl-studio .chat-composer .direction-send{grid-area:send;justify-self:end;align-self:center;min-height:44px;margin-right:4px;padding:8px 14px;border:0;border-radius:22px;background:var(--ios-tint-fill);color:var(--ios-on-tint);font:600 calc(13px * var(--ios-s))/1.25 var(--ios-font);white-space:normal}
-  body.pearl-studio .chat-composer .direction-send:hover:not(:disabled){background:var(--ios-tint-pressed)}
+  body.pearl-studio .chat-composer>.direction-result{margin:4px 12px 8px;color:var(--ios-label-2);font:var(--ios-caption1)}
+  body.pearl-studio .chat-composer .direction-send{grid-area:send;justify-self:end;align-self:center;width:44px;height:44px;min-width:44px;margin:0;padding:4px;border:0;border-radius:50%;background:var(--ios-tint-fill) content-box;color:var(--ios-on-tint)}
+  body.pearl-studio .chat-composer .direction-send svg{width:18px;height:18px;stroke-width:2.6}
+  body.pearl-studio .chat-composer .direction-send:hover:not(:disabled){background:var(--ios-tint-pressed) content-box}
 }
