@@ -65,6 +65,8 @@ For owner-operated headless linking, `node scripts/link-engine.mjs connect --con
 
 ## Change and verify
 
+Public Web extraction and research feedback live in `lib/web-content.mjs` and `lib/web-research.mjs`, wired through AgentTools and the Engine. Run `node --test test/web-content.test.mjs test/web-research.test.mjs test/web-research-engine.test.mjs test/web-search*.test.mjs test/autonomous*.test.mjs test/tools.test.mjs test/provider-tool-catalog.test.mjs`, followed by `node scripts/verify-release-tests.mjs` for loop/checkpoint changes. The research fixtures use temporary stores, synthetic pages and local providers, including real Chat Completions, Responses, ChatGPT namespace and Anthropic adapters. They cover extraction, failures across changed requests, duplicate mirrors, parallel-read draining, Stop, no startup replay and continuing productive research. Explicit Mission source-collection/acceptance regressions remain unchanged; its research counters are advisory under the existing shared budget. The release runner isolates the runtime-verification fixture without changing its deadline. They measure machinery, not the judgment or usefulness of real models. parse5 is a pinned production dependency; the keyless search parser still receives the untouched network response.
+
 ```sh
 npm run dev
 npm run build
