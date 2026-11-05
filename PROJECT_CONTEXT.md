@@ -1,5 +1,10 @@
 # Tupies — project context
 
+## Approval/composer installed locally — 5 November 2026
+
+The local Mac Engine now runs frozen e363063 from PR42, stacked on Desktop PR41, after2,143 full regressions,93 focused cases,201 syntax checks,32 guide pages and staged production boot/8-format document acceptance. Fresh idle reservation, normal Stop, complete encrypted stopped backup/authenticated raw and supported offline restore, held startup/activation and independent preservation checks pass:8,822 original runtime entries and12served assets, with one newer authenticated Home document update. Original state/security/configuration, Desktop setup and app pairings are preserved. The missing original Node executable is restored byte-for-byte to its prior provenance. Installed source/manifest remain frozen independently from later documentation commits; old source is retained and rollback uses CURRENT DATA. VPS/signed app/fallback/iPhone/account permissions are unchanged. See docs/verification.md and the ignored local handoff for current ownership and protected receipts.
+
+
 ## Approval/composer publication candidate — 5 November 2026
 
 The scoped branch builds on Desktop PR41 (`145e33e`) while preserving its newer Mission effort/history policies and excluding unrelated working-checkout edits. Official Node22.23.4 passes2,143/2,143 regressions,93/93 focused cases,201 syntax checks and32 guide pages. A shortened automatic-mode instruction preserves the small-context boundary. Installation ownership/backup remains separate from this publication candidate; see docs/verification.md and the ignored local handoff.
