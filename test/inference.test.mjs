@@ -65,7 +65,7 @@ test('automatic memory review uses real provider adapters with isolated bounded 
     f.remote.handler=()=>type==='anthropic'?{content:[{type:'text',text:'Hello, fixture owner.'}],stop_reason:'end_turn'}:type==='custom'?{choices:[{message:{role:'assistant',content:'Hello, fixture owner.'},finish_reason:'stop'}]}:answer('Hello, fixture owner.');
     await f.app.store.mutate(state=>{state.messages.bot_atlas=[{id:'old_private_fixture',role:'user',runId:'old_run',sessionId:'bot_atlas--telegram-private',content:'PRIVATE-REVIEW-CANARY'}];});
     const response=await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text:'My name is Fixture.'}});assert.equal(response.status,202);
-    const finished=await waitRun(f,response.body.run);assert.equal(finished.status,'completed');assert.equal(finished.memoryReview.status,'reviewed');
+    await waitRun(f,response.body.run);for(let i=0;i<200&&!f.app.store.state.runs.bot_atlas?.memoryReview;i++)await new Promise(r=>setTimeout(r,25));const finished=f.app.store.state.runs.bot_atlas;assert.equal(finished.status,'completed');assert.equal(finished.memoryReview.status,'reviewed');
     const review=f.remote.requests.find(request=>isReview(request.body));assert.ok(review);assert.ok(!JSON.stringify(review.body).includes('PRIVATE-REVIEW-CANARY'));
     assert.equal(review.body.max_output_tokens ?? review.body.max_tokens,1536);assert.equal(review.body.model,'reasoning-a');assert.equal(modelRequests(f.remote).length,1);
   });

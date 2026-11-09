@@ -1,4 +1,5 @@
 import { APPROVAL_POLICIES, DEFAULT_APPROVAL_POLICY } from './lib/action-review.mjs';
+import { validateCommandAllowlist } from './lib/command-policy.mjs';
 import { loadMissionPricing } from './lib/mission-pricing.mjs';
 import http from 'node:http';
 import https from 'node:https';
@@ -13,11 +14,13 @@ import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPacka
 import { getWorkspaceRoot } from './lib/agent-tools.mjs';
 import { ensureWorkspaceLayout } from './lib/workspace-layout.mjs';
 import { Runtime, isActive } from './lib/runtime.mjs';
-import { CONTEXT_LIMITS } from './lib/context-budget.mjs';
+import { CONTEXT_LIMITS, COMPACT_THRESHOLDS } from './lib/context-budget.mjs';
+import { chatMessages, handleChatSessions } from './lib/chat-session-api.mjs';
 import { removeBotSessions } from './lib/sessions.mjs';
 import { routineRuns, validateRoutine } from './lib/routines.mjs';
 import { Rooms, isDriveActive } from './lib/rooms.mjs';
 import { Providers } from './lib/providers.mjs';
+import { validateFallback } from './lib/model-resilience.mjs';
 import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
@@ -84,6 +87,8 @@ function validateBot(input, previous={}) {
   for(const key of ['tools','collaborators','integrationIds'])if(Object.hasOwn(input,key)){ensure(Array.isArray(input[key]) && input[key].length<=30 && input[key].every(item=>typeof item==='string' && /^[a-zA-Z0-9_-]{1,100}$/.test(item)),400,`Choose valid ${key}.`);bot[key]=[...new Set(input[key])];}
   if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','setup','terminal','browser','coding','desktop','workshop','engine_workshop'].includes(tool)),400,'Choose supported bot tools.');
   if(Object.hasOwn(input,'approvalPolicy')){ensure(APPROVAL_POLICIES.includes(input.approvalPolicy),400,'Choose a supported action review policy.');bot.approvalPolicy=input.approvalPolicy;}
+  // Owner-only: bots' setup tools never pass this field, so a bot cannot widen its own command allowlist.
+  if(Object.hasOwn(input,'commandAllowlist'))bot.commandAllowlist=validateCommandAllowlist(input.commandAllowlist);
   if(Object.hasOwn(input,'skillInstallPolicy')){ensure(['ask','trusted'].includes(input.skillInstallPolicy),400,'Choose ask or trusted for skill installation.');bot.skillInstallPolicy=input.skillInstallPolicy;}
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
   if(Object.hasOwn(input,'enabled')){ensure(typeof input.enabled==='boolean',400,'enabled must be true or false.');bot.enabled=input.enabled;}
@@ -92,12 +97,16 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'episodicMemory')){ensure(typeof input.episodicMemory==='boolean',400,'episodicMemory must be true or false.');bot.episodicMemory=input.episodicMemory;}
   if(Object.hasOwn(input,'searchFallbackIntegrationId')){ensure(typeof input.searchFallbackIntegrationId==='string' && (!input.searchFallbackIntegrationId || /^[a-zA-Z0-9_-]{1,100}$/.test(input.searchFallbackIntegrationId)),400,'Choose a valid search fallback integration.');bot.searchFallbackIntegrationId=input.searchFallbackIntegrationId;}
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
+  // Shape only here; the provider's existence is checked against current connections in validateBinding.
+  if(Object.hasOwn(input,'fallback')){if(input.fallback===null || input.fallback==='' || (input.fallback && typeof input.fallback==='object' && !input.fallback.connectionId && !input.fallback.model))delete bot.fallback;else{ensure(input.fallback && typeof input.fallback==='object' && !Array.isArray(input.fallback) && typeof input.fallback.connectionId==='string' && typeof input.fallback.model==='string',400,'Choose a provider and a model for the fallback.');bot.fallback={connectionId:string(input.fallback.connectionId,'fallback provider',100),model:string(input.fallback.model,'fallback model',200)};}}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
+  if(Object.hasOwn(input,'compactThreshold')){const value=input.compactThreshold===''?'':typeof input.compactThreshold==='string' && /^\d{1,3}$/.test(input.compactThreshold)?Number(input.compactThreshold):input.compactThreshold;ensure(value==='' || Number.isInteger(value) && value>=COMPACT_THRESHOLDS.min && value<=COMPACT_THRESHOLDS.max,400,`Choose when older messages are summarized: ${COMPACT_THRESHOLDS.min}–${COMPACT_THRESHOLDS.max}% of the context limit, or automatic.`);bot.compactThreshold=value;}
   upgradeReasoningPreference(bot);
   return {description:'',instructions:'',model:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:DEFAULT_APPROVAL_POLICY,enabled:true,hidden:false,...bot};
 }
 function validateBinding(bot,state,integrations) {
   if(bot.connectionId)ensure(state.connections.some(c=>c.id===bot.connectionId && c.type!=='legacy-hermes'),400,'Choose a model provider. Replace legacy gateway connections in Providers.');
+  if(bot.fallback){const checked=validateFallback(bot.fallback,{connections:state.connections,ensure,primary:{connectionId:bot.connectionId || state.settings?.defaultConnectionId || '',model:bot.model || ''}});if(checked)bot.fallback=checked;else delete bot.fallback;}
   ensure((bot.collaborators||[]).every(target=>target!==bot.id && state.bots.some(b=>b.id===target)),400,'Choose other existing bots as collaborators.');
   ensure((bot.integrationIds||[]).every(target=>state.integrations.some(i=>i.id===target)),400,'Choose existing integrations.');
   if(bot.searchFallbackIntegrationId)ensure((bot.integrationIds || []).includes(bot.searchFallbackIntegrationId),400,'Assign the search fallback integration to this bot before choosing it.');
@@ -307,6 +316,13 @@ export async function createStudioServer(options={}) {
           res.setHeader('Cache-Control','no-store');
           return json(res,await runtime.browserControl[action](botId,await body(req,32_000)));
         }
+        const chatMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/sessions(?:\/([a-zA-Z0-9_-]{1,120})(?:\/(resume|messages))?)?$/);
+        if(chatMatch) {
+          const [,botId,sessionId,action]=chatMatch;
+          const idle=()=>{ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot to finish its current work, or stop it, before switching chats.');const elsewhere=sync.busyElsewhere(botId);ensure(!elsewhere,409,`This bot is working on ${elsewhere?.name || 'another engine'} right now. Try again when that task finishes.`);};
+          const result=await handleChatSessions({method,botId,sessionId,action,url,input:()=>body(req),store,idle});
+          return json(res,result.body,result.status);
+        }
         let match=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)(?:\/(messages|run|runs|stop|approval|answer|steer|capabilities|skills|compact))?$/);
         if(match) {
           const [,botId,action]=match,bot=store.state.bots.find(b=>b.id===botId);ensure(bot,404,'Bot not found.');
@@ -327,7 +343,7 @@ export async function createStudioServer(options={}) {
             const idle=()=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Stop the active run and room turn before removing this bot.');idle();
             await store.mutate(state=>{idle();ensure(state.bots.some(b=>b.id===botId),404,'Bot not found.');state.bots=state.bots.filter(b=>b.id!==botId);state.routines=state.routines.filter(r=>r.botId!==botId);delete state.messages[botId];removeBotSessions(state,botId);delete state.memory[botId];delete state.runs[botId];delete state.runHistory?.[botId];delete state.submissions?.[botId];state.proposals=(state.proposals || []).filter(item=>item.botId!==botId);for(const b of state.bots)b.collaborators=(b.collaborators||[]).filter(id=>id!==botId);for(const room of state.rooms)room.botIds=room.botIds.filter(id=>id!==botId);for(const channel of state.channels)if(channel.botId===botId){channel.enabled=false;channel.error='The assigned bot was removed.';}store.audit('bot.deleted',`${bot.name} removed from this workspace`);});return json(res,{deleted:true});
           }
-          if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);return pollReply(req,res,`bot:${botId}`,elsewhere,()=>({messages:store.state.messages[botId] || [],missions:store.publicState().missions,run:store.state.runs[botId] || null,lastMessageAt:store.lastBotMessageAt(botId),elsewhere}));}
+          if(action==='messages' && method==='GET'){await runtime.poll(botId);const elsewhere=sync.busyElsewhere(botId);const requested=url.searchParams.get('session') || '';return pollReply(req,res,`bot:${botId}:${requested}`,elsewhere,()=>({...chatMessages(store.state,botId,requested),missions:store.publicState().missions,run:store.state.runs[botId] || null,lastMessageAt:store.lastBotMessageAt(botId),elsewhere}));}
           if(action==='compact' && method==='POST'){
             const input=await body(req);ensure(input && typeof input==='object' && Object.keys(input).every(key=>key==='topic') && (input.topic===undefined || typeof input.topic==='boolean'),400,'Send {topic?: boolean}.');
             return json(res,await runtime.compactChat(botId,{topic:input.topic===true}));

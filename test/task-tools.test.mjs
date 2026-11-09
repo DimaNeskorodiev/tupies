@@ -28,7 +28,7 @@ test('real engine discovers, reads, edits and verifies files while keeping a dur
     if(index===3){const read=outputs.find(item=>item.id==='read').value;return {text:'',toolCalls:[call('edit','workspace_edit',{path:'src/main.js',oldText:'old value',newText:'new value',expectedSha256:read.sha256}),call('plan2','task_plan_set',{expectedVersion:1,steps:[step('locate','completed'),step('edit','completed'),step('verify','in_progress')]}),call('verify','workspace_read',{path:'src/main.js'})]};}
     if(index===4){assert.equal(outputs.find(item=>item.id==='verify').value.content,"export const value = 'new value';\n");return {text:'',toolCalls:[call('plan3','task_plan_set',{expectedVersion:2,steps:[step('locate','completed'),step('edit','completed'),step('verify','completed')]})]};}
     // The current plan reaches the model in the per-step turn context, not in the cached system prompt.
-    assert.match(request.turnContext,/"version":3/);assert.doesNotMatch(request.messages[0].content,/"version":3/);return {text:'Updated the source and verified its contents.',toolCalls:[]};
+    assert.match(request.turnContext,/Current plan v3 /);assert.doesNotMatch(request.messages[0].content,/Current plan v3/);return {text:'Updated the source and verified its contents.',toolCalls:[]};
   });
   await writeWorkspace(store,'bot_atlas','src/main.js',"export const value = 'old value';\n");
   const result=await run();assert.equal(result.status,'completed');assert.equal(result.plan.version,3);assert.ok(result.plan.steps.every(item=>item.status==='completed'));

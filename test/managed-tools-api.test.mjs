@@ -21,7 +21,7 @@ test('background output and Stop APIs enforce authentication, CSRF, current iden
     return {status:response.status,body:await response.json(),headers:response.headers};
   }
   const setup=await request('/api/setup',{method:'POST',data:{token:app.bootstrapToken,password:'managed-tools-fixture-password'}});assert.equal(setup.status,201);cookie=setup.headers.get('set-cookie').split(';')[0];csrf=setup.body.csrf;
-  await app.store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture-model'});state.bots[0].connectionId='fixture';state.bots[0].tools=['workspace','terminal'];});
+  await app.store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture-model'});state.bots[0].connectionId='fixture';state.bots[0].tools=['workspace','terminal'];state.bots[0].approvalPolicy='balanced';});
   const sent=await request('/api/bots/bot_atlas/messages',{method:'POST',data:{text:'Start a fixture command and wait.'}});assert.equal(sent.status,202);const {id:runId,remoteRunId}=sent.body.run;
   const approval=await until(()=>app.store.state.runs.bot_atlas.status==='waiting_for_approval' && app.store.state.runs.bot_atlas);
   const approved=await request('/api/bots/bot_atlas/approval',{method:'POST',data:{runId,remoteRunId,request_id:approval.pending_controls[0].prompt_id,execution_generation:approval.execution_generation,choice:'once'}});assert.equal(approved.status,200);

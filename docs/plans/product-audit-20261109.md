@@ -155,6 +155,8 @@ Gate: today's Hyperliquid question answered in ≤6 model turns on DeepSeek; no 
 
 Gate: fixed tokens per step ≤8K on the default bot; ≥80% of the 12 tasks complete on DeepSeek without owner intervention; no task exceeds 15 turns on Codex.
 
+Status (9 November 2026): implemented on branch `phase1-20261109`, not merged or deployed. Measured fixed payload 5.0K tokens per step on the default bot (19.4K before). The live-model parts of the gate are not yet run.
+
 ### Phase 2 — research that works (two weeks)
 
 1. Search abstraction with Exa, Firecrawl, Tavily, Brave, Perplexity, Serper, Parallel and keyless DDG/SearXNG fallback; filters, cache, citations in replies (B2).

@@ -23,7 +23,7 @@ async function fixture(t,{complete=async()=>({text:'Nice to meet you.',toolCalls
   await engine.recover();
   t.after(async()=>{await engine.close();await fs.rm(directory,{recursive:true,force:true});});
   const bot=store.state.bots[0];
-  const run=async(text,options)=>{const admitted=await engine.start(bot.id,text,options);await engine.tasks.get(admitted.id);return store.state.runs[bot.id];};
+  const run=async(text,options)=>{const admitted=await engine.start(bot.id,text,options);await engine.tasks.get(admitted.id);await engine.settleReviews();return store.state.runs[bot.id];};
   return {store,engine,bot,requests,reviews,run,directory};
 }
 
@@ -38,7 +38,7 @@ test('a plain owner statement automatically produces a source-linked Learning su
   assert.equal(result.usage.input_tokens,20);assert.equal(h.store.state.runHistory[h.bot.id][0].diagnostics.memoryReview.proposed,1);
   const reopened=await new Store(h.directory).init();assert.equal(reopened.state.proposals.length,1);
   await decideProposal(h.store,{botId:h.bot.id,proposalId:proposal.id,action:'accept',idle(){}});
-  await h.run('What is my name?');assert.doesNotMatch(h.requests.at(-1).messages[0].content,/Owner name is Fixture/);assert.match(h.requests.at(-1).turnContext,/Owner name is Fixture/);
+  await h.run('What is my name?');assert.doesNotMatch(h.requests.at(-1).messages[0].content,/Owner name is Fixture/);assert.match(h.requests.at(-1).messages.find(message=>String(message.content).startsWith('<reference_data>')).content,/Owner name is Fixture/);assert.doesNotMatch(h.requests.at(-1).turnContext,/Owner name is Fixture/);
 });
 
 test('Strict permits only a pending automatic suggestion and retains owner review',async t=>{
@@ -51,8 +51,8 @@ test('an unsupported save confirmation is replaced in the reply, canonical histo
   const saved='I have saved your name to long-term memory.';let h;const partials=[];
   h=await fixture(t,{complete:async request=>{await request.onDelta(saved);return {text:saved,toolCalls:[],providerItems:[{type:'message',role:'assistant',content:[{type:'output_text',text:saved}]}]};},review:async()=>reviewed([fact],[claim(saved)])});
   h.store.onCommit(()=>partials.push(h.store.state.runs[h.bot.id]?.partialOutput || ''));
-  const result=await h.run('My name is Fixture.');assert.equal(result.status,'completed');assert.equal(result.memoryReview.guarded,true);
-  assert.match(result.output,/not verified/);assert.match(result.output,/Learning/);assert.ok(!partials.some(text=>text.includes(saved)));
+  const result=await h.run('My name is Fixture.');assert.equal(result.status,'completed');
+  assert.match(result.output,/not verified/);assert.ok(!partials.some(text=>text.includes(saved)));
   assert.ok(!JSON.stringify(h.store.state.conversations[h.bot.id]).includes(saved));assert.ok(!JSON.stringify(h.store.state.messages[h.bot.id]).includes(saved));
   assert.equal(h.store.state.conversations[h.bot.id].at(-1).providerItems,undefined);
 });
@@ -64,10 +64,10 @@ test('a successful exact memory write keeps its verified confirmation and surviv
   assert.equal(h.reviews.length,1);assert.equal(h.store.state.memory[h.bot.id][0].value,fact.value);assert.equal(h.store.state.proposals.length,0);
 });
 
-test('an unrelated successful write cannot validate a false saved-fact confirmation',async t=>{
+test('a save confirmation with no memory write in the run is replaced without waiting for any model review',async t=>{
   const saved='Запам’ятав: твоє ім’я Fixture.';
-  const h=await fixture(t,{complete:async(_request,index)=>index===1?{text:'',toolCalls:[call('memory_set',{key:'unrelated',value:'A different fact.'})]}:{text:saved,toolCalls:[]},review:async()=>reviewed([],[claim(saved)])});
-  const result=await h.run('Мене звати Fixture.');assert.equal(result.memoryReview.guarded,true);assert.doesNotMatch(result.output,/Запам’ятав/);
+  const h=await fixture(t,{complete:async()=>({text:saved,toolCalls:[]}),review:async()=>reviewed()});
+  const result=await h.run('Мене звати Fixture.');assert.doesNotMatch(result.output,/Запам’ятав/);assert.match(result.output,/не підтверджено/);
 });
 
 test('review failure preserves the useful answer, suppresses unsupported confirmation and reports unavailable coverage',async t=>{
@@ -119,20 +119,26 @@ test('disabled Memory, third-party lanes, rooms and unattended tasks never start
   assert.equal(h.reviews.length,0);assert.equal(h.store.state.proposals.length,0);
 });
 
-test('cancellation during review commits no proposal and does not publish a successful answer',async t=>{
+test('the reply is delivered before the review runs, and shutdown during review commits no proposal',async t=>{
   let entered,release;const started=new Promise(resolve=>entered=resolve),pending=new Promise(resolve=>release=resolve);
-  const h=await fixture(t,{complete:async request=>{await request.onDelta('I have saved your name to memory.');return {text:'I have saved your name to memory.',toolCalls:[]};},review:async()=>{entered();await pending;return reviewed([fact]);}});
-  const admitted=await h.engine.start(h.bot.id,'My name is Fixture.');await started;
-  h.engine.controllers.get(admitted.id).abort(new Error('Fixture stop.'));release();await h.engine.tasks.get(admitted.id);
-  assert.equal(h.store.state.proposals.length,0);assert.notEqual(h.store.state.runs[h.bot.id].status,'completed');assert.ok(!JSON.stringify(h.store.state.messages[h.bot.id]).includes('I have saved your name to memory.'));
+  const h=await fixture(t,{review:async()=>{entered();await pending;return reviewed([fact]);}});
+  const admitted=await h.engine.start(h.bot.id,'My name is Fixture.');await started;await h.engine.tasks.get(admitted.id);
+  assert.equal(h.store.state.runs[h.bot.id].status,'completed');assert.ok(h.store.state.messages[h.bot.id].some(message=>message.role==='assistant'));assert.equal(h.store.state.proposals.length,0);
+  const closing=h.engine.close();release();await closing;
+  assert.equal(h.store.state.proposals.length,0);
 });
 
-test('owner direction arriving during review invalidates its proposal and the next review sees the applied direction',async t=>{
-  let entered,release;const started=new Promise(resolve=>entered=resolve),pending=new Promise(resolve=>release=resolve);
-  const h=await fixture(t,{review:async(request,index)=>{if(index===1){entered();await pending;return reviewed([fact]);}assert.match(JSON.parse(request.messages[1].content).ownerMessage,/Do not remember my name/);return reviewed();}});
-  const admitted=await h.engine.start(h.bot.id,'My name is Fixture.');await started;
-  try{await h.engine.steer(h.bot.id,{runId:admitted.id,remoteRunId:admitted.remoteRunId,clientUpdateId:'fixture_direction',text:'Do not remember my name.'});}finally{release();}await h.engine.tasks.get(admitted.id);
-  assert.equal(h.store.state.proposals.length,0);assert.equal(h.store.state.runs[h.bot.id].status,'completed');assert.equal(h.reviews.length,2);
+test('a review runs once per finished run on the auxiliary model when one is configured',async t=>{
+  const h=await fixture(t,{review:async()=>reviewed([fact])});
+  await h.store.mutate(state=>{state.connections.push({id:'cheap_provider',type:'custom',defaultModel:'cheap-model'});state.settings.auxiliary={connectionId:'cheap_provider',model:'cheap-model'};});
+  await h.run('My name is Fixture.');
+  assert.equal(h.reviews.length,1);assert.equal(h.reviews[0].request.model,'cheap-model');assert.equal(h.reviews[0].connection.id,'cheap_provider');assert.equal(h.requests[0].model,'fixture-model');
+  assert.equal(h.store.state.proposals.length,1);
+});
+
+test('without an auxiliary setting the review uses the bot’s own model',async t=>{
+  const h=await fixture(t,{review:async()=>reviewed()});await h.run('My name is Fixture.');
+  assert.equal(h.reviews[0].request.model,'fixture-model');
 });
 
 test('automatic review cannot overflow the pending queue or run after a failed primary completion',async t=>{
