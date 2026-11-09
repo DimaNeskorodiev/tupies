@@ -148,7 +148,7 @@ export async function createStudioServer(options={}) {
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();
-  const channels=new Channels(store,runtime,{...options,automation:()=>!maintenance.paused && sync.runsAutomation()});
+  const channels=new Channels(store,runtime,{...options,publicUrl:publicOrigin,automation:()=>!maintenance.paused && sync.runsAutomation()});
   sync.options.linkBusy=()=>runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging');
   sync.prepareLinkChange=()=>channels.pauseAutomation();
   await channels.recover?.();

@@ -3,7 +3,7 @@
 const TABS=[['overview','Overview','grid'],['settings','Settings','sliders'],['skills','Skills','spark'],['brain','Brain','brain'],['memory','Memory','pin'],['learning','Learning','spark'],['files','Files','folder'],['scripts','Scripts','code'],['workshop','Workshop','code']];
 const GROUPS={workspace:'Files',memory:'Memory',skills:'Skills',web:'Web',integrations:'Integrations',delegation:'Bot collaboration',automation:'Routines',setup:'Manage Tupies',terminal:'Terminal',browser:'Browser',desktop:'Desktop on this Mac',coding:'Coding on this Mac',workshop:'Tool workshop',engine_workshop:'Engine workshop'};
 const DEFAULT_GROUPS=['workspace','memory','skills','web','integrations','delegation','automation','setup'];
-const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local'};
+const PROVIDERS={openai:'OpenAI',anthropic:'Anthropic',xai:'xAI',openrouter:'OpenRouter',ollama:'Ollama',custom:'Custom API',chatgpt:'ChatGPT plan',codex:'Codex local',deepseek:'DeepSeek',gemini:'Google Gemini',groq:'Groq',mistral:'Mistral',together:'Together AI',fireworks:'Fireworks',zai:'Z.ai',moonshot:'Moonshot',minimax:'MiniMax'};
 const PALETTE=['#829f96','#9590b5','#81a0bd','#d0a47b','#bf92aa','#b7b17e'];
 const ACTIVITY={run:'play',memory:'pin',file:'file',bot:'bots',skill:'spark',learning:'spark',routine:'routine',integration:'globe',channel:'chat',process:'stop',room:'team'};
 const GRAPH_NODES=60,LIST_PAGE=60,STALE=20000,MAX_FACTS=200,MAX_PINNED=20,W=640,H=340;

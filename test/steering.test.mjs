@@ -16,7 +16,7 @@ async function wait(predicate){const until=Date.now()+4000;while(Date.now()<unti
 async function configure(store){await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',name:'Fixture',model:'fixture-model',secret:store.seal('disposable-fixture-key')});for(const bot of state.bots){bot.connectionId='fixture';bot.tools=['workspace','delegation'];}});}
 async function fixture(t,complete){
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-steering-')),store=await new Store(directory).init();await configure(store);const requests=[];
-  const engine=new NativeEngine(store,{runTimeout:10000,providers:{async complete(connection,request){requests.push({connection:structuredClone(connection),request:structuredClone({...request,signal:undefined,onDelta:undefined})});return complete(request,requests.length);}}});
+  const engine=new NativeEngine(store,{runTimeout:10000,providers:{async complete(connection,request){requests.push({connection:structuredClone(connection),request:structuredClone({...request,signal:undefined,onDelta:undefined,onReasoning:undefined})});return complete(request,requests.length);}}});
   t.after(async()=>{await engine.close();await fs.rm(directory,{recursive:true,force:true});});return {directory,store,engine,requests};
 }
 const input=(run,text='Keep the requested result concise.',clientUpdateId='guidance_update_001')=>({runId:run.id,remoteRunId:run.remoteRunId,clientUpdateId,text});
