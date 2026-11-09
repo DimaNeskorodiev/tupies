@@ -10,7 +10,7 @@ On the Home server, Рома (DeepSeek v4.1 flash via OpenRouter, autonomous) sp
 
 Verification: `npm run check`; release runner 2,293 tests (new `test/site-access.test.mjs`, stable 6× in parallel). Not deployed; no live-model run.
 
-## Prompt-cache and history cost controls — 9 November 2026 (source only)
+## Prompt-cache and history cost controls — 9 November 2026 (installed on Mac and VPS)
 
 The first DeepSeek (OpenRouter) requests after the Phase 0/1 installation finished in 6–7 steps but cost $0.04–0.06 each. The Home engine log showed two causes. About 70% of the cost was five prompt-cache misses: the offered tool list changed mid-task (`mission_start` dropped after step 1, tool groups appended after `tools_load` or a direct call), so the provider re-read ~300K tokens at full price. The rest was the Finance bot's ~300K-token history, because "The model's full window" (1M) put the 55% compaction point at 577K and skips the bounded earlier-task projection. Changes, after Hermes Agent and OpenClaw:
 
@@ -18,7 +18,7 @@ The first DeepSeek (OpenRouter) requests after the Phase 0/1 installation finish
 - With the default threshold, summary compaction starts at most at 128K tokens (`COMPACT_CEILING`) and targets at most 54,400 tokens, also with the full window; an explicit per-bot threshold is honoured as set.
 - Before a summary, old tool outputs outside the protected tail and the current task are cleared without a model call (`pruneToolOutputs`, `context.pruned` event); the summary is skipped when that leaves the request under 60% of the compaction point. Single results above 16K characters were already paged.
 
-Verification: `npm run check` 215 modules; release runner 98 + 2,187 = 2,285 tests; fixed payload 5.2K tokens (default bot) and 5.4K (fully enabled), unchanged when groups load. Not deployed; real-model cost not yet re-measured.
+Verification: `npm run check` 215 modules; release runner 98 + 2,187 = 2,285 tests; fixed payload 5.2K tokens (default bot) and 5.4K (fully enabled), unchanged when groups load. Merged through PR #50 and installed the same evening: the VPS runs signed Engine `0.5.0-engine.beta.7` (installed by its updater and independently verified), the Mac an isolated source from `038c6c9` after a full encrypted stopped backup, held start, verification and activation. Real-model cost has not yet been re-measured.
 
 ## Phase 0 and Phase 1 recovery installed on Mac and VPS — 9 November 2026
 
