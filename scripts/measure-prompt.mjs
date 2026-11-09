@@ -17,7 +17,7 @@ const PLAN={version:2,steps:[{id:'search',title:'Search for direct flights',stat
 
 /**
  * Measure one bot profile. `profile` is 'default' (a new bot with standard tool groups) or 'full' (every tool group,
- * Browser, Coding and Desktop available). `loadAll` additionally loads every on-demand group, when the engine has them.
+ * Browser, Coding and Desktop available). `loadAll` marks every on-demand group loaded; the offered list must stay the same.
  */
 export async function measurePrompt({profile='default',loadAll=false,seeded=false}={}) {
   const [{Store},{NativeEngine},{TOOL_GROUPS},{estimateTokens}]=await Promise.all([load('lib/store.mjs'),load('lib/engine.mjs'),load('lib/agent-tools.mjs'),load('lib/context-budget.mjs')]);

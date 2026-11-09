@@ -198,10 +198,10 @@ test('a bot suggests a memory update from a routine without approval, cites mess
   t.after(async()=>{await engine.close();await fs.rm(directory,{recursive:true,force:true});});
   await engine.runRoutine('routine_review');
   const run=await waitFor(()=>store.state.runs.bot_atlas?.status==='completed' && store.state.runs.bot_atlas);
-  // Suggestion tools are permitted by group and load on demand: session_search loads the memory group for later steps.
-  const names=requests[0].tools.map(tool=>tool.name),loaded=requests[1].tools.map(tool=>tool.name);
+  // Suggestion tools are permitted by group and reached on demand: session_search records the memory group; the offered list stays the same.
+  const names=requests[0].tools.map(tool=>tool.name);
   assert.ok(!names.includes('memory_propose'));assert.deepEqual(requests[0].tools.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum.filter(group=>['memory','skills'].includes(group)),['memory','skills']);
-  assert.ok(loaded.includes('memory_propose'));assert.ok(!loaded.includes('skills_propose'));
+  assert.deepEqual(requests[1].tools,requests[0].tools);assert.ok(run.loadedToolGroups.includes('memory'));
   const permitted=engine.permittedTools({bot:store.state.bots.find(bot=>bot.id==='bot_atlas'),source:'routine',inference:{}}).map(tool=>tool.name);
   assert.ok(permitted.includes('memory_propose'));assert.ok(permitted.includes('skills_propose'));
   assert.doesNotMatch(JSON.stringify(requests[0].messages[0]),/memory_propose/);assert.match(requests[1].turnContext,/propose it with memory_propose/);

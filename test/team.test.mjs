@@ -42,7 +42,8 @@ test('a bot knows the whole team by default and really talks with a teammate it 
   assert.match(reference,/- bot_nova: Ops/);assert.match(reference,/- bot_scout: Scout/);assert.doesNotMatch(reference,/- bot_atlas:/);
   assert.match(system,/load the team group/);assert.doesNotMatch(system,/delegate_task/);
   const atlasRequests=requests.filter(request=>request.messages[0].content===system);
-  assert.ok(atlasRequests[1].tools.some(tool=>tool.name==='delegate_task'),'the first delegate_task call loads the team group');
+  assert.deepEqual(atlasRequests[1].tools,atlasRequests[0].tools,'calling delegate_task records the team group without changing the offered tools');
+  assert.ok(atlasRequests[0].tools.some(tool=>tool.name==='tool_call'));
   assert.equal(store.state.runs.bot_scout.output,'The primary source is most reliable.');
   const asked=store.state.messages.bot_scout.find(message=>message.role==='user');
   assert.equal(asked.content,'Which source is most reliable?');assert.equal(asked.fromBotId,'bot_atlas');assert.equal(asked.source,'delegation');

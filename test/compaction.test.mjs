@@ -131,3 +131,22 @@ test('ordinary short histories keep one model call and estimated request budgets
   }});
   assert.equal(calls,1);assert.equal(result.summary,'A short summary.');assert.deepEqual(original,before);
 });
+
+test('model-free pruning clears old tool outputs before the protected tail and the current task, and keeps everything else',async()=>{
+  const { pruneToolOutputs, PRUNED_OUTPUT }=await import('../lib/compaction.mjs');
+  const conversation=Array.from({length:6},(_,i)=>turn(i,4000)).flat();
+  conversation[2]={...conversation[2],images:[{path:'browser/old.png'}]};
+  const small={role:'tool',tool_call_id:'tiny',content:'ok'};conversation.splice(3,0,small);
+  const keepFrom=conversation.length-4,{messages,pruned,freedChars}=pruneToolOutputs(conversation,{keepFrom,tailTokens:1200,measure});
+  // The last earlier turn fits the 1,200-token tail and the current task (from keepFrom) is protected; older outputs are cleared.
+  const tools=messages.map((message,index)=>[index,message]).filter(([,message])=>message.role==='tool');
+  const cleared=tools.filter(([,message])=>message.content===PRUNED_OUTPUT).map(([index])=>index);
+  assert.ok(cleared.length>=3 && pruned===cleared.length,`${pruned} ${cleared}`);assert.ok(freedChars>10_000);
+  assert.ok(cleared.every(index=>index<keepFrom));
+  for(const index of [keepFrom,keepFrom+1,keepFrom+2,keepFrom+3])assert.deepEqual(messages[index],conversation[index]);
+  assert.equal(messages[2].images,undefined,'old screenshots go with their output');assert.equal(messages[3].content,'ok','short results stay');
+  // Requests, answers and calls are untouched, and the input array is not mutated.
+  for(const [index,message] of conversation.entries())if(message.role!=='tool')assert.deepEqual(messages[index],message);
+  assert.notEqual(conversation[2].content,PRUNED_OUTPUT);
+  assert.equal(pruneToolOutputs(messages,{keepFrom,tailTokens:1200,measure}).pruned,0,'pruning twice changes nothing');
+});
