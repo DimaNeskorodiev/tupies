@@ -8,7 +8,7 @@ Each model step sends three parts:
 
 1. **System prompt** (`NativeEngine.instructions`): identity, the owner-configured bot instructions, Engine rules and tool guidance. Core memory, assigned skill descriptions and teammate profiles are reference data and never inserted into this system message for new tasks. It is built once per task and does not change between steps, so providers can reuse its cached prefix. Memory a bot saves during a task appears in the tool result immediately and in the reference snapshot from the next task. A skill assigned during the task is announced in the turn context.
 2. **A view of the bot's stored conversation**, with bulky earlier tool trajectories projected out for new eligible tasks, then fitted to the model's window (below).
-3. **The turn context** (`NativeEngine.turnContext`): a `<turn_context>` block with a JSON-encoded reference snapshot (core memory, skill descriptions and teammate profiles), today's date, the current run plan, recalled long-term notes, skills assigned during the task and any compaction note. Providers append it as the last user message; the assembled block is not conversation history, so preceding messages stay cacheable. The reference snapshot is retained in engine-local continuation checkpoints and restored unchanged; legacy continuations keep their previously saved system prompt. Reference data is counted before fitting history into the context window. Browser-specific system guidance is included only when Browser is enabled, preserving small-window capacity without removing tool contracts. Keeping reference data outside the cacheable system prefix can increase uncached input tokens.
+3. **The turn context** (`NativeEngine.turnContext`): a `<turn_context>` block with a JSON-encoded reference snapshot (core memory, skill descriptions, teammate profiles and, in a later chat session, a short `previousChat` pointer), today's date, the current run plan, recalled long-term notes, skills assigned during the task and any compaction note. Providers append it as the last user message; the assembled block is not conversation history, so preceding messages stay cacheable. The reference snapshot is retained in engine-local continuation checkpoints and restored unchanged; legacy continuations keep their previously saved system prompt. Reference data is counted before fitting history into the context window. Browser-specific system guidance is included only when Browser is enabled, preserving small-window capacity without removing tool contracts. Keeping reference data outside the cacheable system prefix can increase uncached input tokens.
 
 The display transcript (`state.messages`) is separate and never shortened.
 
@@ -24,7 +24,25 @@ Explicit **Maximum** context keeps the prior full-history fitting behavior. The 
 
 ## Conversations and lanes
 
-A bot has one **Bot Chat**: the app and its chat, the owner's own Telegram direct messages and requests from teammates all continue it. Its model history keeps the bot's id as its key, as it did before lanes existed, so no data moved.
+A bot has one **Bot Chat**: the app and its chat, the owner's own Telegram direct messages and requests from teammates all continue it. The Bot Chat is divided into **chat sessions** (below); new work continues the bot's active chat. The first chat's model history keeps the bot's id as its key, as it did before lanes and sessions existed, so no data moved.
+
+### Chat sessions
+
+Each chat is a first-class object (`lib/chat-sessions.mjs`), modelled on Hermes Agent's one-session-per-chat design with memory outside the session:
+
+- **Record.** A synced `state.sessions` record `{id, botId, kind:'chat', key:'chat', title, titleSource, createdAt, updatedAt, activatedAt, archivedAt?, previous?}` plus the existing compaction fields (`summary`, `compactedAt`, `compactions`, `compactMethod`, `compactCoverage`). The first chat's id is the bot id; later chats are `<botId>--chat-<16 hex>`, so sync still tells whose they are.
+- **Model history.** Each chat has its own `state.conversations[chatId]`, compaction state and prompt-cache key. A new chat starts empty.
+- **Title.** The first request's first line (≤60 characters), until the owner renames it (≤80).
+- **Active chat.** Exactly one per bot: the non-archived chat record with the newest `activatedAt`, or the bot id when no record has one. Every engine computes the same answer from the replicated records. **New chat**, **Continue this chat** (resume), archive and delete wait until the bot is idle (not starting, working, summarizing, reserved by a room or working on another engine), so a running task never changes chats; an admission that races a switch is refused with 409 instead of being misfiled. An active chat that is still empty is reused instead of creating another blank chat.
+- **Display transcript.** Still one list per bot (`state.messages[botId]`), so unread counts, notifications and search keep working. A request in a later chat carries `sessionId:<chatId>`; requests from other lanes carry `chatSessionId` (the chat that was active when they arrived) and so does a compaction note; replies, progress and partial output follow their request's `runId`. Untagged messages belong to the first chat. `GET /api/bots/{id}/messages` returns the active chat; `?session=` reads another.
+- **Owner Telegram DMs and teammates** continue the active chat. Routine and room completions bridge into the chat that is active when they finish. Third-party Telegram, room, routine and Mission lanes keep their own keying.
+- **Deleting** a chat removes its model history, its record and everything shown in it (including other lanes' messages that appeared there; their lanes keep their own model histories), and discards that chat's engine-local saved work without replaying anything. Deleting the first chat keeps an empty history under the bot id, so a later load never rebuilds it from other messages. Archiving hides a chat from the list without deleting it; resuming restores it.
+
+**Across chats.** Core memory, long-term notes and daily notes belong to the bot, not a chat, and are unchanged. A new chat records a short deterministic pointer to the chat before it (`previous: {id, title, endedAt, summary}` — the earlier chat's compaction summary or its last request and reply, at most 600 characters; no model call). For tasks in that chat the pointer is part of the frozen reference snapshot as `previousChat`, never the turn context or the stored history. `session_search`/`session_read` cover every chat of the bot (results name the chat as `chat: <title>`), so details outside the pointer remain searchable.
+
+**Migration.** At startup `migrateChatSessions` adds a chat record for every bot with an existing Bot Chat (id = bot id, title from its first owner request, `createdAt`/`updatedAt` from the transcript). Model history, compaction summaries, message `kind` markers and the display transcript stay exactly where they were. It is idempotent; a bot without history gets no record until it receives work.
+
+**Sync.** Chat records replicate as ordinary `session:<id>` documents and chat histories as `conv:<id>` (last-writer-wins, like other lanes); display messages remain per-message documents. Both engines therefore see the same chats and active chat. An engine older than sessions stores these documents without using them: Bot Chat work it runs continues the first chat (the bot-id history) and its messages appear there on newer engines. It never corrupts later chats, but update linked engines together. No sync schema version changes; there is no new document kind.
 
 Other work runs in its own lane with a separate model history (`lib/sessions.mjs`):
 
@@ -63,13 +81,15 @@ A member that joins later starts with that bounded recent history. The prompt al
 - **Window:** an owner-set `contextWindow` on the connection wins. Otherwise the window from the provider's catalog applies (`context_window`, `context_length` and similar fields, cached on `connection.models`), then a small table of known model families, then **128K** for an unknown model. Guessing too high fails requests; guessing too low only compacts earlier.
 - **Ceiling:** by default at most **272K** of a larger window is used, because every step resends the whole context. A bot's `contextLimit` can be `''` (automatic, 272K ceiling), `'128k'` or `'max'` (the full window).
 - **Usable:** 95% of the effective window, less the output reservation when that is smaller. A context above this is refused.
-- **Compaction point:** 90% of the effective window. For a ChatGPT-subscription model with a 272K window, that is 258,400 usable tokens and compaction from 244,800.
+- **Compaction point (`compactAt`):** summary compaction starts at a per-bot threshold, by default **55%** of the effective window (`compactThreshold`, a whole percent 30–90 in **Bot settings › Advanced › Summarize older messages**). For a ChatGPT-subscription model with a 272K window, that is 258,400 usable tokens and summaries from 149,600.
+- **Target (`compactTarget`):** about **20%** of the effective window after a summary. The summary record is capped at that target minus the kept tail (never below a tenth of the window), so summary plus recent turns land near a fifth of the window. Hermes Agent uses 50% → 20%.
+- **Fit point (`fitAt`):** 90% of the effective window. Only above it does a request get shaped (earlier tool outputs cleared, current outputs shortened, oldest turns dropped; next section), so the lower summary threshold never drops content by itself.
 
 Token counts are UTF-8 bytes over four, which counts Cyrillic about twice as dense as English. After each response the engine compares the provider's reported prompt tokens (`input_tokens`/`prompt_tokens`, including Anthropic's cached segments) with its estimate. It keeps that ratio per connection and model, so later estimates track the real tokenizer. Tool schemas and the turn context are reserved before the conversation is fitted.
 
 ## Compaction order
 
-`compactConversation` in `lib/engine.mjs` keeps the conversation itself for as long as possible. Above the compaction point it does the following, in order:
+Summary compaction (below) starts once the whole request exceeds the compaction point. `compactConversation` in `lib/engine.mjs` shapes a request only above the fit point, keeping the conversation itself for as long as possible, in this order:
 
 1. **Tool outputs from earlier tasks** longer than 200 characters are replaced with a stub, all at once. Doing them together keeps the context identical from one step to the next. Their retained copies expired with their tasks, so the stub offers no handle.
    - **Summary.** If the context is still over the point after step 1, the older turns are summarized (see below), before anything else gives way. Up to three attempts are allowed in a task, with a new attempt only after the canonical history has grown; an unchanged oversized history cannot trigger an endless summary loop.
@@ -99,10 +119,10 @@ The deterministic regression fixtures reproduce a requirement that the former mi
 
 ## Owner-requested compaction
 
-`POST /api/bots/{id}/compact` takes `{topic?: boolean}`. Both forms are refused while the bot works, is reserved by a room or runs on another engine, and no task can start while a summary is being written.
+`POST /api/bots/{id}/compact` summarizes the bot's **active chat** on demand. It is refused while the bot works, is reserved by a room or runs on another engine, and no task can start while a summary is being written.
 
 - **Summarize older messages** (`{}`) keeps the recent turns. A short conversation is left as it is.
-- **Start a new topic** (`{topic:true}`) summarizes everything into one background summary and continues the same conversation. Grok Bot 0.77's packaged reset confirmation instead says the conversation starts over while memory, files, routines and settings remain; its client delegates reset to a service, so physical transcript deletion is not established. See the [package comparison](research/grok-bot-0.77.0.md).
+- **New chat** replaces the former *Start a new topic* in the app: it starts a separate chat session instead of summarizing in place. The API still accepts `{topic:true}` from older clients; it summarizes everything into one background summary and continues the same chat. Grok Bot 0.77's packaged reset confirmation instead says the conversation starts over while memory, files, routines and settings remain; its client delegates reset to a service, so physical transcript deletion is not established. See the [package comparison](research/grok-bot-0.77.0.md).
 - **If the summary request fails**, nothing changes and the error is reported.
 
 ## When a provider says the context is too large
@@ -127,7 +147,9 @@ Cached prompt tokens are added up per task in `run.usage.cached_tokens`. Each ru
 - **Settings › Models › provider › Advanced endpoint settings › Context window (tokens):** for local or compatible services that run a model with a smaller context than it supports (for example Ollama's `num_ctx`). Ollama does not report its window, so set it there.
 - **Chat options:**
   - the selected model's window and the point where older material gets organized;
-  - a **Conversation** section with the conversation's estimated size, when it was last summarized, and **Summarize older messages** and **Start a new topic**.
+  - a **Conversation** section with the active chat's estimated size, when it was last summarized, and **Summarize older messages** and **New chat**.
+- **Chat header › + / chat menu › New chat and Chats:** start a chat, and list, read, continue, rename or delete earlier chats.
+- **Bot settings › Advanced › Summarize older messages:** Automatic (55%), 40%, 70% or 85% of the context limit.
 - **Bot settings › Context limit:** Automatic (up to 272K), 128K, or the model's full window.
 - **`npm run context:report`:** read-only diagnostics per bot. It shows the window, stored and visible user turns, cleared outputs, other lanes and the last run's summed usage, and it prints no content.
 
@@ -144,7 +166,7 @@ Compaction rewrites only the model history. The display transcript keeps every m
 
 - **`session_search`** ranks stored messages by the query's words (BM25, with word forms such as "migrate" and "migration" matching). It returns the message id, date, who said it, where (Bot Chat, a named team room or routine) and a short excerpt, with `totalMatches` and `nextOffset`. Optional filters: `role` (`user` or `assistant`), `after` and `before` (ISO dates). An empty query with `after` lists every message since then in transcript order, which the daily review uses to look back over a day.
 - **`session_read`** returns one message (6,000 characters per page, `nextOffset` for more) with up to five neighbours on each side from the same conversation.
-- **Scope:** the Bot Chat, team rooms and routines search the bot's whole history apart from Telegram chats with other people. Such a Telegram chat searches only itself. Tupies notes and the current task's own messages are left out.
+- **Scope:** every chat of the Bot Chat, team rooms and routines search the bot's whole history apart from Telegram chats with other people. A result from a titled chat also carries `chat: <title>`. Such a Telegram chat searches only itself. Tupies notes and the current task's own messages are left out.
 - The system prompt tells the bot to search when a task depends on something it no longer sees and to say where it came from. Results are marked as stored data, never instructions or approval.
 
 Code: `lib/history.mjs`.
@@ -174,7 +196,7 @@ The next context policy should separate the model's hard capacity from the evide
 
 These are input-selection changes, not task-duration limits. They must preserve work-until-done execution, active inference snapshots, Stop, exact action approvals and the prohibition on replaying uncertain effects. Verification should compare input tokens, latency, task completion and exact-requirement retention; token savings alone are insufficient.
 
-Existing owner controls offer **Bot settings → Context limit → 128K** for earlier window cleanup, or **Chat options → Summarize older messages / Start a new topic** while idle. Both summary actions preserve the display transcript; Start a new topic retains a background summary. The narrower source projection applies to newly admitted eligible runs; this broader proposal adds no further automatic change.
+Existing owner controls offer **Bot settings → Context limit → 128K** for earlier window cleanup, or **Chat options → Summarize older messages / New chat** while idle. Summaries preserve the display transcript; a new chat starts a fresh working context while earlier chats stay searchable. The narrower source projection applies to newly admitted eligible runs; this broader proposal adds no further automatic change.
 
 Grok Bot's [official memory documentation](https://docs.x.ai/grok-bot/bots), reviewed 30 October 2026, describes persistent facts, preferences and work summaries without replaying every prior message. Its [design account](https://x.ai/news/designing-grok-bot) describes memory belonging to a bot's role and group chats supplying shared project context. These support the product direction above; neither source discloses Grok's exact retrieval algorithm, compaction thresholds or working-context size. The [packaged-client comparison](research/grok-bot-0.77.0-followup.md) retains the same backend-evidence boundary.
 
