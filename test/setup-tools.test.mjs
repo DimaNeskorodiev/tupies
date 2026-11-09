@@ -162,7 +162,7 @@ test('“check the bitcoin price every 10 minutes” in chat becomes an approved
   assert.equal(store.state.routines.length,0,'nothing is scheduled before approval');
   await engine.control('bot_atlas','approval',{runId:run.id,remoteRunId:run.remoteRunId,request_id:control.prompt_id,execution_generation:run.execution_generation,choice:'once'});
   await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
-  assert.ok(requests[1].tools.some(tool=>tool.name==='routines_create'));assert.match(requests[1].turnContext,/check the bitcoin price every 10 minutes/);
+  assert.deepEqual(requests[1].tools,requests[0].tools);assert.match(requests[1].turnContext,/check the bitcoin price every 10 minutes/);
   const routine=store.state.routines[0];
   assert.equal(routine.name,'Bitcoin price');assert.equal(routine.botId,'bot_atlas');assert.equal(routine.enabled,true);
   assert.deepEqual(routine.schedule,{kind:'interval',minutes:10});

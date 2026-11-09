@@ -1,5 +1,15 @@
 # Tupies — project context
 
+## Prompt-cache and history cost controls — 9 November 2026 (source only)
+
+The first DeepSeek (OpenRouter) requests after the Phase 0/1 installation finished in 6–7 steps but cost $0.04–0.06 each. The Home engine log showed two causes. About 70% of the cost was five prompt-cache misses: the offered tool list changed mid-task (`mission_start` dropped after step 1, tool groups appended after `tools_load` or a direct call), so the provider re-read ~300K tokens at full price. The rest was the Finance bot's ~300K-token history, because "The model's full window" (1M) put the 55% compaction point at 577K and skips the bounded earlier-task projection. Changes, after Hermes Agent and OpenClaw:
+
+- The offered tool list never changes during a conversation: core tools plus the `tools_load`/`tool_call` bridge. `tools_load` returns full (or, for small windows, concise) schemas as a tool result; the Engine unwraps `tool_call` before admission so approvals, batching and records see the real tool; history stores direct calls to unoffered tools as `tool_call`. `mission_start` is offered on every owner-chat step and still admitted only in step 1. See [tool use](docs/tool-use.md#tiered-catalog).
+- With the default threshold, summary compaction starts at most at 128K tokens (`COMPACT_CEILING`) and targets at most 54,400 tokens, also with the full window; an explicit per-bot threshold is honoured as set.
+- Before a summary, old tool outputs outside the protected tail and the current task are cleared without a model call (`pruneToolOutputs`, `context.pruned` event); the summary is skipped when that leaves the request under 60% of the compaction point. Single results above 16K characters were already paged.
+
+Verification: `npm run check` 215 modules; release runner 98 + 2,187 = 2,285 tests; fixed payload 5.2K tokens (default bot) and 5.4K (fully enabled), unchanged when groups load. Not deployed; real-model cost not yet re-measured.
+
 ## Phase 0 and Phase 1 recovery installed on Mac and VPS — 9 November 2026
 
 PRs #45 (Phase 0) and #46 (Phase 1) are merged; `main` `7609fd2` is tree-equal to the tested candidate `ce132c6`. Test-only PRs #47 and #48 widened two 150 ms runtime budgets after the beta 4 and beta 5 publication runs stopped at their test gates (nothing was signed or published); shipped files are identical through `main` `7aa6da4`. The VPS runs signed Engine `0.5.0-engine.beta.6`, installed once by the existing signed updater and independently verified (state, configuration, security and runtime files preserved, encrypted backup and offline restore, no automatic restarts); its update timer is active again. The Mac external Engine runs an isolated source from `ce132c6` with its original Node, environment, data and port, after a full encrypted stopped backup, held start, verification and activation. The VPS was updated first so its chat-session records synced to the Mac before the switch. Native apps, the Mac feed and iPhone are unchanged. Current owners, backups and rollback steps are in the ignored local-workspace notes. The live-model phase gates have not been run.
