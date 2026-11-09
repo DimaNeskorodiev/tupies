@@ -31,9 +31,10 @@ async function fixture(t,options={}){
 async function handoff(f){await f.engine.start('bot_atlas','Help me use my account.');return structuredClone(await waitFor(()=>f.store.state.runs.bot_atlas?.status==='waiting_for_input' && f.store.state.runs.bot_atlas));}
 
 test('browser handoff pauses the task and owner inputs and pixels never enter durable state or model history',async t=>{
-  const f=await fixture(t,{runTimeout:150}),waiting=await handoff(f),input=identity(waiting);
+  const f=await fixture(t,{runTimeout:1500}),waiting=await handoff(f),input=identity(waiting);
   assert.equal(waiting.pending_controls[0].kind,'browser');assert.ok(f.requests[0].tools.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum.includes('browser'));assert.ok(f.engine.permittedTools({bot:f.store.state.bots[0],source:'chat',lane:'chat',runId:waiting.id,inference:{images:false}}).some(tool=>tool.name==='browser_handoff'));
-  await delay(250);assert.equal(f.store.state.runs.bot_atlas.status,'waiting_for_input');
+  // Longer than the 1.5 s runtime limit (room for cold release runners): waiting for the owner does not count.
+  await delay(1800);assert.equal(f.store.state.runs.bot_atlas.status,'waiting_for_input');
   const view=await f.engine.browserControl.view('bot_atlas',input);
   assert.equal(view.retained,false);assert.equal(view.imageBase64,'cGl4ZWxz');assert.equal(view.identity,undefined);
   const secret='owner-password-never-in-model-2026';
