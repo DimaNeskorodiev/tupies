@@ -18,17 +18,19 @@ async function fixture(t,complete,{memory=true}={}) {
   return {store,engine,tools,bot,requests,run};
 }
 
-test('explicit subtopic recall refreshes within the shared three-pass budget and keeps the cached system prefix',async t=>{
+test('explicit subtopic recall refreshes within its own three-pass budget (admission is free) and keeps the cached system prefix',async t=>{
   const {store,tools,bot,run,requests}=await fixture(t,async(request,index)=>{
     assert.ok(request.tools.some(tool=>tool.name==='memory_refresh'));
     if(index===1)return {text:'',toolCalls:[call('garden','tomatoes watering')]};
     if(index===2){assert.match(request.turnContext,/Tomatoes need regular watering/);return {text:'',toolCalls:[call('launch','launch budget')]};}
-    if(index===3){assert.match(request.turnContext,/launch budget is EUR 42/);return {text:'',toolCalls:[call('limit','another subtopic')]};}
-    const result=JSON.parse(request.messages.find(message=>message.tool_call_id==='limit').content);assert.equal(result.refreshed,false);assert.equal(result.remaining,0);return {text:'Completed using scoped recalled evidence.',toolCalls:[]};
+    if(index===3){assert.match(request.turnContext,/launch budget is EUR 42/);return {text:'',toolCalls:[call('third','third subtopic')]};}
+    if(index===4)return {text:'',toolCalls:[call('limit','another subtopic')]};
+    if(index===5){const result=JSON.parse(request.messages.find(message=>message.tool_call_id==='limit').content);assert.equal(result.refreshed,false);assert.equal(result.remaining,0);assert.equal(result.errorCode,'recall_budget_exhausted');assert.match(result.notice,/plan edits, admission and compaction do not count/);return {text:'',toolCalls:[call('again','yet another')]};}
+    const again=JSON.parse(request.messages.find(message=>message.tool_call_id==='again').content);assert.equal(again.refreshed,false);assert.match(again.notice,/No memory_refresh passes are left/);return {text:'Completed using scoped recalled evidence.',toolCalls:[]};
   });
   await tools.execute(bot,'brain_write',{path:'projects/launch',content:'# Launch\nThe launch budget is EUR 42.'});await tools.execute(bot,'brain_write',{path:'topics/garden',content:'# Tomatoes\nTomatoes need regular watering.'});
-  const result=await run('Prepare the launch budget.');assert.equal(result.status,'completed');assert.equal(requests.length,4,'recall does not make additional model calls');
-  assert.ok(requests.every(request=>request.messages[0].content===requests[0].messages[0].content));assert.equal(result.events.filter(event=>event.type==='memory.recalled').length,3);assert.equal(result.memoryDiagnostics.refreshes,3);assert.equal(result.memoryDiagnostics.reason,'subtopic');assert.equal(store.state.runHistory[bot.id][0].diagnostics.memory.refreshes,3);
+  const result=await run('Prepare the launch budget.');assert.equal(result.status,'completed');assert.equal(requests.length,6,'recall does not make additional model calls');
+  assert.ok(requests.every(request=>request.messages[0].content===requests[0].messages[0].content));assert.equal(result.events.filter(event=>event.type==='memory.recalled').length,4);assert.equal(result.memoryDiagnostics.refreshes,3);assert.equal(result.memoryDiagnostics.reason,'subtopic');assert.equal(store.state.runHistory[bot.id][0].diagnostics.memory.refreshes,3);
 });
 
 test('explicit owner recall cannot read a third-party transcript and disabled Memory cannot refresh',async t=>{
