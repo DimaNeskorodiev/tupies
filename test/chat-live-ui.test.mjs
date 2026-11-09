@@ -144,3 +144,20 @@ test('provider presets render generically from the catalog',t=>{
   h.run("connectionDialog(undefined,'custom')");form=h.doc.querySelector('#connection-form');
   assert.equal(form.querySelector('[name=baseUrl]').required,true);assert.equal(form.querySelector('.advanced-fields').open,true);
 });
+
+// Automatic reasoning is High only on OpenAI/ChatGPT connections; other providers keep their own default.
+function reasoningFixture(h,type){
+  h.run(`data.connections=[{id:'provider',name:'Fixture provider',type:${JSON.stringify(type)},status:'connected',defaultModel:'model-r',models:[{id:'model-r',name:'Model R',reasoning:{supported:true,efforts:['low','medium','high'],defaultEffort:'medium'}}]}];data.bots[0]={...data.bots[0],model:'model-r',reasoningEffort:'auto',reasoningEffortVersion:1};`);
+  const bot="botById('bot_atlas')",caps=`botReasoningCapabilities(${bot})`,field=h.doc.createElement('div');
+  field.innerHTML=h.run(`reasoningOptionsHTML(${caps},'auto',{id:'bot-reasoning',autoHigh:autoReasoningIsHigh(${bot},${caps})})`);
+  return {auto:field.querySelector('option[value="auto"]').textContent,note:field.querySelector('small').textContent,effort:h.run(`inferenceEffortName(${bot},${caps})`),high:h.run(`autoReasoningIsHigh(${bot},${caps})`)};
+}
+test('automatic reasoning on an OpenRouter bot means the provider default even when the model lists High',t=>{
+  const h=ui(t,{events:()=>({})}),view=reasoningFixture(h,'openrouter');
+  assert.equal(view.high,false);assert.equal(view.auto,'Tupies default · Provider default');assert.equal(view.effort,'Provider default');
+  assert.match(view.note,/automatic preference uses the provider default/);assert.doesNotMatch(view.note,/High is the Tupies default/);
+});
+test('automatic reasoning on a ChatGPT bot is High when the model lists it',t=>{
+  const h=ui(t,{events:()=>({})}),view=reasoningFixture(h,'chatgpt');
+  assert.equal(view.high,true);assert.equal(view.auto,'High · Tupies default');assert.equal(view.effort,'High');assert.match(view.note,/High is the Tupies default/);
+});
