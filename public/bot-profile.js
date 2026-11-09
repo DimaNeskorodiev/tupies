@@ -207,7 +207,7 @@ const RUN_STATUS={completed:['Done','ok'],failed:['Failed','fail'],cancelled:['S
 const RUN_SOURCE={chat:'Chat',routine:'Routine',room:'Team room',telegram:'Telegram',delegation:'For a teammate'};
 function duration(ms){if(!Number.isFinite(ms))return '';const seconds=Math.round(ms/1000);return seconds<60?`${seconds}s`:seconds<3600?`${Math.round(seconds/60)} min`:`${(seconds/3600).toFixed(1)} h`;}
 const CHECK_KIND={file_exists:'File exists',file_contains:'File content',file_sha256:'File version',command_success:'Command result',source_read:'Source read',teammate_completed:'Teammate result'};
-const RECEIPT_TOOL={workspace_image:'Read image',web_search:'Search web',http_fetch:'Read web page',task_outcome_set:'Set result checks',task_outcome_check:'Check results',work_records_read:'Read earlier work',delegate_task:'Ask teammate'};
+const RECEIPT_TOOL={workspace_image:'Read image',web_search:'Search web',http_fetch:'Read web page',web_extract:'Read web page',task_outcome_set:'Set result checks',task_outcome_check:'Check results',work_records_read:'Read earlier work',delegate_task:'Ask teammate'};
 const shortValue=(value,max=200)=>String(value??'').slice(0,max);
 function taskEvidence(item,v){
   const verification=item.verification,checks=Array.isArray(verification?.checks)?verification.checks.slice(0,12):[],records=Array.isArray(item.workRecords)?item.workRecords.slice(0,60):[];
