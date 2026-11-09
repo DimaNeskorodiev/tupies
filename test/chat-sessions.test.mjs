@@ -141,7 +141,7 @@ test('a new chat runs with a fresh model history, a short pointer to the previou
   assert.equal(second.status,'completed');assert.equal(second.sessionId,record.id);
   const request=JSON.stringify(requests.at(-1));
   // The previous chat's request is not replayed as history, but its pointer and core memory are in the reference data.
-  assert.equal(requests.at(-1).messages.filter(message=>message.role!=='system' && String(message.content).includes('FIRST-CHAT-SECRET-77') && !String(message.content).includes('turn_context')).length,0);
+  assert.equal(requests.at(-1).messages.filter(message=>message.role!=='system' && String(message.content).includes('FIRST-CHAT-SECRET-77') && !String(message.content).includes('turn_context') && !String(message.content).startsWith('<reference_data>')).length,0);
   assert.match(request,/previousChat/);assert.match(request,/Lisbon/);
   assert.deepEqual(store.state.conversations[record.id].map(message=>message.role),['user','assistant']);
   assert.equal(store.state.conversations.bot_atlas.length,2,'the first chat keeps its own history');

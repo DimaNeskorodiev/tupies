@@ -108,7 +108,8 @@ test('a bot reads a script-rendered page, follows a link, is refused stale or co
   const stored=store.state.conversations.bot_atlas.find(message=>message.role==='tool' && message.images);
   assert.equal(stored.images[0].path,shot.path);assert.ok(!JSON.stringify(store.state).includes(bytes.toString('base64').slice(0,100)));
   const shown=requests[5].messages.at(-1);assert.equal(shown.role,'user');assert.match(shown.content,/Images returned by the tool calls above/);assert.equal(shown.imageParts[0].mediaType,'image/png');
-  assert.ok(requests[0].tools.some(tool=>tool.name==='browser_screenshot'));
+  // Browser tools are a load group: calling browser_open loads it, so later steps offer browser_screenshot.
+  assert.ok(requests[5].tools.some(tool=>tool.name==='browser_screenshot'));
   // The task's browser is gone with the task.
   await waitFor(()=>!alive(pid),5000);assert.equal(engine.browsers.sessions.size,0);
   // The profile folder is removed just after the process exits; under load that can take a moment.
