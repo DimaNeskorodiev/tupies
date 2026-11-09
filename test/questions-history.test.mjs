@@ -26,13 +26,13 @@ const identity=run=>({runId:run.id,remoteRunId:run.remoteRunId,request_id:run.pe
 const QUESTION={questions:[{id:'format',header:'Format',prompt:'Which format should the report use?',options:[{id:'pdf',label:'PDF'},{id:'docx',label:'Word'}]}]};
 
 test('a chat task asks a question, waits without spending its runtime and continues with the answer',async t=>{
-  const {engine,store,requests}=await fixture(t,async(request,count)=>count===1?{text:'',toolCalls:[call('ask','ask_user',QUESTION)]}:{text:`Using ${lastTool(request).answers[0].options[0].label}.`,toolCalls:[]},{runTimeout:150});
+  const {engine,store,requests}=await fixture(t,async(request,count)=>count===1?{text:'',toolCalls:[call('ask','ask_user',QUESTION)]}:{text:`Using ${lastTool(request).answers[0].options[0].label}.`,toolCalls:[]},{runTimeout:1500});
   await engine.start('bot_atlas','Make the quarterly report.');
   const waiting=structuredClone(await waitFor(()=>current(store)?.status==='waiting_for_input' && current(store)));
   assert.ok(toolNames(requests[0]).includes('ask_user'));
   assert.equal(waiting.pending_controls[0].kind,'question');assert.equal(waiting.pending_controls[0].questions[0].prompt,'Which format should the report use?');
-  // Longer than the task's 150 ms runtime limit: the wait does not count.
-  await delay(300);assert.equal(current(store).status,'waiting_for_input');
+  // Longer than the task's 1.5 s runtime limit (which leaves room for a cold first step): the wait does not count.
+  await delay(1800);assert.equal(current(store).status,'waiting_for_input');
   await assert.rejects(engine.control('bot_atlas','answer',{...identity(waiting),request_id:'question_stale',answers:[{questionId:'format',optionIds:['pdf']}]}),/changed or was already answered/);
   await assert.rejects(engine.control('bot_atlas','answer',{...identity(waiting),execution_generation:waiting.execution_generation-1,answers:[{questionId:'format',optionIds:['pdf']}]}),/changed or was already answered/);
   await assert.rejects(engine.control('bot_atlas','answer',{...identity(waiting),answers:[{questionId:'format',optionIds:['epub']}]}),/displayed options/);
