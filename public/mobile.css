@@ -755,6 +755,17 @@
   body.pearl-studio .task-activity h4{font:var(--ios-footnote);font-weight:600}
   body.pearl-studio .task-activity li{font:var(--ios-footnote)}
   body.pearl-studio .task-activity time{font:var(--ios-caption1)}
+  /* Live run strip, Thinking block and Activity list: phone type scale, full measure, 44pt disclosure targets. */
+  body.pearl-studio :is(.thinking-block,.run-activity){border:.5px solid var(--ios-separator);border-radius:14px;background:var(--ios-cell);color:var(--ios-label-2)}
+  body.pearl-studio :is(.thinking-block,.run-activity)>summary{min-height:44px;padding:10px 14px;color:var(--ios-label-2);font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font)}
+  body.pearl-studio .run-activity>summary span{font:var(--ios-caption1);color:var(--ios-label-3)}
+  body.pearl-studio .thinking-text{padding:0 14px 12px;font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio .run-strip{font:var(--ios-footnote);color:var(--ios-label-2)}
+  body.pearl-studio :is(.run-strip-tool,.run-activity-tool){color:var(--ios-label)}
+  body.pearl-studio .run-activity-list{padding:0 14px 12px}
+  body.pearl-studio .run-activity-item{font:var(--ios-footnote)}
+  body.pearl-studio .run-activity-meta{font:var(--ios-caption1);color:var(--ios-label-3)}
+  body.pearl-studio .run-activity-attached{max-width:100%;margin:-12px 0 20px;padding-left:0}
   body.pearl-studio .timeline-event{border-top:.5px solid var(--ios-separator)}
   body.pearl-studio .timeline-event strong{font:600 calc(13px * var(--ios-s))/calc(18px * var(--ios-s)) var(--ios-font);color:var(--ios-label)}
   body.pearl-studio .timeline-event p{font:var(--ios-footnote);color:var(--ios-label-2)}
