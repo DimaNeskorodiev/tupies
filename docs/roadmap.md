@@ -1,8 +1,8 @@
 # Product roadmap
 
-## Refused sites and stalled plans — 9 November 2026 (source only)
+## Refused sites and stalled plans — 9 November 2026 (installed on Mac and VPS)
 
-Owner checkpoints for a site that keeps refusing automated access (ask before any further route to it, per request) and for autonomous plans that stop moving; research guard covers browser and terminal fetches. Remaining: installation on the engines, live-model observation of how models respond to the notes. See [tool use](tool-use.md#refused-sites-and-stalled-plans).
+Owner checkpoints for a site that keeps refusing automated access (ask before any further route to it, per request) and for autonomous plans that stop moving; research guard covers browser and terminal fetches. Installed on both engines as Engine beta 8. Remaining: live-model observation of how models respond to the notes and prompts. See [tool use](tool-use.md#refused-sites-and-stalled-plans).
 
 ## Product audit and recovery plan — 9 November 2026 (proposed)
 
