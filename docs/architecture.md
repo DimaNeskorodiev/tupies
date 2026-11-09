@@ -125,7 +125,7 @@ Every committed mutation still rewrites the whole `state.json`, so its cost grow
 
 The browser calls a same-origin authenticated HTTP API; engine and persistence do not live in the client. The Apple app (`apps/apple/`) pairs with device keys, signs in with bearer sessions and hosts the same web interface for each engine, switching between them in one click. Several engines can share one workspace through the home-server sync described in [Engines, devices and sync](sync.md).
 
-Native Mac/iOS computer actions need a separate device boundary: explicit device pairing, scoped capabilities, short-lived credentials, action-specific approvals, revocation, audit events and OS permission handling. The intended device worker should execute only a declared action authorized for its device. A model-generated command must never grant itself device or account access. Device pairing for apps is shipped; no device worker, screen-control transport or Mac/iOS action implementation is.
+Native Mac/iOS computer actions need a separate device boundary: explicit device pairing, scoped capabilities, short-lived credentials, action-specific approvals, revocation, audit events and OS permission handling. The intended device worker should execute only a declared action authorized for its device. A model-generated command must never grant itself device or account access. Device pairing for apps is shipped. The local Mac source now has a separately enabled agent-desktop adapter with exact task approvals, one-use observations, verification and durable no-replay receipts; see [Desktop on this Mac](desktop.md). Remote device-worker transport and iOS action execution remain future work.
 
 ## Mac-local coding workers
 

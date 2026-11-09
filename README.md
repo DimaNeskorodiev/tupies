@@ -109,4 +109,4 @@ npm test
 
 One process owns a data directory and its scheduler; do not run two engines against the same volume. Separate engines sync through a home server instead.
 
-The Apple app is a native shell around the engine interface (see [apps/apple](apps/apple/README.md)). Live computer control and Mac/iOS action permissions are planned. This version does not take over the host computer or an iOS device. The [capability map](docs/capabilities.md) separates implemented engine features from those future surfaces.
+The Apple app is a native shell around the engine interface (see [apps/apple](apps/apple/README.md)). Local Mac desktop actions are implemented in source as a separate opt-in driver with application/bot assignments, exact action review and result verification; see [Desktop on this Mac](docs/desktop.md). Installed/native acceptance is separate. Remote Mac and iOS device actions remain planned. The [capability map](docs/capabilities.md) separates implemented engine features from those future surfaces.
