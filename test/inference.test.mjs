@@ -256,3 +256,19 @@ test('changing the shared default retains metadata for unaffected bot overrides 
   const cached=f.app.store.state.connections.find(item=>item.id===connection.id).models;
   assert.ok(cached.some(item=>item.id==='reasoning-b'&&item.reasoning.efforts.includes('high')));
 });
+
+test('preset reasoning reaches the inference API and requests: OpenRouter reasoning.effort and Anthropic thinking, with auto sending nothing',async t=>{
+  for(const [type,model,record,effort,expected] of [
+    ['openrouter','deepseek/deepseek-v4.1-flash',{id:'deepseek/deepseek-v4.1-flash',name:'DeepSeek flash',reasoning:{supported_efforts:['high','medium','low','none'],mandatory:false}},'medium',body=>assert.deepEqual(body.reasoning,{effort:'medium'})],
+    ['anthropic','claude-sonnet-4-5',{id:'claude-sonnet-4-5',display_name:'Claude Sonnet 4.5'},'high',body=>{assert.deepEqual(body.thinking,{type:'enabled',budget_tokens:16384});assert.equal(body.max_tokens,16384+4096);}]
+  ])await t.test(type,async t=>{
+    const f=await fixture(t);await f.connect(type);f.remote.models={data:[record]};
+    f.remote.handler=()=>type==='anthropic'?{content:[{type:'text',text:'Preset fixture.'}],stop_reason:'end_turn',usage:{output_tokens:3}}:{choices:[{message:{role:'assistant',content:'Preset fixture.'},finish_reason:'stop'}]};
+    const automatic=await f.request(inference,{method:'PATCH',data:{model,reasoningEffort:'auto'}});assert.equal(automatic.status,200,JSON.stringify(automatic.body));
+    assert.equal(automatic.body.reasoning.supported,true);assert.ok(automatic.body.reasoning.efforts.includes(effort));assert.equal(automatic.body.effectiveReasoningEffort,'');
+    async function run(text){const response=await f.request('/api/bots/bot_atlas/messages',{method:'POST',data:{text}});assert.equal(response.status,202);const finished=await waitRun(f,response.body.run);assert.equal(finished.status,'completed',finished.error);return modelRequests(f.remote).at(-1).body;}
+    const plain=await run('Use the provider default.');assert.equal(plain.reasoning,undefined);assert.equal(plain.reasoning_effort,undefined);assert.equal(plain.thinking,undefined);
+    const chosen=await f.request(inference,{method:'PATCH',data:{reasoningEffort:effort}});assert.equal(chosen.status,200,JSON.stringify(chosen.body));assert.equal(chosen.body.effectiveReasoningEffort,effort);
+    expected(await run('Use the chosen effort.'));
+  });
+});

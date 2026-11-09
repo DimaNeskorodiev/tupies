@@ -336,6 +336,35 @@ body.pearl-studio {
 .pearl-studio .task-activity li { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
 .pearl-studio .task-activity li > span { min-width: 0; overflow-wrap: anywhere; }
 .pearl-studio .task-activity time { flex: none; color: var(--muted); font-size: 11px; }
+/* Live run: Thinking block, step/tool strip and the run's tool calls. Plain text, theme variables only. */
+.pearl-studio .chat-message.live-run.is-empty { display: none; }
+.pearl-studio .chat-message.live-run.is-quiet > .avatar { visibility: hidden; }
+.pearl-studio .chat-message.live-run.is-quiet .message-label { display: none; }
+body.pearl-studio .chat-message.live-run.is-quiet:not(.user):not(.thinking-message) > .message-content { padding-top: 0; padding-bottom: 0; background: none; box-shadow: none; border-color: transparent; }
+.pearl-studio .live-run-text:empty { display: none; }
+.pearl-studio :is(.thinking-block, .run-activity) { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--pearl-soft); color: var(--muted); font-size: 13px; min-width: 0; max-width: 100%; }
+.pearl-studio .run-activity { margin: 8px 0 0; }
+.pearl-studio .run-activity-attached { max-width: min(850px, 100%); margin: -16px auto 28px; padding-left: 71px; }
+.pearl-studio :is(.thinking-block, .run-activity)[hidden] { display: none; }
+.pearl-studio :is(.thinking-block, .run-activity) > summary { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 7px 12px; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; list-style: none; }
+.pearl-studio :is(.thinking-block, .run-activity) > summary::-webkit-details-marker { display: none; }
+.pearl-studio :is(.thinking-block, .run-activity) > summary::after { content: '⌄'; margin-left: auto; transition: transform .15s ease; }
+.pearl-studio :is(.thinking-block, .run-activity)[open] > summary::after { transform: rotate(180deg); }
+.pearl-studio .run-activity > summary svg { width: 14px; height: 14px; flex: none; }
+.pearl-studio .run-activity > summary span { font-weight: 400; }
+.pearl-studio .thinking-text { max-height: 220px; overflow: auto; padding: 0 12px 10px; color: var(--muted); font-size: 12px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pearl-studio .thinking-block:not(.is-live) .thinking-text { max-height: 320px; }
+.pearl-studio .run-strip { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; min-width: 0; }
+.pearl-studio .run-strip[hidden] { display: none; }
+.pearl-studio .run-strip > span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pearl-studio .run-strip-tool { color: var(--ink); }
+.pearl-studio .run-activity-list { display: grid; gap: 6px; max-height: 280px; overflow: auto; list-style: none; margin: 0; padding: 0 12px 10px; }
+.pearl-studio .run-activity-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; font-size: 12px; }
+.pearl-studio .run-activity-tool { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.pearl-studio .run-activity-arg { flex: 1 1 120px; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pearl-studio .run-activity-meta { display: inline-flex; gap: 8px; margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.pearl-studio .run-activity-item.is-error .run-activity-outcome { color: var(--pearl-amber); }
+.pearl-studio .run-activity-item:is(.is-retry, .is-running) .run-activity-outcome { color: var(--pearl-blue); }
 .pearl-studio :is(.rich-widget, .rich-code, .rich-infographic, .artifact-card, .preview-paper, .preview-slide) { background: var(--pearl-surface); border-color: var(--pearl-border); box-shadow: 0 6px 24px rgba(66, 92, 130, .04); border-radius: 20px; color: var(--ink); }
 .pearl-studio :is(.rich-code-head, .rich-prose blockquote, .artifact-format, .rich-metrics article, .preview-sheet > summary) { background: var(--pearl-blue-soft); border-color: var(--line); color: var(--muted); }
 .pearl-studio .rich-code pre { color: var(--ink); font-size: 12px; }
