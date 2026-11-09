@@ -50,6 +50,8 @@ When the session folder is outside the workspace, reads become normal and writes
 
 ## Approval policy
 
+The owner chose (9 November 2026) that Approve for me in the owner's own chat runs ordinary (non-dangerous) commands without asking; dangerous commands always ask.
+
 `decideAction` uses the stricter of the task's snapshot and the saved bot's Action review setting; an unknown setting counts as Strict. The decision is re-checked just before execution.
 
 | Command | Strict | Balanced | Approve for me, owner chat | Approve for me, routines / teammates / other chats |
