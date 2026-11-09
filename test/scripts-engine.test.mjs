@@ -51,12 +51,14 @@ test('an 8K workspace model completes a write and reply with the full script cat
     // The 8K model first sees the core catalog and loads the files group, whose schemas keep their constraints.
     if(turn===1){const load=request.tools.find(tool=>tool.name==='tools_load');assert.ok(load.parameters.properties.groups.items.enum.includes('files'));assert.equal(Object.hasOwn(load,'description'),true);assert.equal(request.tools.some(tool=>tool.name==='scripts_register'),false);observed++;return {text:'',toolCalls:[call('load','tools_load',{groups:['files']})]};}
     assert.match(JSON.parse(request.messages.findLast(message=>message.tool_call_id==='load').content).guidance.files,/scripts_register/);
-    const registration=request.tools.find(tool=>tool.name==='scripts_register'),original=h.engine.tools.definitions(h.store.state.bots[0]).find(tool=>tool.name==='scripts_register');
+    // Loaded schemas arrive in the tools_load result (concise for this small window); the offered list never changes.
+    const loaded=JSON.parse(request.messages.findLast(message=>message.tool_call_id==='load').content).tools;
+    const registration=loaded.find(tool=>tool.name==='scripts_register'),original=h.engine.tools.definitions(h.store.state.bots[0]).find(tool=>tool.name==='scripts_register');
     assert.equal(registration.description,original.description);assert.equal(registration.parameters.additionalProperties,false);
     assert.deepEqual(registration.parameters.required,original.parameters.required);assert.equal(registration.parameters.properties.purpose.maxLength,2000);
     assert.equal(registration.parameters.properties.files.minItems,2);assert.equal(registration.parameters.properties.files.items.properties.sha256.maxLength,64);
     assert.equal(registration.parameters.properties.interpreter.enum.includes('python3'),true);assert.equal(Object.hasOwn(registration.parameters.properties.purpose,'description'),false);
-    assert.equal(typeof original.parameters.properties.purpose.description,'string');assert.equal(request.tools.some(tool=>tool.name==='scripts_inspect'),true);assert.equal(request.tools.some(tool=>tool.name==='scripts_run'),false);observed++;
+    assert.equal(typeof original.parameters.properties.purpose.description,'string');assert.equal(loaded.some(tool=>tool.name==='scripts_inspect'),true);assert.equal(loaded.some(tool=>tool.name==='scripts_run'),false);assert.equal(request.tools.some(tool=>tool.name==='scripts_register'),false);observed++;
     return turn===2?{text:'',toolCalls:[call('small-write','workspace_write',{path:'outputs/small-window.txt',content:'Verified at 8K.\n'})]}:{text:'The requested file was written.',toolCalls:[]};
   },{tools:['workspace'],contextWindow:8000});
   const started=await h.engine.start(BOT,'Create the requested private fixture output.');

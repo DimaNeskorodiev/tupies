@@ -2,14 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compactThreshold, compactionSummaryTokens, contextLimits, catalogContextWindow, knownContextWindow, contextOverflow, estimateTokens, promptTokens, safeContextWindow } from '../lib/context-budget.mjs';
 
-test('context limits follow the model window with a 55% summary threshold and a 272K default ceiling',()=>{
+test('context limits follow the model window with a 55% summary threshold capped at 128K and a 272K default ceiling',()=>{
   // A ChatGPT subscription model: 95% usable, summary compaction from 55% towards a 20% target.
-  assert.deepEqual(contextLimits({type:'chatgpt'},'gpt-6.1-sol'),{window:272_000,source:'known',effective:272_000,usable:258_400,compactAt:149_600,fitAt:244_800,compactThreshold:55,compactTarget:54_400,small:false});
+  assert.deepEqual(contextLimits({type:'chatgpt'},'gpt-6.1-sol'),{window:272_000,source:'known',effective:272_000,usable:258_400,compactAt:128_000,fitAt:244_800,compactThreshold:55,compactTarget:54_400,small:false});
   assert.equal(contextLimits({type:'chatgpt'},'gpt-5.3-codex-spark').window,128_000);
   // A 1M window is capped by default; the bot may allow the full window or ask for 128K.
   const claude={type:'anthropic',models:[{id:'claude-opus-5',contextWindow:1_000_000}]};
   assert.equal(contextLimits(claude,'claude-opus-5').effective,272_000);assert.equal(contextLimits(claude,'claude-opus-5').source,'provider');
-  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max'}).compactAt,550_000);
+  // The full window still fits a large task, but with the default threshold a conversation is summarized at 128K tokens.
+  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max'}).compactAt,128_000);assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max'}).fitAt,900_000);
+  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max'}).compactTarget,54_400);
+  // An explicit owner threshold is honoured as set.
+  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max',compactThreshold:55}).compactAt,550_000);
+  assert.equal(contextLimits({type:'openai'},'gpt-4o').compactAt,70_400);
   assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'128k'}).compactAt,70_400);
   // Unknown windows are treated as 128K; an owner's explicit setting wins over everything else.
   assert.deepEqual(contextLimits({type:'custom'},'local-model'),{window:128_000,source:'default',effective:128_000,usable:121_600,compactAt:70_400,fitAt:115_200,compactThreshold:55,compactTarget:25_600,small:false});

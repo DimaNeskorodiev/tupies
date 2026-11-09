@@ -111,7 +111,9 @@ export async function createHarness(definition,options,budget,{subscriptionGrant
     request={...request,signal:request.signal?AbortSignal.any([request.signal,controller.signal]):controller.signal};
     if(blocked)throw new EvaluationBudgetError('inference');
     const reservation=budget.reserve(request,calls);calls++;
-    harness.offeredTools=new Set((request.tools || []).map(tool=>tool.name));
+    // Offered tools plus the schemas a tools_load result returned: those are callable through tool_call.
+    const loadedSchemas=request.messages.filter(message=>message.role==='tool').flatMap(message=>{try{const value=JSON.parse(message.content);return Array.isArray(value?.loaded) && Array.isArray(value?.tools)?value.tools.map(tool=>tool?.name).filter(Boolean):[];}catch{return [];}});
+    harness.offeredTools=new Set([...(request.tools || []).map(tool=>tool.name),...loadedSchemas]);
     for(const image of request.messages.flatMap(message=>message.imageParts || []))if(harness.imageParts.length<5 && !harness.imageParts.some(item=>item.data===image.data))harness.imageParts.push(image);
     try {
       const result=options.mode==='fixture'?await definition.script(request,harness):await actualProviders.complete(current,request);

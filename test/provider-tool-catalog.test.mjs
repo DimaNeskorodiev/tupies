@@ -45,11 +45,14 @@ test('complete native chat and Mission catalogs reach every provider protocol wi
       f.store.state.missions ||= {};
       f.store.state.missions.catalog_mission={id:'catalog_mission',state:'running',leadBotId:bot.id,ownerEngineId:f.engine.missions.ownerEngineId,episodeRefs:[{runId,botId:bot.id}]};
       const context={bot,source:'chat',runId,connection:f.connection,inference:{model:'fixture-model',images}};
-      // The first step offers only core tools; loading every available group offers the complete permitted catalog.
+      // Every step offers only core tools plus the tools_load/tool_call bridge, also after loading every group. The adapters
+      // must still carry the complete permitted catalog intact, so it is sent through them here as one request.
       const core=f.engine.toolDefinitions(context),groups=core.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum;
-      assert.ok(core.filter(tool=>!tool.name.startsWith('mission_')).length<=16,`Core catalog: ${core.length}`);
-      const tools=f.engine.toolDefinitions({...context,loadedToolGroups:[...groups]}),permitted=f.engine.permittedTools(context);
-      assert.deepEqual(new Set(tools.map(tool=>tool.name)),new Set([...permitted.filter(tool=>!['lsp_query','lsp_list','lsp_stop'].includes(tool.name) || permitted.some(item=>item.name==='lsp_start')).map(tool=>tool.name),'tools_load']));
+      assert.ok(core.filter(tool=>!tool.name.startsWith('mission_')).length<=17,`Core catalog: ${core.length}`);
+      assert.deepEqual(f.engine.toolDefinitions({...context,loadedToolGroups:[...groups]}),core,'loading groups never changes the offered list');
+      const permitted=f.engine.permittedTools(context),bridge=core.filter(tool=>['tools_load','tool_call'].includes(tool.name));
+      const tools=[...permitted.filter(tool=>!['lsp_query','lsp_list','lsp_stop'].includes(tool.name) || permitted.some(item=>item.name==='lsp_start')),...bridge];
+      assert.equal(bridge.length,2);
       assert.ok(tools.length>100,`Must exercise the old failure: ${tools.length}`);
       assert.ok(tools.length<=128,`Native catalog exceeds provider capacity: ${tools.length}`);
       assert.equal(new Set(tools.map(tool=>tool.name)).size,tools.length);
