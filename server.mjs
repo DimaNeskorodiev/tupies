@@ -18,6 +18,7 @@ import { removeBotSessions } from './lib/sessions.mjs';
 import { routineRuns, validateRoutine } from './lib/routines.mjs';
 import { Rooms, isDriveActive } from './lib/rooms.mjs';
 import { Providers } from './lib/providers.mjs';
+import { validateFallback } from './lib/model-resilience.mjs';
 import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
@@ -92,12 +93,15 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'episodicMemory')){ensure(typeof input.episodicMemory==='boolean',400,'episodicMemory must be true or false.');bot.episodicMemory=input.episodicMemory;}
   if(Object.hasOwn(input,'searchFallbackIntegrationId')){ensure(typeof input.searchFallbackIntegrationId==='string' && (!input.searchFallbackIntegrationId || /^[a-zA-Z0-9_-]{1,100}$/.test(input.searchFallbackIntegrationId)),400,'Choose a valid search fallback integration.');bot.searchFallbackIntegrationId=input.searchFallbackIntegrationId;}
   if(Object.hasOwn(input,'teamMode')){ensure(['all','selected'].includes(input.teamMode),400,'Choose whether this bot knows the whole team or only selected teammates.');bot.teamMode=input.teamMode;}
+  // Shape only here; the provider's existence is checked against current connections in validateBinding.
+  if(Object.hasOwn(input,'fallback')){if(input.fallback===null || input.fallback==='' || (input.fallback && typeof input.fallback==='object' && !input.fallback.connectionId && !input.fallback.model))delete bot.fallback;else{ensure(input.fallback && typeof input.fallback==='object' && !Array.isArray(input.fallback) && typeof input.fallback.connectionId==='string' && typeof input.fallback.model==='string',400,'Choose a provider and a model for the fallback.');bot.fallback={connectionId:string(input.fallback.connectionId,'fallback provider',100),model:string(input.fallback.model,'fallback model',200)};}}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
   upgradeReasoningPreference(bot);
   return {description:'',instructions:'',model:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:DEFAULT_APPROVAL_POLICY,enabled:true,hidden:false,...bot};
 }
 function validateBinding(bot,state,integrations) {
   if(bot.connectionId)ensure(state.connections.some(c=>c.id===bot.connectionId && c.type!=='legacy-hermes'),400,'Choose a model provider. Replace legacy gateway connections in Providers.');
+  if(bot.fallback){const checked=validateFallback(bot.fallback,{connections:state.connections,ensure,primary:{connectionId:bot.connectionId || state.settings?.defaultConnectionId || '',model:bot.model || ''}});if(checked)bot.fallback=checked;else delete bot.fallback;}
   ensure((bot.collaborators||[]).every(target=>target!==bot.id && state.bots.some(b=>b.id===target)),400,'Choose other existing bots as collaborators.');
   ensure((bot.integrationIds||[]).every(target=>state.integrations.some(i=>i.id===target)),400,'Choose existing integrations.');
   if(bot.searchFallbackIntegrationId)ensure((bot.integrationIds || []).includes(bot.searchFallbackIntegrationId),400,'Assign the search fallback integration to this bot before choosing it.');
