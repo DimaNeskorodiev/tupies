@@ -2,7 +2,7 @@
 
 ## Product audit and recovery plan — 9 November 2026 (proposed)
 
-A whole-product audit against the current checkout and live engine data records P0/P1 defects in providers (reasoning never streamed or controlled outside OpenAI, ~30K fixed tokens per step), web research (GET-only fetch, DuckDuckGo scrape default, no readable script-rendered pages), the agent loop (no duplicate-call detection, unattended lanes cannot act), the chat UI (2 s whole-thread polling, no tool or reasoning view), channels (Telegram text only, OAuth renewal fails closed), storage and observability, with a competitor matrix and a five-phase plan with measurable gates. See [product audit](plans/product-audit-20261109.md). Phase 0 is implemented on branch `phase0-20261109`; see that branch for scope and verification.
+A whole-product audit against the current checkout and live engine data records P0/P1 defects in providers (reasoning never streamed or controlled outside OpenAI, ~30K fixed tokens per step), web research (GET-only fetch, DuckDuckGo scrape default, no readable script-rendered pages), the agent loop (no duplicate-call detection, unattended lanes cannot act), the chat UI (2 s whole-thread polling, no tool or reasoning view), channels (Telegram text only, OAuth renewal fails closed), storage and observability, with a competitor matrix and a five-phase plan with measurable gates. See [product audit](plans/product-audit-20261109.md). Phase 0 is implemented on branch `phase0-20261109` and Phase 1 (prompt diet, terminal and command policy, chat sessions, retries/fallback, loop fixes) on `phase1-20261109` built on it; neither is merged or deployed, and the live-model phase gates have not been run.
 
 ## Automatic Mac/VPS updates — 4 November 2026 (source only)
 
