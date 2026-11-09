@@ -1,5 +1,15 @@
 # Tupies — project context
 
+## Refused sites and stalled plans — 9 November 2026 (source only)
+
+On the Home server, Рома (DeepSeek v4.1 flash via OpenRouter, autonomous) spent 14+ minutes on "find all OLX listings for this phone number". OLX has no phone search, so the bot listed every Tesla Model Y ad and ran ~1,223 parallel `limited-phones` lookups from `terminal`; OLX answered with CloudFront blocks, `Disallowed for this user` and rate-limit errors, and the bot then kept retrying with sleeps, other user agents, headers and endpoints. Nothing stopped it: the research guard only counted `web_search`/`http_fetch`, every new `curl` variant (exit 0 even on a 403) counted as autonomous progress, and the plan sat on its first step for 15 steps. Changes:
+
+- `lib/site-access.mjs` keeps a per-task ledger of sites (registrable domain, local addresses excluded) that refused automated access — HTTP 403/429/451, block pages, bot challenges and anti-bot phrases seen in `http_fetch`, `browser_open`/`browser_new_tab` and `terminal`/`execute_code`/`shell_*` output. After 3 refusals, the next call that would contact that site by any route waits for the owner (`site_access_review`; Approve for me never answers it). Allow once permits workarounds for that site for the rest of the request; Deny refuses every later call to it (`site_access_denied`). The ledger is in `run.siteAccess`, the task checkpoint and each step's engine data. The owner chose this over a blanket "never work around blocks" prompt rule.
+- The research guard also counts browser navigations and terminal/code commands that fetch a public URL (`browsed`, `commands`); ordinary command failures are ignored as coding signals, refusals count as failed observations.
+- Autonomous non-Mission tasks count model steps that ran tools while the plan stayed identical (steps with new research evidence don't count; `ask_user` or a plan edit resets). At 12 the step data gets a progress checkpoint note (`task.stalled` event); at 24, with a plan, the owner gets `task_checkpoint`: Allow once continues and restarts the count, Deny stops the task (cancelled, work kept). Overrides: `stallNudgeRounds`, `stallAskRounds`, `siteRefusalThreshold` (0 disables).
+
+Verification: `npm run check`; release runner 2,293 tests (new `test/site-access.test.mjs`, stable 6× in parallel). Not deployed; no live-model run.
+
 ## Prompt-cache and history cost controls — 9 November 2026 (installed on Mac and VPS)
 
 The first DeepSeek (OpenRouter) requests after the Phase 0/1 installation finished in 6–7 steps but cost $0.04–0.06 each. The Home engine log showed two causes. About 70% of the cost was five prompt-cache misses: the offered tool list changed mid-task (`mission_start` dropped after step 1, tool groups appended after `tools_load` or a direct call), so the provider re-read ~300K tokens at full price. The rest was the Finance bot's ~300K-token history, because "The model's full window" (1M) put the 55% compaction point at 577K and skips the bounded earlier-task projection. Changes, after Hermes Agent and OpenClaw:

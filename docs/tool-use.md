@@ -12,6 +12,16 @@ All models receive a short Engine workflow and Web-specific guidance: search bri
 
 Every 12 research observations also adds an effort checkpoint asking the model to identify the precise remaining fact. Productive research can continue; this is not a total token, time or call budget. Novel but irrelevant material can still evade novelty checks. The method improves tool usability and bounds repeated observed failure; real-model judgment requires separate evaluation.
 
+## Refused sites and stalled plans
+
+`site-access.mjs` records, per task, sites that refused automated access: HTTP 403/429/451 (or a 4xx/5xx block page) from `http_fetch`, a bot challenge or block page from `browser_open`/`browser_new_tab`, and block statuses or phrases (`Request blocked`, `Disallowed for this user`, `Too Many Requests`, Cloudflare challenges) in the output of `terminal`, `execute_code` or `shell_*` commands whose arguments name the site's URL. Sites are grouped by registrable domain (`m.olx.ua` and `www.olx.ua` are `olx.ua`); localhost, private addresses and `.test`/`.local` names are never gated. Each step's engine data lists the refused sites.
+
+After three refusals, the next call that would contact the site by any of those tools pauses with a `site_access_review` approval, even under **Approve for me**: working around a refusal is sometimes legitimate, but it is the owner's call for this request. **Allow once** permits further attempts to that site for the rest of the task without asking again; **Deny** refuses every later call to it with `site_access_denied`, and the model is told to answer with what it has. Parallel calls share one prompt per site. Run field: `siteAccess.sites[] {site, refusals, decision, lastReason}`; event `site.access`.
+
+The research guard above also counts browser navigations (`browsed`) and terminal/code commands that fetch a public URL with curl, wget, requests, urllib, httpx, aiohttp or fetch (`commands`). A refusal is a failed observation; an ordinary command failure (non-zero exit without a block) is a coding signal and is not counted.
+
+Autonomous tasks outside Missions count model steps that ran tools while the task plan stayed identical. Steps that produced new research evidence do not count; a plan edit or an `ask_user` answer restarts the count. At 12 steps the step data adds a progress checkpoint asking the model to complete the step, change the plan or ask the owner (`task.stalled`). At 24 steps on an unchanged plan the owner gets a `task_checkpoint` approval: **Allow once** continues and restarts the count, **Deny** stops the task and keeps its work (`task.checkpoint`). A task without a plan only gets the note. Engine options `siteRefusalThreshold`, `stallNudgeRounds` and `stallAskRounds` override 3/12/24; 0 disables.
+
 ## Action review
 
 Choose **Bot Settings → General → Action review**. **Approve for me** is the default and stays with the bot across chats, restarts and linked engines until changed. It handles ordinary private work, playbooks, search and browser interaction, and independently reviews supported commands, Mac input and connected-service actions. **Balanced** reviews outside actions and commands; **Strict** also reviews private file changes. Explicit existing choices are preserved; profiles without a choice acquire the automatic default. Settings changes apply to new tasks.

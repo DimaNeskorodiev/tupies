@@ -1,5 +1,9 @@
 # Product roadmap
 
+## Refused sites and stalled plans — 9 November 2026 (source only)
+
+Owner checkpoints for a site that keeps refusing automated access (ask before any further route to it, per request) and for autonomous plans that stop moving; research guard covers browser and terminal fetches. Remaining: installation on the engines, live-model observation of how models respond to the notes. See [tool use](tool-use.md#refused-sites-and-stalled-plans).
+
 ## Product audit and recovery plan — 9 November 2026 (proposed)
 
 A whole-product audit against the current checkout and live engine data records P0/P1 defects in providers (reasoning never streamed or controlled outside OpenAI, ~30K fixed tokens per step), web research (GET-only fetch, DuckDuckGo scrape default, no readable script-rendered pages), the agent loop (no duplicate-call detection, unattended lanes cannot act), the chat UI (2 s whole-thread polling, no tool or reasoning view), channels (Telegram text only, OAuth renewal fails closed), storage and observability, with a competitor matrix and a five-phase plan with measurable gates. See [product audit](plans/product-audit-20261109.md). Phase 0 and Phase 1 (prompt diet, terminal and command policy, chat sessions, retries/fallback, loop fixes) are merged (PRs #45 and #46) and installed on the Mac and VPS engines (VPS signed Engine `0.5.0-engine.beta.6`) on 9 November 2026, followed the same evening by prompt-cache and history cost controls (PR #50, Engine `0.5.0-engine.beta.7`); the live-model phase gates have not been run.
