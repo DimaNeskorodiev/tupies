@@ -1,6 +1,6 @@
 # Tupies — project context
 
-## Refused sites and stalled plans — 9 November 2026 (source only)
+## Refused sites and stalled plans — 9 November 2026 (installed on Mac and VPS)
 
 On the Home server, Рома (DeepSeek v4.1 flash via OpenRouter, autonomous) spent 14+ minutes on "find all OLX listings for this phone number". OLX has no phone search, so the bot listed every Tesla Model Y ad and ran ~1,223 parallel `limited-phones` lookups from `terminal`; OLX answered with CloudFront blocks, `Disallowed for this user` and rate-limit errors, and the bot then kept retrying with sleeps, other user agents, headers and endpoints. Nothing stopped it: the research guard only counted `web_search`/`http_fetch`, every new `curl` variant (exit 0 even on a 403) counted as autonomous progress, and the plan sat on its first step for 15 steps. Changes:
 
@@ -8,7 +8,7 @@ On the Home server, Рома (DeepSeek v4.1 flash via OpenRouter, autonomous) sp
 - The research guard also counts browser navigations and terminal/code commands that fetch a public URL (`browsed`, `commands`); ordinary command failures are ignored as coding signals, refusals count as failed observations.
 - Autonomous non-Mission tasks count model steps that ran tools while the plan stayed identical (steps with new research evidence don't count; `ask_user` or a plan edit resets). At 12 the step data gets a progress checkpoint note (`task.stalled` event); at 24, with a plan, the owner gets `task_checkpoint`: Allow once continues and restarts the count, Deny stops the task (cancelled, work kept). Overrides: `stallNudgeRounds`, `stallAskRounds`, `siteRefusalThreshold` (0 disables).
 
-Verification: `npm run check`; release runner 2,293 tests (new `test/site-access.test.mjs`, stable 6× in parallel). Not deployed; no live-model run.
+Verification: `npm run check`; release runner 2,293/2,293 on the exported candidate (new `test/site-access.test.mjs`, stable 6× in parallel); container CI passed. Merged through PR #52 (main `9e95d7c`, tree-equal to the tested `e74545f`) and installed the same evening: the Mac runs an isolated source from `e74545f` after a full encrypted stopped backup, held start, verification and activation; the VPS runs signed Engine `0.5.0-engine.beta.8` (installed by its updater and independently verified; the first two signing runs hit a GitHub Actions outage before any job started). No live-model run yet.
 
 ## Prompt-cache and history cost controls — 9 November 2026 (installed on Mac and VPS)
 
