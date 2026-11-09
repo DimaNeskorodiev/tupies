@@ -1,5 +1,28 @@
 # Tupies — project context
 
+## Approval/composer installed locally — 5 November 2026
+
+The local Mac Engine now runs frozen e363063 from PR42, stacked on Desktop PR41, after2,143 full regressions,93 focused cases,201 syntax checks,32 guide pages and staged production boot/8-format document acceptance. Fresh idle reservation, normal Stop, complete encrypted stopped backup/authenticated raw and supported offline restore, held startup/activation and independent preservation checks pass:8,822 original runtime entries and12served assets, with one newer authenticated Home document update. Original state/security/configuration, Desktop setup and app pairings are preserved. The missing original Node executable is restored byte-for-byte to its prior provenance. Installed source/manifest remain frozen independently from later documentation commits; old source is retained and rollback uses CURRENT DATA. VPS/signed app/fallback/iPhone/account permissions are unchanged. See docs/verification.md and the ignored local handoff for current ownership and protected receipts.
+
+
+## Approval/composer publication candidate — 5 November 2026
+
+The scoped branch builds on Desktop PR41 (`145e33e`) while preserving its newer Mission effort/history policies and excluding unrelated working-checkout edits. Official Node22.23.4 passes2,143/2,143 regressions,93/93 focused cases,201 syntax checks and32 guide pages. A shortened automatic-mode instruction preserves the small-context boundary. Installation ownership/backup remains separate from this publication candidate; see docs/verification.md and the ignored local handoff.
+
+
+## Compact chat composer — 5 November 2026 (source only)
+
+Action review is now a44px shield icon over the existing native selector; current mode stays available to accessibility and tooltips. The active task's Add direction action is a labelled send-arrow icon in the ordinary Send slot. Phone draft/toolbar layout has no extra review/direction rows or standing busy-policy paragraph; long drafts are bounded. Existing saved-policy, active lock, drafts/attachments, steering identities/limits, keyboard and receipt behavior remain. Actual disposable UI measurements at320/390/834/1280px give101px phone and68–70px desktop composer height, without overflow or active-direction growth. See docs/chat-controls.md and docs/verification.md. Operational installations are unchanged.
+
+
+## Broader Approve for me — 5 November 2026 (source only)
+
+The previous closed automatic action list remains the fast path. `lib/action-risk-review.mjs` adds an independent, bounded no-tools review using the active task's original provider/model for supported direct-owner-chat commands, scripts, browser buttons/forms/files, local Mac input, assigned integration calls and ordinary team/routine changes. Ordinary requested steps can proceed without manual prompts; explicit deletes/protected-security paths remain manual, and semantic review escalates deletion, secrets, security, financial, irreversible, out-of-scope or unresolved effects. Foreign/delegated/scheduled lanes and separate skill-install/Workshop-grant policies retain their boundaries.
+
+Exact action/evidence and current-bot binding, fresh browser/native target and draft checks, original result verification, Stop/direction, denial/unknown no-replay and Mission admission/accounting remain intact. Missing/invalid/oversized/timed-out reviews fall back to manual. Review adds model usage and is fallible; it is not host isolation. The automatic-mode task prompt discourages redundant permission questions. Settings/profile copy and disposable protocol fixture describe the broader policy. Official Node22.23.4 passes2,094/2,094 full-run cases, followed by45/45 final focused cases,199 syntax checks and32 guide pages;13 directly affected source/test hashes remain stable through the final focused run. Actual disposable in-app protocol/UI acceptance shows a real command result and automatic approval without a manual card. Verification, retained environment/fixture failures and real-model limitations are in docs/verification.md. Operational installations and real account data are unchanged.
+
+
+
 ## Local Mac desktop actions — 4 November 2026 (Mac Engine installed)
 
 The independent Engine now exposes `desktop_status`, `desktop_launch`, `desktop_observe`, `desktop_action` and `desktop_verify` through an optional pinned agent-desktop 1.1.0 / JSON 2.6 driver. Local owner settings assign applications and bots; task admission freezes application IDs and driver identity in an engine-local journal. Both current and saved permissions apply. Imported skills, newly assigned applications and driver replacements cannot expand an active task. Every input uses exact manual review, a fresh target/draft check and the original declared result condition. Input delivery alone cannot complete a task; interrupted/unknown actions are retained without replay. Stop cancels owned driver processes. Episode time/action/read limits, repeated semantic UI state and six failures without verified progress stop looping.

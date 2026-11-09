@@ -1,5 +1,7 @@
 # Desktop actions on this Mac
 
+**Action review update (5 November 2026, source only):** In a direct owner chat, Approve for me can independently review an exact launch/input and continue without a manual prompt for ordinary requested work. Balanced/Strict retain manual review. Owner app/bot setup, frozen driver/app scope, fresh target/draft checks, result verification, denial/unknown receipts and Stop remain required. Dangerous or unresolved effects ask the owner. The historical installation receipts below predate this source change. See [security](security.md#approve-for-me).
+
 Tupies Engine can read and operate explicitly assigned Mac applications through the optional `agent-desktop` 1.1.0 driver (JSON protocol 2.6). Tupies owns task admission, approvals, cancellation, result checks and recovery. The driver has no model and is not Tupies’s inference backend. Ordinary provider, API/MCP and browser work does not require it.
 
 ## Local installation checkpoint

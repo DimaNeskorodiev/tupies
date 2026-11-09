@@ -140,16 +140,15 @@ body.pearl-studio .chat-composer .composer-footer .composer-mic-button:hover{bac
 .workshop-request-detail { margin-block: 12px; }
 .workshop-request-detail pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
 
-/* The saved bot review mode is always visible beside the chat tools. */
-.chat-composer .composer-review{flex:0 1 auto;min-width:0;max-width:185px}
-.chat-composer .composer-review-chip{display:inline-flex;align-items:center;position:relative;max-width:100%;min-height:36px;border:1px solid var(--line,rgba(125,139,160,.2));border-radius:18px;color:var(--ink,#394558);background:rgba(132,147,170,.06)}
-.chat-composer .composer-review-chip>svg{position:absolute;pointer-events:none;width:15px;height:15px;left:10px}
-.chat-composer .composer-review-chip>svg:last-child{left:auto;right:9px;width:12px;height:12px}
-.chat-composer .composer-review-chip select{appearance:none;-webkit-appearance:none;display:block;width:auto;max-width:100%;min-width:0;min-height:36px;margin:0;padding:6px 27px 6px 31px;border:0;border-radius:18px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer;box-shadow:none}
+/* Icon-only review control retains the native, keyboard-accessible picker. */
+.chat-composer .composer-review{flex:0 0 44px;width:44px;height:44px;min-width:44px}
+.chat-composer .composer-review-chip{display:grid;place-items:center;position:relative;width:44px;height:44px;border:0;border-radius:50%;color:var(--ink,#394558);background:transparent;cursor:pointer}
+.chat-composer .composer-review-chip>svg{pointer-events:none;width:21px;height:21px;stroke-width:1.75}
+.chat-composer .composer-review-chip select{appearance:none;-webkit-appearance:none;position:absolute;inset:0;display:block;width:44px;height:44px;min-width:44px;margin:0;padding:0;border:0;opacity:0;cursor:pointer}
+.chat-composer .composer-review-chip:hover{background:rgba(132,147,170,.12)}
 .chat-composer .composer-review-chip:focus-within{outline:2px solid var(--accent,#7194c5);outline-offset:2px}
-.chat-composer .composer-review-chip:has(select:disabled){opacity:.6}
+.chat-composer .composer-review-chip:has(select:disabled){opacity:.5;cursor:default}
 .chat-composer .composer-review-chip select:disabled{cursor:default}
 .chat-composer .composer-review-status{grid-column:1/-1;min-width:0;overflow-wrap:anywhere;margin:7px 4px 0;font-size:11px;line-height:1.5;color:var(--muted,#7b8494)}
 .chat-composer .composer-review-status.is-error{color:var(--danger,#b45b64)}
 .chat-composer .composer-review-status[hidden]{display:none}
-@media(max-width:540px){.chat-composer .composer-footer{flex-wrap:wrap}.chat-composer .composer-review{order:-1;flex:0 0 100%;max-width:none}.chat-composer .composer-review-chip{margin-bottom:3px}}

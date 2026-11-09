@@ -9,8 +9,8 @@ async function until(predicate){const deadline=Date.now()+10000;while(Date.now()
 const next=(id,name,args)=>({text:'',toolCalls:[{id,name,arguments:args}]});
 const reply=request=>JSON.parse(request.messages.findLast(m=>m.role==='tool').content);
 async function fixture(t,complete,options={}) {
-  const f=await desktopFixture(t,options);await f.store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture'});Object.assign(state.bots[0],{connectionId:'fixture',tools:['desktop'],approvalPolicy:'strict'});});
-  const engine=new NativeEngine(f.store,{maxTurns:12,runTimeout:15000,providers:{complete:(_c,request)=>complete(request)}});engine.desktop=f.desktop;await engine.recover();t.after(()=>engine.close());
+  const f=await desktopFixture(t,options);await f.store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture'});Object.assign(state.bots[0],{connectionId:'fixture',tools:['desktop'],approvalPolicy:options.policy || 'strict'});});
+  const engine=new NativeEngine(f.store,{maxTurns:12,runTimeout:15000,providers:{complete:(_c,request)=>complete(request),...(options.reviewAction?{reviewAction:(_c,request)=>options.reviewAction(request)}:{})}});engine.desktop=f.desktop;await engine.recover();t.after(()=>engine.close());
   const bot=f.store.state.bots[0],run=()=>f.store.state.runs[bot.id];
   async function start(){return engine.start(bot.id,'Send Hello fixture to the selected local app.');}
   async function settle(started,choose=()=>true){
@@ -61,4 +61,19 @@ test('Engine freezes application scope before inference and refuses later app gr
 test('changing invalid desktop arguments cannot evade the Engine no-progress stop',async t=>{
   let f,step=0,view;f=await fixture(t,async request=>{step++;if(step===1)return next('observe','desktop_observe',{appId:f.appId,windowId:'w-1'});if(step===2)view=reply(request);return next('bad_'+step,'desktop_action',{...f.typeArgs(view),ref:`@s${step}:e999`});});
   const result=await f.settle(await f.engine.start(f.bot.id,'Inspect the fixture and stop if no desktop progress is possible.'));assert.equal(result.run.status,'failed');assert.equal(result.run.errorCode,'desktop_no_progress');assert.match(result.run.error,/six failures/);assert.equal(f.calls.filter(c=>c.args[0]==='set-value').length,0);
+});
+
+test('Approve for me reviews actual Mac targets and verifies input and Send without manual prompts',async t=>{
+  let f,step=0;const reviews=[];
+  f=await fixture(t,async request=>{
+    step++;const result=step===1?null:reply(request);
+    if(step===1)return next('observe','desktop_observe',{appId:f.appId,windowId:'w-1'});
+    if(step===2)return next('type','desktop_action',f.typeArgs(result));
+    if(step===3)return next('verify-type','desktop_verify',{actionId:result.actionId});
+    if(step===4)return next('send','desktop_action',{observationId:result.observationId,ref:result.tree.children[1].ref_id,action:'click',expect:{kind:'appears',role:'text',text:'Delivered: Hello fixture'}});
+    if(step===5)return next('verify-send','desktop_verify',{actionId:result.actionId});
+    assert.equal(result.passed,true);return {text:'The requested message is verified.',toolCalls:[]};
+  },{policy:'auto',reviewAction:request=>{const payload=JSON.parse(request.messages[1].content);reviews.push(payload);return {toolCalls:[{name:'action_review_result',arguments:{actionDigest:payload.actionDigest,decision:'approve',risks:[],reason:'Send the exact message requested by the owner in the assigned fixture app.'}}]};}});
+  const result=await f.settle(await f.start());assert.equal(result.run.status,'completed');assert.equal(result.approvals.length,0);assert.equal(reviews.length,2);
+  assert.equal(reviews[0].action.review.target.name,'Message');assert.equal(reviews[1].action.review.target.name,'Send');assert.equal(f.state.sent,true);assert.equal(f.engine.desktop.hasPending(result.run.id),false);
 });
