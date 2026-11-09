@@ -230,3 +230,12 @@ test('summary compaction starts at the default 55% threshold, long before the 90
   assert.equal((await second.run('Continue.')).status,'completed');
   assert.ok(second.requests.every(request=>request.tools?.length));assert.equal(second.store.state.conversations.bot_atlas.length,history.length+2);
 });
+
+test('later chats keep skill-review eligibility and the owner-chat command policy',async()=>{
+  const {reviewEligible}=await import('../lib/background-reviews.mjs');const {ownerChat}=await import('../lib/command-policy.mjs');
+  const bot={id:'bot_atlas',tools:['skills']},later='bot_atlas--chat-0123456789abcdef';
+  assert.equal(reviewEligible({bot,source:'chat',sessionId:later},{id:'run_1'}),true);
+  assert.equal(reviewEligible({bot,source:'chat',sessionId:'bot_nova--chat-0123456789abcdef'},{id:'run_1'}),false);
+  assert.equal(ownerChat({bot,source:'chat',sessionId:later}),true);
+  assert.equal(ownerChat({bot,source:'chat',sessionId:'bot_atlas--telegram-1'}),false);
+});
