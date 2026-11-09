@@ -120,7 +120,7 @@ test('only the newest five images in a conversation are shown; older and changed
   for(let index=0;index<3;index++)second.push(await write(`b${index}.png`,await photo(50+index,30)));
   await engine.start('bot_atlas','Look at these.',{attachments:first});await waitFor(()=>current(store)?.status==='completed');
   await engine.start('bot_atlas','And these.',{attachments:second});await waitFor(()=>current(store)?.status==='completed' && requests.length===2);
-  const users=requests[1].messages.filter(message=>message.role==='user' && !String(message.content).startsWith('<turn_context>'));
+  const users=requests[1].messages.filter(message=>message.role==='user' && !/^<(turn_context|reference_data)>/.test(String(message.content)));
   assert.equal(users[0].imageParts.length,2);assert.match(users[0].content,/Not shown to you now: a0\.png\. Only the newest images/);
   assert.equal(users[1].imageParts.length,3);
   // A file replaced after it was attached is not shown as if it were the original.
