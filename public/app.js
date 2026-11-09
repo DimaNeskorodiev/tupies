@@ -1139,7 +1139,7 @@ function thinkingPhase(bot,run){
   const events=run.events||[];
   if(run.status==='waiting_for_delegate'){const handoff=events.findLast?.(event=>event.type==='delegation.started'),peer=botById(handoff?.targetBotId||handoff?.botId);return {energy:'talk',text:`is talking with ${peer?.name||'a teammate'}`,peer};}
   if(run.partialOutput)return {energy:'write',text:'is writing'};
-  const last=events.findLast?.(event=>['model.started','tool.started','tool.completed','memory.recalled','context.compacted','delegation.completed','skill.reviewing'].includes(event.type));
+  const last=events.findLast?.(event=>['model.started','tool.started','tool.completed','memory.recalled','context.compacted','context.pruned','delegation.completed','skill.reviewing'].includes(event.type));
   if(last?.type==='tool.started'){const match=toolPhrases.find(([pattern])=>pattern.test(String(last.tool||'')));return {energy:match?.[2]||'act',text:`is ${match?.[1]||'working'}`};}
   if(last?.type==='skill.reviewing')return {energy:'think',text:'is reviewing what to keep'};
   if(last?.type==='memory.recalled')return {energy:'think',text:'is remembering'};

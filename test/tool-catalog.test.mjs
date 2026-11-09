@@ -34,7 +34,7 @@ async function fullCatalog(t) {
       f.store.state.runs[f.bot.id]={id:'catalog_run',botId:f.bot.id,status:'running',...(mission?{missionId:'catalog_mission'}:{})};
       f.store.state.missions ||= {};
       f.store.state.missions.catalog_mission={id:'catalog_mission',state:'running',leadBotId:f.bot.id,ownerEngineId:f.engine.missions.ownerEngineId,episodeRefs:[{runId:'catalog_run',botId:f.bot.id}]};
-      for(const tool of f.engine.toolDefinitions({...f.context(),loadedToolGroups:LOAD_GROUPS.map(group=>group.id)}))all.set(`${tool.name}\n${tool.description}`,tool);
+      for(const tool of [...f.engine.permittedTools(f.context()),...f.engine.toolDefinitions(f.context())])all.set(`${tool.name}\n${tool.description}`,tool);
     }
   }
   return [...all.values()];
@@ -43,7 +43,7 @@ async function fullCatalog(t) {
 test('every tool description in the whole catalog fits 200 characters and parameter descriptions stay short',async t=>{
   const tools=await fullCatalog(t),names=new Set(tools.map(tool=>tool.name));
   assert.ok(names.size>=120,`Exercise the whole catalog: ${names.size}`);
-  for(const name of ['tools_load','mission_start','mission_contract_set','browser_screenshot','browser_handoff','ask_user','coding_run','desktop_action','engine_candidate_build','routines_update','workspace_image'])assert.ok(names.has(name),name);
+  for(const name of ['tools_load','tool_call','mission_start','mission_contract_set','browser_screenshot','browser_handoff','ask_user','coding_run','desktop_action','engine_candidate_build','routines_update','workspace_image'])assert.ok(names.has(name),name);
   const long=[];
   const visit=(schema,where)=>{
     if(!schema || typeof schema!=='object')return;
@@ -65,19 +65,21 @@ test('a default bot is offered a small core set; every other permitted tool load
   const f=await catalogFixture(t),context=f.context(),offered=f.engine.toolDefinitions(context),permitted=f.engine.permittedTools(context);
   const names=offered.map(tool=>tool.name),load=offered.find(tool=>tool.name==='tools_load');
   assert.ok(names.length<=16,`Core set: ${names.join(', ')}`);
-  for(const name of names)assert.ok(CORE_TOOLS.has(name) || name.startsWith('mission_'),name);
+  for(const name of names)assert.ok(CORE_TOOLS.has(name) || name==='tool_call' || name.startsWith('mission_'),name);
   assert.deepEqual(load.parameters.properties.groups.items.enum,['files','documents','memory','skills','team','automation','setup','integrations','quality']);
   for(const name of ['shell_run','browser_open','coding_run','desktop_action','lsp_start'])assert.ok(!permitted.some(tool=>tool.name===name),name);
-  // Every bot configuration: loading every available group yields exactly the permitted catalog plus tools_load.
+  // Every bot configuration: the offered list is core tools plus the tools_load/tool_call bridge, and loading groups never changes it.
   for(const groups of [[],['web'],['workspace'],['memory'],['workspace','terminal'],['terminal'],['delegation','automation'],[...TOOL_GROUPS]]) {
     const g=await catalogFixture(t,{tools:groups}),scoped=g.context(),allowed=new Set(g.engine.permittedTools(scoped).map(tool=>tool.name));
-    const {available}=catalogGroups(g.engine.permittedTools(scoped));
-    const loaded=g.engine.toolDefinitions({...scoped,loadedToolGroups:LOAD_GROUPS.map(group=>group.id)}).map(tool=>tool.name);
-    for(const name of loaded)assert.ok(name==='tools_load' || allowed.has(name),`${groups.join('+')}: ${name}`);
-    assert.equal(loaded.includes('tools_load'),available.length>0);
-    assert.equal(new Set(loaded).size,loaded.length);
-    // Language-server reads are only offered with a way to start a server.
-    if(!allowed.has('lsp_start'))assert.ok(!loaded.some(name=>/^lsp_/.test(name)));
+    const {available,groups:byGroup}=catalogGroups(g.engine.permittedTools(scoped));
+    const offeredNow=g.engine.toolDefinitions(scoped),loaded=g.engine.toolDefinitions({...scoped,loadedToolGroups:LOAD_GROUPS.map(group=>group.id)});
+    assert.deepEqual(loaded,offeredNow,`${groups.join('+')}: loading groups keeps the offered list byte-stable`);
+    const names=offeredNow.map(tool=>tool.name);
+    for(const name of names)assert.ok(['tools_load','tool_call'].includes(name) || allowed.has(name),`${groups.join('+')}: ${name}`);
+    assert.equal(names.includes('tools_load'),available.length>0);assert.equal(names.includes('tool_call'),available.length>0);
+    assert.equal(new Set(names).size,names.length);
+    // Language-server reads are only reachable with a way to start a server.
+    if(!allowed.has('lsp_start'))assert.ok(![...byGroup.values()].flat().some(tool=>/^lsp_/.test(tool.name)));
   }
   // Tools defined by other workstreams fall back to their permission group or name prefix, never to the core set.
   assert.equal(loadGroupOf('shell_run'),'terminal');assert.equal(loadGroupOf('browser_future_tool'),'browser');assert.equal(loadGroupOf('workspace_future_tool'),'files');assert.equal(loadGroupOf('unknown_future_tool'),'other');
@@ -102,7 +104,7 @@ test('every system prompt paragraph names only tools the bot is offered',async t
   }
 });
 
-test('the default bot fixed per-step payload is at most 8K estimated tokens; a fully enabled bot stays within it until it loads groups',async t=>{
+test('the default bot fixed per-step payload is at most 8K estimated tokens, and loading groups never grows it',async t=>{
   const fresh=await measurePrompt({profile:'default'}),seeded=await measurePrompt({profile:'default',seeded:true}),full=await measurePrompt({profile:'full'}),all=await measurePrompt({profile:'full',loadAll:true});
   for(const result of [fresh,seeded,full,all])t.diagnostic(`${result.profile}${result.seeded?' seeded':''}${result.loadAll?' all groups':''}: ${result.toolCount} tools, fixed ${result.fixedTokens} tokens (system ${result.first.parts.system.tokens}, tools ${result.first.parts.tools.tokens}, turn ${result.later.parts.turnContext.tokens}), reference ${result.first.parts.reference.tokens}`);
   assert.ok(fresh.fixedTokens<=8000,`default: ${fresh.fixedTokens}`);assert.ok(seeded.fixedTokens<=8000,`seeded: ${seeded.fixedTokens}`);assert.ok(full.fixedTokens<=8000,`full: ${full.fixedTokens}`);
@@ -110,19 +112,20 @@ test('the default bot fixed per-step payload is at most 8K estimated tokens; a f
   // Seeded memory lives in the cached reference data, not in the system prompt or per-step turn context.
   assert.equal(seeded.first.parts.system.chars,fresh.first.parts.system.chars);assert.equal(seeded.later.parts.turnContext.chars,fresh.later.parts.turnContext.chars);
   assert.ok(seeded.first.parts.reference.tokens>fresh.first.parts.reference.tokens);
-  assert.ok(all.toolCount>100 && all.toolCount<=128,`all groups: ${all.toolCount}`);
+  // Loaded groups arrive as tools_load results in the conversation, so the offered list and fixed payload stay the same.
+  assert.equal(all.toolCount,full.toolCount);assert.equal(all.fixedTokens,full.fixedTokens);
 });
 
-test('tools_load adds permitted groups for later steps, refuses others, keeps the prefix stable and auto-loads on a direct call',async t=>{
+test('tools_load returns schemas, tool_call runs them, direct calls are stored as tool_call, and the offered list never changes',async t=>{
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-tools-load-')),store=await new Store(directory).init(),requests=[];
   await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture-model'});for(const bot of state.bots){bot.connectionId='fixture';bot.approvalPolicy='balanced';}});
   const result=(request,id)=>JSON.parse(request.messages.findLast(message=>message.tool_call_id===id).content);
   const steps=[
     ()=>({text:'',toolCalls:[call('load','tools_load',{groups:['files']})]}),
-    request=>{const loaded=result(request,'load');assert.deepEqual(loaded.loaded,['files']);assert.ok(loaded.tools.includes('workspace_glob'));assert.match(loaded.guidance.files,/expectedSha256/);return {text:'',toolCalls:[call('denied','tools_load',{groups:['terminal']})]};},
-    request=>{assert.match(result(request,'denied').error,/Not available to this bot: terminal/);return {text:'',toolCalls:[call('glob','workspace_glob',{pattern:'**/*.md'})]};},
-    ()=>({text:'',toolCalls:[call('notes','brain_search',{query:'launch'})]}),
-    request=>{assert.equal(Array.isArray(result(request,'notes').results),true);return {text:'',toolCalls:[call('plan','task_plan_set',{steps:[{id:'done',title:'Report',status:'completed'}]})]};},
+    request=>{const loaded=result(request,'load');assert.deepEqual(loaded.loaded,['files']);const glob=loaded.tools.find(tool=>tool.name==='workspace_glob');assert.ok(glob?.parameters?.properties?.pattern,'schemas arrive whole');assert.match(loaded.guidance.files,/expectedSha256/);assert.match(loaded.notice,/tool_call/);return {text:'',toolCalls:[call('denied','tools_load',{groups:['terminal']})]};},
+    request=>{assert.match(result(request,'denied').error,/Not available to this bot: terminal/);return {text:'',toolCalls:[call('glob','tool_call',{name:'workspace_glob',arguments:{pattern:'**/*.md'}})]};},
+    request=>{assert.ok(Array.isArray(result(request,'glob').matches || result(request,'glob').files || []));return {text:'',toolCalls:[call('notes','brain_search',{query:'launch'}),call('broken','tool_call',{name:'workspace_glob'})]};},
+    request=>{assert.equal(Array.isArray(result(request,'notes').results),true);assert.match(result(request,'broken').error,/missing required arguments|tool_call needs/);return {text:'',toolCalls:[call('plan','task_plan_set',{steps:[{id:'done',title:'Report',status:'completed'}]})]};},
     ()=>({text:'Loaded what was needed.',toolCalls:[]}),
   ];
   const engine=new NativeEngine(store,{runTimeout:10_000,executionMode:'bounded',providers:{async complete(_connection,request){requests.push(request);return steps[requests.length-1](request);}}});
@@ -130,17 +133,22 @@ test('tools_load adds permitted groups for later steps, refuses others, keeps th
   const started=await engine.start('bot_atlas','Find the launch notes.');await engine.tasks.get(started.id);
   const run=store.state.runs.bot_atlas;assert.equal(run.status,'completed',run.error);assert.equal(requests.length,6);
   const names=request=>request.tools.map(tool=>tool.name);
-  assert.ok(!names(requests[0]).includes('workspace_glob'));assert.ok(names(requests[1]).includes('workspace_glob'));assert.ok(!names(requests[1]).includes('shell_run'));
-  // The system prompt and reference data never change within the task; loaded groups append to the tool list.
-  for(const request of requests){assert.equal(request.messages[0].content,requests[0].messages[0].content);assert.deepEqual(reference(request),reference(requests[0]));}
-  assert.deepEqual(requests[2].tools,requests[1].tools,'a refused load leaves the catalog unchanged');
-  assert.deepEqual(requests[4].tools.slice(0,requests[1].tools.length),requests[1].tools);assert.ok(names(requests[4]).includes('brain_search'));
-  // A direct call to a permitted tool loads its group, and its guidance appears in exactly one turn context.
+  // The system prompt, reference data and offered tools never change, so a provider's prompt cache survives every load.
+  for(const request of requests){assert.equal(request.messages[0].content,requests[0].messages[0].content);assert.deepEqual(reference(request),reference(requests[0]));assert.deepEqual(request.tools,requests[0].tools);}
+  assert.ok(names(requests[0]).includes('tool_call'));assert.ok(!names(requests[0]).includes('workspace_glob'));assert.ok(!names(requests[5]).includes('brain_search'));
+  // Bridged calls run under their real names; the history keeps only offered names.
+  const assistantCalls=requests[5].messages.filter(message=>message.role==='assistant').flatMap(message=>message.tool_calls || []);
+  const stored=id=>assistantCalls.find(item=>item.id===id);
+  assert.equal(stored('glob').function.name,'tool_call');assert.deepEqual(JSON.parse(stored('notes').function.arguments),{name:'brain_search',arguments:{query:'launch'}});assert.equal(stored('notes').function.name,'tool_call');
+  for(const item of assistantCalls)assert.ok(names(requests[0]).includes(item.function.name),item.function.name);
+  const executed=run.events.filter(event=>event.type==='tool.started').map(event=>event.tool);
+  assert.ok(executed.includes('workspace_glob') && executed.includes('brain_search'),executed.join(','));
+  // A direct or bridged call to a permitted tool records its group, and its guidance appears in exactly one turn context.
   assert.match(requests[4].turnContext,/Tools loaded by your last call[\s\S]*brain_search first/);assert.doesNotMatch(requests[5].turnContext,/Tools loaded by your last call/);
   assert.deepEqual(run.loadedToolGroups,['files','memory']);
   const loads=run.events.filter(event=>event.type==='tools.loaded');
   assert.deepEqual(loads.map(event=>[event.groups,event.reason]),[[['files'],'requested'],[['memory'],'called']]);assert.equal(loads[1].tool,'brain_search');
-  // A resumed context restores the loaded groups from the run.
+  // A resumed context offers the same tools.
   const resumed={bot:store.state.bots[0],source:'chat',runId:run.id,connection:store.state.connections[0],inference:{model:'fixture-model'}};
-  assert.ok(engine.toolDefinitions(resumed).some(tool=>tool.name==='brain_search'));
+  assert.deepEqual(engine.toolDefinitions(resumed).map(tool=>tool.name),names(requests[0]));
 });

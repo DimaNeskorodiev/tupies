@@ -70,8 +70,8 @@ test('denied discovery cannot read account/project metadata or create a coding c
 test('engine discovers, connects, delegates, inspects and independently verifies through exact approvals',async t=>{
   let projectId,jobId;
   const f=await fixture(t,async(request,index)=>{
-    // Coding tools load on demand: the first coding call loads the whole group for later steps.
-    assert.equal(request.tools.some(tool=>tool.name==='coding_run'),index>1);
+    // Coding tools are reached on demand (directly or through tool_call); the offered list never changes.
+    assert.equal(request.tools.some(tool=>tool.name==='coding_run'),false);
     if(index===1)assert.ok(request.tools.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum.includes('coding'));
     if(index===1)return next('discover','coding_discover',{includeClaudeProjects:true});
     if(index===2){assert.equal(toolResult(request,'discover').projects[0].path,f.source);return next('connect','coding_connect',{path:f.source,agent:'claude',account:'dedicated'});}

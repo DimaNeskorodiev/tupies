@@ -20,8 +20,8 @@ async function fixture(t,complete,{memory=true}={}) {
 
 test('explicit subtopic recall refreshes within its own three-pass budget (admission is free) and keeps the cached system prefix',async t=>{
   const {store,tools,bot,run,requests}=await fixture(t,async(request,index)=>{
-    // memory_refresh belongs to the memory group: the first call loads it for the following steps.
-    assert.equal(request.tools.some(tool=>tool.name==='memory_refresh'),index>1);
+    // memory_refresh belongs to the memory group: a direct call runs and records the group; the offered list never changes.
+    assert.equal(request.tools.some(tool=>tool.name==='memory_refresh'),false);
     if(index===1)return {text:'',toolCalls:[call('garden','tomatoes watering')]};
     if(index===2){assert.match(request.turnContext,/Tomatoes need regular watering/);return {text:'',toolCalls:[call('launch','launch budget')]};}
     if(index===3){assert.match(request.turnContext,/launch budget is EUR 42/);return {text:'',toolCalls:[call('third','third subtopic')]};}

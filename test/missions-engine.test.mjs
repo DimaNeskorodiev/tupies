@@ -364,7 +364,8 @@ for (const intent of ['clear_goal', 'explicit']) test(`a mistaken ${intent} deci
   const goal = 'Я зараз шукаю домен для Tupies. Пошукай тут https://dash.cloudflare.com/domains/registrations/purchase?query=tupies який домен краще підійде.';
   const h = await fixture(t, (request, turn) => {
     if (turn === 1) return tools(call('wrong_adoption', 'mission_start', { intent, ownerMessageId: missionContext(request).ownerMessageId, ...(intent === 'explicit' ? { explicitRequest: goal } : {}) }));
-    assert.equal(request.tools.some(tool => tool.name === 'mission_start'), false, 'refused admission does not repeatedly offer promotion');
+    // The offered list stays byte-stable for prompt caching; a repeated mission_start after step 1 is refused by the Engine.
+    assert.equal(request.tools.some(tool => tool.name === 'mission_start'), true);
     return answer('A normal domain comparison would be returned here; this fixture uses no real Cloudflare account.');
   });
   const run = await h.engine.start(BOT, goal); await h.settled();
