@@ -456,7 +456,7 @@ test('only the exact owner Mission coordinator receives questions and private br
   const created = await h.create('Hold this owner Mission while checking narrow interactive access.'); await until(() => entered);
   const run = h.store.state.runs[BOT], mission = h.store.state.missions[created.mission.id];
   const context = { runId: run.id, source: 'mission', lane: `mission:${mission.id}`, bot: structuredClone(h.store.state.bots[0]), connection: structuredClone(h.store.state.connections[0]), inference: { model: 'mission-model', images: false }, controller: h.engine.controllers.get(run.id), delegation: { depth: 0 } };
-  const names = candidate => h.engine.toolDefinitions(candidate).map(item => item.name);
+  const names = candidate => h.engine.permittedTools(candidate).map(item => item.name);
   assert.equal(ownerMissionContext(h.engine, context), true); assert.ok(names(context).includes('ask_user')); assert.ok(names(context).includes('browser_handoff'));
   await assert.rejects(h.engine.browserControl.ask(context, { reason: 'Open the owner browser.' }), error => error.status === 409 && /Open this task/.test(error.message));
   const child = { ...context, delegation: { depth: 1 } };

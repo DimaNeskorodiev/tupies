@@ -172,8 +172,10 @@ test('a bot recovers a constraint that compaction moved out of its context and c
   });
   await engine.start('bot_atlas','What budget limit did I give you for the launch?');
   await waitFor(()=>current(store)?.status==='completed');
-  assert.ok(toolNames(requests[0]).includes('session_search'));assert.ok(toolNames(requests[0]).includes('session_read'));
-  assert.match(requests[0].messages[0].content,/find it with session_search/);
+  // Conversation search is in the memory group: the system prompt points there and the first call loads it with its guidance.
+  assert.ok(!toolNames(requests[0]).includes('session_search'));assert.match(requests[0].messages[0].content,/load the memory group and search your stored conversations/);
+  assert.ok(toolNames(requests[1]).includes('session_search'));assert.ok(toolNames(requests[1]).includes('session_read'));
+  assert.match(requests[1].turnContext,/find it with session_search/);
   assert.equal(store.state.messages.bot_atlas.at(-1).content,'You set it in message message_budget: under €12,000.');
 });
 

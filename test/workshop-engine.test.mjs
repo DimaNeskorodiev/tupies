@@ -13,7 +13,7 @@ async function until(fn){const deadline=Date.now()+12000;while(Date.now()<deadli
 async function fixture(t,complete,{strict=false}={}){const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-workshop-engine-')),store=await new Store(directory).init();await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'fixture'});Object.assign(state.bots[0],{tools:['workspace','workshop'],connectionId:'fixture',approvalPolicy:strict?'strict':'balanced'});});let turn=0;const engine=new NativeEngine(store,{providers:{async complete(_c,request){return complete(request,++turn);}}});await engine.recover();t.after(async()=>{await engine.close();await store.queue;await fs.rm(directory,{recursive:true,force:true});});return {engine,store,bot:store.state.bots[0],settled:async started=>{await until(()=>!isActive(store.state.runs.bot_atlas));await engine.tasks.get(started.id);return store.state.runs.bot_atlas;}};}
 test('a bot autonomously builds, tests, uses and proposes a reusable tool in the real Engine',async t=>{
   let digest;const h=await fixture(t,async(request,turn)=>{
-    assert.ok(request.tools.some(x=>x.name==='workshop_build'));
+    assert.equal(request.tools.some(x=>x.name==='workshop_build'),turn>1,'the first workshop call loads the workshop group');
     const result=id=>JSON.parse(request.messages.findLast(x=>x.tool_call_id===id).content);
     if(turn===1)return {text:'',toolCalls:[call('build','workshop_build',definition)]};
     if(turn===2){digest=result('build').digest;assert.ok(digest);return {text:'',toolCalls:[call('run','workshop_run',{digest,input:21})]};}

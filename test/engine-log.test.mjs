@@ -92,7 +92,9 @@ test('runs_inspect returns only this bot’s runs, current timings and matching 
     inspected=JSON.parse(request.messages.findLast(message=>message.role==='tool' && message.tool_call_id==='inspect').content);
     return {text:'Here is what took time.',toolCalls:[]};
   });
-  assert.ok(f.engine.toolDefinitions({bot:f.store.state.bots[0],source:'chat',runId:'x',connection:f.store.state.connections[0],inference:{model:'test-model'}}).some(tool=>tool.name==='runs_inspect'));
+  const catalogContext={bot:f.store.state.bots[0],source:'chat',runId:'x',connection:f.store.state.connections[0],inference:{model:'test-model'}};
+  assert.ok(f.engine.permittedTools(catalogContext).some(tool=>tool.name==='runs_inspect'));
+  assert.ok(!f.engine.toolDefinitions(catalogContext).some(tool=>tool.name==='runs_inspect'),'diagnostics load on demand with the quality group');
   await f.engine.start('bot_atlas','Earlier task.');
   const earlier=await waitFor(()=>f.store.state.runs.bot_atlas?.status==='completed' && f.store.state.runs.bot_atlas);
   await f.store.mutate(state=>{(state.runHistory ||= {}).bot_scout=[{id:'run_other_bot',status:'failed',source:'chat',model:'x',createdAt:new Date().toISOString(),finishedAt:new Date().toISOString(),steps:9,toolCalls:9}];});
