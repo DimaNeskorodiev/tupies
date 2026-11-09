@@ -1,5 +1,10 @@
 # Verification — Tupies Engine 0.5
 
+## Phase 0 branch verification — 9 November 2026 (source only)
+
+Branch `phase0-20261109` merges five worktree branches (providers, engine loop, chat UI, OAuth/Telegram, `http_fetch`) plus follow-ups. On this Mac with Node 22.23.1: `npm run check` passes 204 modules; `node scripts/verify-release-tests.mjs` passes 98 + 2,116 = 2,214 tests with 0 failures in 3 m 36 s. The run needs a real `node_modules` directory in the worktree: a symlinked `node_modules` makes the `--permission` sandboxed extraction workers fail in `test/study-sources.test.mjs`, `test/images.test.mjs` and the document-worker tests, which is an environment artifact rather than a regression. A disposable engine started from the branch with a fresh data directory on 127.0.0.1:4399 answered `/` and `/api/auth` and created `logs/`. No provider account, operational engine, native app or account data was used; no live-model run was performed, so real-model quality and the Home-server timeline remain unmeasured.
+
+
 ## Readable Web research installation — 5 November 2026
 
 The owner requested commit/PR and both Engine updates. [PR43](https://github.com/DimaNeskorodiev/tupies/pull/43) contains frozen runtime commit **a8da80c**, stacked on PR42/41; unrelated original-checkout edits are excluded. Exact-head [Linux container CI](https://github.com/DimaNeskorodiev/tupies/actions/runs/42099960837) and [signed Engine publication](https://github.com/DimaNeskorodiev/tupies/actions/runs/42100190230) pass. The [Engine-only beta3 release](https://github.com/DimaNeskorodiev/tupies/releases/tag/v0.5.0-engine.beta.3) and downloaded manifest verify against the existing pinned key: sequence 1793909166000, 22,788 signed payload entries, 178,464,507-byte archive. No signing key was exported or replaced.
