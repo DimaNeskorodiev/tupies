@@ -910,8 +910,8 @@ function updateBotReasoning(form,{reset=false}={}){
 }
 async function saveBotSettings(form,fields,values){
   const originalId=form.dataset.id,previous=botById(originalId),selected=$('#bot-reasoning',form),effort=selected?.value??reasoningPreference(previous),botValues={...values};
-  delete botValues.reasoningEffort;
-  const input={...botValues,color:({sage:'mint',lilac:'lavender'}[values.color]||values.color),skills:fields.getAll('skill'),tools:fields.getAll('tool'),collaborators:fields.getAll('collaborator'),teamMode:fields.get('teamMode')==='selected'?'selected':'all',integrationIds:[...new Set([...fields.getAll('integrationId'),...(values.searchFallbackIntegrationId?[values.searchFallbackIntegrationId]:[])])],enabled:fields.has('enabled'),hidden:fields.has('hidden'),episodicMemory:fields.has('episodicMemory')};
+  delete botValues.reasoningEffort;delete botValues.fallbackConnectionId;delete botValues.fallbackModel;
+  const input={...botValues,color:({sage:'mint',lilac:'lavender'}[values.color]||values.color),skills:fields.getAll('skill'),tools:fields.getAll('tool'),collaborators:fields.getAll('collaborator'),teamMode:fields.get('teamMode')==='selected'?'selected':'all',integrationIds:[...new Set([...fields.getAll('integrationId'),...(values.searchFallbackIntegrationId?[values.searchFallbackIntegrationId]:[])])],enabled:fields.has('enabled'),hidden:fields.has('hidden'),episodicMemory:fields.has('episodicMemory'),fallback:fields.get('fallbackConnectionId')?{connectionId:String(fields.get('fallbackConnectionId')),model:String(fields.get('fallbackModel')||'').trim()}:null};
   const canSaveReasoning=selected&&!selected.disabled,locked=[...form.elements].map(element=>[element,element.disabled]);
   form.dataset.settingsSaving='true';form.setAttribute('aria-busy','true');
   for(const [element] of locked)element.disabled=true;
@@ -991,9 +991,13 @@ function liveDuration(seconds){return seconds===null?'':seconds<10?`${seconds.to
 function toolArgumentSummary(args){let value=args;if(typeof value==='string'){try{value=JSON.parse(value);}catch{return '';}}if(!value||typeof value!=='object')return '';const key=['query','url','path','skillId'].find(name=>typeof value[name]==='string'&&value[name].trim());if(!key)return '';const text=value[key].replace(/\s+/g,' ').trim();return text.length>80?text.slice(0,79)+'…':text;}
 function runEventSeq(run){let seq=0;for(const event of Array.isArray(run?.events)?run.events:[])if(Number.isFinite(event?.seq)&&event.seq>seq)seq=event.seq;return seq;}
 function runActivity(run){
-  const activity={step:0,model:'',modelAt:'',tools:[]},calls=new Map(),call=(event,outcome)=>({id:event.toolCallId||event.id,tool:String(event.tool||'tool'),argument:toolArgumentSummary(event.arguments),startedAt:event.createdAt||'',endedAt:'',outcome,retries:0});
+  const activity={step:0,model:'',modelAt:'',wait:null,tools:[]},calls=new Map(),call=(event,outcome)=>({id:event.toolCallId||event.id,tool:String(event.tool||'tool'),argument:toolArgumentSummary(event.arguments),startedAt:event.createdAt||'',endedAt:'',outcome,retries:0});
   for(const event of Array.isArray(run?.events)?run.events:[]){
-    if(event?.type==='model.started'){const step=Number(event.step);activity.step=Number.isInteger(step)&&step>0?step:activity.step+1;activity.model=String(event.model||activity.model||'');activity.modelAt=event.createdAt||'';}
+    if(event?.type==='model.started'){const step=Number(event.step);activity.step=Number.isInteger(step)&&step>0?step:activity.step+1;activity.model=String(event.model||activity.model||'');activity.modelAt=event.createdAt||'';activity.wait=null;}
+    else if(event?.type==='model.waiting'){activity.wait={kind:'waiting',at:event.createdAt||'',elapsedMs:Number(event.elapsedMs)||0};}
+    else if(event?.type==='model.retry'){activity.wait={kind:'retry',at:event.createdAt||'',attempt:Number(event.attempt)||1,max:Number(event.maxAttempts)||6,delayMs:Number(event.delayMs)||0};}
+    else if(event?.type==='model.fallback'){activity.wait={kind:'fallback',at:event.createdAt||'',model:String(event.to?.model||'')};}
+    else if(['model.resumed','model.completed'].includes(event?.type)){activity.wait=null;}
     else if(event?.type==='tool.started'){const item=call(event,'running');activity.tools.push(item);if(event.toolCallId)calls.set(event.toolCallId,item);}
     else if(['tool.completed','tool.retry','tool.skipped'].includes(event?.type)){
       let item=event.toolCallId&&calls.get(event.toolCallId)||activity.tools.findLast(entry=>entry.tool===event.tool&&['running','retry'].includes(entry.outcome));
@@ -1005,8 +1009,16 @@ function runActivity(run){
   }
   activity.tools=activity.tools.slice(-200);return activity;
 }
+/** Live wait state of the current model call: "waiting for model · 45 s", "retrying 2/6 in 10 s" or the fallback notice. */
+function runWaitLabel(wait,now=Date.now()){
+  if(!wait)return '';const since=liveSeconds(wait.at,now)||0;
+  if(wait.kind==='waiting')return `waiting for model · ${Math.round(wait.elapsedMs/1000+since)} s`;
+  if(wait.kind==='retry')return `retrying ${wait.attempt}/${wait.max} in ${Math.max(0,Math.ceil(wait.delayMs/1000-since))} s`;
+  return `switched to fallback model${wait.model?` · ${wait.model}`:''}`;
+}
 function runActivityStrip(activity,now=Date.now()){
   const current=activity.tools.at(-1),parts=[];
+  if(activity.wait)parts.push(`<span class="run-strip-wait" role="status">${esc(runWaitLabel(activity.wait,now))}</span>`);
   if(activity.step)parts.push(`<span class="run-strip-step">Step ${activity.step}${activity.model?` · ${esc(activity.model)}`:''}${activity.modelAt?` · ${liveDuration(liveSeconds(activity.modelAt,now))}`:''}</span>`);
   if(current)parts.push(`<span class="run-strip-tool">${esc(current.tool)}${current.argument?` · ${esc(current.argument)}`:''} · ${liveDuration(liveSeconds(current.startedAt,current.endedAt||now))}</span>`);
   return parts.join('');
@@ -1306,7 +1318,7 @@ function botSettingsForm(id,{embedded=false,template=null}={}){
     ${section('skills','Skills','Assign reusable playbooks that guide how this bot works.',skills)}
     ${section('memory','Memory','Facts, Brain notes and reviewed learning.',memory)}
     ${section('team','Team','Choose who this bot can work with.',`${toolOption('delegation')}${teamField(bot,id)}`)}
-    ${section('advanced','Advanced','Context, availability and visibility.',`<details class="pearl-advanced bot-advanced" data-settings-disclosure="advanced"${embedded?' open':''}><summary>Advanced settings</summary><div class="field"><label for="bot-context-limit">Context limit</label><select id="bot-context-limit" name="contextLimit"><option value="" ${!bot.contextLimit?'selected':''}>Automatic · up to 272K tokens</option><option value="128k" ${bot.contextLimit==='128k'?'selected':''}>128K tokens · lower cost per step</option><option value="max" ${bot.contextLimit==='max'?'selected':''}>The model’s full window</option></select><small>Every step sends the conversation to the model, so a larger limit costs more. Older messages are summarized at 90% of the limit.</small></div><label class="checkbox-field"><input type="checkbox" name="enabled" ${bot.enabled!==false?'checked':''}>Bot enabled</label><label class="checkbox-field"><input type="checkbox" name="hidden" ${bot.hidden?'checked':''}>Hide from the sidebar and Bots</label></details>`)}
+    ${section('advanced','Advanced','Context, availability and visibility.',`<details class="pearl-advanced bot-advanced" data-settings-disclosure="advanced"${embedded?' open':''}><summary>Advanced settings</summary><div class="field-row bot-fallback"><div class="field"><label for="bot-fallback-connection">Fallback provider</label><select id="bot-fallback-connection" name="fallbackConnectionId"><option value="">No fallback</option>${data.connections.filter(c=>c.type!=='legacy-hermes').map(c=>`<option value="${esc(c.id)}" ${bot.fallback?.connectionId===c.id?'selected':''}>${esc(c.name)} · ${esc(providerMeta(c.type).name)}</option>`).join('')}</select></div><div class="field"><label for="bot-fallback-model">Fallback model</label><input id="bot-fallback-model" name="fallbackModel" value="${esc(bot.fallback?.model||'')}" maxlength="200" placeholder="e.g. a different provider’s model"></div></div><p class="subtle-label">If the main model keeps failing (after 6 automatic retries) or its provider is unavailable or rate limited, the same request is sent once to this model. Tools are never re-run.</p><div class="field"><label for="bot-context-limit">Context limit</label><select id="bot-context-limit" name="contextLimit"><option value="" ${!bot.contextLimit?'selected':''}>Automatic · up to 272K tokens</option><option value="128k" ${bot.contextLimit==='128k'?'selected':''}>128K tokens · lower cost per step</option><option value="max" ${bot.contextLimit==='max'?'selected':''}>The model’s full window</option></select><small>Every step sends the conversation to the model, so a larger limit costs more. Older messages are summarized at 90% of the limit.</small></div><label class="checkbox-field"><input type="checkbox" name="enabled" ${bot.enabled!==false?'checked':''}>Bot enabled</label><label class="checkbox-field"><input type="checkbox" name="hidden" ${bot.hidden?'checked':''}>Hide from the sidebar and Bots</label></details>`)}
     ${embedded&&id?section('remove','Remove bot','Remove this bot, its conversations, memory and routines from Tupies. Saved workspace files remain on this engine.',`<button class="danger-button" type="button" data-action="delete-bot" data-id="${esc(id)}">${icon('trash')}Delete bot</button>`):''}</div>${footer}</form>`;
 }
 function botDialog(id,templateId){
