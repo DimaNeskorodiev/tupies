@@ -102,3 +102,23 @@ test('editing a channel cancels the old poll and a changed token resets its curs
   await f.channels.receive(channel.id,update(600),undefined,channel.secret);
   assert.equal(f.starts.length,0);assert.equal(f.store.state.channels[0].offset,0);
 });
+
+test('a run waiting for approval or an answer is announced once per waiting episode, with a deep link only when a public URL exists',async t=>{
+  const f=await fixture(t),channel=await f.add(),name=f.store.state.bots.find(bot=>bot.id==='bot_atlas').name;f.remote.updates=[update(20,{text:'Do it.'})];await f.tickAndPoll();
+  const setStatus=status=>f.store.mutate(state=>{state.runs.bot_atlas.status=status;});
+  await setStatus('waiting_for_approval');await f.tickAndPoll();await f.tickAndPoll();
+  assert.equal(f.remote.sent.length,1);assert.equal(f.remote.sent[0].text,`${name} needs your approval in Tupies.`);assert.equal(f.remote.sent[0].chat_id,'100');assert.ok(channel.pending);
+  f.channels.options.publicUrl='https://tupies.example.test';
+  await setStatus('running');await f.tickAndPoll();assert.equal(f.remote.sent.length,1);
+  await setStatus('waiting_for_input');await f.tickAndPoll();await f.tickAndPoll();
+  assert.equal(f.remote.sent.length,2);assert.equal(f.remote.sent[1].text,`${name} is waiting for your answer in Tupies: https://tupies.example.test/#/bot/bot_atlas`);
+  await setStatus('running');await f.tickAndPoll();assert.equal(f.remote.sent.length,2);
+  await f.store.mutate(state=>{state.runs.bot_atlas.status='completed';state.runs.bot_atlas.output='All done.';});await f.tickAndPoll();
+  assert.equal(f.remote.sent.length,3);assert.equal(f.remote.sent[2].text,'All done.');assert.equal(channel.lastDelivery.status,'sent');assert.equal(channel.pending,undefined);
+});
+
+test('photos, voice notes and stickers get one text-only reply, and only from allowed senders',async t=>{
+  const f=await fixture(t),channel=await f.add(),media=(id,extra={},user='200')=>({update_id:id,message:{chat:{id:100},from:{id:Number(user),is_bot:false},...extra}});
+  f.remote.updates=[media(30,{photo:[{file_id:'x'}]}),media(31,{voice:{file_id:'y'}},'999'),media(32,{sticker:{file_id:'z'}})];await f.tickAndPoll();
+  assert.equal(f.starts.length,0);assert.deepEqual(f.remote.sent.map(item=>item.text),['I can read text messages only for now.','I can read text messages only for now.']);assert.equal(channel.offset,33);
+});
