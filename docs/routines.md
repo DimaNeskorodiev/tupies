@@ -78,6 +78,10 @@ Seen-item markers commit only after the entire task succeeds, including an optio
 
 Workflows allow up to 16 steps, 1000 source items and 100 selected items per select step, with 64 KiB of combined results. Oversize or truncated data fails instead of silently losing items. Fetch/read steps cannot select executable code or tools from source content. Open-ended research, changing page layouts, authentication and CAPTCHA still need the appropriate agent/browser workflow.
 
+## Pre-approve exact commands
+
+A routine can carry exact terminal commands that run unattended: `routines_create`/`routines_update` (or the owner routine API) accept `commands: ["npm run report", …]`, up to 20. The approval card lists every command and the owner approves them; Approve for me never decides this. Dangerous commands (deletion, pushes, publishing, sends, privilege and the rest of the classifier's list) are refused and always ask at run time. In a run of that routine a `terminal` call with the identical command string runs without asking; any other command follows the bot's normal policy and allowlist. Changing the routine's bot drops its pre-approvals. See [Terminal, code snippets and command approval](terminal.md).
+
 ## Reuse a registered script
 
 The bot profile's **Scripts → Use in routine** opens an unsaved, paused routine preset for that exact registered revision. Review the literal argument list and save the routine. The saved step is `{ "id":"script", "op":"script", "scriptId":"summarize-expenses", "digest":"<exact 64-character digest from Scripts>", "args":[], "timeoutMs":120000 }`. The digest above is a placeholder; use the inspected actual version. A changed or incomplete source package is refused before dispatch and needs review and registration before updating the routine.
