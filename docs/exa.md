@@ -1,6 +1,6 @@
 # Exa web search and page reading
 
-Requested by the owner on 9 November 2026: web search and page reading were the weakest part of Tupies, so [Exa](https://exa.ai/docs) becomes the default search and page reader, with DuckDuckGo kept as the fallback. Source only until a release installs it on the Mac and VPS Engines.
+Requested by the owner on 9 November 2026: web search and page reading were the weakest part of Tupies, so [Exa](https://exa.ai/docs) becomes the default search and page reader, with DuckDuckGo kept as the fallback. Installed on the Mac and VPS Engines on 9 November 2026 as Engine beta 9; it takes effect once the owner adds an Exa key.
 
 ## Setup
 
