@@ -32,7 +32,7 @@ async function handoff(f){await f.engine.start('bot_atlas','Help me use my accou
 
 test('browser handoff pauses the task and owner inputs and pixels never enter durable state or model history',async t=>{
   const f=await fixture(t,{runTimeout:150}),waiting=await handoff(f),input=identity(waiting);
-  assert.equal(waiting.pending_controls[0].kind,'browser');assert.ok(f.requests[0].tools.some(tool=>tool.name==='browser_handoff'));
+  assert.equal(waiting.pending_controls[0].kind,'browser');assert.ok(f.requests[0].tools.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum.includes('browser'));assert.ok(f.engine.permittedTools({bot:f.store.state.bots[0],source:'chat',lane:'chat',runId:waiting.id,inference:{images:false}}).some(tool=>tool.name==='browser_handoff'));
   await delay(250);assert.equal(f.store.state.runs.bot_atlas.status,'waiting_for_input');
   const view=await f.engine.browserControl.view('bot_atlas',input);
   assert.equal(view.retained,false);assert.equal(view.imageBase64,'cGl4ZWxz');assert.equal(view.identity,undefined);
@@ -81,7 +81,7 @@ test('Stop and topology changes invalidate pending browser access and do not rep
 test('browser assistance is not offered to unattended lanes, expires finitely, and never claims sign-in',async t=>{
   const f=await fixture(t,{browserHandoffTimeoutMs:100}),waiting=await handoff(f);
   const context={bot:f.store.state.bots[0],source:'routine',lane:'routine:fixture',inference:{images:false}};
-  assert.ok(!f.engine.toolDefinitions(context).some(tool=>tool.name==='browser_handoff'));
+  assert.ok(!f.engine.permittedTools(context).some(tool=>tool.name==='browser_handoff'));
   await waitFor(()=>f.store.state.runs.bot_atlas.status==='completed');
   const result=JSON.parse(f.requests[1].messages.at(-1).content);assert.match(result.error,/expired/);assert.equal(result.resumed,undefined);
   await assert.rejects(f.engine.browserControl.view('bot_atlas',identity(waiting)),/older or inactive/);

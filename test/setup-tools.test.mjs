@@ -152,14 +152,17 @@ test('“check the bitcoin price every 10 minutes” in chat becomes an approved
   await engine.start('bot_atlas','Create a routine to check the bitcoin price every 10 minutes');
   await waitFor(()=>store.state.runs.bot_atlas?.status==='waiting_for_approval');
   const system=requests[0].system || requests[0].instructions || JSON.stringify(requests[0].messages[0]);
-  assert.match(system,/check the bitcoin price every 10 minutes/);assert.match(system,/bots_create/);
-  assert.ok(requests[0].tools.some(tool=>(tool.name || tool.function?.name)==='routines_create'));
+  // The system prompt names the routines group; calling routines_create loads it and shows its guidance once.
+  assert.match(system,/- automation: create, change, pause and remove routines/);assert.match(system,/instead of describing the steps/);assert.doesNotMatch(system,/routines_create|bots_create/);
+  assert.ok(!requests[0].tools.some(tool=>(tool.name || tool.function?.name)==='routines_create'));
+  assert.ok(engine.permittedTools({bot:store.state.bots.find(bot=>bot.id==='bot_atlas'),source:'chat',inference:{}}).some(tool=>tool.name==='routines_create'));
   const run=store.state.runs.bot_atlas,control=run.pending_controls[0];
   assert.equal(control.review.summary,'Schedule “Bitcoin price”: Every 10 minutes');
   assert.equal(dashboard(store).needs[0].title,'Schedule “Bitcoin price”: Every 10 minutes');
   assert.equal(store.state.routines.length,0,'nothing is scheduled before approval');
   await engine.control('bot_atlas','approval',{runId:run.id,remoteRunId:run.remoteRunId,request_id:control.prompt_id,execution_generation:run.execution_generation,choice:'once'});
   await waitFor(()=>store.state.runs.bot_atlas?.status==='completed');
+  assert.ok(requests[1].tools.some(tool=>tool.name==='routines_create'));assert.match(requests[1].turnContext,/check the bitcoin price every 10 minutes/);
   const routine=store.state.routines[0];
   assert.equal(routine.name,'Bitcoin price');assert.equal(routine.botId,'bot_atlas');assert.equal(routine.enabled,true);
   assert.deepEqual(routine.schedule,{kind:'interval',minutes:10});

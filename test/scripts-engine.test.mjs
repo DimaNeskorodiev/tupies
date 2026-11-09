@@ -10,6 +10,7 @@ import { Store } from '../lib/store.mjs';
 import { NativeEngine, isActive } from '../lib/engine.mjs';
 import { writeWorkspace, getWorkspaceRoot } from '../lib/agent-tools.mjs';
 import { validateRoutine } from '../lib/routines.mjs';
+import { groupGuidance } from '../lib/tool-catalog.mjs';
 
 const BOT='bot_atlas',ID='collect-fixture';
 const hash=value=>createHash('sha256').update(value).digest('hex');
@@ -47,16 +48,19 @@ test('the reusable scripts module can be imported independently without an initi
 test('an 8K workspace model completes a write and reply with the full script catalog and unchanged schema constraints',async t=>{
   let h,observed=0;
   h=await fixture(t,'process.stdout.write("unused");',async(request,turn)=>{
+    // The 8K model first sees the core catalog and loads the files group, whose schemas keep their constraints.
+    if(turn===1){const load=request.tools.find(tool=>tool.name==='tools_load');assert.ok(load.parameters.properties.groups.items.enum.includes('files'));assert.equal(Object.hasOwn(load,'description'),true);assert.equal(request.tools.some(tool=>tool.name==='scripts_register'),false);observed++;return {text:'',toolCalls:[call('load','tools_load',{groups:['files']})]};}
+    assert.match(JSON.parse(request.messages.findLast(message=>message.tool_call_id==='load').content).guidance.files,/scripts_register/);
     const registration=request.tools.find(tool=>tool.name==='scripts_register'),original=h.engine.tools.definitions(h.store.state.bots[0]).find(tool=>tool.name==='scripts_register');
     assert.equal(registration.description,original.description);assert.equal(registration.parameters.additionalProperties,false);
     assert.deepEqual(registration.parameters.required,original.parameters.required);assert.equal(registration.parameters.properties.purpose.maxLength,2000);
     assert.equal(registration.parameters.properties.files.minItems,2);assert.equal(registration.parameters.properties.files.items.properties.sha256.maxLength,64);
     assert.equal(registration.parameters.properties.interpreter.enum.includes('python3'),true);assert.equal(Object.hasOwn(registration.parameters.properties.purpose,'description'),false);
     assert.equal(typeof original.parameters.properties.purpose.description,'string');assert.equal(request.tools.some(tool=>tool.name==='scripts_inspect'),true);assert.equal(request.tools.some(tool=>tool.name==='scripts_run'),false);observed++;
-    return turn===1?{text:'',toolCalls:[call('small-write','workspace_write',{path:'outputs/small-window.txt',content:'Verified at 8K.\n'})]}:{text:'The requested file was written.',toolCalls:[]};
+    return turn===2?{text:'',toolCalls:[call('small-write','workspace_write',{path:'outputs/small-window.txt',content:'Verified at 8K.\n'})]}:{text:'The requested file was written.',toolCalls:[]};
   },{tools:['workspace'],contextWindow:8000});
   const started=await h.engine.start(BOT,'Create the requested private fixture output.');
-  const finished=await h.settled(started);assert.equal(finished.status,'completed',finished.error);assert.equal(observed,2);
+  const finished=await h.settled(started);assert.equal(finished.status,'completed',finished.error);assert.equal(observed,3);assert.ok(finished.events.some(event=>event.type==='tools.loaded' && event.reason==='requested' && event.groups[0]==='files'));
   assert.equal(await fs.readFile(path.join(h.root,'outputs/small-window.txt'),'utf8'),'Verified at 8K.\n');
 });
 
@@ -68,8 +72,10 @@ test('a registered script never grants missing Terminal access or prompts to exe
   },{tools:['workspace']});
   const started=await h.engine.start(BOT,'Use the prepared fixture if permitted.');
   const finished=await h.settled(started);assert.equal(finished.status,'completed');assert.equal(finished.backgroundProcesses,undefined);assert.equal(finished.events.some(event=>event.type==='approval.request'),false);assert.deepEqual(h.store.state.bots[0].tools,['workspace']);
-  assert.equal(h.engine.instructions({...h.store.state.bots[0],tools:[]}).includes('scripts_register'),false);
-  assert.equal(h.engine.instructions(h.store.state.bots[0]).includes('scripts_register'),true);
+  // Script guidance arrives with the files group; neither system prompt names a tool it does not offer.
+  assert.equal(h.engine.instructions({...h.store.state.bots[0],tools:[]}).includes('- files:'),false);
+  assert.equal(h.engine.instructions(h.store.state.bots[0]).includes('scripts_register'),false);assert.equal(h.engine.instructions(h.store.state.bots[0]).includes('- files:'),true);
+  assert.match(groupGuidance('files',new Set(['scripts_register'])),/scripts_register/);
 });
 
 test('engine binds script approval to source details and records real command verification',async t=>{
