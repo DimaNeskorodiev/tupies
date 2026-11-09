@@ -1,4 +1,5 @@
 import { APPROVAL_POLICIES, DEFAULT_APPROVAL_POLICY } from './lib/action-review.mjs';
+import { validateCommandAllowlist } from './lib/command-policy.mjs';
 import { loadMissionPricing } from './lib/mission-pricing.mjs';
 import http from 'node:http';
 import https from 'node:https';
@@ -86,6 +87,8 @@ function validateBot(input, previous={}) {
   for(const key of ['tools','collaborators','integrationIds'])if(Object.hasOwn(input,key)){ensure(Array.isArray(input[key]) && input[key].length<=30 && input[key].every(item=>typeof item==='string' && /^[a-zA-Z0-9_-]{1,100}$/.test(item)),400,`Choose valid ${key}.`);bot[key]=[...new Set(input[key])];}
   if(bot.tools)ensure(bot.tools.every(tool=>['workspace','memory','skills','web','integrations','delegation','automation','setup','terminal','browser','coding','desktop','workshop','engine_workshop'].includes(tool)),400,'Choose supported bot tools.');
   if(Object.hasOwn(input,'approvalPolicy')){ensure(APPROVAL_POLICIES.includes(input.approvalPolicy),400,'Choose a supported action review policy.');bot.approvalPolicy=input.approvalPolicy;}
+  // Owner-only: bots' setup tools never pass this field, so a bot cannot widen its own command allowlist.
+  if(Object.hasOwn(input,'commandAllowlist'))bot.commandAllowlist=validateCommandAllowlist(input.commandAllowlist);
   if(Object.hasOwn(input,'skillInstallPolicy')){ensure(['ask','trusted'].includes(input.skillInstallPolicy),400,'Choose ask or trusted for skill installation.');bot.skillInstallPolicy=input.skillInstallPolicy;}
   if(Object.hasOwn(input,'skills')){ensure(Array.isArray(input.skills) && input.skills.length<=30 && input.skills.every(s=>typeof s==='string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s)),400,'Select valid local skills.');bot.skills=[...new Set(input.skills)];}
   if(Object.hasOwn(input,'enabled')){ensure(typeof input.enabled==='boolean',400,'enabled must be true or false.');bot.enabled=input.enabled;}

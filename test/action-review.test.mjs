@@ -53,14 +53,15 @@ test('auto completes real playbook creation without a prompt and retains the sav
 });
 
 test('dangerous actions still wait; denial cannot be retried in auto mode',async t=>{
-  const command=call('shell_run',{executable:'node',args:['-e','throw new Error("must never execute")']});
+  const command=call('terminal',{command:'rm -rf build && echo must-never-execute'});
   const h=await fixture(t,(_request,turn)=>turn<=2?{text:'',toolCalls:[{...command,id:`attempt-${turn}`}]}:{text:'The command was denied.',toolCalls:[]});
   const started=await h.engine.start(h.bot.id,'Inspect the command.');await waitFor(()=>h.run()?.status==='waiting_for_approval');
-  const run=h.run(),prompt=run.pending_controls[0];assert.match(prompt.review.riskReason,/risk review is unavailable/);
+  const run=h.run(),prompt=run.pending_controls[0];assert.match(prompt.review.riskReason,/^Dangerous: rm deletes/);assert.equal(prompt.review.command.risk,'dangerous');
   await h.engine.control(h.bot.id,'approval',{runId:run.id,remoteRunId:run.remoteRunId,request_id:prompt.prompt_id,execution_generation:run.execution_generation,choice:'deny'});
   await h.engine.tasks.get(started.id);
   assert.equal(h.run().events.filter(e=>e.type==='approval.request').length,1);
   assert.equal(h.run().events.some(e=>e.type==='approval.automatic'),false);
+  assert.equal(h.run().events.some(e=>e.type==='tool.completed' && e.tool==='terminal' && !e.error),false);
   assert.ok(h.run().deniedCalls.length);
 });
 
