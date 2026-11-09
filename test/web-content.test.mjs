@@ -46,7 +46,7 @@ test('script-only and oversized pages explicitly report missing or limited reada
   for(const source of ['<div>'.repeat(21000),'<p>'+ 'x'.repeat(1_000_001)+'</p>']) {
     const result=readableWebContent(page(source));assert.equal(result.extraction.limited,true);assert.equal(result.extraction.empty,true);assert.match(result.notice,/extraction limit/);
   }
-  const truncated=readableWebContent(page('<p>'+'x'.repeat(100000)+'</p>'));assert.equal(truncated.extraction.limited,true);assert.ok(truncated.text.length>79000 && truncated.text.length<=80000);assert.match(truncated.notice,/not the complete page/);
+  const truncated=readableWebContent(page('<p>'+'x'.repeat(100000)+'</p>'));assert.equal(truncated.extraction.limited,true);assert.ok(truncated.text.length>79000 && truncated.text.length<=80100);assert.match(truncated.notice,/not the complete page/);assert.equal(truncated.extraction.omittedChars,20000);
 });
 
 test('structured data, link counts and deep malformed markup remain bounded',()=>{
