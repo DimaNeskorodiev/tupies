@@ -152,10 +152,13 @@ test('a stalled call announces itself with waiting events that the activity stri
   const release=Promise.withResolvers();
   const f=await fixture(t,async()=>{await release.promise;return answer('Finally.');},{options:{waitNoticeMs:60,waitTickMs:15}});
   const admitted=await f.engine.start(BOT,'Think hard.');
-  await until(()=>eventsOf(current(f.store),'model.waiting').length>0);
-  const waiting=eventsOf(current(f.store),'model.waiting').at(-1);assert.ok(waiting.elapsedMs>=60);assert.equal(waiting.model,'primary-model');
-  await delay(200);assert.equal(eventsOf(current(f.store),'model.waiting').length,1,'older waiting events are replaced, not accumulated');
-  release.resolve();const run=await finished(f,admitted);assert.equal(run.status,'completed');
+  // A failed assertion must not leave the provider stalled, or engine cleanup would wait on it forever.
+  try {
+    await until(()=>eventsOf(current(f.store),'model.waiting').length>0);
+    const waiting=eventsOf(current(f.store),'model.waiting').at(-1);assert.ok(waiting.elapsedMs>=60);assert.equal(waiting.model,'primary-model');
+    await delay(200);assert.equal(eventsOf(current(f.store),'model.waiting').length,1,'older waiting events are replaced, not accumulated');
+  } finally {release.resolve();}
+  const run=await finished(f,admitted);assert.equal(run.status,'completed');
 });
 
 test('bot fallback validation: provider must exist, be a direct provider and differ from the primary',()=>{
