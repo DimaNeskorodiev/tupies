@@ -222,7 +222,7 @@ test('asynchronous chat options expose model and reasoning while retaining form 
   assert.deepEqual([...form.querySelectorAll('details')].map(details=>[details.querySelector('summary').textContent,details.open]),[['Model & reasoning',true],['Conversation history',false],['Voice & dictation',false]]);
   assert.equal(form.dataset.inferenceReady,'true');assert.match(history.textContent,/12K tokens/);
   const data=new h.win.FormData(form);assert.equal(data.get('model'),'model-a');assert.equal(data.get('reasoningEffort'),'high');
-  assert.deepEqual([...history.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-topic',false]]);
+  assert.deepEqual([...history.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-chat',false]]);
   form.querySelector('#chat-reasoning').value='low';
   form.querySelector('#chat-reasoning').dispatchEvent(new h.win.Event('change',{bubbles:true}));
   form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
@@ -294,7 +294,7 @@ test('active work keeps history mutations disabled inside the collapsed conversa
   const h=ui(t,{inferenceRequest:()=>({model:'model-a',effectiveModel:'model-a',models:[{id:'model-a'}],reasoning:{supported:false,efforts:[]},activeRun:{id:'run_fixture',status:'running'}})});
   await h.run("chatOptionsDialog('bot_atlas')");const history=h.doc.querySelector('#chat-context-tools');
   assert.equal(history.open,false);
-  assert.deepEqual([...history.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',true],['new-topic',true]]);
+  assert.deepEqual([...history.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',true],['new-chat',true]]);
   assert.equal(h.requests.length,1);
 });
 

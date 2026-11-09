@@ -96,14 +96,18 @@ The panel preserves the draft and applies selections to the next task. During a 
 
 Choose a model from the connected provider's current catalog. Choose the shared default to resume following the provider/workspace default. Changing a model does not erase the transcript, memory or files.
 
-Chat options also shows the selected model's context window and where Tupies starts organizing older material (90% of the window, at most about 245K by default). When a provider does not report a window, Tupies assumes 128K; set the real one for a local or compatible service in the provider's **Advanced endpoint settings › Context window**.
+Chat options also shows the selected model's context window and where Tupies starts summarizing older material (55% of the window by default, about 150K of the default 272K ceiling). When a provider does not report a window, Tupies assumes 128K; set the real one for a local or compatible service in the provider's **Advanced endpoint settings › Context window**.
 
 The **Conversation history** section in Chat options shows how large the conversation is and when it was last summarized:
 
 - **Summarize older messages** folds the older turns into a summary and keeps the recent ones.
-- **Start a new topic** keeps everything so far as a background summary, so the same chat continues fresh.
+- **New chat** starts a separate chat with a fresh working context (it replaces the former *Start a new topic*).
 
-Either way the full transcript stays visible in the chat, with a short Tupies note. **Bot settings › Context limit** chooses how much of the model's window a bot uses. See `docs/context.md`.
+Summaries keep the full transcript visible in the chat, with a short Tupies note. **Bot settings › Context limit** chooses how much of the model's window a bot uses, and **Summarize older messages** (Automatic 55%, or 40/70/85%) when automatic summaries start. See `docs/context.md`.
+
+### Chats
+
+The **+** button in the chat header (and **New chat** in the chat menu) starts a new chat with the bot. **Chats** in the chat menu lists the bot's chats with their title and last activity: open one to read it (the composer hides and a banner offers **Continue this chat** or **Back to current chat**), continue it, rename it or delete it. A chat is titled from its first message. Switching, starting and deleting chats wait until the bot is idle. Memory, notes, files and settings are shared by all chats; the bot can search earlier chats with `session_search`. See [Chat sessions](context.md#chat-sessions).
 
 Reasoning defaults to **Tupies default · High** for new bots and bots that previously had an implicit provider default. High is sent only when the selected model explicitly advertises it; otherwise the automatic preference uses the provider default and the UI says so. Existing explicit effort choices are kept. **Provider default** is a separate, persistent owner choice that omits the effort parameter. Reasoning choices come from the provider’s catalog metadata when it declares them, and otherwise from a per-provider preset for known model families (OpenRouter `reasoning.effort`, Anthropic adaptive thinking with `output_config.effort` or a thinking budget on older Claude models, DeepSeek and GLM `thinking`, Gemini and grok-mini `reasoning_effort`). On every provider except OpenAI and ChatGPT/Codex, the automatic preference sends no effort parameter and leaves the provider default in place. Changing the shared model preserves the reasoning preference; an explicit level unsupported by the new model uses its provider default until a supported level is chosen. A change is validated against a fresh catalog before it is saved. Models and account entitlement remain provider-controlled.
 
