@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contextLimits, catalogContextWindow, knownContextWindow, contextOverflow, estimateTokens, promptTokens, safeContextWindow } from '../lib/context-budget.mjs';
+import { compactThreshold, compactionSummaryTokens, contextLimits, catalogContextWindow, knownContextWindow, contextOverflow, estimateTokens, promptTokens, safeContextWindow } from '../lib/context-budget.mjs';
 
-test('context limits follow the model window with Codex thresholds and a 272K default ceiling',()=>{
-  // A ChatGPT subscription model: 95% usable, compaction from 90%.
-  assert.deepEqual(contextLimits({type:'chatgpt'},'gpt-6.1-sol'),{window:272_000,source:'known',effective:272_000,usable:258_400,compactAt:244_800,small:false});
+test('context limits follow the model window with a 55% summary threshold and a 272K default ceiling',()=>{
+  // A ChatGPT subscription model: 95% usable, summary compaction from 55% towards a 20% target.
+  assert.deepEqual(contextLimits({type:'chatgpt'},'gpt-6.1-sol'),{window:272_000,source:'known',effective:272_000,usable:258_400,compactAt:149_600,fitAt:244_800,compactThreshold:55,compactTarget:54_400,small:false});
   assert.equal(contextLimits({type:'chatgpt'},'gpt-5.3-codex-spark').window,128_000);
   // A 1M window is capped by default; the bot may allow the full window or ask for 128K.
   const claude={type:'anthropic',models:[{id:'claude-opus-5',contextWindow:1_000_000}]};
   assert.equal(contextLimits(claude,'claude-opus-5').effective,272_000);assert.equal(contextLimits(claude,'claude-opus-5').source,'provider');
-  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max'}).compactAt,900_000);
-  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'128k'}).compactAt,115_200);
+  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'max'}).compactAt,550_000);
+  assert.equal(contextLimits(claude,'claude-opus-5',{contextLimit:'128k'}).compactAt,70_400);
   // Unknown windows are treated as 128K; an owner's explicit setting wins over everything else.
-  assert.deepEqual(contextLimits({type:'custom'},'local-model'),{window:128_000,source:'default',effective:128_000,usable:121_600,compactAt:115_200,small:false});
+  assert.deepEqual(contextLimits({type:'custom'},'local-model'),{window:128_000,source:'default',effective:128_000,usable:121_600,compactAt:70_400,fitAt:115_200,compactThreshold:55,compactTarget:25_600,small:false});
   assert.equal(contextLimits({type:'ollama',contextWindow:32_768,models:[{id:'qwen',contextWindow:262_144}]},'qwen').window,32_768);
   assert.equal(contextLimits({type:'ollama',contextWindow:32_768},'qwen').small,true);
   // A limit learned from a provider error is reported as such.
@@ -49,4 +49,17 @@ test('token estimates count multi-byte text denser and reported usage includes c
   assert.equal(promptTokens({prompt_tokens:900}),900);
   assert.equal(promptTokens({input_tokens:10,cache_read_input_tokens:5000,cache_creation_input_tokens:200}),5210);
   assert.equal(promptTokens({output_tokens:5}),null);
+});
+
+test('a bot chooses its summary threshold within 30-90% of the effective window',()=>{
+  const chatgpt={type:'chatgpt'};
+  assert.equal(contextLimits(chatgpt,'gpt-6.1-sol',{compactThreshold:90}).compactAt,244_800);
+  assert.equal(contextLimits(chatgpt,'gpt-6.1-sol',{compactThreshold:'40'}).compactAt,108_800);
+  for(const invalid of [10,95,'abc',55.5,null,''])assert.equal(compactThreshold({compactThreshold:invalid}),55);
+  // The usable budget still caps a high threshold when the output reservation is large.
+  const tight=contextLimits({type:'custom',contextWindow:16_000,maxOutputTokens:32_768},'tiny',{compactThreshold:90});
+  assert.ok(tight.compactAt<=tight.usable);
+  // Summary record plus kept tail aim at about a fifth of the window, never below a tenth.
+  assert.equal(compactionSummaryTokens(272_000,10_000),44_400);
+  assert.equal(compactionSummaryTokens(32_000,6_400),3_200);
 });

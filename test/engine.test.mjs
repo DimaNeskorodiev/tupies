@@ -364,7 +364,7 @@ test('a third-party Telegram lane keeps its own history without supplying Bot Ch
   assert.deepEqual(requests[1].messages.slice(1).map(message=>message.content),['Question from someone else.']);
   assert.equal(current(store).sessionId,sessionId);assert.equal(sessionOwner(sessionId),'bot_atlas');assert.match(sessionId,/^bot_atlas--telegram-[0-9a-f]{16}$/);
   assert.deepEqual(store.state.conversations[sessionId].map(message=>message.role),['user','assistant']);
-  assert.deepEqual(store.state.sessions.map(({id,botId,kind,key})=>({id,botId,kind,key})),[{id:sessionId,botId:'bot_atlas',kind:'telegram',key:lane}]);
+  assert.deepEqual(store.state.sessions.filter(item=>item.kind!=='chat').map(({id,botId,kind,key})=>({id,botId,kind,key})),[{id:sessionId,botId:'bot_atlas',kind:'telegram',key:lane}]);
   // The display retains the lane, but the Bot Chat model keeps only the owner's own turns.
   const chat=store.state.conversations.bot_atlas;
   assert.deepEqual(chat.map(message=>message.content),['Hello in the app.','Chat answer.']);
@@ -483,7 +483,8 @@ test('a provider context overflow is compacted to the stated limit and the model
     if(index===1)throw new HttpError(502,"OpenAI returned HTTP 400: This model's maximum context length is 64,000 tokens. However, your messages resulted in 150,000 tokens.");
     return {text:'Answered within the real window.',toolCalls:[],usage:{input_tokens:40_000,output_tokens:20}};
   });
-  await store.mutate(state=>{state.connections[0].models=[{id:'test-model',name:'Test model',reasoning:{supported:false,efforts:[]}}];state.conversations.bot_atlas=history;});
+  // A 90% summary threshold lets the history reach the provider; the default 55% would summarize it before the first step.
+  await store.mutate(state=>{state.connections[0].models=[{id:'test-model',name:'Test model',reasoning:{supported:false,efforts:[]}}];state.conversations.bot_atlas=history;state.bots.find(bot=>bot.id==='bot_atlas').compactThreshold=90;});
   await engine.start('bot_atlas','Continue.');await waitFor(()=>current(store)?.status==='completed');
   // The learned window no longer holds the older turns, so they are summarized before the step is sent again.
   const modelSteps=requests.filter(request=>request.tools.length),summarySteps=requests.filter(request=>!request.tools.length);
