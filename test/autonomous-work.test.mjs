@@ -56,14 +56,27 @@ test('unfinished assistant endings can be guarded independently from variable pr
   assert.throws(()=>noteAutonomousProgress(state,{fingerprint,hasProgress:'model says done'}),/boolean/);
 });
 
-test('trusted transient provider downtime retries indefinitely with capped exponential backoff',()=>{
+test('trusted transient provider downtime retries at most six times with exponential backoff and jitter',()=>{
   let policy,attempt=0;const delays=[];
-  for(let index=0;index<1000;index++){policy=autonomousRetryPolicy(failure('timeout'),{attempt});attempt=policy.attempt;delays.push(policy.delayMs);assert.equal(policy.retry,true);assert.equal(policy.blocked,false);}
-  assert.equal(attempt,1000);assert.deepEqual(delays.slice(0,5),[2000,4000,8000,16000,32000]);assert.equal(delays.at(-1),300000);
-  assert.equal(autonomousRetryPolicy(failure('timeout'),{attempt,hasProgress:true}).delayMs,2000);
+  for(let index=0;index<6;index++){policy=autonomousRetryPolicy(failure('timeout'),{attempt,random:()=>0.5});attempt=policy.attempt;delays.push(policy.delayMs);assert.equal(policy.retry,true);assert.equal(policy.blocked,false);}
+  assert.equal(attempt,6);assert.deepEqual(delays,[2000,4000,8000,16000,32000,64000]);
+  const low=autonomousRetryPolicy(failure('timeout'),{attempt:0,random:()=>0}).delayMs,high=autonomousRetryPolicy(failure('timeout'),{attempt:0,random:()=>1}).delayMs;
+  assert.equal(low,1600);assert.equal(high,2400);
+  const capped=autonomousRetryPolicy(failure('timeout'),{attempt});
+  assert.deepEqual([capped.retry,capped.blocked,capped.exhausted,capped.reason],[false,true,true,'retry_limit']);
+  assert.equal(autonomousRetryPolicy(failure('timeout'),{attempt,hasProgress:true,random:()=>0.5}).delayMs,2000);
   for(const code of ['dns_error','transport_error','stream_interrupted','rate_limit','upstream_unavailable'])assert.equal(autonomousRetryPolicy(failure(code)).retry,true,code);
   for(const code of ['http_error','response_failed'])for(const status of [429,500,503,599])assert.equal(autonomousRetryPolicy(failure(code,status)).retry,true,`${code}/${status}`);
-  assert.equal(autonomousRetryPolicy(failure('timeout'),{attempt:Number.MAX_SAFE_INTEGER}).attempt,Number.MAX_SAFE_INTEGER);
+});
+
+test('Retry-After extends the wait, and one beyond the retry window ends retrying for fallback',()=>{
+  const wait=failure('rate_limit');wait.retryAfterMs=45_000;
+  assert.equal(autonomousRetryPolicy(wait,{random:()=>0.5}).delayMs,45_000);
+  const small=failure('rate_limit');small.retryAfterMs=500;
+  assert.equal(autonomousRetryPolicy(small,{random:()=>0.5}).delayMs,2000);
+  const long=failure('rate_limit');long.retryAfterMs=3_600_000;
+  const policy=autonomousRetryPolicy(long);
+  assert.deepEqual([policy.retry,policy.exhausted,policy.reason],[false,true,'retry_after_too_long']);
 });
 
 test('auth, TLS, destination, malformed output, truncation and untrusted error labels never authorize retry',()=>{
