@@ -26,17 +26,17 @@ test('chat options use the live catalog and save only the selected bot inference
   doc.querySelector('#chat-model').value='model-b';doc.querySelector('#chat-model').dispatchEvent(new h.win.Event('change',{bubbles:true}));assert.deepEqual([...doc.querySelector('#chat-reasoning').options].map(option=>option.value),['auto','','low','minimal','medium']);doc.querySelector('#chat-reasoning').value='medium';
   doc.querySelector('#chat-options-form').dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();const patch=h.win.requests.find(request=>request.method==='PATCH');assert.equal(JSON.stringify(patch.body),JSON.stringify({model:'model-b',reasoningEffort:'medium'}));assert.equal(input.value,'Keep this draft');assert.equal(doc.querySelector('#message-input'),input);assert.equal(doc.querySelectorAll('.attachment-chip').length,1);assert.equal(doc.querySelector('#composer-model-summary'),null);assert.equal(h.run("botById('bot_test').model"),'model-b');assert.equal(h.run("data.connections[0].defaultModel"),'model-a');h.close();
 });
-test('chat options show how full the conversation is and send compaction requests for this bot only',async()=>{
+test('chat options show how full the conversation is and start a new chat for this bot only',async()=>{
   const h=harness(),doc=h.win.document;await h.run("chatOptionsDialog('bot_test')");
   const section=doc.querySelector('#chat-context-tools');assert.ok(section);assert.match(section.textContent,/This conversation is about 0 tokens\./);
-  assert.deepEqual([...section.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-topic',false]]);
-  section.querySelector('[data-action="new-topic"]').dispatchEvent(new h.win.MouseEvent('click',{bubbles:true}));await tick();await tick();
-  const request=h.win.requests.find(item=>item.path.endsWith('/compact'));
-  assert.equal(request.path,'/api/bots/bot_test/compact');assert.equal(request.method,'POST');assert.equal(JSON.stringify(request.body),JSON.stringify({topic:true}));
+  assert.deepEqual([...section.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-chat',false]]);
+  section.querySelector('[data-action="new-chat"]').dispatchEvent(new h.win.MouseEvent('click',{bubbles:true}));await tick();await tick();
+  const request=h.win.requests.find(item=>item.path.endsWith('/sessions'));
+  assert.equal(request.path,'/api/bots/bot_test/sessions');assert.equal(request.method,'POST');assert.equal(JSON.stringify(request.body),JSON.stringify({}));
   // The context note uses the limits the engine reports for the bot.
   h.run("chatInferenceState={...chatInferenceState,context:{window:272000,source:'known',compactAt:244800},conversation:{tokens:91234,compactedAt:'2026-10-27T10:00:00Z'}}");
   assert.match(h.run('conversationNoteText(chatInferenceState)'),/^This conversation is about 91K tokens; older messages are summarized automatically from about 245K\. Last summarized /);
-  h.run("botDialog('bot_test')");assert.deepEqual([...doc.querySelectorAll('#bot-context-limit option')].map(option=>option.value),['','128k','max']);
+  h.run("botDialog('bot_test')");assert.deepEqual([...doc.querySelectorAll('#bot-context-limit option')].map(option=>option.value),['','128k','max']);assert.deepEqual([...doc.querySelectorAll('#bot-compact-threshold option')].map(option=>option.value),['','40','70','85']);
   h.close();
 });
 test('unknown reasoning capabilities expose automatic and provider defaults only',async()=>{
