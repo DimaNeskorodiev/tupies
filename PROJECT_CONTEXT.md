@@ -1,5 +1,17 @@
 # Tupies — project context
 
+## Exa web search and page reading — 9 November 2026 (source only)
+
+The owner said web search and page reading are Tupies' weakest side and chose Exa as the default, with DuckDuckGo as the fallback. Branch `feature/exa-web-search` (from `origin/main` `37c413b`):
+
+- `lib/exa.mjs`: the Exa preset (`https://api.exa.ai`, bearer key, declared `POST /search` and `POST /contents`), contract recognition (`isExaIntegration`, first match is the Engine default via `defaultExa`), fixed request bodies, result normalization within the 16K tool-result threshold, filter validation, `web_extract` with Exa paging/passages/live crawl and a direct-read fallback using `readableWebContent`.
+- `lib/engine.mjs`: with an Exa connection every Web bot is offered the Exa `web_search` schema and `web_extract` (no assignment, no approval); `web_search` runs Exa → DuckDuckGo → the bot's approved fallback, recording `search.fallback`; Stop never advances to the next provider. Capabilities report `web_search_provider` and `web_extract`.
+- `web_extract` joins `http_fetch` in the core tool set, parallel reads, read-only failure handling, the repeated-read guard, receipts/`source_read`, Mission sources, teammate sources, the research guard, the refused-site gate and the UI activity labels.
+- UI: an **Exa** preset and a **Web search · Exa** template card in Settings → Integrations; the Exa card shows **Default web search** / **All bots with Web tools**, and **Needs attention** while Exa rejects the key or reports no credits (cleared by the next accepted request).
+- Docs: [docs/exa.md](docs/exa.md), tool use, capabilities, API, roadmap.
+
+Verification: `npm run check` (217 modules); full release runner 2,305/2,305 before the final Needs-attention/wording changes, then the 19 affected suites (152 tests) after them; new `test/exa-web.test.mjs` (13) and `test/exa-web-ui.test.mjs` (2); a disposable local Engine for the Integrations UI; a real `api.exa.ai` request with an invalid key (401 → `unauthorized` → direct fallback, card marked). Not yet checked with a real key, so search quality, latency and cost are unmeasured. Not installed on the Mac or VPS Engines.
+
 ## Refused sites and stalled plans — 9 November 2026 (installed on Mac and VPS)
 
 On the Home server, Рома (DeepSeek v4.1 flash via OpenRouter, autonomous) spent 14+ minutes on "find all OLX listings for this phone number". OLX has no phone search, so the bot listed every Tesla Model Y ad and ran ~1,223 parallel `limited-phones` lookups from `terminal`; OLX answered with CloudFront blocks, `Disallowed for this user` and rate-limit errors, and the bot then kept retrying with sleeps, other user agents, headers and endpoints. Nothing stopped it: the research guard only counted `web_search`/`http_fetch`, every new `curl` variant (exit 0 even on a 403) counted as autonomous progress, and the plan sat on its first step for 15 steps. Changes:

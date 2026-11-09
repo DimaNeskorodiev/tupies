@@ -1,5 +1,9 @@
 # Product roadmap
 
+## Exa web search and page reading — 9 November 2026 (source only)
+
+The owner chose [Exa](exa.md) as the default web search and page reader, with DuckDuckGo kept as the fallback. One Exa connection in Settings → Integrations serves every bot with Web tools: `web_search` gains excerpts and domain/category/date filters, and the new `web_extract` reads pages and PDFs as clean text with paging and live crawl. Every Exa failure falls back with provenance. This delivers part of audit Phase 2 item 1 (an API-key search backend as the first choice, filters) and item 2 (`web_extract` with Markdown output and paging). Remaining from Phase 2: provider-native search, a search cache, citations in replies and the fetch-to-browser escalation. Not installed on the Mac or VPS Engines; a live check with the owner's key is pending.
+
 ## Refused sites and stalled plans — 9 November 2026 (installed on Mac and VPS)
 
 Owner checkpoints for a site that keeps refusing automated access (ask before any further route to it, per request) and for autonomous plans that stop moving; research guard covers browser and terminal fetches. Installed on both engines as Engine beta 8. Remaining: live-model observation of how models respond to the notes and prompts. See [tool use](tool-use.md#refused-sites-and-stalled-plans).
