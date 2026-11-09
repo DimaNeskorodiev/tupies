@@ -1,5 +1,9 @@
 # Product roadmap
 
+## Product audit and recovery plan — 9 November 2026 (proposed)
+
+A whole-product audit against the current checkout and live engine data records P0/P1 defects in providers (reasoning never streamed or controlled outside OpenAI, ~30K fixed tokens per step), web research (GET-only fetch, DuckDuckGo scrape default, no readable script-rendered pages), the agent loop (no duplicate-call detection, unattended lanes cannot act), the chat UI (2 s whole-thread polling, no tool or reasoning view), channels (Telegram text only, OAuth renewal fails closed), storage and observability, with a competitor matrix and a five-phase plan with measurable gates. See [product audit](plans/product-audit-20261109.md). Phase 0 is implemented on branch `phase0-20261109`; see that branch for scope and verification.
+
 ## Automatic Mac/VPS updates — 4 November 2026 (source only)
 
 Implemented Sparkle integration, idle maintenance protocol, signed Engine bundles, encrypted stopped backup verification, same-epoch code rollback, guarded activation and release-event publication workflows. Remaining: reviewed first bootstrap, GitHub signing environments/feeds, actual VPS/systemd and two-notarized-build Mac updater acceptance. Existing operational ownership is unchanged. See [updates](updates.md).
