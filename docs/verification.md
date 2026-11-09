@@ -1,5 +1,46 @@
 # Verification — Tupies Engine 0.5
 
+## Approval/composer local installation — 5 November 2026
+
+The local Mac Engine now runs frozen source from **e363063** (PR42, stacked on Desktop PR41). All2,143 exact-candidate regressions,93 focused cases,201 syntax checks and32 guide pages pass; production-only staging separately boots with synthetic data and round-trips all8 document formats with the private API still401.
+
+The existing owner task finishes naturally before fresh idle reservation and one normal Stop. A complete AES-256-GCM stopped backup authenticates before raw extraction, preserves numeric owners/modes/directories/bytes and passes the supported sealed-credential/offline restore. The candidate starts held, verifies preservation and activates once. An independent post-activation check confirms the same process, unchanged original state/security/configuration and **8,822 original runtime entries**, **12 served assets** and one newer authenticated Home document update. Existing Desktop setup, model/provider metadata and app pairings remain intact.
+
+Installed provenance remains commit `e363063238d7660839f97eaf67343b6b62f41e62`,1527 allowlisted payload files and manifest SHA256 `d908f985bbaa4c7fd8a04b717739dbcd7ba133a1fd763903522680ef87cb0f86`; two separately generated Darwin notice files are the platform correction. Locked production dependencies have their own frozen manifest. Later publication-only documentation does not relabel or mutate the installed source. The old immutable source is retained; rollback uses a fresh backup of CURRENT DATA. The formerly missing Node executable is restored at its original path from the official22.23.4 archive with the exact recorded executable hash. No signed app/fallback, VPS, iPhone, new pairing, driver grant or maintenance-triggered paid inference change occurs. Protected locations and recovery receipts stay in the ignored local handoff.
+
+
+## Publication candidate — 5 November 2026
+
+The approval/composer changes are reconciled onto Desktop publication `145e33e` (PR41), preserving its newer Mission effort/history policies and existing local Desktop setup. This is a scoped stacked change; unrelated edits in the original working checkout are excluded. Official Node22.23.4 passes **2,143/2,143** exact-candidate regressions (97 sequential +2,046 concurrency4), **93/93** focused UI/action/native-boundary cases, **201 syntax checks** and **32 guide pages**; targeted assets and platform notices build successfully.
+
+The first isolated run used a dependency symlink, which the unchanged restricted document worker correctly refused; a fresh locked `npm ci` inside the checkout resolves those failures without widening filesystem permissions. The newer baseline also exposed a small-context overflow from the added automatic-mode instruction; the instruction is shortened and the unchanged context-boundary cases and full suite now pass. Repository platform notices remain unchanged; the local Mac payload retains separately generated Darwin notices. Operational installation is recorded separately after idle reservation and verified encrypted stopped backup/offline restore.
+
+
+## Compact chat composer — 5 November 2026 (source only)
+
+The saved review selector is a44×44px shield icon with a native keyboard-accessible picker, current-mode tooltip and screen-reader value. Add direction becomes a circular send-arrow icon occupying the normal Send slot; sending state uses its accessible name/aria-busy without changing its dimensions. Phone layout keeps a draft row and a shared toolbar, removes the standing active-review explanation and caps growing drafts at128px/25dvh. Errors/receipts, current-run review locks, saved preference, draft/attachment preservation and steering admission remain intact.
+
+Focused UI/navigation/mobile/steering checks pass **65/65**; syntax checks pass **199 modules** and the guide builds **32 pages**. Existing tests expecting visible Add direction/Sending text now assert the corresponding accessible name and busy state. This presentation-only change does not rerun or supersede the earlier Engine full-suite receipt.
+
+Actual disposable in-app acceptance at320/390/834/1280px measures **101px** phone composer height in both idle and active-direction states, **70px** idle/**68px** active desktop height,44×44px review/direction targets, one shared toolbar row and no horizontal overflow. Changing review mode preserves a typed draft; an actual direction is queued on the same synthetic run through the arrow icon, and Stop cancels it without starting another task. The viewport override is reset and the fixture/tab are closed afterward. Screenshot evidence contains synthetic data only. Physical iOS keyboard/VoiceOver behavior is not newly measured. No operational Engine/app/account data is changed.
+
+
+## Broader Approve for me — 5 November 2026 (source only)
+
+The automatic action table remains the fast path. An independent bounded reviewer now handles supported direct-owner-chat commands, browser buttons/forms/file transfers, assigned API/MCP actions, local Mac input and ordinary team/routine work. Explicit deletion/protected-security paths remain manual, and the reviewer escalates dangerous, out-of-scope or insufficiently understood effects. A successful-review counter does not force a later human prompt. The task prompt tells bots to call enabled tools for routine steps instead of asking for redundant permission in prose. See [security](security.md#approve-for-me) for the preserved access/install/grant boundaries and the direct-chat scope.
+
+Official unmodified Node **22.23.4** passes **2,094/2,094** full-run cases (97 sequential +1,997 concurrency4). Final small policy refinements are separately covered by **45/45** focused cases, including12 independent risk-review cases,17 actual disposable Chrome cases and8 native Engine/driver-fixture cases. All13 directly affected source/test hashes remain exact across that final focused run. Syntax checks pass **199 modules** and the guide rebuild passes **32 pages**. These are mutable-checkout checks alongside existing local changes, not frozen-release or installed-source equality claims.
+
+The focused cases verify a real host calculation without a manual prompt, malformed/unavailable/risky review fallback, unchanged Balanced/Strict behavior, Stop/current policy/tool revocation, explicit deletes and HTTP DELETE, exact service destination/method/credential-configuration binding, original owner context separated from teammate/scheduled text, browser form submission, and verified Mac fixture text/Send. Review uses the task's configured transport/model and is included in usage/Mission accounting. The result tool cannot execute actions. Large complete evidence falls back to manual rather than being silently truncated.
+
+An actual in-app disposable UI session runs **E2E automatic command** through the local provider protocol, shows the real result42 and **Approved automatically → Task completed**, with Approve for me selected and no approval card. The fixture is stopped and removed afterward. This verifies protocol/UI machinery with a deterministic reviewer, not real-model risk accuracy, real user apps or operational Atlas/Work acceptance.
+
+Earlier failures are retained: the initial fixture assertion expected the old manual reason; the first restricted test command could not open a loopback listener. Node22.23.1 full attempts also hit idle-sync and browser-retention fixture failures; the sync case subsequently passes alone and in a source-only temporary comparison, without a product/test timeout change. Trying the signed installed-app Node22.23.4 against this checkout fails18 native-image/document cases because of development-library code signatures. An unmodified official Node22.23.4 archive, SHA256 `c9e1dbc748b33ed2d14f42445191ecaf14c56259c7a9a26d0042c49ec2b66428`, resolves that environment mismatch and passes the full run. Installed app binaries/signatures are untouched.
+
+No production data, provider accounts, bot access settings, operational Engine/native installation, pairing or paid inference is changed. A future installation must use the normal idle/backup/update workflow. Automatic model review is fallible and does not add an OS sandbox around host commands.
+
+
+
 ## Local Mac desktop actions — 4 November 2026 (Mac Engine installed)
 
 The final isolated Desktop overlay on main `1ecbede` passes **2,129/2,129** regressions (96 sequential +2,033 concurrency4), including42 Desktop cases, **200 syntax checks**,32 guide pages and targeted asset/notices builds. All2,276 frozen source/asset/test hashes remain exact through the full suite and native acceptance. The final eight-step/two-approval native episode uses the verified installed driver against only the synthetic AppKit app; it verifies exact text/readback, Send/new transcript text and a real PNG delivered to the deterministic fixture model, completing without unverified actions.

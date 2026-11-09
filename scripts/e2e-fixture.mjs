@@ -16,6 +16,10 @@ const provider = http.createServer(async (req,res) => {
   try {
     const chunks=[]; for await (const chunk of req) chunks.push(chunk);
     const body=JSON.parse(Buffer.concat(chunks).toString()),input=body.input || [];
+    if((body.tools || []).some(tool=>tool.name==='action_review_result')) {
+      const review=JSON.parse(input.find(item=>item.role==='user').content);
+      return res.end(JSON.stringify(call('action_review_result',{actionDigest:review.actionDigest,decision:'approve',risks:[],reason:'Run the synthetic owner-requested local calculation.'})));
+    }
     if((body.tools || []).some(tool=>tool.name==='skill_review_result')) {
       const review=JSON.parse(input.find(item=>item.role==='user').content),learn=/E2E learning/i.test(review.request);
       return res.end(JSON.stringify(call('skill_review_result',{worthSaving:learn,name:learn?'verified-report-method':'',description:learn?'Create reports and check their saved contents.':'',reason:learn?'A reusable sequence for future reports.':'No reusable method needed.',instructions:learn?'## When to use\nCreating a repeatable report.\n## Inputs\nThe requested report specification.\n## Steps\n1. Write the report.\n2. Read the saved file.\n3. Confirm the listing.\n## Verification\nCheck the saved content against the request.\n## Limitations\nSynthetic fixture; real model quality is not measured.':'',evidenceCallIds:learn?review.work.slice(0,3).map(row=>row.callId):[] } )));
@@ -34,7 +38,10 @@ const provider = http.createServer(async (req,res) => {
     const results=input.slice(taskIndex+1).filter(item=>item.type==='function_call_output');
     const guidance=input.slice(taskIndex+1).filter(item=>item.role==='user' && text(item).startsWith('Additional owner guidance for this same task:')).map(text).join('\n');
     let result;
-    if(/E2E learning/i.test(task)){
+    if(/E2E automatic command/i.test(task)){
+      result=results.length?answer('The local calculation returned 42. Automatic review completed without a manual approval prompt.'):call('shell_run',{executable:process.execPath,args:['-e','console.log(6 * 7)']});
+    }
+    else if(/E2E learning/i.test(task)){
       const steps=[['workspace_write',{path:'outputs/learning-report.txt',content:'A synthetic report with verified saved contents.'}],['workspace_read',{path:'outputs/learning-report.txt'}],['workspace_list',{path:'outputs'}],['brain_write',{path:'methods/Report verification',content:'# Report verification\nRead the saved report before reporting success.'}],['memory_set',{key:'report-format',value:'Short Markdown reports.'}]];
       if(results.length<steps.length){await new Promise(resolve=>setTimeout(resolve,700));result=call(...steps[results.length]);}
       else result=answer('The report is ready. I checked the saved contents and kept the useful method for next time.');
@@ -107,6 +114,7 @@ await app.store.mutate(state=>{
   state.connections.push({id:'qa-provider',name:'Local QA fixture',type:'openai',baseUrl:`http://127.0.0.1:${provider.address().port}/v1`,secret:app.store.seal('disposable-qa-key'),defaultModel:'qa-model',status:'connected',models:[{id:'qa-model',name:'QA model'}]});
   for(const bot of state.bots){bot.connectionId='qa-provider';bot.model='qa-model';bot.approvalPolicy=bot.id==='bot_nova'?'strict':'balanced';bot.collaborators=state.bots.filter(other=>other.id!==bot.id).map(other=>other.id);}
   if(process.argv.includes('--learning'))state.bots[0].approvalPolicy='auto';
+  if(process.argv.includes('--action-review')){state.bots[0].approvalPolicy='auto';state.bots[0].tools=[...new Set([...state.bots[0].tools,'terminal'])];}
   if(process.argv.includes('--layout-stress')) {
     Object.assign(state.bots[0],{name:'ResearchAndDocumentationCoordinationAssistant',title:'DocumentationAndResearchForTheWholeWorkspace',description:'A synthetic teammate with deliberately long unbroken labels for mobile layout verification.'});
     state.bots.push({...structuredClone(state.bots[1]),id:'bot_hidden_layout',name:'ArchivedLayoutFixture',hidden:true});
