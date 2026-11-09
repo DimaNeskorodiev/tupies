@@ -140,7 +140,7 @@
   function toolKind(name,args={}) {
     if(/^delegate_task$/.test(name))return 'team';
     if(/^task_plan_/.test(name))return 'reasoning';
-    if(/^(web_search|http_fetch|browser_|brain_|memory_|skills_read|skills_file|skills_list)/.test(name)||name==='integration_call'&&/internet|page/.test(operation(name,args)))return 'research';
+    if(/^(web_search|web_extract|http_fetch|browser_|brain_|memory_|skills_read|skills_file|skills_list)/.test(name)||name==='integration_call'&&/internet|page/.test(operation(name,args)))return 'research';
     return 'analysis';
   }
   function promptKind(prompt) {
@@ -152,7 +152,7 @@
   function operation(name,args={}) {
     const tool=name==='integration_call'?text(args?.tool,100):text(name,100);
     if(name==='web_search'||name==='integration_call'&&/search/i.test(tool))return 'Searching the internet';
-    if(name==='http_fetch'||/^browser_(text|snapshot)$/.test(name)||name==='integration_call'&&/read|fetch|browse|crawl/i.test(tool))return 'Reading a page';
+    if(name==='http_fetch'||name==='web_extract'||/^browser_(text|snapshot)$/.test(name)||name==='integration_call'&&/read|fetch|browse|crawl/i.test(tool))return 'Reading a page';
     if(/^browser_/.test(name))return 'Browsing a page';
     if(/^workspace_(write|edit)$/.test(name))return 'Editing files';
     if(name==='workspace_delete')return 'Removing a file';
@@ -175,7 +175,7 @@
     if(!call.completed)return {label:'In progress',failed:false,parsed:null,complete:false,detail:'The tool started; no completion has been recorded.'};
     const parsed=parsePreview(call.completed.preview),value=plain(parsed.value)?parsed.value:null;
     const failed=Boolean(call.completed.error||value?.error||value?.timedOut||['failed','cancelled','timed_out','output_limit','interrupted'].includes(value?.status)||(Number.isInteger(value?.exitCode)&&value.exitCode!==0)||(call.tool==='http_fetch'&&Number.isInteger(value?.status)&&value.status>=400));
-    const label=failed?'Tool failed':call.tool==='http_fetch'&&Number.isInteger(value?.status)?`HTTP ${value.status}`:parsed.complete?'Result received':parsed.reason;
+    const label=failed?'Tool failed':(call.tool==='http_fetch'||call.tool==='web_extract')&&Number.isInteger(value?.status)?`HTTP ${value.status}`:parsed.complete?'Result received':parsed.reason;
     return {label,failed,parsed:parsed.value,complete:parsed.complete,detail:failed?text(typeof value?.error==='string'?value.error:'The tool returned an error.',180):parsed.complete?'Actual recorded tool result.':`${parsed.reason}. No structured result values were inferred.`};
   }
   function collectCalls(events) {
