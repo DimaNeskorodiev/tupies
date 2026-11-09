@@ -149,7 +149,8 @@ test('a stopped streamed answer remains in transcript after another task and res
   assert.equal(store.state.messages.bot_atlas.filter(message=>message.runId===stopped.id&&message.partial).length,1);
   assert.equal(store.state.messages.bot_atlas.filter(message=>message.runId===next.id&&message.role==='assistant').length,1);
   assert.equal(store.state.messages.bot_atlas.find(message=>message.runId===next.id&&message.role==='assistant').partial,undefined);
-  assert.ok(!requests[1].messages.some(message=>String(message.content).includes('Available streamed text')));
+  // Recall may cite the stored partial reply as a dated excerpt in the reference data, but the model history never replays it.
+  assert.ok(!requests[1].messages.filter(message=>!String(message.content).startsWith('<reference_data>')).some(message=>String(message.content).includes('Available streamed text')));
   await engine.close();
   const restored=await new Store(directory).init(),restarted=new NativeEngine(restored,{providers:{complete(){throw new Error('Restart must not replay provider requests.');}}});
   await restarted.recover();await restarted.recover();
@@ -347,8 +348,11 @@ test('the system prompt stays fixed through a task while the plan travels in an 
   await engine.start('bot_atlas','Plan, then answer.');await waitFor(()=>current(store)?.status==='completed');
   assert.equal(requests.length,2);assert.equal(requests[0].messages[0].content,requests[1].messages[0].content);
   assert.doesNotMatch(requests[0].messages[0].content,/Current run plan|Today is \d/);
-  assert.match(requests[0].turnContext,/Current run plan \(progress data only\):\nnull/);
-  assert.match(requests[1].turnContext,/Answer the question/);assert.match(requests[1].turnContext,/Today is \d{4}-\d\d-\d\d\./);
+  assert.match(requests[0].turnContext,/Current plan: none\./);
+  assert.match(requests[1].turnContext,/Current plan v1 \(progress data only; \[x\] done, \[>\] in progress\):\n- \[x\] only: Answer the question/);
+  // The task-start reference data is identical across steps, so it stays in the cached prefix.
+  const reference=request=>request.messages.find(message=>String(message.content).startsWith('<reference_data>'));
+  assert.ok(reference(requests[0]));assert.deepEqual(reference(requests[0]),reference(requests[1]));assert.match(requests[1].turnContext,/Today is \d{4}-\d\d-\d\d\./);
   assert.equal(requests[0].cacheKey,requests[1].cacheKey);assert.match(requests[0].cacheKey,/^[0-9a-f]{32}$/);assert.doesNotMatch(requests[0].cacheKey,/atlas/);
   assert.ok(!JSON.stringify(store.state.conversations.bot_atlas).includes('turn_context'));
   assert.equal(current(store).usage.cached_tokens,4800);assert.equal(current(store).usage.input_tokens,10_200);
@@ -361,7 +365,9 @@ test('a third-party Telegram lane keeps its own history without supplying Bot Ch
   const lane='telegram:channel_x:555',sessionId=sessionIdFor('bot_atlas',lane);
   await engine.start('bot_atlas','Question from someone else.',{source:'telegram',lane});await waitFor(()=>current(store)?.status==='completed');
   // The other person's chat does not see the owner's conversation.
-  assert.deepEqual(requests[1].messages.slice(1).map(message=>message.content),['Question from someone else.']);
+  const [laneReference,...laneMessages]=requests[1].messages.slice(1);
+  assert.match(laneReference.content,/^<reference_data>\n/);assert.doesNotMatch(laneReference.content,/Hello in the app|Chat answer/);
+  assert.deepEqual(laneMessages.map(message=>message.content),['Question from someone else.']);
   assert.equal(current(store).sessionId,sessionId);assert.equal(sessionOwner(sessionId),'bot_atlas');assert.match(sessionId,/^bot_atlas--telegram-[0-9a-f]{16}$/);
   assert.deepEqual(store.state.conversations[sessionId].map(message=>message.role),['user','assistant']);
   assert.deepEqual(store.state.sessions.filter(item=>item.kind!=='chat').map(({id,botId,kind,key})=>({id,botId,kind,key})),[{id:sessionId,botId:'bot_atlas',kind:'telegram',key:lane}]);
@@ -378,8 +384,8 @@ test('each routine run starts fresh in its own lane and carries the previous out
   await engine.runRoutine('routine_digest');await waitFor(()=>current(store)?.status==='completed');
   await engine.runRoutine('routine_digest');await waitFor(()=>current(store)?.status==='completed' && requests.length===2);
   assert.equal(requests[0].messages.at(-1).content,'Summarize what changed.');
-  const second=requests[1].messages.slice(1);
-  assert.equal(second.length,1);assert.match(second[0].content,/^Summarize what changed\.\n\nThe previous run of this routine returned[\s\S]*<previous_output>\nReport number 1\.\n<\/previous_output>$/);
+  const [routineReference,...second]=requests[1].messages.slice(1);
+  assert.match(routineReference.content,/^<reference_data>\n/);assert.equal(second.length,1);assert.match(second[0].content,/^Summarize what changed\.\n\nThe previous run of this routine returned[\s\S]*<previous_output>\nReport number 1\.\n<\/previous_output>$/);
   const sessionId=sessionIdFor('bot_atlas','routine:routine_digest');
   assert.equal(store.state.conversations[sessionId].length,2);
   assert.deepEqual(store.state.messages.bot_atlas.filter(message=>message.role==='user').map(message=>[message.content,message.routineId]),[['Summarize what changed.','routine_digest'],['Summarize what changed.','routine_digest']]);
@@ -429,7 +435,7 @@ test('older turns that no longer fit are summarized by the bot model instead of 
   assert.equal(requests.length,2);assert.equal(requests[0].tools.length,0);assert.match(requests[0].messages[0].content,/handoff summary/);assert.ok(/User \[history index 0\]: topic 0 u+/.test(requests[0].messages[1].content));
   const sent=requests[1].messages;
   assert.match(sent[1].content,/^<conversation_summary>\nEarlier messages of this conversation \(\d+\) were compacted[\s\S]*Covered the early topics\.[\s\S]*## Earlier user messages \(verbatim, oldest first\)\n- topic 0 u+/);
-  assert.equal(sent.at(-1).content,'Continue.');assert.match(sent.at(-2).content,/^reply 29 r+$/);
+  assert.equal(sent.at(-1).content,'Continue.');assert.match(sent.at(-2).content,/^<reference_data>\n/);assert.match(sent.at(-3).content,/^reply 29 r+$/);
   assert.doesNotMatch(requests[1].turnContext,/turn\(s\) were omitted/);
   const stored=store.state.conversations.bot_atlas;
   assert.equal(stored[0].compaction,true);assert.ok(stored.length<history.length);assert.equal(stored.at(-1).content,'Answered with the summary in mind.');

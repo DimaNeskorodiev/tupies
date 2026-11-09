@@ -198,9 +198,14 @@ test('a bot suggests a memory update from a routine without approval, cites mess
   t.after(async()=>{await engine.close();await fs.rm(directory,{recursive:true,force:true});});
   await engine.runRoutine('routine_review');
   const run=await waitFor(()=>store.state.runs.bot_atlas?.status==='completed' && store.state.runs.bot_atlas);
-  const names=requests[0].tools.map(tool=>tool.name);
-  assert.ok(names.includes('memory_propose'));assert.ok(names.includes('skills_propose'));
-  assert.match(requests[0].system || requests[0].instructions || JSON.stringify(requests[0].messages[0]),/memory_propose/);
+  // Suggestion tools are permitted by group and load on demand: session_search loads the memory group for later steps.
+  const names=requests[0].tools.map(tool=>tool.name),loaded=requests[1].tools.map(tool=>tool.name);
+  assert.ok(!names.includes('memory_propose'));assert.deepEqual(requests[0].tools.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum.filter(group=>['memory','skills'].includes(group)),['memory','skills']);
+  assert.ok(loaded.includes('memory_propose'));assert.ok(!loaded.includes('skills_propose'));
+  const permitted=engine.permittedTools({bot:store.state.bots.find(bot=>bot.id==='bot_atlas'),source:'routine',inference:{}}).map(tool=>tool.name);
+  assert.ok(permitted.includes('memory_propose'));assert.ok(permitted.includes('skills_propose'));
+  assert.doesNotMatch(JSON.stringify(requests[0].messages[0]),/memory_propose/);assert.match(requests[1].turnContext,/propose it with memory_propose/);
+  assert.ok(run.events.some(event=>event.type==='tools.loaded' && event.reason==='called' && event.groups[0]==='memory'));
   assert.equal(store.state.messages.bot_atlas.at(-1).content,'Suggested: pending.');
   assert.ok(!run.events.some(event=>event.type==='approval.request'),'a suggestion needs no approval, even under Strict policy');
   assert.ok(run.events.some(event=>event.type==='learning.proposed'));
@@ -208,7 +213,7 @@ test('a bot suggests a memory update from a routine without approval, cites mess
   const [proposal]=store.state.proposals;
   assert.equal(proposal.source.from,'routine');assert.ok(proposal.source.messageIds.includes('message_pref'));
   assert.equal(proposal.source.messageIds[0],store.state.messages.bot_atlas.find(message=>message.runId===run.id && message.role==='user').id);
-  assert.ok(engine.toolDefinitions({bot:store.state.bots.find(bot=>bot.id==='bot_nova'),source:'chat',inference:{}}).every(tool=>!/_propose$/.test(tool.name)),'no Memory or Skills tools, no suggestions');
+  assert.ok(engine.permittedTools({bot:store.state.bots.find(bot=>bot.id==='bot_nova'),source:'chat',inference:{}}).every(tool=>!/_propose$/.test(tool.name)),'no Memory or Skills tools, no suggestions');
 });
 
 test('session_search lists a period in order when the query is empty',()=>{
