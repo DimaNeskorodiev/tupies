@@ -23,3 +23,16 @@
 .searchbox .workspace-search-submit{display:grid;place-items:center;align-self:stretch;flex:none;min-width:24px;margin:-4px -6px -4px 0;padding:4px 6px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}
 .searchbox .workspace-search-submit:hover{background:var(--pearl-surface,#fff)}
 .searchbox .workspace-search-submit:focus-visible{outline:2px solid var(--accent,#708bb0);outline-offset:2px}
+/* Chats: a bot's chat sessions, opened from the chat header or menu. */
+.chat-sessions-toolbar{display:flex;align-items:flex-start;gap:12px;justify-content:space-between;margin-bottom:12px}
+.chat-sessions-toolbar .subtle-label{margin:0;flex:1}
+.chat-session-row{display:grid;grid-template-columns:minmax(0,1fr) 108px;align-items:center;gap:6px}
+.chat-session-row.is-active .conversation-search-result{border-color:var(--accent,#708bb0)}
+.chat-session-actions{display:flex;gap:2px;justify-content:flex-end}
+.chat-composer-wrap.is-reading{display:none}
+.chat-session-rename{grid-column:1/-1;display:flex;gap:8px}
+.chat-session-rename input{flex:1;min-width:0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--pearl-surface,#fff);color:var(--ink)}
+.chat-session-banner{flex-wrap:wrap}
+.chat-session-banner span{flex:1;min-width:0;overflow-wrap:anywhere}
+/* The phone header keeps its back/identity/menu layout; New chat stays in the chat menu there. */
+@media(max-width:760px),(max-height:500px) and (pointer:coarse){.chat-header .chat-new{display:none}.chat-sessions-toolbar{flex-direction:column}}

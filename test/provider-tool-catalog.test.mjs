@@ -44,7 +44,12 @@ test('complete native chat and Mission catalogs reach every provider protocol wi
       f.store.state.runs[bot.id]={id:runId,botId:bot.id,status:'completed',...(mission?{missionId:'catalog_mission'}:{})};
       f.store.state.missions ||= {};
       f.store.state.missions.catalog_mission={id:'catalog_mission',state:'running',leadBotId:bot.id,ownerEngineId:f.engine.missions.ownerEngineId,episodeRefs:[{runId,botId:bot.id}]};
-      const tools=f.engine.toolDefinitions({bot,source:'chat',runId,connection:f.connection,inference:{model:'fixture-model',images}});
+      const context={bot,source:'chat',runId,connection:f.connection,inference:{model:'fixture-model',images}};
+      // The first step offers only core tools; loading every available group offers the complete permitted catalog.
+      const core=f.engine.toolDefinitions(context),groups=core.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum;
+      assert.ok(core.filter(tool=>!tool.name.startsWith('mission_')).length<=16,`Core catalog: ${core.length}`);
+      const tools=f.engine.toolDefinitions({...context,loadedToolGroups:[...groups]}),permitted=f.engine.permittedTools(context);
+      assert.deepEqual(new Set(tools.map(tool=>tool.name)),new Set([...permitted.filter(tool=>!['lsp_query','lsp_list','lsp_stop'].includes(tool.name) || permitted.some(item=>item.name==='lsp_start')).map(tool=>tool.name),'tools_load']));
       assert.ok(tools.length>100,`Must exercise the old failure: ${tools.length}`);
       assert.ok(tools.length<=128,`Native catalog exceeds provider capacity: ${tools.length}`);
       assert.equal(new Set(tools.map(tool=>tool.name)).size,tools.length);
@@ -72,8 +77,11 @@ test('a bot with all tool groups completes through the real Engine and provider 
   const f=await fixture(t,'chatgpt'),bot=f.store.state.bots[0];
   const started=await f.engine.start(bot.id,'Return a synthetic catalog check.');await f.engine.tasks.get(started.id);
   const run=f.store.state.runs[bot.id];assert.equal(run.status,'completed',run.error);
-  // The separate final-memory review has its own single-tool catalog.
-  const taskRequests=f.requests.filter(request=>request.tools?.length && f.offered(request).some(tool=>tool.name==='browser_open'));assert.equal(taskRequests.length,1);
-  for(const request of taskRequests){assert.ok(f.offered(request).length>100);assert.ok(f.offered(request).some(tool=>tool.name==='browser_handoff'));}
+  // The separate final-memory review has its own single-tool catalog. The task offers core tools and every group on demand.
+  const taskRequests=f.requests.filter(request=>request.tools?.length && f.offered(request).some(tool=>tool.name==='tools_load'));assert.equal(taskRequests.length,1);
+  for(const request of taskRequests){
+    const offered=f.offered(request);assert.ok(offered.length<=20,`Core catalog: ${offered.length}`);assert.ok(!offered.some(tool=>tool.name==='browser_open'));
+    assert.deepEqual(offered.find(tool=>tool.name==='tools_load').parameters.properties.groups.items.enum,['files','documents','memory','skills','team','automation','setup','integrations','quality','terminal','browser','coding','desktop','workshop','engine_workshop']);
+  }
   assert.ok(f.store.state.messages[bot.id].some(message=>message.role==='assistant' && message.content==='Catalog received.'));
 });

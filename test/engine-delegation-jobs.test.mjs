@@ -7,6 +7,7 @@ import { Store } from '../lib/store.mjs';
 import { NativeEngine, isActive } from '../lib/engine.mjs';
 import { callFingerprint } from '../lib/work-quality.mjs';
 import { DelegationJobs } from '../lib/delegation-jobs.mjs';
+import { groupGuidance } from '../lib/tool-catalog.mjs';
 
 const call=(id,name,args)=>({id,name,arguments:args});
 const reply=text=>({text,toolCalls:[]});
@@ -48,7 +49,8 @@ test('twelve independent jobs enqueue across model turns before collection and r
   assert.equal(new Set(parent(store).delegationJobs.map(job=>job.id)).size,12);
   const acknowledgements=requests.filter(request=>!worker(request)).flatMap(request=>request.messages.filter(message=>message.role==='tool' && message.tool_call_id?.startsWith('dispatch-')).map(message=>JSON.parse(message.content)));
   assert.ok(acknowledgements.every(ack=>ack.accepted===true && ack.completed===false && ack.status==='queued' && !ack.runId));
-  assert.match(requests[0].messages[0].content,/enqueue every request with wait:false before collecting/);
+  // Collaboration protocol arrives with the team group, which the system prompt names.
+  assert.match(requests[0].messages[0].content,/load the team group/);assert.match(groupGuidance('team',new Set(['delegate_task','delegation_status'])),/enqueue every request with wait:false before collecting/);
 });
 
 test('failed children retain their actual failure while successful sibling replies remain collectable',async t=>{

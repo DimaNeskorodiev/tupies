@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MISSION_START_DEFINITION, validateMissionIntent } from '../lib/mission-intent.mjs';
+import { MISSION_INTENT_GUIDANCE, MISSION_START_DEFINITION, validateMissionIntent } from '../lib/mission-intent.mjs';
 
 const owner = { id: 'owner_message', content: 'Run the launch as a staged process with a review checkpoint between phases. Produce a market research report. Build the release candidate from the report. Deliver an independently verified rollout package after the build.' };
 const decision = () => ({ intent: 'clear_goal', ownerMessageId: owner.id, scope: {
@@ -65,7 +65,9 @@ test('bounded decision fields cannot hide malformed or oversized evidence', () =
 });
 
 test('model instructions distinguish small autonomous tasks from large durable processes', () => {
-  const description = MISSION_START_DEFINITION.description;
+  // The recognition policy is system-prompt guidance while mission_start is offered; the description stays short.
+  const description = MISSION_INTENT_GUIDANCE;
+  assert.ok(MISSION_START_DEFINITION.description.length <= 200);
   for (const phrase of ['Ordinary chat is the default', 'domain/product comparison', 'one report/document', 'login, approvals', 'When uncertain', 'Negated, quoted, hypothetical', 'at least three distinct']) assert.ok(description.includes(phrase), phrase);
   assert.equal(MISSION_START_DEFINITION.parameters.additionalProperties, false);
 });
