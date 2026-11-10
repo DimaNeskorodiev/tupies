@@ -9,6 +9,10 @@ Every bot has two levels of memory by default. Both belong to the `memory` tool 
 
 Keep core memory short. A fact that needs more than a sentence or two belongs in a note, and a core fact can point to it, for example `client-acme: Main contact Ada, details in [[projects/acme]]`.
 
+## Undoing a remembered fact
+
+When a fact is saved over an earlier value, the entry keeps that earlier value (one level, in `previous`). The owner can undo the save from the **I'll remember that** card in the chat: `POST /api/bots/{id}/memory/{entryId}` with `{undo:true, revision}` restores the earlier value, or removes the fact when it was new. The revision must be the one the card was created with, so a fact that changed again is never overwritten (HTTP 409). The bot must be idle, as for other memory edits.
+
 ## How the levels work together
 
 - **Pinned facts.** Pin a fact that nearly every task needs, in the Memory dialog (pin button or *Pin this fact*) or with `memory_set` and `pinned: true`. Pinned facts always come first in the prompt. Updating a fact keeps its pin unless `pinned` is given; up to 20 facts can be pinned.

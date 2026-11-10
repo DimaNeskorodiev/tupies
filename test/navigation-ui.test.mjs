@@ -55,7 +55,7 @@ test('every settings section remains directly reachable with a collapsed section
     assert.match(h.app.innerHTML,new RegExp(`class="settings-tab active" data-nav="/${tab}" aria-current="page"`),view);
     assert.match(h.app.innerHTML,/<details class="pearl-advanced settings-section-picker" data-disclosure="settings-sections">/,view);
     const tabs=h.app.innerHTML.match(/<nav class="settings-tabs"[\s\S]*?<\/nav>/)[0];
-    assert.deepEqual([...tabs.matchAll(/data-nav="\/([^\"]+)"/g)].map(match=>match[1]),['skills','connections','integrations','coding','desktop','channels','sync','activity','help'],view);
+    assert.deepEqual([...tabs.matchAll(/data-nav="\/([^\"]+)"/g)].map(match=>match[1]),['skills','connections','integrations','coding','desktop','channels','sync','usage','activity','help'],view);
     assert.match(h.app.innerHTML,/data-nav="\/settings">[\s\S]*All settings/,view);
     assert.match(h.app.innerHTML,/data-nav="\/settings" aria-current="page"/,view);
   }

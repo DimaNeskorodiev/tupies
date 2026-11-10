@@ -1,0 +1,16 @@
+/* Task usage under a finished reply: one quiet line, details on request. No motion. */
+.run-usage{margin:8px 0 0;min-width:0;max-width:100%;color:var(--muted,#737b89);font-size:12px;line-height:1.4}
+.run-usage>summary{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 0;min-height:28px;padding:2px 0;cursor:pointer;list-style:none;font-variant-numeric:tabular-nums;border-radius:8px}
+.run-usage>summary::-webkit-details-marker{display:none}
+.run-usage>summary>span{white-space:nowrap}
+.run-usage>summary>span+span::before{content:"·";margin:0 6px;opacity:.6}
+.run-usage>summary::after{content:"";flex:none;width:6px;height:6px;margin-left:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.55}
+.run-usage[open]>summary::after{transform:rotate(-135deg) translateY(-1px)}
+.run-usage>summary:hover{color:var(--ink,#29313d)}
+.run-usage>summary:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:3px}
+.run-usage>dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 16px;margin:6px 0 0;padding:10px 12px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:12px;background:var(--pearl-soft,rgba(120,130,150,.06))}
+.run-usage>dl>div{min-width:0}
+.run-usage dt{font-size:11px;opacity:.8}
+.run-usage dd{margin:0;color:var(--ink,#29313d);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.run-usage>p{margin:6px 0 0;font-size:11px}
+@media (max-width:760px){.run-usage>summary{min-height:44px}.run-usage>dl{grid-template-columns:repeat(2,minmax(0,1fr))}}
