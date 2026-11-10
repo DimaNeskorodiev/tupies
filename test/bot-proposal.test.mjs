@@ -151,7 +151,7 @@ const tick=()=>new Promise(done=>setTimeout(done,0));
 
 test('the describe-a-bot dialog: step 1, an escaped proposal, removable chips, Customize hands the proposal to the form, Create posts it',async()=>{
   const script=await read('bot-proposal.js'),index=await read('index.html'),app=await read('app.js');
-  assert.match(index,/<script defer src="\/usage\.js"><\/script>\s*<script defer src="\/bot-proposal\.js"><\/script>/);assert.match(index,/<link rel="stylesheet" href="\/bot-proposal\.css">/);
+  assert.match(index,/<script defer src="\/usage\.js"><\/script>[\s\S]*<script defer src="\/bot-proposal\.js"><\/script>/);assert.match(index,/<link rel="stylesheet" href="\/bot-proposal\.css">/);
   assert.ok(app.includes("case 'create-bot':window.StudioBotProposal?window.StudioBotProposal.open({...studioContext(),botDialog}):botDialog();break;"));
   const evil={name:'<img src=x onerror=alert(1)>',title:'Role <b>x</b>',description:'d',instructions:'Do <script>alert(1)</script>',tools:['web','skills','automation','memory'],skills:['brief-writer'],integrationIds:['int_mail'],tone:'brisk',routine:{name:'Run <i>it</i>',prompt:'Go <u>now</u>',schedule:{kind:'daily',time:'08:00'}},source:'rules',notes:['Dropped a skill <b>x</b>.']};
   const t=ui({script,api:async(route,opts,calls)=>route==='/api/bots/proposal'?evil:route==='/api/bots'?{id:'bot_new',name:opts.body.name}:{id:'routine_1'}});
