@@ -161,6 +161,8 @@ The dollar figure is an estimate and appears only when **every** model call of t
 
 The chat shows the summary as one quiet line under a finished reply (for example `2 steps · 25K tokens · 49% cached · ≈ $0.015 · 1 s`), with the breakdown and the price source on click. A low cached share on a long task is the first sign of a prompt-cache problem.
 
+A routine that finishes without any model call (a report-mode workflow of script, fetch, read and JSON steps) still gets a summary, with `modelCalls: 0`, zero tokens and its duration, so the chat can say "0 model calls". A task that simply has no meter has no summary. Script runs started by the owner from the app involve no model and record no usage.
+
 ## Owner controls
 
 - **Settings › Models › provider › Advanced endpoint settings › Context window (tokens):** for local or compatible services that run a model with a smaller context than it supports (for example Ollama's `num_ctx`). Ollama does not report its window, so set it there.

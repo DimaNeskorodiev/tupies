@@ -65,7 +65,7 @@ Two principles from xAI's design account are worth adopting outright: **delegati
 | G4 | **Tones of voice** | A short list per bot (plain, warm, brisk, playful) next to the companion picker, plus a free-text field. |
 | G5 | **Avatar states** | The companion shows working, waiting for you, blocked, and finished-unread, in the roster and on the phone. |
 
-### Core (M each)
+### Core (M each) — G6, G7 and G8 built on 10 November 2026 (source only)
 
 | # | Item | What the owner sees | Notes |
 | --- | --- | --- | --- |

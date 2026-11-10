@@ -90,6 +90,12 @@ Each occurrence calls `scripts_run` through the same task, tool-capability and e
 
 The existing checkpoint rules retain successful preparation steps for that task. Recovery never blindly repeats an uncertain command; a later scheduled occurrence is a new run and needs its own approval. See [Workspaces and scripts](workspaces.md) for package naming, source manifests, dependency and sync boundaries.
 
+## Optional daily brief from the chief of staff
+
+**Settings → Chief of staff** has an **Add a daily brief** button. It creates one ordinary routine on the chief of staff bot: "Daily brief", every day at 08:30 in the workspace time zone, enabled. Nothing is created until you press it, and pressing it again returns the existing routine instead of a second one (`POST /api/settings/chief-of-staff/brief`, owner session and CSRF token as for every owner route). Edit, pause or delete it like any routine; the settings row then reads "Daily brief is on · every day at 08:30 · Edit".
+
+Each morning the bot calls the read-only `team_activity` tool for the last 24 hours and writes at most ten lines: what finished, what failed and why, what waits for you and what it suggests next. When nothing happened and nothing waits it answers with the single line "Nothing to report since yesterday." The tool is available in this routine because it is the chief of staff's own routine; it grants nothing and cannot act on other bots.
+
 ## Research behind the design
 
 - [Windmill AI Flow Chat](https://www.windmill.dev/docs/flows/ai_flows) builds reusable scripts, loops and branches from a natural-language request. This supports preparing a stable procedure once while retaining model reasoning where the task needs it.

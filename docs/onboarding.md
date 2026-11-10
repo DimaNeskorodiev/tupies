@@ -10,6 +10,10 @@ Once connected, Dashboard offers **Continue setup**. The three-step guide is als
 
 The short map explains Dashboard, Bots, Missions and Routines. Chat guidance points to questions, approval cards and Stop. **Set up later** dismisses the Dashboard banner without changing bots, providers, tools or runs; the guide remains accessible.
 
+## Describe a bot
+
+**New bot** (Bots, the bot switcher, empty states) opens a one-field dialog, **What should this bot do?** Describe the job in a sentence, or tap an example, and choose **Propose a bot**. The engine drafts a proposal: name, role, instructions, tools, skills, connected services, optionally a routine. Nothing is created yet. You can edit the name, role and instructions, remove any tool, skill or service, and choose whether to also set up the suggested routine (off by default). **Create bot** makes the bot with the ordinary bot API and opens its chat with the message field focused; **Customize** opens the full form pre-filled with the proposal; **Set up by hand** opens the form unchanged. With no provider connected the bot is still created, exactly as the form does, and the dialog says so. The proposal never suggests Manage Tupies (setup), and suggests Terminal or Browser only when the description clearly needs them. See Chat controls, "Describe a bot".
+
 ## Starter roles
 
 New workspaces contain **Roki · Chief of Staff**, **Ops · Tupies operator**, and the existing **Scout · Research analyst** specialist. The guide focuses on the first two roles. The stable internal IDs remain compatible with earlier workspaces. Existing saved bot names, roles, instructions and skill assignments are never migrated to these defaults.
