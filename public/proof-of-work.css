@@ -1,0 +1,28 @@
+/* What the engine saw a finished task do: one quiet line under the reply; a short list when something needs a look. No motion. */
+.proof-of-work{margin:8px 0 0;min-width:0;max-width:100%;color:var(--muted,#737b89);font-size:12px;line-height:1.4}
+.proof-of-work.checked,.proof-of-work>summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 0;min-height:28px;padding:2px 0;font-variant-numeric:tabular-nums}
+.proof-of-work>summary{cursor:pointer;list-style:none;border-radius:8px}
+.proof-of-work>summary::-webkit-details-marker{display:none}
+.proof-of-work>summary:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:3px}
+.proof-of-work>summary:hover{color:var(--ink,#29313d)}
+.proof-of-work .proof-lead{margin-right:6px;font-weight:600}
+.proof-of-work.checked>span:not(.proof-mark):not(.proof-lead),.proof-of-work>summary>span:not(.proof-mark):not(.proof-lead){overflow-wrap:anywhere}
+.proof-of-work.checked>span:not(.proof-mark):not(.proof-lead)+span:not(.proof-lead)::before,.proof-of-work>summary>span:not(.proof-mark):not(.proof-lead)+span::before{content:"·";margin:0 6px;opacity:.6}
+.proof-of-work .proof-note{opacity:.8}
+/* A check mark drawn with borders; a small ring for the needs-a-look state. */
+.proof-of-work.checked .proof-mark{flex:none;width:4px;height:8px;margin:0 9px 2px 3px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg)}
+.proof-of-work.attention{color:var(--ink,#29313d)}
+.proof-of-work.attention .proof-mark{flex:none;box-sizing:border-box;width:9px;height:9px;margin-right:7px;border:1.5px solid var(--amber,#b07a1f);border-radius:50%}
+.proof-of-work.attention>summary::after{content:"";flex:none;width:6px;height:6px;margin-left:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.55}
+.proof-of-work.attention[open]>summary::after{transform:rotate(-135deg) translateY(-1px)}
+.proof-detail{margin:6px 0 0;padding:10px 12px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:12px;background:var(--pearl-soft,rgba(120,130,150,.06))}
+.proof-detail ul{margin:0;padding-left:18px}
+.proof-detail li{overflow-wrap:anywhere}
+.proof-detail li+li{margin-top:2px}
+.proof-detail p{margin:6px 0 0;color:var(--muted,#737b89)}
+.proof-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.proof-actions .proof-redo{min-height:32px;padding:0 12px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:10px;background:var(--pearl-soft,rgba(255,255,255,.7));color:var(--ink,#29313d);font-size:12px;font-weight:600}
+.proof-actions .proof-redo:hover:not(:disabled){border-color:var(--purple,#706390)}
+.proof-actions .proof-redo:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:2px}
+.proof-status{color:var(--muted,#737b89)}
+@media (max-width:760px){.proof-of-work>summary{min-height:44px}.proof-actions .proof-redo{min-height:44px}}
