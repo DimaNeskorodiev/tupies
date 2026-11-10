@@ -38,7 +38,7 @@ async function packageFiles(h) {
   return {id:SCRIPT,title:'API fixture program',purpose:'Exercise descriptive owner registration without executing source.',interpreter:'node',entrypoint:'main.mjs',files:[{path:'main.mjs',sha256:sha(code)},{path:'README.md',sha256:sha(readme)}],inputs:[],outputs:[],dependencies:[]};
 }
 
-test('workspace and script owner routes retain authentication, CSRF and origin checks without exposing a run endpoint',async t=>{
+test('workspace and script owner routes retain authentication, CSRF and origin checks and run nothing without an explicit action',async t=>{
   const h=await fixture(t),base=`/api/bots/${BOT}`;
   for(const route of [`${base}/workspace`,`${base}/scripts`,`${base}/scripts/${SCRIPT}`])assert.equal((await h.request(route,{authenticated:false})).status,401);
   for(const [route,method] of [[`${base}/workspace`,'POST'],[`${base}/scripts`,'PUT']]) {
@@ -48,7 +48,9 @@ test('workspace and script owner routes retain authentication, CSRF and origin c
   }
   const registration=await packageFiles(h);
   assert.equal((await h.request(`${base}/scripts`,{method:'PUT',data:registration})).status,200);
-  for(const route of [`${base}/scripts`,`${base}/scripts/${SCRIPT}`,`${base}/scripts/run`])assert.equal((await h.request(route,{method:'POST',data:{scriptId:SCRIPT,args:[]}})).status,405);
+  // Running needs an explicit owner action on an exact version (test/saved-scripts-api.test.mjs); anything else runs nothing.
+  assert.equal((await h.request(`${base}/scripts`,{method:'POST',data:{scriptId:SCRIPT,args:[]}})).status,405);
+  for(const route of [`${base}/scripts/${SCRIPT}`,`${base}/scripts/run`])assert.equal((await h.request(route,{method:'POST',data:{scriptId:SCRIPT,args:[]}})).status,400);
   assert.equal((await h.request(`${base}/scripts/${SCRIPT}/run`,{method:'POST',data:{}})).status,404);
   assert.equal(await absent(path.join(h.root,'unexpected-api-execution')),true);
   assert.equal(h.app.runtime.backgroundProcesses.entries.size,0);assert.equal(h.app.store.state.runs[BOT],undefined);
