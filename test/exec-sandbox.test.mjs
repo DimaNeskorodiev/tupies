@@ -16,11 +16,11 @@ const until=async(predicate,label)=>{for(let i=0;i<2000;i++){if(await predicate(
 const alive=pid=>{try{process.kill(pid,0);return true;}catch{return false;}};
 
 test('the registry holds Engine code only and the bot field accepts only registered backends',()=>{
-  assert.deepEqual(EXECUTION_BACKEND_IDS,['host','sandbox']);
+  assert.deepEqual(EXECUTION_BACKEND_IDS,['host','sandbox','docker','ssh']);
   assert.equal(validateExecution(undefined),null);assert.equal(validateExecution(null),null);
   assert.equal(validateExecution({backend:'host'}),null,'host is the default and is stored as no setting');
   assert.deepEqual(validateExecution({backend:'sandbox'}),{backend:'sandbox'});
-  for(const bad of ['sandbox',{backend:'docker'},{backend:'sandbox',image:'x'},{backend:'../lib/x.mjs'},[],{backend:1}])
+  for(const bad of ['sandbox',{backend:'vm'},{backend:'sandbox',image:'x'},{backend:'../lib/x.mjs'},[],{backend:1}])
     assert.throws(()=>validateExecution(bad),error=>error.status===400,JSON.stringify(bad));
   assert.equal(selectedBackend({}),'host');assert.equal(selectedBackend({execution:{backend:'sandbox'}}),'sandbox');
   assert.equal(selectedBackend({execution:{backend:'docker'}}),'docker','an unknown stored id is kept so it reports as unavailable, never as host');
@@ -67,7 +67,7 @@ test('availability is reported honestly per platform and cached',async()=>{
   let now=0;const failing=createSandboxBackend({platform:'darwin',seatbelt:process.execPath,clock:()=>now,runProbe:async()=>({ok:false,reason:'denied'})});
   assert.match((await failing.available()).reason,/sandbox-exec is not working: denied/);
   const status=await executionStatus();
-  assert.deepEqual(status.map(item=>item.id),['host','sandbox']);assert.equal(status[0].available,true);
+  assert.deepEqual(status.map(item=>item.id),['host','sandbox','docker','ssh']);assert.equal(status[0].available,true);
   assert.equal(status[1].available,seatbelt || (process.platform==='linux' && status[1].available));
   if(!status[1].available)assert.ok(status[1].reason.length>0);
 });
