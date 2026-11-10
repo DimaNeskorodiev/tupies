@@ -21,7 +21,7 @@ const status=linux?await sandboxBackend.available():{ok:false,reason:'not Linux'
 const skipLinux=!linux?'bubblewrap runs only on Linux.':status.ok?false:`bubblewrap cannot run here: ${status.reason}`;
 if(linux)console.log(`# Linux sandbox self-test: ${status.ok?'ready':status.reason}`);
 const until=async(predicate,label)=>{for(let i=0;i<2000;i++){if(await predicate())return;await new Promise(resolve=>setTimeout(resolve,5));}throw new Error(`Timed out waiting for ${label}.`);};
-const notFound=/No such file or directory|Permission denied|Read-only file system/;
+const notFound=/No such file or directory|Directory nonexistent|Permission denied|Read-only file system/;
 
 // ---- Availability reasons (any platform) ----
 async function fakeTools(t,{bwrapStderr=null,setpriv=false}={}) {
