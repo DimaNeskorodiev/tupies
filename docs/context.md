@@ -153,6 +153,14 @@ The deterministic regression fixtures reproduce a requirement that the former mi
 
 Cached prompt tokens are added up per task in `run.usage.cached_tokens`. Each run also records `run.context`: `{window, source, compactAt, tokens}`.
 
+### Task usage and cost
+
+`lib/run-usage.mjs` reduces every model call to four token counts, whatever the provider's format: new input, cached input, cache writes and output (plus reasoning tokens where reported). They add up in `run.metering`. When a task ends, a compact summary is stored on the final reply (`message.usage`), in the run history (`metering`) and in the engine log (`run.finished`): steps, tool calls, model calls, the four counts, the share of prompt tokens served from the cache, the duration, the model, and an estimate in dollars.
+
+The dollar figure is an estimate and appears only when **every** model call of the task has a price from a named source, in this order: the cost the provider itself reports (`usage.cost`; OpenRouter is asked for it), the owner's price for the connection (`connection.prices`, no UI yet), or the list price in the provider's own model catalog (OpenRouter publishes one; it is stored when the model list is refreshed). There is no built-in price table. A task with one unpriced call shows tokens only, never a partial sum. ChatGPT subscription connections are never priced. Summaries, action reviews and background memory/skill reviews are separate model calls and are not yet included in a task's total.
+
+The chat shows the summary as one quiet line under a finished reply (for example `2 steps · 25K tokens · 49% cached · ≈ $0.015 · 1 s`), with the breakdown and the price source on click. A low cached share on a long task is the first sign of a prompt-cache problem.
+
 ## Owner controls
 
 - **Settings › Models › provider › Advanced endpoint settings › Context window (tokens):** for local or compatible services that run a model with a smaller context than it supports (for example Ollama's `num_ctx`). Ollama does not report its window, so set it there.

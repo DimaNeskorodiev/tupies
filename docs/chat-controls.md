@@ -84,6 +84,12 @@ The view uses actual run events and bounded tool-result previews (`public/activi
 
 The pearl glass redesign was deployed to both engines serving the Mac and iOS apps on 29 October 2026. Existing views need **Reload** to fetch the updated web assets; signed Mac7/iPhone7 apps, their profiles/pairings and the bundled fallback v10 were unchanged. The [activity preview](../prototypes/activity-glass-preview.html) uses this same production renderer with clearly labeled illustrative data, without running a bot or contacting a service. Exact rollout and disposable browser/WebKit evidence are recorded in [verification](verification.md).
 
+### Task usage and check-ins
+
+Under each finished reply, one line shows what the task used: steps, tokens, the share of the prompt served from the provider's cache, an estimated cost when the model has a known price, and the time. Clicking it shows new input, cached input, output, tool and model calls, the model and where the price came from. No cost is shown for subscription connections or models without a price. `public/run-usage.js` + `.css` render it from numbers only.
+
+When a bot reaches the optional task budget set in its Advanced settings, or its plan has not moved for 24 tool steps, the chat shows a plain **Continue / Stop** card instead of the generic approval card with its raw request details.
+
 ## Hiding bots
 
 Open the bot profile’s **Settings → Model → Advanced settings → Hide from the sidebar and Bots** to hide a bot. Hidden bots keep their chats, routines, channels and team roles and still work; **Bots › Hidden** lists them and the same button shows them again.
