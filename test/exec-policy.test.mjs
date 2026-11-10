@@ -156,7 +156,7 @@ test('API: GET /api/execution reports the backends and the owner sets where a bo
   const cookie=setup.headers.get('set-cookie').split(';')[0],{csrf}=await setup.json();
   const request=(endpoint,method,body)=>fetch(url+endpoint,{method,headers:{'content-type':'application/json',Cookie:cookie,'X-CSRF-Token':csrf},...(body?{body:JSON.stringify(body)}:{})});
   const status=await (await request('/api/execution','GET')).json();
-  assert.deepEqual(status.backends.map(item=>item.id),['host','sandbox']);
+  assert.deepEqual(status.backends.map(item=>item.id),['host','sandbox','docker','ssh']);
   assert.deepEqual(Object.keys(status.backends[1]).sort(),['available','id','isolated','label','reason','summary']);
   assert.equal(status.backends[0].available,true);assert.equal(status.backends[1].label,'Sandbox on this computer (recommended)');
   assert.equal(status.backends[1].available,seatbelt || status.backends[1].available);
@@ -168,7 +168,7 @@ test('API: GET /api/execution reports the backends and the owner sets where a bo
   response=await request(`/api/bots/${bot.id}`,'PATCH',{executionBackend:'host'});
   const cleared=await response.json();assert.equal(Object.hasOwn(cleared,'execution'),false);assert.equal(Object.hasOwn(cleared,'executionBackend'),false);
   assert.deepEqual((await (await request(`/api/bots/${bot.id}`,'PATCH',{executionBackend:'sandbox'})).json()).execution,{backend:'sandbox'});
-  for(const bad of [{execution:{backend:'docker'}},{execution:'sandbox'},{execution:{backend:'sandbox',path:'/'}},{executionBackend:'ssh'}])
+  for(const bad of [{execution:{backend:'vm'}},{execution:'sandbox'},{execution:{backend:'sandbox',path:'/'}},{executionBackend:'kubernetes'}])
     assert.equal((await request(`/api/bots/${bot.id}`,'PATCH',bad)).status,400,JSON.stringify(bad));
   assert.deepEqual(app.store.state.bots.find(item=>item.id===bot.id).execution,{backend:'sandbox'});
 });

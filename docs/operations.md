@@ -20,6 +20,8 @@ Control-C stops the server and cancels active Tupies tasks. Approved external ac
 | STUDIO_APNS_KEY_ID | unset | Key identifier for that APNs key. |
 | STUDIO_APNS_TEAM_ID | unset | Apple Developer team that signs the native app. |
 | STUDIO_APNS_TOPIC | dev.tupies.app | App bundle identifier for native push delivery. Must match the installed app and APNs key. |
+| STUDIO_EXEC_DOCKER_IMAGE | nikolaik/python-nodejs:python3.12-nodejs22-slim | Image for the "Docker container" choice of Where commands run; must already be on this computer (the engine never pulls). Also `STUDIO_EXEC_DOCKER_MEMORY` (2g) and `STUDIO_EXEC_DOCKER_PIDS` (512). See [Terminal](terminal.md). |
+| STUDIO_EXEC_SSH_HOST / _USER / _PORT / _KEY / _DIR | unset / unset / 22 / agent / tupies | The machine behind "Another machine (SSH)": host, remote account, port, private key file (optional) and remote base folder. Both host and user are required. Host keys must be trusted beforehand. |
 | STUDIO_APNS_ENVIRONMENT | sandbox | Sandbox for development-signed iPhone builds; production for distribution. Must match the key and app. |
 
 `npm start` and `npm run dev` load `.env` if it exists. A direct `node server.mjs` invocation only uses the shell environment; use `node --env-file=.env server.mjs` to load a file explicitly. Compose reads its interpolation `.env` separately. Provider credentials belong in the app's sealed connection store, not a committed environment file.
