@@ -1,8 +1,8 @@
 # Product roadmap
 
-## Exa web search and page reading — 9 November 2026 (source only)
+## Exa web search and page reading — 9 November 2026 (installed on Mac and VPS)
 
-The owner chose [Exa](exa.md) as the default web search and page reader, with DuckDuckGo kept as the fallback. One Exa connection in Settings → Integrations serves every bot with Web tools: `web_search` gains excerpts and domain/category/date filters, and the new `web_extract` reads pages and PDFs as clean text with paging and live crawl. Every Exa failure falls back with provenance. This delivers part of audit Phase 2 item 1 (an API-key search backend as the first choice, filters) and item 2 (`web_extract` with Markdown output and paging). Remaining from Phase 2: provider-native search, a search cache, citations in replies and the fetch-to-browser escalation. Not installed on the Mac or VPS Engines; a live check with the owner's key is pending.
+The owner chose [Exa](exa.md) as the default web search and page reader, with DuckDuckGo kept as the fallback. One Exa connection in Settings → Integrations serves every bot with Web tools: `web_search` gains excerpts and domain/category/date filters, and the new `web_extract` reads pages and PDFs as clean text with paging and live crawl. Every Exa failure falls back with provenance. This delivers part of audit Phase 2 item 1 (an API-key search backend as the first choice, filters) and item 2 (`web_extract` with Markdown output and paging). Remaining from Phase 2: provider-native search, a search cache, citations in replies and the fetch-to-browser escalation. Installed on both engines on 9 November 2026 as Engine beta 9 (main `7b32a06`, tree-equal to the tested `ad42fab`). Remaining: the owner adds an Exa key, then a live check of quality, latency and cost.
 
 ## Refused sites and stalled plans — 9 November 2026 (installed on Mac and VPS)
 
