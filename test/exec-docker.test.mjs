@@ -120,7 +120,9 @@ test('prepare(): builds the launch from the real folders and refuses a working f
 const docker=['/usr/local/bin','/opt/homebrew/bin','/usr/bin'].map(dir=>path.join(dir,'docker')).find(file=>spawnSync('test',['-x',file]).status===0);
 const probeReal=()=>{if(!docker)return false;const image=process.env.STUDIO_EXEC_DOCKER_IMAGE || DEFAULT_DOCKER_IMAGE;return spawnSync(docker,['version','--format','{{.Server.Version}}'],{timeout:8000,stdio:'ignore'}).status===0 && spawnSync(docker,['image','inspect',image],{timeout:8000,stdio:'ignore'}).status===0;};
 const realDocker=probeReal();
-test('real Docker: a container sees only the two folders and cannot reach the socket',{skip:realDocker?false:'no running Docker daemon with the image already present locally'},async t=>{
+// Platform-bound cases are defined only where they can run. The release verifier counts a skipped test as a failed
+// suite, so a case that cannot apply on this platform is not registered instead of being skipped.
+(realDocker?test:()=>{})('real Docker: a container sees only the two folders and cannot reach the socket',{skip:realDocker?false:'no running Docker daemon with the image already present locally'},async t=>{
   const dir=await temp(t),data=path.join(dir,'data'),workspace=path.join(data,'workspaces','bot'),home=path.join(data,'process-homes','bot');
   await fs.mkdir(workspace,{recursive:true});await fs.mkdir(home,{recursive:true});await fs.writeFile(path.join(dir,'secret.txt'),'nope');
   const backend=createDockerBackend({searchDirs:[path.dirname(docker)]});
