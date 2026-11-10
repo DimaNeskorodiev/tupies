@@ -1359,8 +1359,8 @@ function botSettingsForm(id,{embedded=false,template=null}={}){
     ${embedded&&id?section('remove','Remove bot','Remove this bot, its conversations, memory and routines from Tupies. Saved workspace files remain on this engine.',`<button class="danger-button" type="button" data-action="delete-bot" data-id="${esc(id)}">${icon('trash')}Delete bot</button>`):''}</div>${footer}</form>`;
 }
 function botDialog(id,templateId){
-  const selectedTemplate=(data.botTemplates||[]).find(item=>item.id===templateId),guide=data.skills.find(item=>item.catalogId==='tupies-product');
-  const template=selectedTemplate?{...selectedTemplate,skills:selectedTemplate.id==='ops'&&guide?[guide.id]:[]}:null;
+  const selectedTemplate=templateId&&typeof templateId==='object'?templateId:(data.botTemplates||[]).find(item=>item.id===templateId),guide=data.skills.find(item=>item.catalogId==='tupies-product');
+  const template=selectedTemplate?{...selectedTemplate,skills:selectedTemplate.skills||(selectedTemplate.id==='ops'&&guide?[guide.id]:[])}:null;
   const picker=id?'':`<p class="modal-subtitle">Choose a starting point, then make it yours. Review the instructions and tools before creating your bot.</p><div class="onboarding-template-picker" aria-label="Bot templates">${[['','Blank bot'],...(data.botTemplates||[]).map(item=>[item.id,item.id==='ops'?'Ops':'Chief of Staff'])].map(([key,label])=>`<button type="button" class="secondary-button" data-action="starter-template" data-template="${esc(key)}" aria-pressed="${(templateId||'')===key}">${label}</button>`).join('')}</div>`;
   openDialog(id?`${botById(id)?.name||'Bot'} settings`:'New bot',picker+botSettingsForm(id,{template}),{wide:true});
   window.StudioBotProfile?.syncSettings($('#dialog-root #bot-form'));
@@ -1625,7 +1625,7 @@ document.addEventListener('click',async event=>{
       case 'delete-room':confirmDelete('room',id);break;
       case 'stop-room':el.disabled=true;await api(`/api/rooms/${encodeURIComponent(id)}/stop`,{method:'POST',body:JSON.parse(el.dataset.drive||'{}')});await loadRoomChat(id);toast('Room paused. Queued turns cancelled.');break;
       case 'reload-room':await loadRoomChat(id);break;
-      case 'create-bot':botDialog();break;
+      case 'create-bot':window.StudioBotProposal?window.StudioBotProposal.open({...studioContext(),botDialog}):botDialog();break;
       case 'starter-template':botDialog(undefined,el.dataset.template);break;
       case 'onboarding-prompt':{const template=(data.botTemplates||[]).find(item=>item.id===el.dataset.template);if(template)openBotDraft(id,template.prompt,{notice:'Prompt added to your draft. Make it yours, then Send.'});break;}
       case 'onboarding-dismiss':{el.disabled=true;try{await api('/api/onboarding',{method:'PATCH',body:{dismissed:true}});await refresh(false);if(route().view==='welcome')navigate('/dashboard');else renderApp();toast('Getting started is always available from Dashboard and Help.');}finally{if(el.isConnected)el.disabled=false;}break;}
