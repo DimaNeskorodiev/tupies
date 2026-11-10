@@ -55,3 +55,15 @@ test('bot settings offer an optional task budget and engine check-ins are a plai
   assert.match(card,/data-choice="deny"[^>]*>Stop<\/button>/);assert.match(card,/data-choice="once"[^>]*>Continue<\/button>/);
   assert.equal(card.includes('JSON.stringify(rawDetail'),false);
 });
+
+test('work that used no model says so, with no token rows or price note',()=>{
+  const html=footer({steps:0,toolCalls:1,modelCalls:0,inputTokens:0,cachedTokens:0,outputTokens:0,totalTokens:0,durationMs:3000});
+  assert.match(html,/^<details class="run-usage"><summary aria-label="Task usage: 0 model calls, 1 command, 3 s">/);
+  assert.ok(html.includes('<span>0 model calls</span><span>1 command</span><span>3 s</span>'));
+  assert.ok(html.includes('<p>This ran without a model: no tokens were used.</p>'));
+  assert.equal(/<dl|tokens<\/dd>|\$|price|cached/i.test(html),false);
+  assert.ok(footer({modelCalls:0,totalTokens:0,toolCalls:3}).includes('<span>0 model calls</span><span>3 commands</span>'));
+  assert.ok(footer({modelCalls:0,totalTokens:0}).includes('<span>0 model calls</span></summary>'));
+  // A record claiming zero calls but real tokens is not a zero-model record.
+  assert.equal(footer({modelCalls:0,totalTokens:12}),'');assert.equal(footer({modelCalls:0,totalTokens:0,inputTokens:5}),'');
+});
