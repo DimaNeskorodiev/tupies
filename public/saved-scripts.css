@@ -1,0 +1,63 @@
+/* Saved scripts: the Scripts tab details and the "Save this as a script" card in chat. The list reuses the bot profile's script layout. No motion. */
+.ss-row .ss-meta,.ss-detail .ss-meta{font-size:11px;line-height:1.6;color:var(--muted,#606e88)}
+.ss-state{font-size:11px;line-height:1.6;color:var(--muted,#606e88);margin:0}
+.ss-state.note{color:var(--purple,#706390)}
+.ss-state.warn{color:var(--amber,#b07a1f)}
+.ss-row>span:nth-child(2){display:grid;gap:3px}
+.ss-empty{display:grid;gap:8px;padding:34px 26px;min-width:0}
+.ss-empty>svg,.ss-welcome>svg{width:28px;height:28px;color:#829a94}
+.ss-empty h2{margin:0;font-size:18px;font-weight:550;color:var(--ink,#192440)}
+.ss-empty p,.ss-welcome p{margin:0;font-size:13px;line-height:1.7;color:var(--muted,#606e88);max-width:52ch}
+.ss-detail .ss-form{display:grid;gap:12px;min-width:0}
+.ss-field{margin:0;display:grid;gap:5px;min-width:0}
+.ss-field label{font-size:12px;font-weight:600;color:var(--ink,#192440)}
+.ss-field input,.ss-field textarea{width:100%;min-width:0;min-height:36px}
+.ss-field textarea{font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
+.ss-field small{font-size:11px;line-height:1.6;color:var(--muted,#606e88)}
+.ss-required{color:var(--amber,#b07a1f)}
+.ss-optional{font-weight:400;color:var(--muted,#606e88)}
+.ss-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ss-notes{margin:0;padding-left:18px;font-size:12px;line-height:1.7;color:var(--muted,#606e88)}
+.ss-error{margin:0}
+.ss-notice{margin:0;font-size:12px;line-height:1.6;color:var(--ink,#192440)}
+.ss-actions{display:flex;flex-wrap:wrap;gap:8px}
+.ss-result{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line,rgba(63,86,122,.12));border-radius:12px;min-width:0}
+.ss-result.bad{border-color:var(--amber,#b07a1f)}
+.ss-result-line{margin:0;font-size:12px;line-height:1.6;color:var(--ink,#192440);overflow-wrap:anywhere}
+.ss-quiet{margin:0;font-size:11px;line-height:1.6;color:var(--muted,#606e88)}
+.ss-output,.ss-code{margin:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line,rgba(63,86,122,.12));background:var(--pearl-soft,rgba(120,130,150,.06));color:var(--ink,#192440);font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:260px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.ss-code .ss-add{color:var(--ios-green,#2f7a52)}
+.ss-code .ss-del{color:var(--red,#a14a4a)}
+.ss-review{display:grid;gap:10px;padding:14px;border:1px solid var(--line,rgba(63,86,122,.12));border-radius:12px;min-width:0}
+.ss-review h3{margin:0;font-size:14px;color:var(--ink,#192440)}
+.ss-review p{margin:0;font-size:12px;line-height:1.6;color:var(--muted,#606e88)}
+.ss-section{min-width:0}
+.ss-section h3{margin:0 0 8px;font-size:13px;color:var(--ink,#192440)}
+.ss-runs,.ss-used{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ss-runs summary,.ss-codeblock>summary{display:flex;flex-wrap:wrap;gap:2px 0;align-items:center;min-height:32px;cursor:pointer;font-size:12px;color:var(--muted,#606e88);border-radius:8px}
+.ss-codeblock>summary{font-size:13px;font-weight:600;color:var(--ink,#192440)}
+.ss-runs summary>span+span::before{content:"·";margin:0 6px;opacity:.6}
+.ss-runs summary:focus-visible,.ss-codeblock>summary:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:2px}
+.ss-runs details>pre,.ss-runs details>p,.ss-codeblock>pre,.ss-codeblock>p{margin:6px 0 0}
+.ss-version{margin:0;padding-top:12px;border-top:1px solid var(--line,rgba(63,86,122,.12));font-size:11px;line-height:1.8;color:var(--muted,#606e88)}
+.ss-text{padding:0;min-height:0;font-size:11px;text-decoration:underline}
+.ss-small{min-height:32px;padding:0 12px;font-size:11px}
+.ss-confirm{display:block;margin-top:6px}
+.script-suggestion{margin:8px 0 0;padding:10px 12px;max-width:100%;min-width:0;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:12px;background:var(--pearl-soft,rgba(120,130,150,.06));color:var(--ink,#29313d);font-size:12px;line-height:1.5}
+.script-suggestion>p{margin:0}
+.script-suggestion-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.script-suggestion-save{min-height:32px;padding:0 12px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:10px;background:var(--pearl-soft,rgba(255,255,255,.7));color:var(--ink,#29313d);font-size:12px;font-weight:600}
+.script-suggestion-save:hover:not(:disabled){border-color:var(--purple,#706390)}
+.script-suggestion-dismiss{min-height:32px;padding:0 6px;border:0;background:none;color:var(--muted,#737b89);font-size:12px}
+.script-suggestion-dismiss:hover{color:var(--ink,#29313d)}
+.script-suggestion button:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:2px}
+.script-suggestion-status{color:var(--muted,#737b89)}
+@media (max-width:760px){
+  .ss-actions button,.ss-actions .primary-button{min-height:44px;flex:1}
+  .ss-field input{min-height:44px;font-size:16px}
+  .ss-field textarea{font-size:16px}
+  .ss-runs summary,.ss-codeblock>summary{min-height:44px}
+  .ss-text,.ss-small{min-height:44px;padding:0 8px;font-size:13px}
+  .ss-state,.ss-detail .ss-meta,.ss-row .ss-meta,.ss-quiet,.ss-version{font-size:calc(12px * var(--ios-s,1))}
+  .script-suggestion-save,.script-suggestion-dismiss{min-height:44px}
+}

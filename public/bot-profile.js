@@ -533,6 +533,7 @@ function workshopPanel(bot,v){
 }
 function scriptsPanel(bot,v){
   if(!v.scripts)return v.scriptsError&&!v.loading.scripts?retry(v.scriptsError,'retry'):loading('Opening scripts…');
+  const owned=window.StudioScripts?.panel?.(bot,v,{api:ctx.api,icon,errorText:ctx.errorText,refresh});if(owned)return owned;
   const query=fold(v.scriptQuery),items=v.scripts.filter(script=>!query||fold(`${script.title||script.id} ${script.purpose||''} ${script.interpreter||''}`).includes(query));
   const tools=`<div class="bp-toolbar"><label class="bp-search">${icon('search')}<input type="search" data-profile-input="script-query" value="${esc(v.scriptQuery)}" placeholder="Search scripts" aria-label="Search scripts" autocomplete="off"></label><button type="button" class="secondary-button" data-profile-action="script-folder">${icon('folder')}Browse script files</button></div>`;
   if(!v.scripts.length)return `${tools}${empty('code','No scripts yet','Scripts saved for this bot appear here with their purpose, files, inputs and outputs. Open the scripts folder to inspect or add a package.')}<p class="bp-hint">Adding files does not execute them or enable Terminal tools.</p>`;
