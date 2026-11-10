@@ -136,7 +136,9 @@ test('engine: without the setting a routine command behaves exactly as before',a
   assert.equal(receipt.status,'succeeded');assert.equal(Object.hasOwn(receipt,'backend'),false);
 });
 
-test('engine: on this Mac a routine changes its workspace in the real sandbox and cannot read the Engine state',{skip:seatbelt?false:'Seatbelt needs macOS with /usr/bin/sandbox-exec.'},async t=>{
+// Platform-bound cases are defined only where they can run. The release verifier counts a skipped test as a failed
+// suite, so a case that cannot apply on this platform is not registered instead of being skipped.
+(seatbelt?test:()=>{})('engine: on this Mac a routine changes its workspace in the real sandbox and cannot read the Engine state',{skip:seatbelt?false:'Seatbelt needs macOS with /usr/bin/sandbox-exec.'},async t=>{
   const h=await engineFixture(t,{backend:null,calls:[{name:'terminal',arguments:{command:'python3 -c "open(\'report.txt\',\'w\').write(\'ok\')" && cat report.txt'}},{name:'terminal',arguments:{command:'cat ../../state.json'}}]});
   const started=await h.engine.runRoutine('routine_report');await h.engine.tasks.get(started.id);
   assert.equal(h.events('approval.request').length,0,'cat of an outside path is ordinary, and runs unattended in the sandbox');

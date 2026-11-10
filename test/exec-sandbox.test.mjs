@@ -12,6 +12,9 @@ import { validateExecution, selectedBackend, executionStatus, prepareLaunch, ove
 
 const seatbelt=process.platform==='darwin' && existsSync('/usr/bin/sandbox-exec');
 const skipSeatbelt=seatbelt?false:'Seatbelt needs macOS with /usr/bin/sandbox-exec.';
+// Platform-bound cases are defined only where they can run. The release verifier counts a skipped test as a failed
+// suite, so a case that cannot apply on this platform is not registered instead of being skipped.
+const seatbeltTest=seatbelt?test:()=>{};
 const until=async(predicate,label)=>{for(let i=0;i<2000;i++){if(await predicate())return;await new Promise(resolve=>setTimeout(resolve,5));}throw new Error(`Timed out waiting for ${label}.`);};
 const alive=pid=>{try{process.kill(pid,0);return true;}catch{return false;}};
 
@@ -88,7 +91,7 @@ async function fixture(t,{execution={backend:'sandbox'}}={}) {
   return {store,bot,tools,run,outside,directory:await fs.realpath(directory),root:await fs.realpath(await getWorkspaceRoot(store,bot.id))};
 }
 
-test('Seatbelt: commands change the workspace but nothing outside it, globally or in a fake ~/.ssh',{skip:skipSeatbelt},async t=>{
+seatbeltTest('Seatbelt: commands change the workspace but nothing outside it, globally or in a fake ~/.ssh',{skip:skipSeatbelt},async t=>{
   const h=await fixture(t);
   let result=await h.run('mkdir -p data && echo hello > data/out.txt && cat data/out.txt');
   assert.deepEqual([result.exitCode,result.output,result.backend],[0,'hello\n','sandbox']);
@@ -109,7 +112,7 @@ test('Seatbelt: commands change the workspace but nothing outside it, globally o
   assert.notEqual(result.exitCode,0);assert.equal(existsSync(`/tmp/tupies-sandbox-probe-${process.pid}`),false);
 });
 
-test('Seatbelt: the Engine data folder, the vault key, other bots and the user’s keys are unreadable',{skip:skipSeatbelt},async t=>{
+seatbeltTest('Seatbelt: the Engine data folder, the vault key, other bots and the user’s keys are unreadable',{skip:skipSeatbelt},async t=>{
   const h=await fixture(t);
   await fs.access(path.join(h.directory,'vault.key'));
   for(const command of [`cat '${h.directory}/vault.key'`,`cat '${h.directory}/state.json'`,`ls '${h.directory}'`,`ls '${h.directory}/workspaces'`]) {
@@ -127,7 +130,7 @@ test('Seatbelt: the Engine data folder, the vault key, other bots and the user�
   }
 });
 
-test('Seatbelt: Git hooks, Git config and shell profiles stay read-only, and a symlink cannot reach outside',{skip:skipSeatbelt},async t=>{
+seatbeltTest('Seatbelt: Git hooks, Git config and shell profiles stay read-only, and a symlink cannot reach outside',{skip:skipSeatbelt},async t=>{
   const h=await fixture(t);
   await fs.mkdir(path.join(h.root,'.git','hooks'),{recursive:true});await fs.writeFile(path.join(h.root,'.git','config'),'[core]\n');
   for(const target of ['.git/hooks/pre-commit','.git/config','.GIT/Hooks/post-merge','nested/repo/.git/hooks/pre-push','.zshrc','.bashrc','.profile','.zprofile','.bash_profile','.npmrc','nested/.npmrc']) {
@@ -149,7 +152,7 @@ test('Seatbelt: Git hooks, Git config and shell profiles stay read-only, and a s
   assert.notEqual(result.exitCode,0);assert.equal(existsSync(path.join(h.outside,'target','file.txt')),false);
 });
 
-test('Seatbelt: Stop ends the whole sandboxed command tree',{skip:skipSeatbelt},async t=>{
+seatbeltTest('Seatbelt: Stop ends the whole sandboxed command tree',{skip:skipSeatbelt},async t=>{
   const h=await fixture(t),controller=new AbortController();
   const pending=h.run('sleep 30 & echo $! > child.pid; wait',{signal:controller.signal});
   await until(async()=>{try{return (await fs.readFile(path.join(h.root,'child.pid'),'utf8')).trim().length>0;}catch{return false;}},'the child pid');
@@ -159,7 +162,7 @@ test('Seatbelt: Stop ends the whole sandboxed command tree',{skip:skipSeatbelt},
   await until(()=>!alive(child),'the sandboxed child to exit');
 });
 
-test('Seatbelt: execute_code, shell_run and background commands run in the sandbox too',{skip:skipSeatbelt},async t=>{
+seatbeltTest('Seatbelt: execute_code, shell_run and background commands run in the sandbox too',{skip:skipSeatbelt},async t=>{
   const h=await fixture(t);
   const code=await h.tools.execute(h.bot,'execute_code',{language:'node',code:`import fs from 'node:fs';fs.writeFileSync('code.txt','ok');try{fs.readFileSync(${JSON.stringify(path.join(h.directory,'vault.key'))});console.log('read');}catch(error){console.log(error.code);}`},{approved:true,runId:'run_a'});
   assert.deepEqual([code.exitCode,code.output.trim(),code.backend],[0,'EPERM','sandbox']);

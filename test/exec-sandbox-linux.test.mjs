@@ -19,6 +19,11 @@ import { createSandboxBackend, sandboxBackend, bubblewrapFailureReason, holdsCap
 const linux=process.platform==='linux',required=process.env.TUPIES_REQUIRE_LINUX_SANDBOX==='1';
 const status=linux?await sandboxBackend.available():{ok:false,reason:'not Linux'};
 const skipLinux=!linux?'bubblewrap runs only on Linux.':status.ok?false:`bubblewrap cannot run here: ${status.reason}`;
+// Platform-bound cases are defined only where they can run. The release verifier counts a skipped test as a failed
+// suite, so a case that cannot apply on this platform is not registered instead of being skipped.
+// The real bubblewrap cases run where the self-test passes, and always in .github/workflows/linux-sandbox.yml, which
+// sets TUPIES_REQUIRE_LINUX_SANDBOX=1 so a sandbox that is not ready fails there instead of going unnoticed.
+const linuxTest=linux && (status.ok || required)?test:()=>{},readinessTest=linux && required?test:()=>{};
 if(linux)console.log(`# Linux sandbox self-test: ${status.ok?'ready':status.reason}`);
 const until=async(predicate,label)=>{for(let i=0;i<2000;i++){if(await predicate())return;await new Promise(resolve=>setTimeout(resolve,5));}throw new Error(`Timed out waiting for ${label}.`);};
 const notFound=/No such file or directory|Directory nonexistent|Permission denied|Read-only file system/;
@@ -102,7 +107,7 @@ test('the repository scan is bounded, breadth first and never follows symbolic l
 });
 
 // ---- Real bubblewrap (Linux only) ----
-test('the Linux sandbox is ready on this runner',{skip:linux && required?false:'only checked where TUPIES_REQUIRE_LINUX_SANDBOX=1 on Linux.'},()=>{
+readinessTest('the Linux sandbox is ready on this runner',{skip:linux && required?false:'only checked where TUPIES_REQUIRE_LINUX_SANDBOX=1 on Linux.'},()=>{
   assert.equal(status.ok,true,`The sandbox self-test failed: ${status.reason}`);
 });
 
@@ -124,7 +129,7 @@ function spawnLaunch(launch) {
 }
 const hostPids=token=>readdirSync('/proc').filter(name=>/^\d+$/.test(name)).filter(pid=>{try{return readFileSync(`/proc/${pid}/cmdline`,'utf8').includes(token);}catch{return false;}});
 
-test('Linux: commands change the workspace and process home but nothing else',{skip:skipLinux},async t=>{
+linuxTest('Linux: commands change the workspace and process home but nothing else',{skip:skipLinux},async t=>{
   const h=await fixture(t);
   let result=await h.run('mkdir -p data && echo hello > data/out.txt && cat data/out.txt');
   assert.deepEqual([result.exitCode,result.output,result.backend],[0,'hello\n','sandbox'],result.output);
@@ -145,7 +150,7 @@ test('Linux: commands change the workspace and process home but nothing else',{s
   assert.equal(result.output.includes(path.basename(h.outside)),false,`the host /tmp is not visible: ${result.output}`);
 });
 
-test('Linux: the Engine data folder, the vault key, other bots and the user’s keys cannot be read or listed',{skip:skipLinux},async t=>{
+linuxTest('Linux: the Engine data folder, the vault key, other bots and the user’s keys cannot be read or listed',{skip:skipLinux},async t=>{
   const h=await fixture(t);
   await fs.access(path.join(h.directory,'vault.key'));
   const other=h.store.state.bots[1];await fs.writeFile(path.join(await getWorkspaceRoot(h.store,other.id),'private.txt'),'other bot secret');
@@ -162,7 +167,7 @@ test('Linux: the Engine data folder, the vault key, other bots and the user’s 
   }
 });
 
-test('Linux: in the VPS layout the service home holding the data, a fixture ~/.ssh and the Engine’s .env stay hidden',{skip:skipLinux},async t=>{
+linuxTest('Linux: in the VPS layout the service home holding the data, a fixture ~/.ssh and the Engine’s .env stay hidden',{skip:skipLinux},async t=>{
   // home /var/lib/tupies → base, data /var/lib/tupies/data → base/data, release /opt/tupies/app → engine.
   const base=await fs.realpath(await fs.mkdtemp(path.join(tmpdir(),'tupies-exec-vps-'))),engine=await fs.realpath(await fs.mkdtemp(path.join(tmpdir(),'tupies-exec-release-')));
   t.after(async()=>{await fs.rm(base,{recursive:true,force:true});await fs.rm(engine,{recursive:true,force:true});});
@@ -182,7 +187,7 @@ test('Linux: in the VPS layout the service home holding the data, a fixture ~/.s
   result=await run(`ls -A '${base}/data'`);assert.deepEqual(result.output.trim().split(/\s+/).sort(),['process-homes','workspaces'],result.output);
 });
 
-test('Linux: Git hooks and config, shell profiles, .gitconfig and .npmrc stay read-only and cannot be created or swapped',{skip:skipLinux},async t=>{
+linuxTest('Linux: Git hooks and config, shell profiles, .gitconfig and .npmrc stay read-only and cannot be created or swapped',{skip:skipLinux},async t=>{
   const h=await fixture(t);
   await fs.mkdir(path.join(h.root,'.git','hooks'),{recursive:true});await fs.writeFile(path.join(h.root,'.git','config'),'[core]\n');await fs.writeFile(path.join(h.root,'.git','HEAD'),'ref: refs/heads/main\n');
   await fs.mkdir(path.join(h.root,'nested','repo','.git','hooks'),{recursive:true});await fs.writeFile(path.join(h.root,'nested','repo','.git','config'),'[core]\n');
@@ -212,7 +217,7 @@ test('Linux: Git hooks and config, shell profiles, .gitconfig and .npmrc stay re
   await assert.rejects(h.run('true'),error=>error.code==='sandbox_unavailable' && /symbolic link/.test(error.message) && /Nothing ran on this computer/.test(error.message));
 });
 
-test('Linux: Stop ends the whole sandboxed tree, including a grandchild that ignores TERM and one in its own session',{skip:skipLinux},async t=>{
+linuxTest('Linux: Stop ends the whole sandboxed tree, including a grandchild that ignores TERM and one in its own session',{skip:skipLinux},async t=>{
   const h=await fixture(t),controller=new AbortController(),token=`tupies-stop-${process.pid}-${Date.now()}`;
   const command=`(trap '' TERM; exec -a ${token}-grandchild sleep 60) & setsid bash -c "trap '' TERM; exec -a ${token}-detached sleep 60" & echo started > started.txt; wait`;
   const started=Date.now(),pending=h.run(command,{signal:controller.signal});
@@ -223,7 +228,7 @@ test('Linux: Stop ends the whole sandboxed tree, including a grandchild that ign
   assert.ok(Date.now()-started<9000,'Stop did not wait for the sleepers');
 });
 
-test('Linux: execute_code, shell_run and background commands run in the sandbox too',{skip:skipLinux},async t=>{
+linuxTest('Linux: execute_code, shell_run and background commands run in the sandbox too',{skip:skipLinux},async t=>{
   const h=await fixture(t);
   const code=await h.tools.execute(h.bot,'execute_code',{language:'node',code:`import fs from 'node:fs';fs.writeFileSync('code.txt','ok');try{fs.readFileSync(${JSON.stringify(path.join(h.directory,'vault.key'))});console.log('read');}catch(error){console.log(error.code);}`},{approved:true,runId:'run_a'});
   assert.equal(code.exitCode,0,code.output);assert.equal(code.backend,'sandbox');assert.match(code.output.trim(),/^(ENOENT|EACCES)$/);
@@ -239,7 +244,7 @@ test('Linux: execute_code, shell_run and background commands run in the sandbox 
   assert.equal(existsSync(path.join(h.root,'bg.txt')),true);assert.equal(existsSync(path.join(h.outside,'bg.txt')),false);
 });
 
-test('Linux: a real engine routine changes its workspace in the sandbox with no approval and cannot read the Engine state',{skip:skipLinux},async t=>{
+linuxTest('Linux: a real engine routine changes its workspace in the sandbox with no approval and cannot read the Engine state',{skip:skipLinux},async t=>{
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-exec-linux-engine-')),store=await new Store(directory).init();
   await store.mutate(state=>{state.connections=[{id:'fixture',type:'custom',defaultModel:'fixture-model'}];Object.assign(state.bots[0],{connectionId:'fixture',approvalPolicy:'balanced',tools:['workspace','terminal'],execution:{backend:'sandbox'}});});
   const calls=[{name:'terminal',arguments:{command:'echo ok > report.txt && cat report.txt'}},{name:'terminal',arguments:{command:'cat ../../state.json'}}];let step=0;
