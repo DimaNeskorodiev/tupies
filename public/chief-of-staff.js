@@ -17,7 +17,7 @@
     if(!state.loaded)return '<p class="chief-note" aria-busy="true">Loading…</p>';
     const settings=state.settings,chosen=settings.chiefOfStaffBotId || '';
     const auto=settings.chiefOfStaff && !chosen?` (${settings.chiefOfStaff.name})`:'';
-    return `<label class="chief-field"><span>Who is your chief of staff</span><select class="chief-select" data-chief-select ${state.busy?'disabled':''}><option value=""${chosen?'':' selected'}>${e(`Automatic${auto}`)}</option>${bots().map(bot=>`<option value="${e(bot.id)}"${bot.id===chosen?' selected':''}>${e(bot.name || 'Bot')}</option>`).join('')}</select></label>${brief(settings)}${state.message?`<p class="chief-note" role="status">${e(state.message)}</p>`:''}`;
+    return `<label class="chief-field field"><span>Who is your chief of staff</span><select class="chief-select" data-chief-select ${state.busy?'disabled':''}><option value=""${chosen?'':' selected'}>${e(`Automatic${auto}`)}</option>${bots().map(bot=>`<option value="${e(bot.id)}"${bot.id===chosen?' selected':''}>${e(bot.name || 'Bot')}</option>`).join('')}</select></label>${brief(settings)}${state.message?`<p class="chief-note" role="status">${e(state.message)}</p>`:''}`;
   }
   const page=()=>`<section class="chief-card glass-card" data-chief-card aria-label="Chief of staff"><h2>Chief of staff</h2><p class="chief-note">Your chief of staff can see what your other bots did and what waits for you, hands work to the right teammate and brings you only decisions, failures and results.</p><div data-chief-body>${body()}</div></section>`;
   const paint=()=>{const host=document.querySelector('[data-chief-body]');if(host && context)host.innerHTML=body();};
