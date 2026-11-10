@@ -1,0 +1,5 @@
+/* Bot settings › Where commands run: a small status dot before the engine's answer. */
+.execution-field .execution-status{display:flex;gap:7px;align-items:baseline;margin-top:6px}
+.execution-field .execution-status::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.35;transform:translateY(-1px)}
+.execution-field .execution-status[data-state=ready]::before{background:#3f9b72;opacity:1}
+.execution-field .execution-status[data-state=down]::before{background:#c0703c;opacity:1}
