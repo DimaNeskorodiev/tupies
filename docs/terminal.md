@@ -16,7 +16,27 @@ Code: `lib/terminal.mjs` (runtime), `lib/command-classifier.mjs` (classifier), `
 
 **Why a wrapper per command instead of a long-lived shell.** Each call runs a fresh `bash -lc` wrapper. The wrapper restores the saved folder and exported variables, runs the command with `eval` in the same shell, and on exit writes `pwd -P` and the exported environment to a private Engine folder. Restored values travel as data in the child environment, never as sourced shell code. This approach keeps timeouts, Stop and output bounds per command. It avoids prompt or sentinel parsing and hangs on stdin. A killed or crashed command cannot corrupt the session: the last good state is kept.
 
-The process environment is the existing curated one from `process-environment.mjs`: a per-bot engine-local HOME, no provider credentials, and Git hooks, fsmonitor, credential helpers and `ext::` disabled. A command cannot persist changes to those protective `GIT_CONFIG_*` and `PYTHONNOUSERSITE` settings. Code-injecting variables (`LD_*`, `DYLD_*`, `BASH_ENV`, `ENV`, `PROMPT_COMMAND`, exported functions) are never carried over. This is trusted host execution with the server account's permissions, not an OS sandbox.
+The process environment is the existing curated one from `process-environment.mjs`: a per-bot engine-local HOME, no provider credentials, and Git hooks, fsmonitor, credential helpers and `ext::` disabled. A command cannot persist changes to those protective `GIT_CONFIG_*` and `PYTHONNOUSERSITE` settings. Code-injecting variables (`LD_*`, `DYLD_*`, `BASH_ENV`, `ENV`, `PROMPT_COMMAND`, exported functions) are never carried over. With the default setting this is trusted host execution with the server account's permissions, not an OS sandbox. See “Where commands run” below.
+
+## Where commands run
+
+Bot settings → Tools → Automation & development → **Where commands run** (`bot.execution.backend`, owner-only):
+
+| Choice | Meaning |
+| --- | --- |
+| This computer, ask me (default, no setting) | Today's behaviour: host execution, approvals as in the table below. |
+| Sandbox on this computer (recommended) | Commands can change only the bot's own folders and cannot read the Engine's data or your keys. Read-only and ordinary commands run without asking in every lane; dangerous ones still ask; Strict asks for everything. |
+
+A status line under the choice comes from `GET /api/execution` (authenticated): `{backends:[{id,label,available,reason,isolated,summary}]}`, for example "Sandbox ready" or "bubblewrap (bwrap) is not installed on this server". The sandbox is Seatbelt (`/usr/bin/sandbox-exec`) on macOS and bubblewrap on Linux; what it allows and denies is in `docs/security.md` → Command sandbox.
+
+- **One registry.** `lib/exec/` holds the backends (`host`, `sandbox`). `terminal`, `execute_code`, `shell_run`, `shell_start`, background commands and `scripts_run` all ask it what to spawn; the supervisor, timeouts, output limits and Stop are unchanged. Registry entries are Engine code only, never loaded from a workspace, state or model output. The interface (`available`, `describe`, `check`, `prepare`) is documented at the top of `lib/exec/index.mjs`. Language servers and document workers are Engine-owned and stay on the host.
+- **Snapshot.** A task uses the backend its bot had when the task started. Unattended runs need the saved bot to select the same backend too, so switching a bot back to "ask me" takes effect at the next command.
+- **Fallback.** If the sandbox is selected but unavailable (or its profile cannot be built) when a command is admitted, the policy is exactly the host policy and the card says why; only such a command may run on the host. A command admitted for the sandbox fails closed if the sandbox breaks before it starts.
+- **Caches** go to the process home: `HOME`, `TMPDIR`, `XDG_CACHE_HOME`, `npm_config_cache`, `PIP_CACHE_DIR` (and `xcrun_db` on macOS). Install packages into the workspace (`python3 -m venv .venv`, `npm install`); global installs fail.
+- **Receipts.** Results and work receipts carry `backend: "sandbox"`, or `backend: "host"` with `sandboxUnavailable` after a disclosed fallback. A plain host bot's results are unchanged.
+- **Limits.** The network is open; commands run as the same OS user; `git init`/`git clone` fail inside the sandbox because `.git/config` and `.git/hooks` are read-only; the Linux path is unit-tested but not yet run on Linux.
+
+Tests: `test/exec-sandbox.test.mjs` (real Seatbelt on macOS, skipped elsewhere; bubblewrap argument builder anywhere), `test/exec-policy.test.mjs` (policy matrix, engine lanes, API, settings field).
 
 ## `execute_code`
 
@@ -53,6 +73,8 @@ When the session folder is outside the workspace, reads become normal and writes
 The owner chose (9 November 2026) that Approve for me in the owner's own chat runs ordinary (non-dangerous) commands without asking; dangerous commands always ask.
 
 `decideAction` uses the stricter of the task's snapshot and the saved bot's Action review setting; an unknown setting counts as Strict. The decision is re-checked just before execution.
+
+For a bot whose commands run in a ready sandbox (see “Where commands run”), read_only and normal commands run in every lane under Balanced and Approve for me; dangerous ones ask and Strict asks for everything. The table below is the host behaviour.
 
 | Command | Strict | Balanced | Approve for me, owner chat | Approve for me, routines / teammates / other chats |
 | --- | --- | --- | --- | --- |
