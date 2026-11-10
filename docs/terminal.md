@@ -26,10 +26,38 @@ Bot settings → Tools → Automation & development → **Where commands run** (
 | --- | --- |
 | This computer, ask me (default, no setting) | Today's behaviour: host execution, approvals as in the table below. |
 | Sandbox on this computer (recommended) | Commands can change only the bot's own folders and cannot read the Engine's data or your keys. Read-only and ordinary commands run without asking in every lane; dangerous ones still ask; Strict asks for everything. |
+| Docker container | Each command runs in a fresh container (`docker run --rm`) that mounts only the bot's workspace and process home. Same approval behaviour as the sandbox while Docker and the image are ready. |
+| Another machine (SSH) | Each command runs on a machine you set up, in `<base folder>/<bot id>/`. Same approval behaviour as the sandbox while the connection works. The bot's local workspace is not copied there. |
 
 A status line under the choice comes from `GET /api/execution` (authenticated): `{backends:[{id,label,available,reason,isolated,summary}]}`, for example "Sandbox ready" or "bubblewrap (bwrap) is not installed on this server". The sandbox is Seatbelt (`/usr/bin/sandbox-exec`) on macOS and bubblewrap on Linux; what it allows and denies is in `docs/security.md` → Command sandbox.
 
-- **One registry.** `lib/exec/` holds the backends (`host`, `sandbox`). `terminal`, `execute_code`, `shell_run`, `shell_start`, background commands and `scripts_run` all ask it what to spawn; the supervisor, timeouts, output limits and Stop are unchanged. Registry entries are Engine code only, never loaded from a workspace, state or model output. The interface (`available`, `describe`, `check`, `prepare`) is documented at the top of `lib/exec/index.mjs`. Language servers and document workers are Engine-owned and stay on the host.
+### Docker and SSH settings (engine environment)
+
+Both are per engine, not per bot. Set them in the engine's environment (`.env` or the service definition) and restart.
+
+**Docker** uses the `docker` (or `podman`) command found on `PATH` or in `/usr/local/bin`, `/opt/homebrew/bin`, `/usr/bin`; it never uses the Docker API or mounts the socket, and never pulls an image. The status line says which command to run when the image is missing (for example `docker pull nikolaik/python-nodejs:python3.12-nodejs22-slim`).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| STUDIO_EXEC_DOCKER_IMAGE | `nikolaik/python-nodejs:python3.12-nodejs22-slim` | Image to run commands in. It must already be on this computer and contain `bash`; the default has Python 3 and Node 22 but not Git. Build your own (for example named `tupies-exec`) for more tools. |
+| STUDIO_EXEC_DOCKER_MEMORY | `2g` | Memory limit per command. |
+| STUDIO_EXEC_DOCKER_PIDS | `512` | Process limit per command. |
+
+A command runs as `docker run --rm -i --init --pull=never --cap-drop ALL --security-opt no-new-privileges --memory … --pids-limit …` (plus `--user uid:gid` on Linux; Docker Desktop on macOS maps file ownership itself), with the network at its default (open). Only two folders are mounted, read-write: the bot's workspace and its process home, each **at the same absolute path as on the computer**, so paths in commands, in `execute_code` snippets and in the terminal's saved working folder mean the same inside and outside. Environment variables come from an allow-list (`HOME`, `TMPDIR`, `LANG`, `XDG_*`, `GIT_*` config, `PIP_*`, `npm_config_*`, `TUPIES_*`); the container's `PATH` is the image's. `execute_code` with `language:"node"` starts Node by the engine's own path, which does not exist in the container; use `terminal` with `node file.js` there. Stop ends the `docker run` client's process group, which forwards the termination signal to the container (`--init`); a command that ignores it can keep running in the container until it ends on its own (containers are named `tupies-exec-…` and labelled `tupies-exec=1`, so you can `docker kill` them).
+
+**SSH** uses the system `ssh` client with `BatchMode=yes`, `StrictHostKeyChecking=yes` (no password prompts; add the host key once yourself with `ssh -p PORT USER@HOST`), `-T`, a connect timeout, keep-alive probes, and one shared connection (`ControlMaster=auto`, socket in `<data folder>/exec-ssh/`; skipped when that path would be too long for a socket).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| STUDIO_EXEC_SSH_HOST | unset | Host name or address. SSH is "not set up" until this and the user are set. |
+| STUDIO_EXEC_SSH_USER | unset | Remote account. |
+| STUDIO_EXEC_SSH_PORT | `22` | Remote port. |
+| STUDIO_EXEC_SSH_KEY | unset | Full path of a private key file on this computer. Without it the ssh agent (`SSH_AUTH_SOCK`) and default keys are used. |
+| STUDIO_EXEC_SSH_DIR | `tupies` | Base folder on the remote machine (absolute, or relative to the remote home). Each bot works in `<dir>/<bot id>/`. |
+
+The local workspace is **not synced**: files the bot creates there stay on that machine, and local files are not visible to its commands. A working folder inside the workspace maps to the same relative folder remotely; anything else is refused. The remote account must use a POSIX-style login shell. Only `LANG`, `PYTHON*` flags and `TUPIES_*` variables are sent. A changed working folder is not carried between terminal calls. Stop ends the local `ssh` client; whether remote child processes then receive a hangup depends on the remote `sshd` (no terminal is requested), so a long-running quiet command may keep running there.
+
+- **One registry.** `lib/exec/` holds the backends (`host`, `sandbox`, `docker`, `ssh`). `terminal`, `execute_code`, `shell_run`, `shell_start`, background commands and `scripts_run` all ask it what to spawn; the supervisor, timeouts, output limits and Stop are unchanged. Registry entries are Engine code only, never loaded from a workspace, state or model output. The interface (`available`, `describe`, `check`, `prepare`) is documented at the top of `lib/exec/index.mjs`. Language servers and document workers are Engine-owned and stay on the host.
 - **Snapshot.** A task uses the backend its bot had when the task started. Unattended runs need the saved bot to select the same backend too, so switching a bot back to "ask me" takes effect at the next command.
 - **Fallback.** If the sandbox is selected but unavailable (or its profile cannot be built) when a command is admitted, the policy is exactly the host policy and the card says why; only such a command may run on the host. A command admitted for the sandbox fails closed if the sandbox breaks before it starts.
 - **Caches** go to the process home: `HOME`, `TMPDIR`, `XDG_CACHE_HOME`, `npm_config_cache`, `PIP_CACHE_DIR` (and `xcrun_db` on macOS). Install packages into the workspace (`python3 -m venv .venv`, `npm install`); global installs fail.
