@@ -11,7 +11,7 @@ const here=path.dirname(fileURLToPath(import.meta.url)),root=path.dirname(here),
 for(let index=2;index<process.argv.length;index+=2){const key=process.argv[index],value=process.argv[index+1];if(!['--state-mib','--batches','--output'].includes(key)||!value)throw new Error('Use --state-mib 1–64, --batches 1–12 and optional --output PATH.');settings[key==='--state-mib'?'stateMib':key.slice(2)]=key==='--output'?value:Number(value);}
 assert.ok(Number.isInteger(settings.stateMib)&&settings.stateMib>=1&&settings.stateMib<=64&&Number.isInteger(settings.batches)&&settings.batches>=1&&settings.batches<=12);
 const identityFiles=['server.mjs','package-lock.json','scripts/runtime-verification-host.mjs','scripts/verify-runtime.mjs'];
-for(const folder of ['lib','lib/sync'])for(const name of await fs.readdir(path.join(root,folder)))if(name.endsWith('.mjs'))identityFiles.push(`${folder}/${name}`);
+for(const folder of ['lib','lib/sync','lib/exec'])for(const name of await fs.readdir(path.join(root,folder)))if(name.endsWith('.mjs'))identityFiles.push(`${folder}/${name}`);
 async function identities(){return Object.fromEntries(await Promise.all(identityFiles.map(async file=>[file,createHash('sha256').update(await fs.readFile(path.join(root,file))).digest('hex')])));}
 const owned=new Set(),token=randomBytes(24).toString('hex'),directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-runtime-verification-'));
 await fs.writeFile(path.join(directory,'verification-only.json'),JSON.stringify({token}),{mode:0o600});

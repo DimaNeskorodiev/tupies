@@ -90,9 +90,27 @@ Under each finished reply, one line shows what the task used: steps, tokens, the
 
 When a bot reaches the optional task budget set in its Advanced settings, or its plan has not moved for 24 tool steps, the chat shows a plain **Continue / Stop** card instead of the generic approval card with its raw request details.
 
+### Proof of work
+
+Under a reply from a task that used tools, a second quiet line says what the engine itself saw happen, from its own records and never from the reply text: **Checked: 2 files saved · 3 sources read · 4 commands ran**. It counts files saved or documents created (verified documents and successful writes and edits), sources read, searches, commands that exited cleanly, passed result checks, confirmed teammate results, memory saved, calls to connected apps and other completed steps. Pages that could not be opened and actions the owner or a policy refused are shown as plain notes and do not change the line.
+
+When something needs a look, the line reads **Needs a look: 1 command failed · 1 action with an unknown result** and opens to a short list (up to eight items) plus **Ask to redo**. Counted here: commands or other actions that failed and were not later repeated successfully (the same request, the same tool on the same file, or a background command read to a clean exit), actions whose result is unknown, steps cut off by a stop or restart, result checks that did not pass and required teammate results that were not confirmed. **Ask to redo** is the owner's click: it sends a normal chat message naming exactly those items (tool and call) and asking the bot to check the current state before redoing anything with an unknown result. If the message box already has text or files, or a task is still running, it only puts the request in the box. A plain conversational answer shows nothing. Partial replies kept from stopped or failed tasks carry the line too. `lib/proof-of-work.mjs` builds the summary (`message.proof`, the run history and `runs_inspect`); `public/proof-of-work.js` + `.css` render it.
+
+### Save as a script, and zero-model runs
+
+When the engine attaches a `scriptSuggestion` to a finished reply (three or more successful commands and no script saved), a small card appears under it: "You ran N commands for this. Save it as a script so next time it runs in seconds without the model." **Save as a script** sends one ordinary chat message asking the bot to save the work with `script_save`, using the same rules as **Ask to redo** (it sends only when the message box is empty, has no attachment and no task is running; otherwise it fills the box for review). **Not now** hides the card for that message; dismissed message keys are remembered in the browser tab's session storage (at most 100). Nothing is sent without a click.
+
+Work that used no model (a saved script run from a routine, for example) carries a usage record with zero model calls. Its line reads **0 model calls · 1 command · 3 s**, and its breakdown says "This ran without a model: no tokens were used." with no token rows or price note.
+
+Approval cards for a saved script say "Run a saved script" (inputs by name; what changed and the diff are inside Details) or "Save a script" ("Nothing runs", with the language and a clipped code preview).
+
 ### Usage screen
 
 **Settings → Usage** shows what bots used over the last 7, 14 or 30 days: tasks, tokens, the share served from the provider's cache and the estimated cost; one bar per day; a table per bot; the five tasks that cost the most (or used the most tokens, when some tasks have no price); and a table per day. It is built from the usage summaries of finished tasks kept on this engine (the run history and the final replies), so it covers failed and stopped tasks too, and nothing is counted twice. Costs follow the same rules as the usage line: no price, no dollars. `lib/usage-report.mjs`, `GET /api/usage?days=N`, `public/usage.js` + `.css`.
+
+### Chief of staff
+
+One bot oversees the team. **Settings → Chief of staff** lets you pick it (setting `chiefOfStaffBotId`; **Automatic** means the seeded chief-of-staff bot while it exists). Only that bot gets the read-only `team_activity` tool, and only in your own chat and in its own routines: never in Telegram lanes, team rooms, delegated tasks or Missions. It returns, per bot, the current state (idle, working, waiting for your approval, waiting for an answer, paused), finished tasks of the last 1 to 168 hours with title, status, source, steps and usage, counts, an estimated total cost when every task has one, and what waits for you. It never returns message text, tool output, files or memory, leaves out other people's Telegram conversations, and lists at most 40 tasks with a `truncated` flag. The tool is in the team tool group (load it with `tools_load`); the chief's prompt also says to hand work that clearly fits a teammate to the delegation tool, report the verified result and bring you only decisions, failures and finished results. Unread replies are not included because the engine does not keep them in run state. The optional daily brief is described in [routines](routines.md).
 
 ### Approval cards in plain words
 
@@ -105,6 +123,10 @@ When a task saves a fact to the bot's memory, the chat shows a card titled **I'l
 ### Tone of voice
 
 Bot settings → Instructions has a **Tone of voice** (Default, Plain, Warm, Brisk, Playful) and an optional note in the owner's words (up to 300 characters). It adds one or two lines after the bot's own instructions, applies to new tasks, and only changes how replies are worded. `lib/bot-tone.mjs`.
+
+### Describe a bot
+
+`POST /api/bots/proposal` with `{description}` (1–2,000 characters, owner session) returns `{name, title, description, instructions, tools[], skills[], integrationIds[], tone, routine?, source:'model'|'rules', notes[]}` and creates or stores nothing. With a configured model (the Settings auxiliary model when set, else the workspace default provider) it makes one no-tools request (30 s, bounded output) that asks for strict JSON; the answer is parsed defensively (plain, fenced or wrapped in prose), lengths are clamped (name 60, role 100, description 1,000, instructions 4,000) and every field passes the same allow-lists as the rules fallback: tools only from workspace, skills, memory, web, terminal, integrations, delegation, automation and browser (never `setup`; terminal and browser only when the description clearly asks for commands or website work), skills and integrations only if they exist here, tone only from the tone list, routines only with a daily or weekly schedule. Anything dropped is listed in `notes`. Without a model, or when the call fails or the answer is unusable, keyword rules build the proposal (`source:'rules'`, shown as "Suggested without a model — adjust anything you like."). The app (`public/bot-proposal.js`) creates the bot through `POST /api/bots`, and the optional routine through `POST /api/routines`; if the routine fails the bot stays and the error is shown. The model call is not counted in task usage. `lib/bot-proposal.mjs`.
 
 ### Avatar states
 

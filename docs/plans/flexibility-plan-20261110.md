@@ -33,11 +33,11 @@ flowchart LR
 
 Sizes are S, M, L for scope, not dates.
 
-## P0 — Land the current branch (S)
+## P0 — Land the current branch (S) — done: PR #56 merged on 10 November 2026
 
 The usage meter, quota handling, task budget and browser settle are uncommitted in this worktree. Commit, open a pull request and merge before P1, because P1 and P2 change the same engine files. `public/app.js` and `lib/api-native.mjs` also carry someone else's uncommitted chat-provider-switch work in the main checkout; that needs merging first or together.
 
-## P1 — Sandbox and execution backends (L)
+## P1 — Sandbox and execution backends (L) — built on 10 November 2026 (source only); background-job wake-up not built
 
 **What the owner gets.** In a bot's settings, one choice, "Where commands run":
 
@@ -72,7 +72,7 @@ A status line under the choice says whether the backend works on this engine ("S
 
 **Risks.** Seatbelt is deprecated by Apple but still works and is what OpenBot and Codex rely on. Tools that write outside the workspace (global package caches) will fail until their cache folders are redirected into the process home.
 
-## P2 — Scripts before the model (M)
+## P2 — Scripts before the model (M) — built on 10 November 2026 (source only); `execute_code` calling tools and retiring `shell_run` not built
 
 **What Hermes does.** It writes scripts into a scripts folder and uses them in four ways: a script alone on a schedule with its output delivered as the message; a script that runs before the model and feeds it; a check that decides whether to wake the model at all; and `execute_code`, where one script calls several of the agent's tools. All of it is set up through tool arguments and files.
 

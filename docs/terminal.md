@@ -1,6 +1,6 @@
 # Terminal, code snippets and command approval
 
-Bots with the **Terminal** tool group get a real shell (`terminal`) and an ad-hoc code runner (`execute_code`). A deterministic, pattern-based classifier decides which commands run without asking. It replaces the per-action model risk review for terminal and code actions, so commands no longer cost an extra inference. `shell_run`, `shell_start`, registered scripts and skill scripts keep working.
+Bots with the **Terminal** tool group get a real shell (`terminal`) and an ad-hoc code runner (`execute_code`). A deterministic, pattern-based classifier decides which commands run without asking. It replaces the per-action model risk review for terminal and code actions, so commands no longer cost an extra inference. `shell_run`, `shell_start`, saved scripts (`script_save` / `script_run`, see [Workspaces](workspaces.md)) and skill scripts keep working; the older `scripts_register`/`scripts_run` stay for existing callers and routine steps.
 
 Code: `lib/terminal.mjs` (runtime), `lib/command-classifier.mjs` (classifier), `lib/command-policy.mjs` (approval policy, allowlist, routine pre-approval, integration auto reads). The Engine calls the policy from `approve()` in `lib/engine.mjs`. Tests: `test/command-classifier.test.mjs`, `test/command-policy.test.mjs`, `test/terminal.test.mjs`.
 
@@ -16,11 +16,66 @@ Code: `lib/terminal.mjs` (runtime), `lib/command-classifier.mjs` (classifier), `
 
 **Why a wrapper per command instead of a long-lived shell.** Each call runs a fresh `bash -lc` wrapper. The wrapper restores the saved folder and exported variables, runs the command with `eval` in the same shell, and on exit writes `pwd -P` and the exported environment to a private Engine folder. Restored values travel as data in the child environment, never as sourced shell code. This approach keeps timeouts, Stop and output bounds per command. It avoids prompt or sentinel parsing and hangs on stdin. A killed or crashed command cannot corrupt the session: the last good state is kept.
 
-The process environment is the existing curated one from `process-environment.mjs`: a per-bot engine-local HOME, no provider credentials, and Git hooks, fsmonitor, credential helpers and `ext::` disabled. A command cannot persist changes to those protective `GIT_CONFIG_*` and `PYTHONNOUSERSITE` settings. Code-injecting variables (`LD_*`, `DYLD_*`, `BASH_ENV`, `ENV`, `PROMPT_COMMAND`, exported functions) are never carried over. This is trusted host execution with the server account's permissions, not an OS sandbox.
+The process environment is the existing curated one from `process-environment.mjs`: a per-bot engine-local HOME, no provider credentials, and Git hooks, fsmonitor, credential helpers and `ext::` disabled. A command cannot persist changes to those protective `GIT_CONFIG_*` and `PYTHONNOUSERSITE` settings. Code-injecting variables (`LD_*`, `DYLD_*`, `BASH_ENV`, `ENV`, `PROMPT_COMMAND`, exported functions) are never carried over. With the default setting this is trusted host execution with the server account's permissions, not an OS sandbox. See “Where commands run” below.
+
+## Where commands run
+
+Bot settings → Tools → Automation & development → **Where commands run** (`bot.execution.backend`, owner-only):
+
+| Choice | Meaning |
+| --- | --- |
+| This computer, ask me (default, no setting) | Today's behaviour: host execution, approvals as in the table below. |
+| Sandbox on this computer (recommended) | Commands can change only the bot's own folders and cannot read the Engine's data or your keys. Read-only and ordinary commands run without asking in every lane; dangerous ones still ask; Strict asks for everything. |
+| Docker container | Each command runs in a fresh container (`docker run --rm`) that mounts only the bot's workspace and process home. Same approval behaviour as the sandbox while Docker and the image are ready. |
+| Another machine (SSH) | Each command runs on a machine you set up, in `<base folder>/<bot id>/`. Same approval behaviour as the sandbox while the connection works. The bot's local workspace is not copied there. |
+
+A status line under the choice comes from `GET /api/execution` (authenticated): `{backends:[{id,label,available,reason,isolated,summary}]}`, for example "Sandbox ready" or "The sandbox needs bubblewrap. On Debian or Ubuntu: sudo apt install bubblewrap". The sandbox is Seatbelt (`/usr/bin/sandbox-exec`) on macOS and bubblewrap on Linux; what it allows and denies is in `docs/security.md` → Command sandbox.
+
+### Docker and SSH settings (engine environment)
+
+Both are per engine, not per bot. Set them in the engine's environment (`.env` or the service definition) and restart.
+
+**Docker** uses the `docker` (or `podman`) command found on `PATH` or in `/usr/local/bin`, `/opt/homebrew/bin`, `/usr/bin`; it never uses the Docker API or mounts the socket, and never pulls an image. The status line says which command to run when the image is missing (for example `docker pull nikolaik/python-nodejs:python3.12-nodejs22-slim`).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| STUDIO_EXEC_DOCKER_IMAGE | `nikolaik/python-nodejs:python3.12-nodejs22-slim` | Image to run commands in. It must already be on this computer and contain `bash`; the default has Python 3 and Node 22 but not Git. Build your own (for example named `tupies-exec`) for more tools. |
+| STUDIO_EXEC_DOCKER_MEMORY | `2g` | Memory limit per command. |
+| STUDIO_EXEC_DOCKER_PIDS | `512` | Process limit per command. |
+
+A command runs as `docker run --rm -i --init --pull=never --cap-drop ALL --security-opt no-new-privileges --memory … --pids-limit …` (plus `--user uid:gid` on Linux; Docker Desktop on macOS maps file ownership itself), with the network at its default (open). Only two folders are mounted, read-write: the bot's workspace and its process home, each **at the same absolute path as on the computer**, so paths in commands, in `execute_code` snippets and in the terminal's saved working folder mean the same inside and outside. Environment variables come from an allow-list (`HOME`, `TMPDIR`, `LANG`, `XDG_*`, `GIT_*` config, `PIP_*`, `npm_config_*`, `TUPIES_*`); the container's `PATH` is the image's. `execute_code` with `language:"node"` starts Node by the engine's own path, which does not exist in the container; use `terminal` with `node file.js` there. Stop ends the `docker run` client's process group, which forwards the termination signal to the container (`--init`); a command that ignores it can keep running in the container until it ends on its own (containers are named `tupies-exec-…` and labelled `tupies-exec=1`, so you can `docker kill` them).
+
+**SSH** uses the system `ssh` client with `BatchMode=yes`, `StrictHostKeyChecking=yes` (no password prompts; add the host key once yourself with `ssh -p PORT USER@HOST`), `-T`, a connect timeout, keep-alive probes, and one shared connection (`ControlMaster=auto`, socket in `<data folder>/exec-ssh/`; skipped when that path would be too long for a socket).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| STUDIO_EXEC_SSH_HOST | unset | Host name or address. SSH is "not set up" until this and the user are set. |
+| STUDIO_EXEC_SSH_USER | unset | Remote account. |
+| STUDIO_EXEC_SSH_PORT | `22` | Remote port. |
+| STUDIO_EXEC_SSH_KEY | unset | Full path of a private key file on this computer. Without it the ssh agent (`SSH_AUTH_SOCK`) and default keys are used. |
+| STUDIO_EXEC_SSH_DIR | `tupies` | Base folder on the remote machine (absolute, or relative to the remote home). Each bot works in `<dir>/<bot id>/`. |
+
+The local workspace is **not synced**: files the bot creates there stay on that machine, and local files are not visible to its commands. A working folder inside the workspace maps to the same relative folder remotely; anything else is refused. The remote account must use a POSIX-style login shell. Only `LANG`, `PYTHON*` flags and `TUPIES_*` variables are sent. A changed working folder is not carried between terminal calls. Stop ends the local `ssh` client; whether remote child processes then receive a hangup depends on the remote `sshd` (no terminal is requested), so a long-running quiet command may keep running there.
+
+- **One registry.** `lib/exec/` holds the backends (`host`, `sandbox`, `docker`, `ssh`). `terminal`, `execute_code`, `shell_run`, `shell_start`, background commands, `script_run`/`scripts_run` and the owner's own script runs all ask it what to spawn; the supervisor, timeouts, output limits and Stop are unchanged. Registry entries are Engine code only, never loaded from a workspace, state or model output. The interface (`available`, `describe`, `check`, `prepare`) is documented at the top of `lib/exec/index.mjs`. Language servers and document workers are Engine-owned and stay on the host.
+- **Snapshot.** A task uses the backend its bot had when the task started. Unattended runs need the saved bot to select the same backend too, so switching a bot back to "ask me" takes effect at the next command.
+- **Fallback.** If the sandbox is selected but unavailable (or its profile cannot be built) when a command is admitted, the policy is exactly the host policy and the card says why; only such a command may run on the host. A command admitted for the sandbox fails closed if the sandbox breaks before it starts.
+- **Caches** go to the process home: `HOME`, `TMPDIR`, `XDG_CACHE_HOME`, `npm_config_cache`, `PIP_CACHE_DIR` (and `xcrun_db` on macOS). Install packages into the workspace (`python3 -m venv .venv`, `npm install`); global installs fail.
+- **Receipts.** Results and work receipts carry `backend: "sandbox"`, or `backend: "host"` with `sandboxUnavailable` after a disclosed fallback. A plain host bot's results are unchanged.
+- **Limits.** The network is open; commands run as the same OS user; on macOS `git init`/`git clone` fail inside the sandbox because `.git/config` and `.git/hooks` are read-only (on Linux only repositories that already exist are protected, so they work); `git config --global` fails everywhere because the process home's `.gitconfig` is read-only (set an identity with `git -c user.name=… -c user.email=…` or `GIT_AUTHOR_*`/`GIT_COMMITTER_*`).
+- **Linux.** bubblewrap in new user, mount and PID namespaces, network shared. The service must allow those namespaces (`RestrictNamespaces=user pid net mnt`) and `bubblewrap` must be installed; the status line names the exact fix otherwise (see `docs/deployment.md` → Command sandbox on the server, and `node scripts/check-sandbox.mjs`). When the Engine holds capabilities (the VPS unit's `AmbientCapabilities=CAP_NET_BIND_SERVICE`), bubblewrap is started through `setpriv --inh-caps=-all --ambient-caps=-all`, because bubblewrap refuses to start with them. The PID namespace means everything a command started ends when the command ends or is stopped, also processes it moved into their own session; use `shell_start` for long-running servers. Linux behaviour is proven only by the Linux sandbox workflow; its status is the marker line in `docs/security.md` → Command sandbox.
+
+Tests: `test/exec-sandbox.test.mjs` (real Seatbelt on macOS, defined only there; bubblewrap argument builder anywhere), `test/exec-sandbox-linux.test.mjs` (availability reasons with a fake `bwrap` anywhere; real bubblewrap cases on Linux, defined only where the self-test passes or `TUPIES_REQUIRE_LINUX_SANDBOX=1`, because the release verifier counts a skipped test as a failed suite), `test/exec-policy.test.mjs` (policy matrix, engine lanes, API, settings field). `.github/workflows/linux-sandbox.yml` runs the sandbox tests on Ubuntu directly and inside a transient systemd service with the VPS unit's hardening, and checks that without `mnt` the sandbox reports itself unavailable with the fix.
 
 ## `execute_code`
 
 `execute_code {language: "python" | "node", code, timeoutMs?}` writes the snippet to a private temporary file under the workspace's `.tmp/code/`. It runs the file with `python3` or the Engine's own Node, in the task's terminal folder and environment, under the same timeout, output and cancellation rules. The file is removed afterwards. Node snippets run as ES modules (top-level `await` works) unless they only use `require`. Use it for ad-hoc computation. Registered scripts (`scripts_register`/`scripts_run`) remain the way to keep reviewed, versioned code.
+
+## Saved scripts
+
+`script_save {id, title, purpose, language, code, inputs?, readme?, files?}` saves a reusable program under `scripts/<id>/` and computes its hashes; `script_run {id, args?, inputs?, timeoutMs?}` runs the current saved version through the same backend registry. Named inputs arrive as literal `--name value` argument pairs and as JSON in `TUPIES_SCRIPT_INPUTS`; nothing goes through a shell string. Approval is once per exact version and recorded engine-locally: a new or changed version always shows one card (with a diff against the approved version); an approved version then runs without a card in a ready sandbox under Balanced or Approve for me, in every lane. On this computer every `script_run` asks; Strict always asks; a script whose code the classifier rates dangerous always asks. Code: `lib/saved-scripts.mjs`, `lib/script-ledger.mjs` (decision called from `engineActionDecision`). Tests: `test/saved-scripts.test.mjs`, `test/saved-scripts-api.test.mjs`.
+
+For fully determined work (fetching and parsing, calculations, conversions, bulk edits, checks over many items) bots are told to write and run one script instead of repeating tool calls, to reuse a saved script, and to save one after doing the same kind of work twice.
 
 ## Classifier
 
@@ -54,6 +109,8 @@ The owner chose (9 November 2026) that Approve for me in the owner's own chat ru
 
 `decideAction` uses the stricter of the task's snapshot and the saved bot's Action review setting; an unknown setting counts as Strict. The decision is re-checked just before execution.
 
+For a bot whose commands run in a ready sandbox (see “Where commands run”), read_only and normal commands run in every lane under Balanced and Approve for me; dangerous ones ask and Strict asks for everything. The table below is the host behaviour.
+
 | Command | Strict | Balanced | Approve for me, owner chat | Approve for me, routines / teammates / other chats |
 | --- | --- | --- | --- | --- |
 | read_only | ask | runs | runs | runs |
@@ -75,7 +132,7 @@ The owner chose (9 November 2026) that Approve for me in the owner's own chat ru
 - browser submissions and downloads
 - Mac desktop input
 - non-auto integration calls
-- registered `scripts_run` and `skills_run`
+- registered `scripts_run` on this computer (an approved version in a ready sandbox runs without review; `script_run` never reaches the reviewer) and `skills_run`
 - `lsp_start`
 - coding delegation
 - team and routine changes

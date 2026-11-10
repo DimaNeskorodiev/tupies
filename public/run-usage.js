@@ -44,7 +44,17 @@
     const time=duration(usage.durationMs);if(time)parts.push(time);
     return parts;
   }
+  /** Work that used no model (a saved script run): no tokens, no price, just that it cost nothing to think. */
+  function zeroModel(usage){
+    return usage && typeof usage==='object' && !Array.isArray(usage) && usage.modelCalls===0 && !whole(usage.totalTokens) && !whole(usage.inputTokens) && !whole(usage.outputTokens) && !whole(usage.cachedTokens);
+  }
+  function zeroFooter(usage){
+    const commands=whole(usage.toolCalls),time=duration(usage.durationMs);
+    const parts=['0 model calls',...(commands?[`${commands} command${commands===1?'':'s'}`]:[]),...(time?[time]:[])];
+    return `<details class="run-usage"><summary aria-label="${escape(`Task usage: ${parts.join(', ')}`)}">${parts.map(part=>`<span>${escape(part)}</span>`).join('')}</summary><p>This ran without a model: no tokens were used.</p></details>`;
+  }
   function footer(usage){
+    if(zeroModel(usage))return zeroFooter(usage);
     if(!valid(usage))return '';
     const parts=summary(usage);if(!parts.length)return '';
     const row=(label,value)=>`<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`;
