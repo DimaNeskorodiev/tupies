@@ -7,7 +7,7 @@
   const enc=encodeURIComponent;
   const plain=value=>value && typeof value==='object' && !Array.isArray(value);
   const text=(value,max=300)=>typeof value==='string'?value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,' ').slice(0,max):'';
-  const SAVE_REQUEST='Save what you just did as a script with script_save so next time it runs in seconds without the model. Pick a clear name, declare its inputs, and tell me how to run it.';
+  const SAVE_REQUEST='Save what you just did as a script so next time it runs in seconds without the model. Pick a clear name, declare its inputs, and tell me how to run it.';
   const WHO={owner:'you',bot:'the bot',routine:'a routine',teammate:'a teammate'};
   const STATUS={succeeded:'Succeeded',failed:'Failed',timed_out:'Timed out',stopped:'Stopped'};
   const MAX_STATES=40;
