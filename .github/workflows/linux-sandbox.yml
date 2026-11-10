@@ -1,0 +1,109 @@
+name: Linux command sandbox
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: linux-sandbox-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  bubblewrap:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      WORK: /srv/tupies-sandbox-ci
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Prepare dependencies
+        run: npm ci
+      - name: Install bubblewrap and record the runner's kernel and systemd facts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap
+          bwrap --version
+          command -v setpriv
+          uname -r
+          systemctl --version | head -n 1
+          for setting in kernel.unprivileged_userns_clone user.max_user_namespaces kernel.apparmor_restrict_unprivileged_userns; do
+            printf '%s = %s\n' "$setting" "$(sysctl -n "$setting" 2>/dev/null || echo absent)"
+          done
+      - name: Lift Ubuntu's AppArmor user-namespace restriction on this disposable runner only (Debian 13 has none)
+        run: |
+          if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo absent)" = 1 ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          else
+            echo 'No AppArmor user-namespace restriction on this runner.'
+          fi
+      - name: Sandbox and policy tests as the runner user (bubblewrap started directly)
+        env:
+          TUPIES_REQUIRE_LINUX_SANDBOX: '1'
+        run: node --test --test-reporter=spec test/exec-sandbox.test.mjs test/exec-sandbox-linux.test.mjs test/exec-policy.test.mjs
+      - name: Prepare the read-write folder and runner script for the hardened service
+        run: |
+          sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0700 "$WORK" "$WORK/tmp"
+          cat > "$WORK/run.sh" <<'SCRIPT'
+          #!/bin/bash
+          # Runs a command inside the transient service, copies its output to RESULT.log and its exit code to RESULT.
+          set -u
+          result="$1"
+          shift
+          "$@" | tee "$result.log"
+          echo "${PIPESTATUS[0]}" > "$result"
+          SCRIPT
+          chmod 0700 "$WORK/run.sh"
+      - name: Sandbox tests inside a transient service with the VPS unit's hardening and RestrictNamespaces=user pid net mnt
+        run: |
+          rm -f "$WORK/tests" "$WORK/tests.log"
+          sudo systemd-run --wait --collect --pipe \
+            -p User="$(id -un)" \
+            -p WorkingDirectory="$GITHUB_WORKSPACE" \
+            -p NoNewPrivileges=true \
+            -p ProtectSystem=strict \
+            -p ProtectHome=read-only \
+            -p ReadWritePaths="$WORK" \
+            -p PrivateTmp=true \
+            -p UMask=0077 \
+            -p MemoryMax=1200M \
+            -p TasksMax=512 \
+            -p AmbientCapabilities=CAP_NET_BIND_SERVICE \
+            -p CapabilityBoundingSet=CAP_NET_BIND_SERVICE \
+            -p "RestrictNamespaces=user pid net mnt" \
+            -E TMPDIR="$WORK/tmp" \
+            -E TUPIES_REQUIRE_LINUX_SANDBOX=1 \
+            /bin/bash "$WORK/run.sh" "$WORK/tests" "$(command -v node)" --test --test-reporter=spec test/exec-sandbox.test.mjs test/exec-sandbox-linux.test.mjs || echo "systemd-run returned $?"
+          code="$(cat "$WORK/tests" 2>/dev/null || echo missing)"
+          echo "Sandbox tests inside the hardened service exited with: $code"
+          if [ "$code" != 0 ]; then echo "::error::The sandbox tests failed inside the hardened service (exit $code); the failing test and its assertion are in the output above."; exit 1; fi
+      - name: The operator check inside the same hardened service reports the sandbox ready
+        run: |
+          rm -f "$WORK/ready" "$WORK/ready.log"
+          sudo systemd-run --wait --collect --pipe \
+            -p User="$(id -un)" -p WorkingDirectory="$GITHUB_WORKSPACE" \
+            -p NoNewPrivileges=true -p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths="$WORK" -p PrivateTmp=true -p UMask=0077 \
+            -p AmbientCapabilities=CAP_NET_BIND_SERVICE -p CapabilityBoundingSet=CAP_NET_BIND_SERVICE \
+            -p "RestrictNamespaces=user pid net mnt" \
+            /bin/bash "$WORK/run.sh" "$WORK/ready" "$(command -v node)" scripts/check-sandbox.mjs || echo "systemd-run returned $?"
+          code="$(cat "$WORK/ready" 2>/dev/null || echo missing)"
+          echo "check-sandbox exited with: $code"
+          if [ "$code" != 0 ]; then echo "::error::scripts/check-sandbox.mjs did not report the sandbox ready inside the hardened service (exit $code)."; exit 1; fi
+      - name: Without mnt in RestrictNamespaces (today's VPS drop-in) the sandbox reports itself unavailable and names the fix
+        run: |
+          rm -f "$WORK/negative" "$WORK/negative.log"
+          sudo systemd-run --wait --collect --pipe \
+            -p User="$(id -un)" -p WorkingDirectory="$GITHUB_WORKSPACE" \
+            -p NoNewPrivileges=true -p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths="$WORK" -p PrivateTmp=true -p UMask=0077 \
+            -p AmbientCapabilities=CAP_NET_BIND_SERVICE -p CapabilityBoundingSet=CAP_NET_BIND_SERVICE \
+            -p "RestrictNamespaces=user pid net" \
+            /bin/bash "$WORK/run.sh" "$WORK/negative" "$(command -v node)" scripts/check-sandbox.mjs --json || echo "systemd-run returned $?"
+          code="$(cat "$WORK/negative" 2>/dev/null || echo missing)"
+          echo "check-sandbox exited with: $code"
+          if [ "$code" != 1 ]; then echo "::error::Expected exit 1 (sandbox not ready) without mnt, got $code."; exit 1; fi
+          if ! grep -q '"sandboxReady":false' "$WORK/negative.log"; then echo '::error::The sandbox did not report itself unavailable without mnt.'; exit 1; fi
+          if ! grep -qF 'RestrictNamespaces=user pid net mnt' "$WORK/negative.log"; then echo '::error::The unavailable reason does not name RestrictNamespaces=user pid net mnt.'; exit 1; fi
+          echo 'Without mnt the sandbox is unavailable and its reason names RestrictNamespaces=user pid net mnt.'
