@@ -14,12 +14,14 @@
   const HIDDEN=new Set(['ref','revision','expectedSha256','expectedVersion','digest','approvedDigest','frameId','tabId']);
 
   /** A short title and a sentence for the tools that ask most often; anything else is described from its name. */
-  function describe(tool,args){
+  function describe(tool,args,review){
     const a=plain(args)?args:{},file=clip(a.path,160),site=host(a.url);
     switch(tool){
       case 'terminal':return {title:'Run a command',sentence:'Run this command in the bot’s terminal.',keys:['command','cwd','timeoutMs']};
       case 'execute_code':return {title:'Run code',sentence:`Run a short ${a.language==='node'?'JavaScript':a.language==='python'?'Python':'code'} program.`,keys:['code','language','timeoutMs']};
       case 'shell_run':case 'shell_start':return {title:tool==='shell_start'?'Start a background command':'Run a program',sentence:tool==='shell_start'?'Start this program and keep it running in the background.':'Run this program once.',keys:['executable','command','args','cwd','timeoutMs']};
+      case 'script_run':{const name=clip(review?.script?.title || a.id,80);return {title:'Run a saved script',sentence:`Run the saved script ${name || 'named below'}.`,keys:['inputs','args']};}
+      case 'script_save':{const name=clip(a.title || a.id,80);return {title:'Save a script',sentence:`Save the script ${name || 'named below'} in the bot’s workspace. Nothing runs.`,keys:['title','language','purpose','code']};}
       case 'scripts_run':return {title:'Run a saved script',sentence:`Run the saved script ${clip(a.id ?? a.script ?? a.name,80) || 'named below'}.`,keys:['id','script','name','args','arguments']};
       case 'workspace_write':return {title:'Write a file',sentence:file?`Write the file ${file}.`:'Write a file in the bot’s workspace.',keys:['path','content']};
       case 'workspace_edit':return {title:'Change a file',sentence:file?`Change the file ${file}.`:'Change a file in the bot’s workspace.',keys:['path','oldText','newText','replaceAll']};
@@ -47,21 +49,34 @@
   /** The inputs as a list: the tool's known inputs first, then anything else it was given, without internal identifiers. */
   function inputs(tool,args,keys){
     if(!plain(args))return '';
+    if(tool==='script_run'){
+      const given=plain(args.inputs)?Object.entries(args.inputs).slice(0,12).map(([name,value])=>[clip(name,64),value]):[],extra=Array.isArray(args.args)?args.args.map(item=>clip(item,200)).join(' '):'';
+      const rows=[...given.map(([name,value])=>`<div><dt>${escape(name)}</dt><dd>${escape(clip(value,300))}</dd></div>`),extra?`<div><dt>Extra arguments</dt><dd>${escape(extra)}</dd></div>`:''].join('');
+      return rows?`<dl class="approval-inputs">${rows}</dl>`:'';
+    }
     const order=[...(keys || []).filter(key=>Object.hasOwn(args,key)),...Object.keys(args).filter(key=>!(keys || []).includes(key) && !HIDDEN.has(key))].slice(0,12);
     const rows=order.map(key=>row(key,args[key])).filter(Boolean).join('');
     return rows?`<dl class="approval-inputs">${rows}</dl>`:'';
   }
 
+  /** For a saved script: what changed since the version the owner approved, as words and a diff. */
+  function changeBlock(control){
+    const change=control?.review?.script?.change;if(!plain(change))return '';
+    const words=typeof change.words==='string' && change.words.trim()?`<p class="approval-change">${escape(clip(change.words,400))}</p>`:'';
+    const diff=typeof change.diff==='string' && change.diff.trim()?`<pre class="approval-diff">${escape(clip(change.diff,8000))}</pre>`:'';
+    return words+diff;
+  }
+
   /** Title for the card heading. */
-  function title(control){return describe(control?.tool,control?.arguments).title;}
+  function title(control){return describe(control?.tool,control?.arguments,control?.review).title;}
   /** Sentence, optional reason, inputs and the exact request. `raw` is the engine's own preview text. */
   function body(control,raw){
     if(!control || typeof control.tool!=='string')return '';
-    const described=describe(control.tool,control.arguments);
+    const described=describe(control.tool,control.arguments,control.review);
     const sentence=typeof control.review?.summary==='string' && control.review.summary.trim()?control.review.summary:described.sentence;
     const reason=typeof control.review?.riskReason==='string' && control.review.riskReason.trim()?`<p class="approval-reason">${escape(clip(control.review.riskReason,600))}</p>`:'';
     const exact=text(raw) || JSON.stringify({tool:control.tool,arguments:control.arguments},null,2);
-    return `<p class="approval-sentence"><strong>${escape(clip(sentence,600))}</strong></p>${reason}${inputs(control.tool,control.arguments,described.keys)}<details class="approval-raw"><summary>Details</summary><pre>${escape(clip(exact,20_000))}</pre></details>`;
+    return `<p class="approval-sentence"><strong>${escape(clip(sentence,600))}</strong></p>${reason}${inputs(control.tool,control.arguments,described.keys)}<details class="approval-raw"><summary>Details</summary>${changeBlock(control)}<pre>${escape(clip(exact,20_000))}</pre></details>`;
   }
   window.StudioApprovals={title,body,describe};
 })();
