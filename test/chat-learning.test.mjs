@@ -9,7 +9,7 @@ test('receipts distinguish saved work and pending suggestions, escape text and l
   const {root,ui}=fixture(t);root.innerHTML=ui.render([row('brain'),row('memory','saved',2),row('skill','saved',3),{...row('skill','suggested',4),label:'<img src=x onerror=alert(1)>'}], 'bot_test');
   assert.equal(root.querySelectorAll('a').length,4);assert.equal(root.querySelectorAll('img').length,0);
   assert.deepEqual([...root.querySelectorAll('a')].map(a=>a.getAttribute('href')),['#/bots/bot_test/brain','#/bots/bot_test/memory','#/skills/bot_test','#/bots/bot_test/learning']);
-  assert.match(root.textContent,/Saved to Brain/);assert.match(root.textContent,/Memory updated/);assert.match(root.textContent,/Skill created/);assert.match(root.textContent,/Skill suggested/);
+  assert.match(root.textContent,/Saved to Brain/);assert.match(root.textContent,/I’ll remember that/);assert.match(root.textContent,/Skill created/);assert.match(root.textContent,/Skill suggested/);
   assert.equal(ui.render([{...row('brain'),status:'running'},{...row('brain'),kind:'__proto__'}],'bot_test'),'');
 });
 test('a fresh live receipt animates once, with no replay after polling, DOM replacement or opening old history',t=>{
