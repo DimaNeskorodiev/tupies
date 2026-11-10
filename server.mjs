@@ -23,6 +23,7 @@ import { Providers } from './lib/providers.mjs';
 import { validateFallback } from './lib/model-resilience.mjs';
 import { validateTaskBudget } from './lib/task-budget.mjs';
 import { validateTone } from './lib/bot-tone.mjs';
+import { applyExecutionInput } from './lib/exec/index.mjs';
 import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
@@ -106,6 +107,7 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'taskBudgetUsd') || Object.hasOwn(input,'taskBudgetSteps')){const budget=validateTaskBudget({taskBudgetUsd:Object.hasOwn(input,'taskBudgetUsd')?input.taskBudgetUsd:bot.taskBudget?.usd,taskBudgetSteps:Object.hasOwn(input,'taskBudgetSteps')?input.taskBudgetSteps:bot.taskBudget?.steps},ensure);if(budget)bot.taskBudget=budget;else delete bot.taskBudget;}
   delete bot.taskBudgetUsd;delete bot.taskBudgetSteps;
   if(Object.hasOwn(input,'tone') || Object.hasOwn(input,'toneNote')){const voice=validateTone({tone:Object.hasOwn(input,'tone')?input.tone:bot.tone,toneNote:Object.hasOwn(input,'toneNote')?input.toneNote:bot.toneNote},ensure);if(voice.tone)bot.tone=voice.tone;else delete bot.tone;if(voice.toneNote)bot.toneNote=voice.toneNote;else delete bot.toneNote;}
+  applyExecutionInput(bot,input);
   upgradeReasoningPreference(bot);
   return {description:'',instructions:'',model:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:DEFAULT_APPROVAL_POLICY,enabled:true,hidden:false,...bot};
 }
