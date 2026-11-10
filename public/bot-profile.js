@@ -176,7 +176,7 @@ const PANEL_INTRO={
   memory:['Memory','Key facts and preferences this bot carries into its tasks.'],
   files:['Files','Documents, sources and outputs in this bot’s workspace.'],
   workshop:['Workshop','Isolated tools and improvements to review for product reuse.'],
-  scripts:['Scripts','Reusable programs. Inspect a package before using it.'],
+  scripts:['Scripts','Small programs this bot saved. Run them here in seconds, without the model.'],
 };
 function panel(bot,v){
   const intro=PANEL_INTRO[v.tab];

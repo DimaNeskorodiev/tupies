@@ -5,7 +5,7 @@ import { JSDOM } from 'jsdom';
 
 const read=name=>readFile(new URL(`../public/${name}`,import.meta.url),'utf8');
 const [source,usageSource,approvalSource,app,index,css,profile]=await Promise.all([read('saved-scripts.js'),read('run-usage.js'),read('approval-summary.js'),read('app.js'),read('index.html'),read('saved-scripts.css'),read('bot-profile.js')]);
-const REQUEST='Save what you just did as a script with script_save so next time it runs in seconds without the model. Pick a clear name, declare its inputs, and tell me how to run it.';
+const REQUEST='Save what you just did as a script so next time it runs in seconds without the model. Pick a clear name, declare its inputs, and tell me how to run it.';
 const ago=minutes=>new Date(Date.now()-minutes*60000).toISOString();
 const base={id:'daily-report',title:'Daily report',purpose:'Builds the sales report.',status:'registered',language:'python',inputFields:[],version:'635e53af0009',approvedVersion:'635e53af0009',approvedAt:'2026-11-10T09:00:00Z',approvedHow:'owner-run',needsApproval:false,runnable:true,runtimeAvailable:true,runs:{count:12,lastAt:ago(120),lastStatus:'succeeded',lastDurationMs:3000},usedBy:[]};
 
