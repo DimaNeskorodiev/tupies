@@ -42,24 +42,30 @@ test('the Seatbelt profile denies writes, re-allows the bot folders, protects ho
   assert.throws(()=>seatbeltProfile({writable:[]}),/writable folder/);
 });
 
-test('the bubblewrap arguments mount the system read-only, hide the Engine data and keep the process group',()=>{
-  const args=bubblewrapArgs({writable:['/srv/data/workspaces/b','/srv/data/process-homes/b'],dataDir:'/srv/data',hideFolders:['/home/u/.ssh'],hideFiles:['/opt/tupies/.env'],readOnly:['/srv/data/workspaces/b/.git/hooks'],cwd:'/srv/data/workspaces/b',executable:'bash',args:['-lc','echo hi']});
-  assert.deepEqual(args.slice(0,5),['--die-with-parent','--unshare-pid','--ro-bind','/','/']);
-  assert.equal(args.includes('--new-session'),false,'a new session would escape Stop');
-  assert.equal(args.includes('--unshare-net'),false,'the network stays open');
+test('the bubblewrap arguments use only user, mount and PID namespaces, hide the Engine data and keep the process group',()=>{
+  const args=bubblewrapArgs({writable:['/srv/data/workspaces/b','/srv/data/process-homes/b'],dataDir:'/srv/data',hideFolders:['/home/u/.ssh'],hideFiles:['/opt/tupies/.env'],hiddenFile:'/srv/data/exec-sandbox/hidden-file',pins:['/srv/data/workspaces/b/repo','/srv/data/workspaces/b/repo/.git'],readOnly:['/srv/data/workspaces/b/.git/hooks',['/srv/data/exec-sandbox/empty-file','/srv/data/process-homes/b/.bashrc']],cwd:'/srv/data/workspaces/b',executable:'bash',args:['-lc','echo hi']});
+  assert.deepEqual(args.slice(0,12),['--unshare-user','--unshare-pid','--die-with-parent','--ro-bind','/','/','--dev','/dev','--proc','/proc','--tmpfs','/tmp']);
+  for(const flag of ['--new-session','--unshare-net','--unshare-all','--unshare-ipc','--unshare-uts','--unshare-cgroup','--unshare-cgroup-try','--as-pid-1'])assert.equal(args.includes(flag),false,`${flag}: a new session would escape Stop; the network and other namespaces stay as they are`);
   const at=flag=>args.findIndex((item,index)=>item===flag[0] && args[index+1]===flag[1]);
-  assert.ok(at(['--tmpfs','/srv/data'])>at(['--ro-bind','/']),'the data folder is replaced by an empty tmpfs');
-  assert.ok(at(['--bind','/srv/data/workspaces/b'])>at(['--tmpfs','/srv/data']),'the bot folders are bound after the data folder is hidden');
-  assert.ok(at(['--ro-bind','/srv/data/workspaces/b/.git/hooks'])>at(['--bind','/srv/data/workspaces/b']),'protected paths are read-only on top of the workspace');
-  assert.ok(at(['--tmpfs','/home/u/.ssh'])>0);assert.ok(at(['--ro-bind','/dev/null'])>0);
+  assert.deepEqual(args.slice(at(['--tmpfs','/srv/data'])-2,at(['--tmpfs','/srv/data'])),['--perms','0111'],'the data folder can be crossed to the bot folders but not listed');
+  assert.deepEqual(args.slice(at(['--tmpfs','/home/u/.ssh'])-2,at(['--tmpfs','/home/u/.ssh'])),['--perms','0000'],'a secret folder cannot even be listed');
+  assert.ok(at(['--ro-bind','/srv/data/exec-sandbox/hidden-file'])>0 && args[at(['--ro-bind','/srv/data/exec-sandbox/hidden-file'])+2]==='/opt/tupies/.env');
+  const order=[['--tmpfs','/srv/data'],['--bind','/srv/data/workspaces/b'],['--bind','/srv/data/workspaces/b/repo'],['--bind','/srv/data/workspaces/b/repo/.git'],['--ro-bind','/srv/data/workspaces/b/.git/hooks'],['--ro-bind','/srv/data/exec-sandbox/empty-file'],['--remount-ro','/srv/data'],['--chdir','/srv/data/workspaces/b']].map(at);
+  assert.ok(order.every(index=>index>0),JSON.stringify(order));assert.deepEqual([...order].sort((a,b)=>a-b),order,'hide, bind back, pin, protect, then make the hidden tmpfs read-only');
+  assert.equal(args[at(['--ro-bind','/srv/data/exec-sandbox/empty-file'])+2],'/srv/data/process-homes/b/.bashrc','a missing profile gets the empty placeholder');
   assert.deepEqual(args.slice(-6),['--chdir','/srv/data/workspaces/b','--','bash','-lc','echo hi']);
+  // When the service account's home that holds the data folder is hidden, the data folder needs no tmpfs of its own.
+  const parent=bubblewrapArgs({writable:['/var/lib/tupies/data/workspaces/b'],dataDir:'/var/lib/tupies/data',hideFolders:['/var/lib/tupies'],cwd:'/var/lib/tupies/data/workspaces/b',executable:'true'});
+  assert.equal(parent.includes('/var/lib/tupies/data') && parent[parent.indexOf('/var/lib/tupies/data')-1]==='--tmpfs',false);assert.ok(parent.includes('/var/lib/tupies'));
   assert.throws(()=>bubblewrapArgs({writable:['/w'],dataDir:'relative',cwd:'/w',executable:'bash'}),error=>error.code==='sandbox_unavailable');
+  assert.throws(()=>bubblewrapArgs({writable:['/w'],dataDir:'/d',hideFiles:['/x/.env'],cwd:'/w',executable:'bash'}),/placeholder/,'files are never hidden without the placeholder');
+  assert.throws(()=>bubblewrapArgs({writable:['/w'],dataDir:'/d',readOnly:['relative'],cwd:'/w',executable:'bash'}),error=>error.code==='sandbox_unavailable');
 });
 
 test('availability is reported honestly per platform and cached',async()=>{
   assert.deepEqual(await createSandboxBackend({platform:'win32'}).available(),{ok:false,reason:'The sandbox works on macOS and Linux only.'});
   const linux=createSandboxBackend({platform:'linux',bwrapCandidates:['/nonexistent/bwrap']});
-  assert.match((await linux.available()).reason,/bubblewrap \(bwrap\) is not installed/);
+  assert.equal((await linux.available()).reason,'The sandbox needs bubblewrap. On Debian or Ubuntu: sudo apt install bubblewrap');
   let probes=0;const working=createSandboxBackend({platform:'darwin',seatbelt:process.execPath,runProbe:async()=>{probes++;return {ok:true,reason:''};}});
   assert.equal(working.cached(),null);
   await Promise.all([working.available(),working.available()]);await working.available();
@@ -133,6 +139,9 @@ test('Seatbelt: Git hooks, Git config and shell profiles stay read-only, and a s
   // The process home's shell profiles are protected the same way.
   const home=await getProcessHome(h.store,h.bot.id);
   assert.notEqual((await h.run('echo "export X=1" > "$HOME/.bash_profile"')).exitCode,0);assert.equal(existsSync(path.join(home,'.bash_profile')),false);
+  // Git's global config and the hooks folder every bot command uses (core.hooksPath) stay read-only too.
+  for(const target of ['"$HOME/.gitconfig"','"$HOME/.bash_login"','"$HOME/disabled-git-hooks/pre-commit"'])assert.notEqual((await h.run(`echo evil > ${target}`)).exitCode,0,target);
+  assert.equal(existsSync(path.join(home,'disabled-git-hooks','pre-commit')),false);assert.equal(existsSync(path.join(home,'.gitconfig')),false);
   // Ordinary files in .git (objects, HEAD) and ordinary dotfiles stay writable.
   assert.equal((await h.run('echo ref > .git/HEAD && echo x > .gitignore')).exitCode,0);
   await fs.mkdir(path.join(h.outside,'target'));await fs.symlink(path.join(h.outside,'target'),path.join(h.root,'link'));
