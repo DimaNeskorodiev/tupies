@@ -55,7 +55,7 @@ Each of these is an opening for Tupies.
 
 Two principles from xAI's design account are worth adopting outright: **delegation over operation** (cut anything that adds supervision work) and **few concepts**. Every item below should reduce what the owner has to manage.
 
-### Quick wins (S each)
+### Quick wins (S each) — built on 10 November 2026, source only
 
 | # | Item | What the owner sees |
 | --- | --- | --- |

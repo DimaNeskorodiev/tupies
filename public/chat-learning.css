@@ -20,3 +20,12 @@
 @keyframes learning-check{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
 @media(max-width:600px){.chat-learning{margin-left:0;max-width:100%;gap:6px}.learning-chip{flex:1 1 145px;max-width:100%;padding:9px 10px}.learning-copy{flex:1}}
 @media(prefers-reduced-motion:reduce){.learning-chip,.learning-chip *{animation:none!important;transition:none!important}}
+
+/* Undo beside a remembered fact; an undone receipt stays, quieter. */
+.learning-undo{align-self:center;min-height:32px;padding:0 12px;border:1px solid color-mix(in srgb,var(--rich-accent,#547ca6) 25%,transparent);border-radius:999px;background:transparent;color:var(--rich-ink,var(--ink,#25344b));font:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.learning-undo:hover{background:color-mix(in srgb,var(--rich-accent,#547ca6) 9%,transparent)}
+.learning-undo:focus-visible{outline:2px solid var(--rich-accent,#547ca6);outline-offset:2px}
+.learning-undo:disabled{opacity:.5;cursor:default}
+.learning-chip.is-undone{--save-accent:var(--rich-muted,#8b7c66);opacity:.75}
+.learning-chip.is-undone .learning-copy>span{text-decoration:line-through}
+@media (max-width:760px){.learning-undo{min-height:44px}}

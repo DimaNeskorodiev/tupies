@@ -1,5 +1,16 @@
 # Verification — Tupies Engine 0.5
 
+## Quick wins from the Grok Bot review — 10 November 2026 (source only)
+
+Branch `feature/engine-capability-20261110`, on top of local commit `eb26b2f`, Node 22 on the maintainer Mac.
+
+- `npm run check`: 224 modules. `node scripts/measure-prompt.mjs`: default bot 5,158 fixed tokens per step, fully enabled 5,412 (unchanged).
+- `node scripts/verify-release-tests.mjs`: 98 sequential + 2,254 parallel = 2,352 tests, 0 failed, 0 skipped (193 s for the parallel part). Documentation and the regenerated guide changed afterwards.
+- New `test/quick-wins.test.mjs` (11): the usage report (per bot, per local day, one count per task, unpriced tasks ranked by tokens), `GET /api/usage` (signed-in owner only, period validation), the usage screen in jsdom (escaping, one focusable labelled column per day, tables); approval cards (sentence, labelled inputs, hidden identifiers, collapsed exact request, no markup from arguments); memory undo (previous value kept, stale revision refused, a real task saving a fact, the HTTP undo, the receipt marked undone); tone validation, prompt placement and the settings API; the four avatar states. `test/chat-learning.test.mjs` updated for the new card title.
+- The bar colour `#2860c2` was run through the charting palette validator against the light and the dark surface (all checks pass in both).
+- In-app browser on a disposable engine (temporary data, scripted local provider, generated password), desktop and 375 px dark: Settings → Usage with seeded history (tiles, 14 bars, three tables, no horizontal overflow); a correction that saved `report_day: Monday`, the **I'll remember that** card, Undo restoring `Friday` and the card turning into "Earlier memory restored"; a Strict bot's `workspace_write` shown as "Write the file notes/hello.md." with File and Content and collapsed Details; the amber waiting badge on that bot in the roster and chat header; Playful plus a note saved from Bot settings → Instructions.
+- Not verified: any live model (so the tones' effect on real replies), the badge and cards in the native iPhone app, linked-engine sync of the new `previous` field on memory entries, and `npm run build` beyond `npm run docs:build`.
+
 ## Task usage, limits and long-read fixes — 10 November 2026 (source only)
 
 Branch `feature/engine-capability-20261110` from `origin/main` `7375bb2`, uncommitted, Node 22 on the maintainer Mac, copied `node_modules`.

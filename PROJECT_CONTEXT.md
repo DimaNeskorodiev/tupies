@@ -1,5 +1,17 @@
 # Tupies — project context
 
+## Quick wins from the Grok Bot review — 10 November 2026 (source only, not installed)
+
+The owner asked what people love about Grok Bot; the findings and a 13-item plan are in [docs/plans/grok-bot-love-20261110.md](docs/plans/grok-bot-love-20261110.md), with the owner's answers (Google first for connected apps; a chief of staff with an optional daily brief; Missions, Study, Workshop, Desktop and Coding may move under Advanced; teach-by-showing after watch-and-take-over). The owner then asked to start with the quick wins. They are on branch `feature/engine-capability-20261110`, on top of local commit `eb26b2f` (the earlier usage, quota, budget and browser work); nothing is pushed, merged or installed.
+
+- **Usage screen (G1).** Settings → Usage: tasks, tokens, cached share and estimated cost for 7, 14 or 30 days, one bar per day, per bot, the five heaviest tasks, per day. `lib/usage-report.mjs` reads the run history and final replies and counts each task once; `GET /api/usage?days=N`; `public/usage.js` + `.css`.
+- **Approval cards in plain words (G2).** `public/approval-summary.js` + `.css`: a sentence, labelled inputs, the exact request under Details. The workshop poll card keeps its own layout; the engine's exact-approval binding is unchanged.
+- **"I'll remember that" with Undo (G3).** A memory fact keeps the value it replaced (`previous`, one level; `rememberFact`, `undoFact` in `lib/agent-tools.mjs`). The save receipt carries the entry id, revision and value; the chat card shows what was learned and an Undo button; `POST /api/bots/{id}/memory/{entryId}` with `{undo:true, revision}` restores or removes it and refuses a fact that changed since.
+- **Tone of voice (G4).** `bot.tone` (plain, warm, brisk, playful) and `bot.toneNote` (≤300 characters) add one or two lines after the bot's instructions (`lib/bot-tone.mjs`); the fixed prompt size is unchanged for bots without a tone.
+- **Avatar states (G5).** Compact avatars carry `data-avatar-status` (working, waiting, blocked, unread) from the same status the roster writes out, drawn as a badge that differs by shape as well as colour.
+
+Verification: `npm run check` (224 modules); release runner 98 + 2,254 = 2,352 tests, 0 failures; new `test/quick-wins.test.mjs` (11); the fixed prompt payload stays 5,158 tokens (default bot); a disposable local engine with a scripted provider in the in-app browser at desktop and 375 px (usage screen with seeded history; a correction saved, shown and undone; a Strict bot's file-write approval card; the waiting badge on the roster and header; a tone saved from Settings). Not done: no live model was used, so how each tone actually reads is unjudged; memory entries now carry `previous`, so linked engines should be updated together; the generated guide was rebuilt but the other `npm run build` steps were not run.
+
 ## Task usage, limits and long-read fixes — 10 November 2026 (source only, not installed)
 
 The owner asked for a review of the app and Engine to make it more capable, friendlier and cheaper to run. The review followed the open items of the [product audit](docs/plans/product-audit-20261109.md) and the OpenBot reuse plan (its R0 and parts of R1/R2). Work is on branch `feature/engine-capability-20261110` (worktree `.claude/worktrees/engine-capability`, from `origin/main` `7375bb2`), uncommitted when written; nothing is merged, published or installed.

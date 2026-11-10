@@ -1,5 +1,9 @@
 # Product roadmap
 
+## Quick wins from the Grok Bot review — 10 November 2026 (source only)
+
+Five small changes from [what people love about Grok Bot](plans/grok-bot-love-20261110.md): a usage screen per bot and day, approval cards in plain words, an "I'll remember that" card with Undo, tones of voice, and state badges on avatars. Not installed. Next in that plan: create a bot by describing it, a chief of staff with an optional daily brief, proof of work under replies, fewer places in the navigation, and connected apps starting with Google. The owner's answers to the plan's four decisions are recorded in it. See [chat controls](chat-controls.md#usage-screen).
+
 ## Task usage, limits and long-read fixes — 10 November 2026 (source only)
 
 From a review of the Engine against the [product audit](plans/product-audit-20261109.md) and the OpenBot reuse plan (R0 and parts of R1/R2): every task now records normalized tokens, cache reuse and an estimated cost, shown under the reply; a spent balance or plan window goes straight to the fallback model instead of six retries; an optional per-bot task budget pauses with a Continue/Stop card; a failed `http_fetch` POST is never re-sent automatically; a long tool result returns its first page inline; the browser waits for script-rendered pages and `browser_wait` takes real conditions. Not installed on any engine. Remaining from those plans: default budgets (owner decision), quota holds across tasks, ordered backup models, provider-native search and citations, prices for direct providers, the OS sandbox and Telegram approvals. See [context](context.md#task-usage-and-cost), [operations](operations.md#model-reliability-and-background-reviews), [tool use](tool-use.md#batches-and-long-results) and [browser](browser.md).

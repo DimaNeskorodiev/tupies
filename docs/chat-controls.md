@@ -90,6 +90,26 @@ Under each finished reply, one line shows what the task used: steps, tokens, the
 
 When a bot reaches the optional task budget set in its Advanced settings, or its plan has not moved for 24 tool steps, the chat shows a plain **Continue / Stop** card instead of the generic approval card with its raw request details.
 
+### Usage screen
+
+**Settings → Usage** shows what bots used over the last 7, 14 or 30 days: tasks, tokens, the share served from the provider's cache and the estimated cost; one bar per day; a table per bot; the five tasks that cost the most (or used the most tokens, when some tasks have no price); and a table per day. It is built from the usage summaries of finished tasks kept on this engine (the run history and the final replies), so it covers failed and stopped tasks too, and nothing is counted twice. Costs follow the same rules as the usage line: no price, no dollars. `lib/usage-report.mjs`, `GET /api/usage?days=N`, `public/usage.js` + `.css`.
+
+### Approval cards in plain words
+
+An approval card now says in one sentence what will happen ("Write the file notes/hello.md."), lists the inputs with ordinary labels (File, Content, Command, Folder, Address…), and keeps the exact request behind **Details**. When the engine supplies its own summary for an action, that sentence is used. Internal identifiers are not listed. The card is presentation only: the approval stays bound to the exact request. `public/approval-summary.js` + `.css`.
+
+### "I'll remember that"
+
+When a task saves a fact to the bot's memory, the chat shows a card titled **I'll remember that** with what was learned ("report_day: Monday") and an **Undo** button. Undo restores the value the fact had before, or removes a fact that was new, and the card stays as "Earlier memory restored" or "Forgotten". Undo is refused when the fact has changed again since. See [memory](memory.md).
+
+### Tone of voice
+
+Bot settings → Instructions has a **Tone of voice** (Default, Plain, Warm, Brisk, Playful) and an optional note in the owner's words (up to 300 characters). It adds one or two lines after the bot's own instructions, applies to new tasks, and only changes how replies are worded. `lib/bot-tone.mjs`.
+
+### Avatar states
+
+Compact avatars (the roster, chat headers, lists) carry a small badge for one of four states: working (blue dot), waiting for you (amber rounded square), blocked (red diamond) and finished with an unread reply (green dot). The same state is always written out next to the bot's name; waiting and blocked differ by shape as well as colour. Welcome and profile artwork stay undecorated.
+
 ## Hiding bots
 
 Open the bot profile’s **Settings → Model → Advanced settings → Hide from the sidebar and Bots** to hide a bot. Hidden bots keep their chats, routines, channels and team roles and still work; **Bots › Hidden** lists them and the same button shows them again.

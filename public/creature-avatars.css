@@ -45,3 +45,15 @@
 @media(max-height:800px){.chat-welcome .avatar.companion-mascot.large{width:116px;height:116px}}
 @media(prefers-reduced-motion:reduce){.companion-avatar *{animation:none!important;transition:none!important;transform:none!important}.companion-avatar .companion-frame{opacity:0!important}.companion-avatar .companion-frame-idle{opacity:1!important}}
 @media(prefers-reduced-transparency:reduce){.avatar.creature-avatar.companion-portrait{background:#f3f7fb;border-color:#dce6ed;box-shadow:none}}
+
+/* State at a glance on compact avatars: working, waiting for the owner, blocked, finished and unread.
+   The same state is always written out next to the bot's name; the badge never carries it alone. */
+[data-avatar-status]:not([data-avatar-status=""])::after{content:"";position:absolute;right:-1px;bottom:-1px;z-index:3;width:28%;height:28%;min-width:9px;min-height:9px;max-width:14px;max-height:14px;border-radius:50%;box-sizing:border-box;border:2px solid var(--avatar-status-surface,#fff);background:var(--avatar-status,#2860c2)}
+[data-avatar-status="working"]{--avatar-status:#2860c2}
+[data-avatar-status="waiting"]{--avatar-status:#d9822b}
+[data-avatar-status="blocked"]{--avatar-status:#d0453f}
+[data-avatar-status="unread"]{--avatar-status:#2f9e6a}
+/* Waiting and blocked differ by shape as well as colour. */
+[data-avatar-status="waiting"]::after{border-radius:35%}
+[data-avatar-status="blocked"]::after{border-radius:2px;transform:rotate(45deg)}
+@media (prefers-color-scheme:dark){[data-avatar-status]{--avatar-status-surface:#1c1f26}}
