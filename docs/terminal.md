@@ -1,6 +1,6 @@
 # Terminal, code snippets and command approval
 
-Bots with the **Terminal** tool group get a real shell (`terminal`) and an ad-hoc code runner (`execute_code`). A deterministic, pattern-based classifier decides which commands run without asking. It replaces the per-action model risk review for terminal and code actions, so commands no longer cost an extra inference. `shell_run`, `shell_start`, registered scripts and skill scripts keep working.
+Bots with the **Terminal** tool group get a real shell (`terminal`) and an ad-hoc code runner (`execute_code`). A deterministic, pattern-based classifier decides which commands run without asking. It replaces the per-action model risk review for terminal and code actions, so commands no longer cost an extra inference. `shell_run`, `shell_start`, saved scripts (`script_save` / `script_run`, see [Workspaces](workspaces.md)) and skill scripts keep working; the older `scripts_register`/`scripts_run` stay for existing callers and routine steps.
 
 Code: `lib/terminal.mjs` (runtime), `lib/command-classifier.mjs` (classifier), `lib/command-policy.mjs` (approval policy, allowlist, routine pre-approval, integration auto reads). The Engine calls the policy from `approve()` in `lib/engine.mjs`. Tests: `test/command-classifier.test.mjs`, `test/command-policy.test.mjs`, `test/terminal.test.mjs`.
 
@@ -57,7 +57,7 @@ A command runs as `docker run --rm -i --init --pull=never --cap-drop ALL --secur
 
 The local workspace is **not synced**: files the bot creates there stay on that machine, and local files are not visible to its commands. A working folder inside the workspace maps to the same relative folder remotely; anything else is refused. The remote account must use a POSIX-style login shell. Only `LANG`, `PYTHON*` flags and `TUPIES_*` variables are sent. A changed working folder is not carried between terminal calls. Stop ends the local `ssh` client; whether remote child processes then receive a hangup depends on the remote `sshd` (no terminal is requested), so a long-running quiet command may keep running there.
 
-- **One registry.** `lib/exec/` holds the backends (`host`, `sandbox`, `docker`, `ssh`). `terminal`, `execute_code`, `shell_run`, `shell_start`, background commands and `scripts_run` all ask it what to spawn; the supervisor, timeouts, output limits and Stop are unchanged. Registry entries are Engine code only, never loaded from a workspace, state or model output. The interface (`available`, `describe`, `check`, `prepare`) is documented at the top of `lib/exec/index.mjs`. Language servers and document workers are Engine-owned and stay on the host.
+- **One registry.** `lib/exec/` holds the backends (`host`, `sandbox`, `docker`, `ssh`). `terminal`, `execute_code`, `shell_run`, `shell_start`, background commands, `script_run`/`scripts_run` and the owner's own script runs all ask it what to spawn; the supervisor, timeouts, output limits and Stop are unchanged. Registry entries are Engine code only, never loaded from a workspace, state or model output. The interface (`available`, `describe`, `check`, `prepare`) is documented at the top of `lib/exec/index.mjs`. Language servers and document workers are Engine-owned and stay on the host.
 - **Snapshot.** A task uses the backend its bot had when the task started. Unattended runs need the saved bot to select the same backend too, so switching a bot back to "ask me" takes effect at the next command.
 - **Fallback.** If the sandbox is selected but unavailable (or its profile cannot be built) when a command is admitted, the policy is exactly the host policy and the card says why; only such a command may run on the host. A command admitted for the sandbox fails closed if the sandbox breaks before it starts.
 - **Caches** go to the process home: `HOME`, `TMPDIR`, `XDG_CACHE_HOME`, `npm_config_cache`, `PIP_CACHE_DIR` (and `xcrun_db` on macOS). Install packages into the workspace (`python3 -m venv .venv`, `npm install`); global installs fail.
@@ -69,6 +69,12 @@ Tests: `test/exec-sandbox.test.mjs` (real Seatbelt on macOS, skipped elsewhere; 
 ## `execute_code`
 
 `execute_code {language: "python" | "node", code, timeoutMs?}` writes the snippet to a private temporary file under the workspace's `.tmp/code/`. It runs the file with `python3` or the Engine's own Node, in the task's terminal folder and environment, under the same timeout, output and cancellation rules. The file is removed afterwards. Node snippets run as ES modules (top-level `await` works) unless they only use `require`. Use it for ad-hoc computation. Registered scripts (`scripts_register`/`scripts_run`) remain the way to keep reviewed, versioned code.
+
+## Saved scripts
+
+`script_save {id, title, purpose, language, code, inputs?, readme?, files?}` saves a reusable program under `scripts/<id>/` and computes its hashes; `script_run {id, args?, inputs?, timeoutMs?}` runs the current saved version through the same backend registry. Named inputs arrive as literal `--name value` argument pairs and as JSON in `TUPIES_SCRIPT_INPUTS`; nothing goes through a shell string. Approval is once per exact version and recorded engine-locally: a new or changed version always shows one card (with a diff against the approved version); an approved version then runs without a card in a ready sandbox under Balanced or Approve for me, in every lane. On this computer every `script_run` asks; Strict always asks; a script whose code the classifier rates dangerous always asks. Code: `lib/saved-scripts.mjs`, `lib/script-ledger.mjs` (decision called from `engineActionDecision`). Tests: `test/saved-scripts.test.mjs`, `test/saved-scripts-api.test.mjs`.
+
+For fully determined work (fetching and parsing, calculations, conversions, bulk edits, checks over many items) bots are told to write and run one script instead of repeating tool calls, to reuse a saved script, and to save one after doing the same kind of work twice.
 
 ## Classifier
 
@@ -125,7 +131,7 @@ For a bot whose commands run in a ready sandbox (see “Where commands run”), 
 - browser submissions and downloads
 - Mac desktop input
 - non-auto integration calls
-- registered `scripts_run` and `skills_run`
+- registered `scripts_run` on this computer (an approved version in a ready sandbox runs without review; `script_run` never reaches the reviewer) and `skills_run`
 - `lsp_start`
 - coding delegation
 - team and routine changes
