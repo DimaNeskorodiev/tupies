@@ -17,6 +17,29 @@ The bot can inspect script-rendered pages, follow links, fill forms, type text, 
 
 Browser actions can submit forms or trigger a site's automatic save behavior. The engine reviews exact actions, including their page/control identity. Approval of one action does not authorize a later purchase, reservation, message or form submission. A successful click is not proof that the site's business operation succeeded; the bot must inspect its result. Interrupted or timed-out actions are not automatically replayed.
 
+## Pages that render with scripts
+
+Many sites send an empty shell and draw their content with scripts after the page has loaded. The browser gives such a page a short, bounded chance to finish before the bot reads it.
+
+**Settle after navigation.** After a page loads (`browser_open`, `browser_new_tab`, `browser_back`, or a link followed by navigation), and before the first `browser_snapshot` of a document reached another way, the browser checks once per document:
+
+- A visible loading marker (`aria-busy="true"`, `role="progressbar"`, or a class containing `skeleton`, `shimmer`, `spinner` or `loading`) is given up to about 2 seconds to go away.
+- A page that has scripts but shows under 200 characters of text, or no links, buttons or fields, is given up to about 1.5 seconds for its content to start arriving, and then until 250 ms pass without a change.
+- Any other page keeps the previous short fixed pause, so ordinary pages are not slowed.
+
+The whole wait is capped at about 3 seconds on top of the existing 15-second load limit. It ends at once when a JavaScript dialog opens or the task is stopped, and if the page cannot be checked (for example because it navigates again) the browser falls back to the short fixed pause. Clicks, fills, typing and keys do not use it.
+
+**`browser_wait` conditions.** `milliseconds` alone is still a plain pause of at most 5000 (default 500). Two optional arguments turn it into a wait for something specific, with `milliseconds` as the longest wait (default 5000, at most 15000):
+
+- `text`: up to 200 characters; wait until the visible text of the selected page or frame contains it, ignoring case and spacing.
+- `until: "dom-quiet"`: wait until 250 ms pass without a change to the page's elements or text.
+
+With both, the text must be present and the page quiet. The result always includes a fresh outline, plus `waited: {condition, met, ms}`. A condition that was not met is reported as `met: false`; it is not an error and nothing is repeated.
+
+**Hint for a page that is still empty.** When the result of `browser_open`, `browser_new_tab` or `browser_snapshot` has under 200 characters of outline and fewer than three references, it carries a `hint` telling the bot to wait for text or a quiet page and then read the text, rather than reopen the same address. The hint is given once per page load (a repeated snapshot of the same page does not repeat it), and not on dialogs or detected verification challenges.
+
+Limits: the settle and the conditions watch the selected page or frame only, and do not see changes inside other frames or shadow-DOM components. A page with constant updates (tickers, animations) may never be quiet and simply reaches the time limit. A very short but complete page also gets the hint. None of this solves a CAPTCHA or a sign-in wall; those still need the owner handoff below. A page drawn only on a canvas has no text to wait for: it needs `browser_screenshot` with an image-capable model.
+
 ## Sign in, verification codes and CAPTCHA
 
 When the bot calls `browser_handoff`, the chat displays **Open browser**. The task pauses while you control the same browser through an image of its current page:

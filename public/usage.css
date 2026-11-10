@@ -1,0 +1,30 @@
+/* Settings › Usage. Quiet numbers; no motion. */
+.usage-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.usage-tile{display:grid;gap:4px;padding:16px 18px;min-width:0}
+.usage-tile>span{color:var(--muted,#737b89);font-size:12px}
+.usage-tile>strong{font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.usage-tile>small{color:var(--muted,#737b89);font-size:11px}
+.usage-chart{margin:0 0 14px;padding:14px 18px 12px}
+.usage-chart>figcaption{margin:0 0 10px;font-weight:650;font-size:14px}
+.usage-bars{display:flex;align-items:flex-end;gap:6px;height:120px}
+.usage-bar{position:relative;flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;border-radius:8px;outline:0}
+/* #2860c2 passes the chart colour checks on both the light and the dark surface. */
+.usage-bar>i{display:block;width:100%;max-width:28px;border-radius:4px 4px 0 0;background:#2860c2}
+.usage-bar>span{color:var(--muted,#737b89);font-size:10px;white-space:nowrap}
+.usage-bar:hover>i,.usage-bar:focus-visible>i{background:#1c4fa8}
+.usage-bar:focus-visible{box-shadow:0 0 0 2px #2860c2}
+.usage-bar:hover::after,.usage-bar:focus-visible::after{content:attr(data-label);position:absolute;z-index:2;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);padding:5px 9px;border-radius:9px;background:#1f2733;color:#fff;font-size:11px;line-height:1.3;white-space:nowrap;pointer-events:none}
+.usage-bar:first-child:hover::after,.usage-bar:first-child:focus-visible::after{left:0;transform:none}
+.usage-bar:last-child:hover::after,.usage-bar:last-child:focus-visible::after{left:auto;right:0;transform:none}
+.usage-table{margin:0 0 14px;padding:6px 18px 10px;overflow-x:auto}
+.usage-table table{width:100%;border-collapse:collapse;font-size:13px}
+.usage-table caption{padding:12px 0 6px;text-align:left;font-weight:650;font-size:14px}
+.usage-table th,.usage-table td{padding:10px 8px 10px 0;border-bottom:1px solid var(--line,rgba(84,96,121,.12));text-align:left;vertical-align:top;font-weight:400}
+.usage-table thead th{color:var(--muted,#737b89);font-size:11px;font-weight:600}
+.usage-table tbody tr:last-child>*{border-bottom:0}
+.usage-table .is-number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;padding-right:0;padding-left:12px}
+.usage-table tbody th a{color:inherit;text-decoration:none;overflow-wrap:anywhere}
+.usage-table tbody th a:hover{text-decoration:underline}
+.usage-table tbody th small{display:block;margin-top:2px;color:var(--muted,#737b89);font-size:11px}
+.usage-note{margin:4px 2px 24px;color:var(--muted,#737b89);font-size:12px;line-height:1.5}
+@media (max-width:760px){.usage-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.usage-bars{height:96px;gap:3px}.usage-bar>span{display:none}.usage-table{padding:4px 14px 8px}.usage-table table{font-size:12px}}

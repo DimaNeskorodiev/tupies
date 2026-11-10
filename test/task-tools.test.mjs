@@ -70,7 +70,7 @@ test('large tool outputs remain redacted, paged, isolated to the active run, and
   let resultId,context;
   const {store,engine,run}=await fixture(t,async(request,index)=>{
     if(index===1)return {text:'',toolCalls:[call('large','workspace_list',{path:'.'})]};
-    if(index===2){const result=JSON.parse(request.messages.at(-1).content);assert.equal(result.shortened,true);resultId=result.resultId;assert.equal(result.nextOffset,0);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);return {text:'',toolCalls:[call('page','tool_result_read',{resultId,offset:16000,limit:12000})]};}
+    if(index===2){const result=JSON.parse(request.messages.at(-1).content);assert.equal(result.shortened,true);resultId=result.resultId;assert.equal(result.nextOffset,result.content.length);assert.ok(result.content.length>=8000 && JSON.stringify(result).length<=16000);assert.equal(result.preview,undefined);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);return {text:'',toolCalls:[call('page','tool_result_read',{resultId,offset:16000,limit:12000})]};}
     const page=JSON.parse(request.messages.at(-1).content);assert.equal(page.offset,16000);assert.ok(page.content.length);assert.ok(page.nextOffset>16000);assert.doesNotMatch(page.content,/private-fixture-token/);return {text:'Read a page of the retained result.',toolCalls:[]};
   });
   await store.mutate(state=>{state.connections[0].secret=store.seal('private-fixture-token');});
