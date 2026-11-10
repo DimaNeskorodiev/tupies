@@ -21,6 +21,7 @@ import { routineRuns, validateRoutine } from './lib/routines.mjs';
 import { Rooms, isDriveActive } from './lib/rooms.mjs';
 import { Providers } from './lib/providers.mjs';
 import { validateFallback } from './lib/model-resilience.mjs';
+import { validateTaskBudget } from './lib/task-budget.mjs';
 import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
@@ -101,6 +102,8 @@ function validateBot(input, previous={}) {
   if(Object.hasOwn(input,'fallback')){if(input.fallback===null || input.fallback==='' || (input.fallback && typeof input.fallback==='object' && !input.fallback.connectionId && !input.fallback.model))delete bot.fallback;else{ensure(input.fallback && typeof input.fallback==='object' && !Array.isArray(input.fallback) && typeof input.fallback.connectionId==='string' && typeof input.fallback.model==='string',400,'Choose a provider and a model for the fallback.');bot.fallback={connectionId:string(input.fallback.connectionId,'fallback provider',100),model:string(input.fallback.model,'fallback model',200)};}}
   if(Object.hasOwn(input,'contextLimit')){ensure(CONTEXT_LIMITS.includes(input.contextLimit),400,'Choose an automatic, 128K or full-model context limit.');bot.contextLimit=input.contextLimit;}
   if(Object.hasOwn(input,'compactThreshold')){const value=input.compactThreshold===''?'':typeof input.compactThreshold==='string' && /^\d{1,3}$/.test(input.compactThreshold)?Number(input.compactThreshold):input.compactThreshold;ensure(value==='' || Number.isInteger(value) && value>=COMPACT_THRESHOLDS.min && value<=COMPACT_THRESHOLDS.max,400,`Choose when older messages are summarized: ${COMPACT_THRESHOLDS.min}–${COMPACT_THRESHOLDS.max}% of the context limit, or automatic.`);bot.compactThreshold=value;}
+  if(Object.hasOwn(input,'taskBudgetUsd') || Object.hasOwn(input,'taskBudgetSteps')){const budget=validateTaskBudget({taskBudgetUsd:Object.hasOwn(input,'taskBudgetUsd')?input.taskBudgetUsd:bot.taskBudget?.usd,taskBudgetSteps:Object.hasOwn(input,'taskBudgetSteps')?input.taskBudgetSteps:bot.taskBudget?.steps},ensure);if(budget)bot.taskBudget=budget;else delete bot.taskBudget;}
+  delete bot.taskBudgetUsd;delete bot.taskBudgetSteps;
   upgradeReasoningPreference(bot);
   return {description:'',instructions:'',model:'',color:'slate',icon:'roki',connectionId:'',skills:[],tools:[...DEFAULT_BOT_TOOLS],toolGroupsVersion:TOOL_GROUPS_VERSION,collaborators:[],teamMode:'all',integrationIds:[],approvalPolicy:DEFAULT_APPROVAL_POLICY,enabled:true,hidden:false,...bot};
 }
