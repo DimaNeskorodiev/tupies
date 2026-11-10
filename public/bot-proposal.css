@@ -12,7 +12,8 @@
 .bprop-banner{margin:0;padding:10px 14px;border-radius:12px;background:rgba(120,130,150,.14);font-size:14px}
 .bprop-card{display:grid;gap:14px;padding:16px;min-width:0}
 .bprop-head{display:flex;gap:14px;align-items:flex-start}
-.bprop-avatar{flex:none;display:block;width:56px}
+/* The large companion portrait is 92px wide; the box matches it so the fields never sit under the artwork. */
+.bprop-avatar{flex:none;display:block;width:92px;min-height:92px}
 .bprop-fields{flex:1;min-width:0;display:grid;gap:10px}
 .bprop-fields .field{margin:0}
 .bprop-how summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}
