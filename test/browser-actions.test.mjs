@@ -23,10 +23,13 @@ async function fixture(t) {
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const directory=await fs.mkdtemp(path.join(os.tmpdir(),'tupies-browser-actions-'));
-  const browsers=new Browsers({directory},{executable,allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}]});await browsers.recover();t.after(async()=>{await browsers.close();await new Promise(resolve=>server.close(resolve));await fs.rm(directory,{recursive:true,force:true});});
+  const browsers=new Browsers({directory},{executable,allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}]});await browsers.recover();
+  // Anything the test starts closes before the folder goes: a failing after hook skips the ones registered after it.
+  const closers=[],closeFirst=close=>closers.push(close);
+  t.after(async()=>{try{for(const close of closers.reverse())await close();await browsers.close();await new Promise(resolve=>server.close(resolve));}finally{await fs.rm(directory,{recursive:true,force:true});}});
   const context={bot:{id:'bot_test',tools:['browser']},runId:'run_test',signal:new AbortController().signal};
   const base=`http://127.0.0.1:${server.address().port}`;
-  return {base,browsers,context,requests,directory};
+  return {base,browsers,context,requests,directory,closeFirst};
 }
 const find=(outline,text)=>{const line=outline.split(/(?=\[e\d+\])/).find(line=>line.includes(`"${text}"`));assert.ok(line,`Missing control ${text}: ${outline}`);return /\[(e\d+)\]/.exec(line)[1];};
 const run=async(f,name,args)=>{const prepared=browserActionRequiresApproval(name,{retained:await f.browsers.hasRetained(f.context.bot.id)})?await prepareBrowserAction(f.browsers,f.context,name,args):null;return executeBrowserTool(f.browsers,{...f.context,approvedAction:prepared?.identity},name,args);};
@@ -207,7 +210,7 @@ test('Approve for me edits a field and follows a link automatically, but stops b
     if(turn===5)return tool('browser_click',{ref:find(page.outline,'Submit order'),revision:page.revision});
     return {text:'The site action was denied.',toolCalls:[]};
   }}});
-  engine.browsers=f.browsers;await engine.recover();t.after(()=>engine.close());
+  engine.browsers=f.browsers;await engine.recover();f.closeFirst(()=>engine.close());
   const started=await engine.start('bot_atlas','Research this fixture and inspect the proposed order.');
   for(let i=0;i<3000&&store.state.runs.bot_atlas?.status!=='waiting_for_approval';i++)await new Promise(resolve=>setTimeout(resolve,10));
   const run=store.state.runs.bot_atlas;assert.equal(run.status,'waiting_for_approval');
@@ -243,7 +246,7 @@ test('Approve for me submits an ordinary requested browser form through independ
     if(turn===3)return tool('browser_click',{ref:find(page.outline,'Find apartments'),revision:page.revision});
     return {text:'The requested search form was submitted.',toolCalls:[]};
   },reviewAction:async(_c,request)=>{const payload=JSON.parse(request.messages[1].content);reviews.push(payload);return {toolCalls:[{name:'action_review_result',arguments:{actionDigest:payload.actionDigest,decision:'approve',risks:[],reason:'Submit the requested apartment search.'}}]};}}});
-  engine.browsers=f.browsers;await engine.recover();t.after(()=>engine.close());
+  engine.browsers=f.browsers;await engine.recover();f.closeFirst(()=>engine.close());
   const started=await engine.start('bot_atlas','Search apartments in Kraków using this fixture form.');await engine.tasks.get(started.id);
   const actual=store.state.runs.bot_atlas;assert.equal(actual.status,'completed');assert.equal(actual.events.some(row=>row.type==='approval.request'),false);assert.equal(reviews.length,1);assert.equal(reviews[0].action.review.control,'Find apartments');assert.ok(f.requests.some(row=>row.url.startsWith('/done?city=Krak')));
 });
