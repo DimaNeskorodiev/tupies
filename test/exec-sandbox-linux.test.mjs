@@ -114,11 +114,13 @@ readinessTest('the Linux sandbox is ready on this runner',{skip:linux && require
 async function fixture(t,{execution={backend:'sandbox'}}={}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-exec-linux-')),store=await new Store(directory).init();
   const outside=await fs.mkdtemp(path.join(tmpdir(),'tupies-exec-linux-outside-'));
-  t.after(async()=>{await fs.rm(directory,{recursive:true,force:true});await fs.rm(outside,{recursive:true,force:true});});
+  // Anything still running is stopped before the folders go: a failing after hook skips the ones registered after it.
+  const closers=[],closeFirst=close=>closers.push(close);
+  t.after(async()=>{try{for(const close of closers.reverse())await close();}finally{await fs.rm(directory,{recursive:true,force:true});await fs.rm(outside,{recursive:true,force:true});}});
   await store.mutate(state=>{for(const bot of state.bots)state.runs[bot.id]={id:'run_a',botId:bot.id,status:'running'};});
   const bot={...store.state.bots[0],tools:['workspace','terminal'],...(execution?{execution}:{})},tools=new AgentTools(store,{});
   const run=(command,options={})=>tools.execute(bot,'terminal',{command},{approved:true,runId:'run_a',signal:options.signal});
-  return {store,bot,tools,run,outside,directory:await fs.realpath(directory),root:await fs.realpath(await getWorkspaceRoot(store,bot.id)),home:await fs.realpath(await getProcessHome(store,bot.id))};
+  return {store,bot,tools,run,outside,closeFirst,directory:await fs.realpath(directory),root:await fs.realpath(await getWorkspaceRoot(store,bot.id)),home:await fs.realpath(await getProcessHome(store,bot.id))};
 }
 function spawnLaunch(launch) {
   return new Promise(resolve=>{
@@ -236,7 +238,7 @@ linuxTest('Linux: execute_code, shell_run and background commands run in the san
   const shell=await h.tools.execute(h.bot,'shell_run',{executable:'sh',args:['-c',`echo ok > shell.txt; echo x > '${h.outside}/shell.txt'`]},{approved:true,runId:'run_a'});
   assert.equal(shell.backend,'sandbox');assert.match(shell.stderr,notFound);
   assert.equal(existsSync(path.join(h.root,'shell.txt')),true);assert.equal(existsSync(path.join(h.outside,'shell.txt')),false);
-  const manager=new BackgroundProcesses(h.store);t.after(()=>manager.close());
+  const manager=new BackgroundProcesses(h.store);h.closeFirst(()=>manager.close());
   const started=await manager.start(h.bot,'run_a',{executable:'sh',args:['-c',`echo bg > bg.txt; echo x > '${h.outside}/bg.txt'; exit 3`]});
   assert.equal(started.backend,'sandbox');
   const done=await manager.wait(h.bot.id,'run_a',started.processId);

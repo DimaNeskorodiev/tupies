@@ -12,11 +12,13 @@ import { writeWorkspace } from '../lib/agent-tools.mjs';
 const call=(id,name,args={})=>({id,name,arguments:args});
 async function fixture(t) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-quality-review-')),store=await new Store(directory).init();
-  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  // Anything the test starts closes before the folder goes: a failing after hook skips the ones registered after it.
+  const closers=[],closeFirst=close=>closers.push(close);
+  t.after(async()=>{try{for(const close of closers.reverse())await close();}finally{await fs.rm(directory,{recursive:true,force:true});}});
   const context={bot:store.state.bots[0],runId:'review_run',sessionId:'bot_atlas',controller:new AbortController()};
   await store.mutate(state=>{state.runs.bot_atlas={id:context.runId,botId:'bot_atlas',source:'chat',status:'running',workRecords:[]};});
   const engine={store,assertRunning(){},current(ctx){const r=store.state.runs[ctx.bot.id];return r?.id===ctx.runId?r:null;}};
-  return {engine,store,context};
+  return {engine,store,context,closeFirst};
 }
 
 test('running background commands with null exit codes remain pending and ordinary polling is not a failure loop',async t=>{
@@ -74,10 +76,10 @@ test('legacy unknown Telegram receipts are hidden while trusted owner-DM current
 });
 
 test('an ambiguous external mutation is never redispatched or reapproved through autonomous repeated calls',async t=>{
-  const {store}=await fixture(t);let step=0,approvals=0,dispatches=0;
+  const {store,closeFirst}=await fixture(t);let step=0,approvals=0,dispatches=0;
   await store.mutate(state=>{state.runs.bot_atlas.status='completed';state.connections.push({id:'fixture',type:'openai',model:'fixture'});state.bots[0].connectionId='fixture';state.bots[0].tools=['workspace','integrations'];});
   const engine=new NativeEngine(store,{providers:{async complete(){step++;return step<=4?{text:'',toolCalls:[step===3?call('unrelated','workspace_write',{path:'unrelated.txt',content:'checked'}):call(`remote-${step}`,'integration_call',{integrationId:'fixture',tool:'publish',arguments:{text:'once'}})]}:{text:'The publish outcome is unknown.',toolCalls:[]};}}});
-  t.after(()=>engine.close());engine.approve=async()=>{approvals++;return true;};
+  closeFirst(()=>engine.close());engine.approve=async()=>{approvals++;return true;};
   const execute=engine.tools.execute.bind(engine.tools);engine.tools.execute=async(bot,name,args,options)=>{if(name==='integration_call'){dispatches++;throw new HttpError(502,'Response lost after dispatch.');}return execute(bot,name,args,options);};
   const run=await engine.start('bot_atlas','Publish once.');await engine.tasks.get(run.id);
   assert.equal(dispatches,1);assert.equal(approvals,1);assert.equal(store.state.runs.bot_atlas.workRecords.filter(r=>r.errorCode==='repeated_failure').length,2);

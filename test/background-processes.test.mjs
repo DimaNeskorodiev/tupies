@@ -14,9 +14,11 @@ async function fixture(t,options={}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'studio-background-')),store=await new Store(directory).init();
   await store.mutate(state=>{for(const bot of state.bots)state.runs[bot.id]={id:`run_${bot.id}`,botId:bot.id,status:'running'};});
   const manager=new BackgroundProcesses(store,options),bot=store.state.bots[0],runId=store.state.runs[bot.id].id,root=await getWorkspaceRoot(store,bot.id);
-  t.after(async()=>{await manager.close();await fs.rm(directory,{recursive:true,force:true});});
+  // Anything the test starts closes before the folder goes: a failing after hook skips the ones registered after it.
+  const closers=[],closeFirst=close=>closers.push(close);
+  t.after(async()=>{try{for(const close of closers.reverse())await close();await manager.close();}finally{await fs.rm(directory,{recursive:true,force:true});}});
   const start=(script,args={})=>manager.start(bot,runId,{executable:process.execPath,args:['-e',script],timeoutMs:5000,...args});
-  return {directory,store,manager,bot,runId,root,start};
+  return {directory,store,manager,bot,runId,root,start,closeFirst};
 }
 
 test('internal captured streams remain separate, bounded and redacted without changing public process output',async t=>{
@@ -213,13 +215,13 @@ test('completed command previews expose reduced coverage after run cleanup and h
 
 test('guardian kills the owned command after an abrupt host crash, then recovery preserves interruption',async t=>{
   if(process.platform==='win32')return;
-  const {directory,manager,store,bot,runId,root}=await fixture(t);
+  const {directory,manager,store,bot,runId,root,closeFirst}=await fixture(t);
   const storeUrl=new URL('../lib/store.mjs',import.meta.url).href,managerUrl=new URL('../lib/background-processes.mjs',import.meta.url).href;
   const command="const fs=require('node:fs');process.on('SIGTERM',()=>{});let n=0;setInterval(()=>fs.writeFileSync('crash-heartbeat',String(++n)),10)";
   const hostScript=`const {Store}=await import(${JSON.stringify(storeUrl)});const {BackgroundProcesses}=await import(${JSON.stringify(managerUrl)});const store=await new Store(${JSON.stringify(directory)}).init();const manager=new BackgroundProcesses(store);const child=await manager.start(${JSON.stringify(bot.id)},${JSON.stringify(runId)},{executable:process.execPath,args:['-e',${JSON.stringify(command)}],timeoutMs:5000});console.log(JSON.stringify({id:child.processId,guardian:manager.entries.get(child.processId).child.pid}));setInterval(()=>{},1000)`;
   const host=spawn(process.execPath,['--input-type=module','-e',hostScript],{stdio:['ignore','pipe','pipe']});let stdout='',stderr='',guardian;
   host.stdout.on('data',chunk=>{stdout+=chunk;});host.stderr.on('data',chunk=>{stderr+=chunk;});
-  t.after(()=>{try{host.kill('SIGKILL');}catch{}if(guardian)try{process.kill(-guardian,'SIGKILL');}catch{}});
+  closeFirst(()=>{try{host.kill('SIGKILL');}catch{}if(guardian)try{process.kill(-guardian,'SIGKILL');}catch{}});
   const metadata=await until(()=>{try{return JSON.parse(stdout.trim());}catch{return null;}});guardian=metadata.guardian;
   await until(async()=>fs.readFile(path.join(root,'crash-heartbeat'),'utf8').catch(()=>null));host.kill('SIGKILL');
   await new Promise(resolve=>host.once('close',resolve));assert.equal(stderr,'');await delay(450);
