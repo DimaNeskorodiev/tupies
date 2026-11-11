@@ -160,10 +160,10 @@ test('a task that saves a fact leaves a receipt with what was learned, and the o
   const {studio,url,headers}=await server(t);
   const store=studio.store,BOT='bot_atlas';
   await store.mutate(state=>{state.connections.push({id:'fixture',type:'openai',defaultModel:'m'});for(const bot of state.bots){bot.connectionId='fixture';bot.model='m';bot.tools=['memory'];}rememberFact(state,BOT,{key:'report_day',value:'Friday',source:{kind:'owner-edit',observedAt:new Date().toISOString()}});});
-  const directory=await mkdtemp(path.join(tmpdir(),'studio-quick-wins-engine-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  const directory=await mkdtemp(path.join(tmpdir(),'studio-quick-wins-engine-'));let engine;
+  t.after(async()=>{try{await engine?.close();}finally{await rm(directory,{recursive:true,force:true});}});
   let calls=0;
-  const engine=new NativeEngine(store,{providers:{async complete(){calls++;return calls===1?{text:'',toolCalls:[{id:'save',name:'memory_set',arguments:{key:'report_day',value:'Monday'}}]}:{text:'Understood: reports on Monday from now on.',toolCalls:[]};}},runTimeout:10000});
-  t.after(()=>engine.close());
+  engine=new NativeEngine(store,{providers:{async complete(){calls++;return calls===1?{text:'',toolCalls:[{id:'save',name:'memory_set',arguments:{key:'report_day',value:'Monday'}}]}:{text:'Understood: reports on Monday from now on.',toolCalls:[]};}},runTimeout:10000});
   const started=await engine.start(BOT,'No, send the weekly report on Monday, not Friday.');await engine.tasks.get(started.id);
   assert.equal(store.state.runs[BOT].status,'completed');
   const owner=store.state.messages[BOT].find(message=>message.runId===started.id && message.role==='user');
