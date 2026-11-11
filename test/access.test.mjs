@@ -194,13 +194,14 @@ test('npm run pair creates pairing links through the private control socket', as
 
 test('a data directory too deep for a Unix socket gets a private per-user socket directory', async t => {
   const base = await fs.mkdtemp(path.join(tmpdir(), 'studio-deep-')), deep = path.join(base, 'a'.repeat(60), 'b'.repeat(60));
-  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  // One hook, close first: a failing after hook skips the ones after it, and an open server would keep the run alive.
+  let app;
+  t.after(async () => { try { await app?.close(); } finally { await fs.rm(base, { recursive: true, force: true }); } });
   const file = controlSocketPath(deep);
   assert.match(file, /^\/tmp\/hermes-studio-[\w-]+\/[0-9a-f]{24}\.sock$/);
   assert.equal(controlSocketPath(`${deep}/`), file, 'the same data directory always maps to the same socket');
   assert.equal(controlSocketPath(base), path.join(base, 'control.sock'));
-  const app = await createStudioServer({ dataDir: deep, scheduler: false, logErrors: false });
-  t.after(() => app.close());
+  app = await createStudioServer({ dataDir: deep, scheduler: false, logErrors: false });
   const { url } = await app.listen(0);
   await app.openControl(file, url);
   assert.equal(((await fs.stat(path.dirname(file))).mode & 0o777), 0o700);

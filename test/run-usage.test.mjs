@@ -119,9 +119,9 @@ async function fakeServer(t,handler) {
 
 test('a provider response that names a spent quota is classified from its structured code',async t=>{
   const directory=await fs.mkdtemp(path.join(tmpdir(),'studio-run-usage-')),store=await new Store(directory).init();
-  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
   const providers=new Providers(store,{allowPrivateNetwork:true});
   const base=await fakeServer(t,(req,res)=>{req.resume();res.writeHead(429,{'Content-Type':'application/json'});res.end(JSON.stringify({error:{code:'insufficient_quota',type:'insufficient_quota',message:'You exceeded your current quota, please check your plan and billing details.'}}));});
+  t.after(()=>fs.rm(directory,{recursive:true,force:true})); // registered after the fake server, so the server closes first
   const error=await providers.complete({id:'c1',type:'custom',baseUrl:base,models:[]},{model:'m',messages:[{role:'user',content:'hi'}]}).catch(value=>value);
   assert.equal(providerFailure(error)?.code,'quota_exhausted');assert.equal(providerFailure(error).upstreamStatus,429);
 });

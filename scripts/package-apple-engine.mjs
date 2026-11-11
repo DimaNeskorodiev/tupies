@@ -58,6 +58,9 @@ async function copyTree(source,destination,allowed) {
   }
 }
 
+/** Operator scripts shipped in every Engine release (the docs tell operators to run them from the installed app). */
+export const ENGINE_OPERATIONAL_SCRIPTS=Object.freeze(['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs','check-sandbox.mjs']);
+
 /** Positive source allowlist: no .env, data, workspaces, tests, prototypes or installed dependencies. */
 export async function stageEngineSource(repo,destination) {
   if(await exists(destination))fail('The source staging destination already exists.');
@@ -69,7 +72,7 @@ export async function stageEngineSource(repo,destination) {
   }
   if(await exists(path.join(repo,'NOTICE')))await copyTree(path.join(repo,'NOTICE'),path.join(destination,'NOTICE'),()=>true);
   await fs.mkdir(path.join(destination,'scripts'),{recursive:true,mode:0o755});
-  for(const name of ['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs']) {
+  for(const name of ENGINE_OPERATIONAL_SCRIPTS) {
     const source=path.join(repo,'scripts',name),stat=await fs.lstat(source);
     if(!stat.isFile()||stat.isSymbolicLink())fail(`Operational script ${name} must be a regular file.`);
     await fs.copyFile(source,path.join(destination,'scripts',name));await fs.chmod(path.join(destination,'scripts',name),0o644);
