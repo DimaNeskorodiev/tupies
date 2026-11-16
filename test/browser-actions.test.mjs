@@ -7,7 +7,7 @@ import os from 'node:os';
 import { Store } from '../lib/store.mjs';
 import { NativeEngine } from '../lib/engine.mjs';
 import { EventEmitter } from 'node:events';
-import { BrowserSession, Browsers, EgressProxy, findBrowser, prepareBrowserAction, executeBrowserTool, browserActionRequiresApproval, browserToolDefinitions } from '../lib/browser.mjs';
+import { BrowserSession, Browsers, EgressProxy, findBrowser, forgetBrowserUserAgents, regularUserAgent, prepareBrowserAction, executeBrowserTool, browserActionRequiresApproval, browserToolDefinitions } from '../lib/browser.mjs';
 import { OwnerControl, StreamSink, checkEvents } from '../lib/browser-stream.mjs';
 
 const executable=await findBrowser();
@@ -288,4 +288,21 @@ test('the task browser identifies as regular Chrome without webdriver, in frames
     for(const request of f.requests.filter(request=>request.url.startsWith('/identity') && !request.checked)){request.checked=true;assert.ok(request.ua && !/headless/i.test(request.ua+request.ch),`${request.url} headers: ${request.ua} ${request.ch}`);assert.ok(request.ch.includes(`v="${major}"`),`${request.url} client hints`);}
     if(runId==='run_test'){await f.browsers.setRetained(runId,'bot_test',true);await f.browsers.closeRun(runId);assert.equal(await f.browsers.hasRetained('bot_test'),true);}
   }
+});
+
+test('regularUserAgent replaces only the headless product token and refuses unusable values',()=>{
+  assert.equal(regularUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36'),'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36');
+  assert.equal(regularUserAgent('Mozilla/5.0 Chrome/157.0.0.0'),'Mozilla/5.0 Chrome/157.0.0.0');
+  for(const bad of ['',null,'Headless Mozilla/5.0','Chrome/1\n','x'.repeat(513)])assert.equal(regularUserAgent(bad),null);
+});
+
+test('a cold start reads the browser’s own user agent and relaunches once, so the first page never sees HeadlessChrome',chrome,async t=>{
+  // Regression: a separate probe browser used to read the user agent; when it was slow or failed (busy CI runners),
+  // tasks silently launched with the HeadlessChrome token for ten minutes.
+  forgetBrowserUserAgents();
+  const f=await fixture(t);f.context.runId='run_cold';await run(f,'browser_open',{url:`${f.base}/identity`});
+  const session=f.browsers.sessions.get('run_cold'),report=JSON.parse(await session.evaluate(function(){return document.title;},{},session.mainFrame));
+  assert.ok(!/headless/i.test(report.ua),report.ua);assert.equal(report.webdriver,false);
+  assert.ok(session.child.spawnargs.some(arg=>/^--user-agent=.*Chrome\//.test(arg) && !/Headless/i.test(arg)),'launched with the corrected user agent');
+  const request=f.requests.find(row=>row.url==='/identity');assert.ok(request && !/headless/i.test(request.ua),`request header: ${request?.ua}`);
 });
