@@ -1,0 +1,13 @@
+# Optional. Lets the owner press "Update now" in Settings → Version & updates.
+# The Engine can only touch the request file. The updater this starts is the same root-owned
+# tupies-update.service the timer runs: it still verifies the signed release, waits for an idle
+# Engine and takes its encrypted backup. Without this unit the timer installs updates by itself.
+[Unit]
+Description=Install a verified Tupies Engine release when the owner asks in the app
+
+[Path]
+PathChanged=/var/lib/tupies-update-request/request
+Unit=tupies-update.service
+
+[Install]
+WantedBy=multi-user.target
