@@ -8,6 +8,7 @@ import {createSpeechController} from '../public/speech.mjs';
 const appSource=(await readFile(new URL('../public/app.js',import.meta.url),'utf8')).replace(/\nstart\(\);\s*$/,'\n');
 const profileSource=await readFile(new URL('../public/bot-profile.js',import.meta.url),'utf8');
 const avatarSource=await readFile(new URL('../public/creature-avatars.js',import.meta.url),'utf8');
+const pickerSource=await readFile(new URL('../public/model-picker.js',import.meta.url),'utf8');
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 const plain=value=>JSON.parse(JSON.stringify(value));
 
@@ -22,7 +23,7 @@ function ui(t,{phone=false,bot={},inferenceRequest,speechCatalog,botPatchRequest
   win.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
   win.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new win.Event('close'));};
   const controller=createSpeechController(win);controller.setPreferences({engine:'browser'});win.StudioSpeech={controller};
-  const context=dom.getInternalVMContext();vm.runInContext(avatarSource,context);vm.runInContext(profileSource,context);vm.runInContext(appSource,context);
+  const context=dom.getInternalVMContext();vm.runInContext(avatarSource,context);vm.runInContext(profileSource,context);vm.runInContext(pickerSource,context);vm.runInContext(appSource,context);
   const saved={id:'bot_atlas',name:'Atlas',title:'Chief of staff',description:'Plans useful work.',instructions:'Keep it concise.',icon:'roki',color:'coral',connectionId:'provider',model:'model-a',reasoningEffort:'high',approvalPolicy:'strict',contextLimit:'128k',tools:['workspace','memory','delegation','terminal'],skills:['skill_brief'],integrationIds:['integration_docs'],teamMode:'selected',collaborators:['bot_nova'],enabled:false,hidden:true,...bot};
   const fixture={settings:{defaultConnectionId:'provider'},bots:[saved,{id:'bot_nova',name:'Nova',title:'Research',connectionId:'provider'}],connections:[{id:'provider',name:'Fixture provider',type:'openai',status:'connected',defaultModel:'model-a',models:[{id:'model-a',name:'Model A'}]}],skills:[{id:'skill_brief',name:'Briefing'}],integrations:[{id:'integration_docs',name:'Docs',type:'mcp',enabled:true}],rooms:[],routines:[],activity:[],runs:{},roomDrives:{}};
   if(speechCatalog)fixture.connections.push({id:'router',name:'Speech fixture',type:'openrouter',hasKey:true});

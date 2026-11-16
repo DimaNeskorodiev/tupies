@@ -639,6 +639,7 @@ function after(root,v){
   if(form&&!settingsBaselines.has(form))settingsBaselines.set(form,settingsIdentity(form));
   if(form&&v.settingsDraft){
     for(const field of v.settingsDraft.fields){const element=[...form.elements].find(element=>element.name===field.name&&element.type===field.type&&(!['checkbox','radio'].includes(field.type)||element.value===field.value));if(!element)continue;if(['checkbox','radio'].includes(field.type))element.checked=field.checked;else element.value=field.value;}
+    window.StudioModelPicker?.syncAll(form);
     form.dataset.settingsDirty='true';const error=form.querySelector('.form-error');if(error)error.textContent=v.settingsDraft.error;
     const status=form.querySelector('[data-settings-status]');if(status)status.textContent=v.settingsDraft.status||'Unsaved changes';
     const bot=ctx.botById(v.id),preview=form.querySelector('#bot-avatar-preview');if(preview)preview.innerHTML=ctx.avatar({...bot,icon:form.elements.icon.value,color:form.elements.color.value},'large');
