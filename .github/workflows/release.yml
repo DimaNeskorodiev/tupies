@@ -123,9 +123,6 @@ jobs:
     concurrency:
       group: ios-testflight-upload
       cancel-in-progress: false
-    env:
-      ARCHIVE: ${{ runner.temp }}/Tupies.xcarchive
-      KEY_DIR: ${{ runner.temp }}/app-store-connect
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -144,8 +141,8 @@ jobs:
             if [ -z "${!name}" ]; then echo "::error::The ios-testflight environment has no value for $name. See docs/releases.md."; exit 1; fi
           done
           umask 077
-          mkdir -p "$KEY_DIR"
-          printf '%s\n' "$ASC_PRIVATE_KEY" > "$KEY_DIR/AuthKey_$ASC_KEY_ID.p8"
+          mkdir -p "$RUNNER_TEMP/app-store-connect"
+          printf '%s\n' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/app-store-connect/AuthKey_$ASC_KEY_ID.p8"
       - name: Archive the iPhone app, signed for distribution
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -155,16 +152,16 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild archive -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" -derivedDataPath "$RUNNER_TEMP/dd-testflight" \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Tupies.xcarchive" -derivedDataPath "$RUNNER_TEMP/dd-testflight" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" TUPIES_REQUIRE_TRANSFER="$REQUIRE_TRANSFER" \
-            -allowProvisioningUpdates -authenticationKeyPath "$KEY_DIR/AuthKey_$ASC_KEY_ID.p8" \
+            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/app-store-connect/AuthKey_$ASC_KEY_ID.p8" \
             -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -n 60
       - name: The archive is the build this release names
         env:
           EXPECTED_BUILD: ${{ needs.plan.outputs.build }}
         run: |
-          build="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleVersion' "$ARCHIVE/Info.plist")"
-          bundle="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' "$ARCHIVE/Info.plist")"
+          build="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleVersion' "$RUNNER_TEMP/Tupies.xcarchive/Info.plist")"
+          bundle="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' "$RUNNER_TEMP/Tupies.xcarchive/Info.plist")"
           echo "Archived $bundle build $build"
           if [ "$bundle" != dev.tupies.app ] || [ "$build" != "$EXPECTED_BUILD" ]; then echo "::error::Expected dev.tupies.app build $EXPECTED_BUILD."; exit 1; fi
       - name: Upload to TestFlight
@@ -186,13 +183,13 @@ jobs:
             <key>uploadSymbols</key><true/>
           </dict></plist>
           PLIST
-          xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Tupies.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -exportPath "$RUNNER_TEMP/testflight-export" -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_DIR/AuthKey_$ASC_KEY_ID.p8" -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyPath "$RUNNER_TEMP/app-store-connect/AuthKey_$ASC_KEY_ID.p8" -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -n 60
       - name: Remove the App Store Connect key
         if: always()
-        run: rm -rf "$KEY_DIR"
+        run: rm -rf "$RUNNER_TEMP/app-store-connect"
 
   notes:
     name: Release notes
