@@ -133,6 +133,21 @@ test('Strict, the host backend and a dangerous script always ask, even for an ap
   });
 });
 
+test('Approve for me in the owner chat runs a new script on the host without a card, records it, and approves nothing',async t=>{
+  const h=await fixture(t,{policy:'auto',sandbox:false});await h.save(saveArgs());
+  const run=await h.task([{name:'script_run',arguments:{id:'echo-args',inputs:{target:'a'}}},null]);
+  assert.equal(run.status,'completed',run.error);assert.equal(h.events('approval.request').length,0);
+  assert.match(h.events('approval.automatic')[0].reason,/^Approve for me: “Echo arguments” \(new script\) runs without asking in your chat\. It runs on this computer without isolation\.$/);
+  assert.equal(JSON.parse(h.result('call_1').stdout).sandbox,'','ran on the host');
+  const ledger=await loadLedger(h.store,h.bot.id);
+  assert.equal(ledger.scripts['echo-args'].approved.length,0,'an automatic run never approves the version for Balanced or other lanes');
+  assert.deepEqual(ledger.scripts['echo-args'].runs.map(item=>[item.startedBy,item.status,item.backend]),[['bot','succeeded','host']]);
+  // The same saved bot under Balanced asks for that version again.
+  await h.store.mutate(state=>{state.bots[0].approvalPolicy='balanced';});
+  await h.task([{name:'script_run',arguments:{id:'echo-args',inputs:{target:'b'}}},null],{answer:async prompt=>{assert.equal(prompt.review.script.change.state,'new');await h.allow('deny');}});
+  assert.equal(h.events('approval.request').length,1);
+});
+
 test('pure decision: approvals are bound to the digest and need terminal, a ready isolated backend and agreement of the saved bot',async t=>{
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-script-decision-')),store=await new Store(directory).init();t.after(()=>fs.rm(directory,{recursive:true,force:true}));
   const digest='a'.repeat(64),bot={id:'bot_atlas',tools:['workspace','terminal'],approvalPolicy:'balanced',execution:{backend:'sandbox'}};

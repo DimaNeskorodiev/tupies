@@ -1,5 +1,19 @@
 # Tupies — project context
 
+## Approve for me runs scripts and connected services without cards — 16 November 2026 (source only, not installed or released)
+
+The owner asked: in the Allowed mode («Дозволено»), remove approvals for scripts, GitHub and others. The mode is the bot's `approvalPolicy:'auto'`, shown as **Approve for me** (the UI has no other "allowed" mode; the owner's word is a translation of it). Branch `feature/allowed-mode-no-approvals-20261116`.
+
+- **Saved scripts** (`lib/script-ledger.mjs` `scriptRunDecision`, `ownerLane` from `ownerChat`): under Approve for me in the owner's own chat, `script_run` and legacy `scripts_run` run any non-dangerous version without a card, on the host too. Automatic runs never record the version as owner-approved. Dangerous packages, Terminal off, Strict, Balanced and other lanes keep their cards. `script_save` already saved without a card outside Strict.
+- **Connected services** (`lib/command-policy.mjs` `integrationDecision`, `serviceActionGate`): every assigned REST/MCP action, GitHub included, reads and writes, runs without a card or model review in the owner's chat when the task snapshot and the saved bot both still have it assigned. Still asks in every lane: deletion (snake, kebab, dotted and camelCase names, HTTP DELETE), credentials/keys/tokens, billing/payments/transfers, `force: true`, and writes that change access, permissions, webhooks or visibility. The same word split now also feeds the model reviewer's delete guard (`lib/action-risk-review.mjs`), which missed `delete-task`/`deleteTask` before.
+- **Unchanged:** dangerous terminal commands (`git push`, `gh api` writes, package publishing), deletion tools, `bots_update` changes to tools/enabled/policy, `integration_propose`, site-access workarounds, task budget and stall checkpoints, skills install, Workshop read grants, coding connect/publish, browser/desktop review. Routines, teammates, rooms, Telegram and other people's chats keep their cards. Balanced and Strict gain nothing.
+- **Audit:** `approval.automatic` (with the Engine's reason), `tool.started` (exact arguments) and `tool.completed` (result preview or error); script runs also in the script history.
+- UI copy in Bot settings → General → Action review and the bot profile says exactly this; docs in [security](docs/security.md#approve-for-me) and [tool use](docs/tool-use.md).
+
+Verification: `npm run build`, `npm run check` (251 modules) and `npm test` 2578/2578 passing (no stalls this run). New `test/allowed-mode.test.mjs` (8 tests: service gate word split, policy × lane matrix, snapshot/saved-bot agreement and mid-task switch, script decision, Engine checkpoints, and three engine runs with audit events); a host-script engine test in `test/saved-scripts.test.mjs`; `test/action-risk-review.test.mjs` now drives the model reviewer with a routine change, since assigned service calls no longer reach it in the owner's chat. Not checked in the running app.
+
+Open owner decisions: whether `git push`/`gh` writes should run in this mode; whether routines/teammates should; whether sending (email, Slack) should keep a card; the conservative word list.
+
 ## Bots add their own connections — 16 November 2026 (source only, not installed or released)
 
 The owner asked: “Bots must be able to create and add their own tools. If the engine has no Gmail integration, the engine must let the model add that tool and integration itself.” An orchestrator built it in waves on `feature/bot-authored-tools-20261116`; owner guide in [docs/connections.md](docs/connections.md).
