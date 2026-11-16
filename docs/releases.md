@@ -55,7 +55,23 @@ The container image holds only the Engine's own sources, and it refuses skipped 
 
 `CI passed` is the one check the `main` ruleset should require. Because the suite now runs on a GitHub runner before merge, a test that is too slow or flaky there fails the pull request instead of failing a release after its tag is public.
 
-## Releasing: `.github/workflows/release.yml`
+## Automatic betas: `.github/workflows/auto-release.yml`
+
+Every merge to `main` whose **CI** run passes publishes the next Engine beta by itself:
+
+1. The workflow starts when CI finishes on a push to `main` with success.
+2. It skips the commit when `main` has already moved on (the newer commit's own CI run decides), when the commit already has a release tag, or when `scripts/update-impact.mjs` says nothing the Engine ships changed since the last release (documentation, tests or workflows only).
+3. Otherwise it creates the prerelease `vX.Y.Z-engine.beta.N+1` on that exact commit, titled after the merged pull request, with GitHub's generated notes since the previous release.
+4. A release made with the workflow's own token does not fire GitHub's "published" event, so it then starts **Release** on the new tag with `publish_engine=true`. The Engine job runs the full suite again, signs the release and advances the beta feed; the release-notes job appends "What to update".
+5. Servers on the beta channel install it with their update timer (about every 30 minutes) or **Update now**.
+
+Switch it off without a code change by setting the repository variable `AUTO_BETA_RELEASE` to `false` (Repository → Settings → Secrets and variables → Actions → Variables). Pause one server instead by stopping its timer (`systemctl stop hermes-studio-update.timer` on the VPS).
+
+What this changes for everyone working on the servers: **every Engine change merged to `main` reaches the VPS within about an hour**, and a hand-installed variant is replaced by the next merge. Bring server-only changes into `main` first; never install a variant by hand and leave the timer running. The Mac app's DMG and the iPhone build are not made automatically; when `apps/apple/` changed, a person still notarizes the DMG and publishes it with a release as below.
+
+## Releasing by hand: `.github/workflows/release.yml`
+
+Use this for a stable release, for a release with a notarized `Tupies.dmg`, or when automatic betas are switched off.
 
 1. Check what each server actually runs before anything else: `sudo -n cat /opt/…/current/engine-release.json` on the VPS, and compare its `id` with the last published release. The updater installs any release with a higher sequence, so a variant installed by hand is replaced without a word. If the server runs something that is not in `main`, bring that into `main` first or pause its update timer. On 16 November 2026 beta 11 replaced a hand-installed finance variant this way.
 2. Merge to `main` with CI green.
@@ -65,7 +81,7 @@ The container image holds only the Engine's own sources, and it refuses skipped 
 | Job | What it does | Runs |
 | --- | --- | --- |
 | **What this release updates** | Compares with the previous release tag | always |
-| **Engine update** | Tests, stages, signs and publishes the Engine; advances the channel feed last | always |
+| **Engine update** | Tests, stages, signs and publishes the Engine; advances the channel feed last | on a published release, or when started on a tag with `publish_engine` (the automatic beta does this) |
 | **Mac update feed** | Verifies the notarized DMG and publishes the signed Sparkle feed | when `Tupies.dmg` is attached |
 | **iPhone app (TestFlight)** | Archives, signs and uploads the iPhone build | when the iPhone app changed and TestFlight is switched on |
 | **Release notes** | Appends "What to update" and each job's outcome to the release page | always |
