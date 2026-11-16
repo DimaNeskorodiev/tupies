@@ -1,14 +1,14 @@
 # Product roadmap
 
-## Approve for me without cards for scripts and services — 16 November 2026 (source only)
+## Approve for me without cards for scripts, services and GitHub — 16 November 2026 (source only)
 
-Built on branch `feature/allowed-mode-no-approvals-20261116`, not installed or released: under Approve for me, in the owner's own chat, saved scripts (unless dangerous) and every assigned connected-service action (GitHub and others, reads and writes) run without an approval card or model review; deletion, credentials, billing, forced overwrites and access changes still ask, and Balanced/Strict are unchanged. See [security](security.md#approve-for-me).
+Built on branch `feature/allowed-mode-no-approvals-20261116`, not installed or released. Under Approve for me, in lanes the owner started (own chat, own Telegram DM, routines, rooms and teammate work for those), these run without an approval card or model review: ordinary commands, non-force `git push` and `gh pr`/`gh issue` writes, saved scripts (unless dangerous) and every assigned connected-service action (GitHub and others, reads and writes). Deletion, force pushes, credentials, billing, forced overwrites, sending messages to people and access changes still ask in every lane; other people's Telegram chats and group chats keep their cards; Balanced/Strict are unchanged. `integration_list` reports the effective approval per action. See [security](security.md#approve-for-me).
 
-Owner decisions pending, not built:
-- Let ordinary `git push` (not `--force`) and `gh` write commands run under Approve for me; today the command classifier rates them dangerous, so they always ask.
-- Extend the mode to routines, teammate work and rooms, which keep their cards today.
-- Keep a card for sending (email, Slack posts) as protection against prompt injection from pages, mail and issues.
+Follow-ups, not built:
+- Confirm with the owner that GitHub issues and comments are not "sending" (today they run without a card).
 - Replace the name-based service gate with per-action owner marks (like `approval:'auto'` for GETs) for the classes it cannot see.
+- Decide whether Missions and the model-reviewed browser/desktop actions follow the trusted-lane rule.
+- Recognise the owner in Telegram group chats (today only the owner's direct messages count as the owner).
 
 ## Bots add their own connections — 16 November 2026 (source only)
 
