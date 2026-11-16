@@ -7,11 +7,19 @@
 #   Release notes              appends "What to update" and what each job did to the release page
 #
 # Run it by hand from a tag (Actions → Release → Run workflow → choose the tag) to send that tag's iPhone build to TestFlight again.
+#
+# Automatic betas (auto-release.yml) create their release with the workflow token, which GitHub does not let trigger
+# the "published" event, so that workflow starts this one on the new tag with publish_engine=true instead.
 name: Release
 on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      publish_engine:
+        description: Sign and publish the Engine of this tag's release (set by the automatic beta; the release must exist and have no Engine assets yet)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -43,7 +51,7 @@ jobs:
   # Deliberately independent of the job above: a problem describing the release must never hold back the server update.
   engine:
     name: Engine update
-    if: github.event_name == 'release' && github.event.release.tag_name != 'update-feeds'
+    if: (github.event_name == 'release' && github.event.release.tag_name != 'update-feeds') || (github.event_name == 'workflow_dispatch' && inputs.publish_engine && startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-22.04
     environment: engine-updates
     timeout-minutes: 30
@@ -55,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || github.ref_name }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -80,12 +88,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_KEY: ${{ secrets.TUPIES_ENGINE_RELEASE_PRIVATE_KEY }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
           RELEASE_PUBLISHED: ${{ github.event.release.published_at }}
           RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
           RELEASE_COMMIT: ${{ github.sha }}
           GH_REPO: ${{ github.repository }}
-        run: node scripts/publish-engine-update.mjs
+        run: |
+          # Started by hand or by the automatic beta: read the publication time and channel from the release itself.
+          if [ -z "$RELEASE_PUBLISHED" ]; then
+            RELEASE_PUBLISHED="$(gh release view "$RELEASE_TAG" --json publishedAt --jq .publishedAt)"
+            RELEASE_PRERELEASE="$(gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease)"
+            export RELEASE_PUBLISHED RELEASE_PRERELEASE
+          fi
+          node scripts/publish-engine-update.mjs
   mac:
     name: Mac update feed
     if: github.event_name == 'release' && github.event.release.tag_name != 'update-feeds' && contains(github.event.release.assets.*.name, 'Tupies.dmg')
@@ -116,7 +131,7 @@ jobs:
     name: iPhone app (TestFlight)
     needs: plan
     # Switched on with the repository variable TESTFLIGHT_ENABLED=true once the ios-testflight environment holds its four secrets.
-    if: vars.TESTFLIGHT_ENABLED == 'true' && (needs.plan.outputs.ios == 'true' || github.event_name == 'workflow_dispatch')
+    if: vars.TESTFLIGHT_ENABLED == 'true' && (needs.plan.outputs.ios == 'true' || (github.event_name == 'workflow_dispatch' && !inputs.publish_engine))
     runs-on: macos-26
     environment: ios-testflight
     timeout-minutes: 60
@@ -194,7 +209,7 @@ jobs:
   notes:
     name: Release notes
     needs: [plan, engine, mac, iphone]
-    if: always() && github.event_name == 'release' && needs.plan.result == 'success'
+    if: always() && (github.event_name == 'release' || inputs.publish_engine) && needs.plan.result == 'success'
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     permissions:
@@ -202,7 +217,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || github.ref_name }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -212,7 +227,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
           OUTCOME: engine=${{ needs.engine.result }},mac=${{ needs.mac.result }},iphone=${{ needs.iphone.result }},testflight=${{ vars.TESTFLIGHT_ENABLED == 'true' }}
         run: |
           gh release view "$RELEASE_TAG" --json body --jq .body > "$RUNNER_TEMP/release-body.md"
