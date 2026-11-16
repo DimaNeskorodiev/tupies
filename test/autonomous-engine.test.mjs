@@ -204,3 +204,24 @@ test('safe startup recovery resumes automatically only after managers initialize
   assert.equal(current(reopened).status,'completed',current(reopened).error);assert.equal(calls,1);assert.equal(writes,0);
   assert.equal(await fs.readFile(path.join(await getWorkspaceRoot(reopened,BOT),'before-crash.txt'),'utf8'),'Already committed before restart.');
 });
+
+test('planless run inspection stops after unchanged invalid arguments and repeated broad diagnostics',async t=>{
+  const inspect=(id,limit)=>({text:'',toolCalls:[call(id,'runs_inspect',{limit})]});
+  const result=(request,id)=>JSON.parse(request.messages.find(message=>message.tool_call_id===id).content);
+  const f=await fixture(t,async(request,count)=>{
+    if(count===1)return inspect('bad',20);
+    if(count===2){assert.equal(result(request,'bad').errorCode,'invalid_arguments');return inspect('bad-again',20);}
+    if(count===3){assert.equal(result(request,'bad-again').errorCode,'repeated_failure');return inspect('first',1);}
+    if(count===4){assert.ok(result(request,'first').current);return inspect('second',2);}
+    if(count===5){assert.ok(result(request,'second').current);return inspect('third',3);}
+    if(count===6){assert.equal(result(request,'third').errorCode,'repeated_read');return inspect('fourth',4);}
+    assert.fail('The engine should have stopped the diagnostic loop.');
+  },{stallNudgeRounds:5});
+  const done=await settle(f.engine,f.store,await f.engine.start(BOT,'Schedule a report about the item I shared earlier.'));
+  assert.equal(done.status,'failed');
+  assert.match(done.error,/relevant saved note or conversation message/);
+  assert.ok(done.events.some(event=>event.type==='task.stalled'));
+  assert.equal(f.requests.length,6);
+  assert.equal(done.workRecords.filter(record=>record.tool==='runs_inspect' && record.status==='succeeded').length,2);
+  assert.deepEqual(done.pending_controls,[]);
+});
