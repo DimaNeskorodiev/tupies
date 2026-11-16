@@ -160,9 +160,9 @@ input[type=checkbox]:not(.switch):focus-visible{outline:2px solid var(--pearl-fo
 input[type=checkbox]:not(.switch):disabled{opacity:.45;cursor:not-allowed}
 
 /* Run / play: a round glass icon button with the accent glyph. */
-body .icon-button.run-button{color:var(--pearl-blue,var(--accent-ink));background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));border-color:var(--pearl-border,rgba(255,255,255,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 9px -3px rgba(30,38,70,.2)}
-body .icon-button.run-button:hover:not(:disabled){color:var(--pearl-blue,var(--accent-ink));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 14px -4px rgba(30,38,70,.28)}
-body .icon-button.run-button svg{width:16px;height:16px;fill:currentColor;stroke-linejoin:round}
+html body .icon-button.run-button{color:var(--pearl-blue,var(--accent-ink));background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));border-color:var(--pearl-border,rgba(255,255,255,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 9px -3px rgba(30,38,70,.2)}
+html body .icon-button.run-button:hover:not(:disabled){color:var(--pearl-blue,var(--accent-ink));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 14px -4px rgba(30,38,70,.28)}
+html body .icon-button.run-button svg{width:16px;height:16px;fill:currentColor;stroke-linejoin:round}
 
 @media(prefers-reduced-motion:reduce){
   .switch,.switch::before,input[type=checkbox]:not(.switch),input[type=checkbox]:not(.switch)::before{transition:none}
