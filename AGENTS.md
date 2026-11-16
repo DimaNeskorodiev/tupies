@@ -189,6 +189,7 @@ Update relevant docs, `PROJECT_CONTEXT.md` and the roadmap when behavior or proj
 - `docs/releases.md`: versions and build numbers, the CI and release workflows, which part a change updates, TestFlight, and Settings → Version & updates.
 - `docs/architecture.md`, `docs/api.md`, `docs/capabilities.md`: implementation map and truthful boundaries.
 - `docs/hermes-setup.md`: direct providers, subscription setup, integrations and skills.
+- `docs/connections.md`: bots proposing their own connections, API key and OAuth sign-in, Gmail setup and the action definition reference.
 - `docs/memory.md`: core memory and long-term Obsidian-compatible notes.
 - `docs/tool-workshop.md`: isolated tools, local improvement inbox, reviewed export and maintainer/shared catalog intake.
 - `docs/workspaces.md`: standard bot folders, documented script packages, exact reviewed reuse and routine steps.

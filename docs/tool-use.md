@@ -35,6 +35,14 @@ Terminal and code actions (`terminal`, `execute_code`, `shell_run`, `shell_start
 
 Tupies owns its model/tool loop. A bot can discover files, search text, read selected lines, edit exact text, run foreground or managed background commands, query real language servers and update a visible task plan. Tool results feed the next model turn. No Claude Code, Hermes Agent or host Codex installation is needed at runtime.
 
+## Connecting outside services
+
+Source only (16 November 2026). In the `integrations` group, `integration_propose` lets a bot propose a REST API or remote MCP connection when the owner asks for something no assigned tool, skill or built-in covers, or change a connection assigned to it. The group guidance (loaded with `tools_load`, so it adds nothing to the fixed prompt) tells the model to check `integration_list` first, prefer the official REST API or remote MCP server (for a hosted MCP server, only its URL with `authType:'oauth2'`, whose sign-in the owner later prepares by automatic discovery, or `bearer` when the service documents a token), read the documentation with web tools when unsure, declare the fewest actions and narrowest scopes with reads separate from changes, write `setupNotes` as plain steps for the owner, and never ask for keys, passwords or codes in chat. Bots without Integrations are told to ask the owner to turn the group on instead of claiming a connection exists.
+
+The Engine checks a proposal before its card: credential fields are refused (`credential_not_allowed`) and anywhere but the owner's direct chat it is refused (`owner_chat_required`); both have `outcome:'not_started'`. The card is never answered automatically. The approved result is `{integrationId, name, type, status, authType, actions, connect:{required, how}, credentialRemoved?, notice}`.
+
+Readiness: `integration_list` shows a connection that waits for the owner once, with `ready:false`, `status` (`needs_credentials`, or `needs_reauth` when the owner must sign in again) and a notice. `integration_call` on it is refused before approval with `errorCode:'integration_not_connected'` and a message that says which of the two applies. An action with `encode` carries a hint in its description (“raw: write plain text; it is sent base64url-encoded”) so the model does not encode twice; `decode` fields simply arrive as text. A POST rejected with HTTP 401 is not resent after the sign-in is renewed; the error says it is safe to call again. See [connections](connections.md).
+
 ## Provider tool catalog
 
 ### Tiered catalog
