@@ -20,6 +20,8 @@ See [Tool workshop](tool-workshop.md) for runtime boundaries and `scripts/review
 
 ## Coordinating an Apple release with its engines
 
+[Versions, CI and releases](releases.md) is the one-page map: what the two workflows (`ci.yml`, `release.yml`) run, where version and build numbers live, and `node scripts/update-impact.mjs`, which says whether a change needs an Engine release, a new iPhone build or a new Mac build. Run it before reporting a change; raise the native build number with `--bump`, never on the `xcodebuild` command line.
+
 Mac/VPS update source, bootstrap, signed publication and recovery are documented in [Automatic updates](updates.md). `scripts/verify-release-tests.mjs` runs every regression with existing timing-sensitive groups isolated. Publishing source does not enable an operational updater.
 
 For a standalone Mac installer, use the [Mac distribution runbook](macos-release.md) and `scripts/release-macos.mjs`. Installation on a new Mac, Developer ID/Keychain provisioning and notarization are distinct from updating an existing development installation.

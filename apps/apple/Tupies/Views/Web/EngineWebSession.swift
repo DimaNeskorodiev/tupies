@@ -772,6 +772,14 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
     })()
     """
 
+    /// Bundle values reduced to the characters a version may contain before they enter the injected script.
+    private static func bundleValue(_ key: String) -> String {
+        let value = Bundle.main.object(forInfoDictionaryKey: key) as? String ?? ""
+        return String(value.filter { $0.isASCII && ($0.isNumber || $0.isLetter || $0 == "." || $0 == "-") }.prefix(32))
+    }
+    private static let appVersion = bundleValue("CFBundleShortVersionString")
+    private static let appBuild = bundleValue("CFBundleVersion")
+
     /// Marks the page as running in the app (`<html data-studio-app>`) and reports 401s from the page's own API calls
     /// so the app can re-sign in.
     private static let bridgeScript = """
@@ -780,6 +788,9 @@ final class EngineWebSession: NSObject, ObservableObject, Identifiable {
       window.__hermesStudioApp = true;
       try {
         document.documentElement.dataset.studioApp = '\(platform)';
+        // Settings → Version & updates compares these with the app build this engine's web UI expects.
+        document.documentElement.dataset.studioAppVersion = '\(appVersion)';
+        document.documentElement.dataset.studioAppBuild = '\(appBuild)';
         document.documentElement.dataset.studioAttendance = '1';
         if ('\(platform)' === 'ios') document.documentElement.dataset.studioHaptics = 'true';
       } catch (_) {}
@@ -852,6 +863,12 @@ extension EngineWebSession: WKScriptMessageHandler {
             StudioHaptics.play(.selection)
             #endif
             store?.showSettings = true
+        #if os(macOS)
+        case "check-app-updates":
+            // Settings → Version & updates. Only the page on screen may open Sparkle's own, user-driven check.
+            guard store?.activeID == id else { return }
+            MacUpdates.shared.check()
+        #endif
         #if os(iOS)
         case "haptic":
             // A hidden engine cannot buzz the device. Only the fixed vocabulary is accepted; frequency is bounded natively.
