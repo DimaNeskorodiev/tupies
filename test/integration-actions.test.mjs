@@ -109,7 +109,8 @@ test('old-shape actions keep their stored form and request behavior',async t=>{
   assert.deepEqual(await call(f,'list',{limit:5,q:'a b'}),{url:'/items?limit=5&q=a+b',body:null});
   assert.deepEqual(await call(f,'create',{title:'T',count:2}),{url:'/items',body:{title:'T',count:2}});
   assert.deepEqual(f.integrations.listTools(f.store.state.bots[0]).map(tool=>Object.keys(tool)),[['integrationId','integrationName','name','description','parameters','requiresApproval'],['integrationId','integrationName','name','description','parameters','requiresApproval']]);
-  for(const preset of f.integrations.catalog().filter(item=>item.type==='rest' && item.tools))for(const tool of preset.tools)assert.ok(!('query' in tool || 'encode' in tool || 'decode' in tool));
+  // Earlier presets keep their plain shape; Gmail is the one preset that relies on encode/decode.
+  for(const preset of f.integrations.catalog().filter(item=>item.type==='rest' && item.tools && item.id!=='gmail'))for(const tool of preset.tools)assert.ok(!('query' in tool || 'encode' in tool || 'decode' in tool));
 });
 
 test('discovered MCP tools never gain REST action fields',async t=>{
