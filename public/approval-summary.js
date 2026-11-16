@@ -29,6 +29,7 @@
       case 'documents_create':return {title:'Create a document',sentence:file?`Create the document ${file}.`:'Create a document in the bot’s workspace.',keys:['path','title','format']};
       case 'http_fetch':return {title:'Send a web request',sentence:`Send a ${clip(a.method || 'GET',10).toUpperCase()} request${site?` to ${site}`:''}.`,keys:['url','method','body','headers']};
       case 'integration_call':return {title:'Use a connected service',sentence:`Use the connected service${a.tool?`: ${clip(words(a.tool),80)}`:''}.`,keys:['integrationId','tool','arguments']};
+      case 'integration_propose':return {title:a.integrationId?'Change a connection':'Add a connection',sentence:a.integrationId?'Change a connection this bot uses.':`Add a connection${host(a.baseUrl)?` to ${host(a.baseUrl)}`:''}. You enter the key or sign in yourself afterwards.`,keys:['name','baseUrl','reason']};
       case 'web_search':return {title:'Search with a connected service',sentence:'Run this search through the bot’s fallback search service.',keys:['query','integrationId','count']};
       case 'site_access_review':return {title:'A site keeps refusing',sentence:`Keep trying ${clip(a.site,120) || 'this site'} by other routes?`,keys:['site','refusals','lastReason']};
       case 'browser_click':return {title:'Click in the browser',sentence:'Click this control on the page the bot has open.',keys:['label','text','name']};
@@ -49,6 +50,7 @@
   /** The inputs as a list: the tool's known inputs first, then anything else it was given, without internal identifiers. */
   function inputs(tool,args,keys){
     if(!plain(args))return '';
+    if(tool==='integration_propose')return proposal(args);
     if(tool==='script_run'){
       const given=plain(args.inputs)?Object.entries(args.inputs).slice(0,12).map(([name,value])=>[clip(name,64),value]):[],extra=Array.isArray(args.args)?args.args.map(item=>clip(item,200)).join(' '):'';
       const rows=[...given.map(([name,value])=>`<div><dt>${escape(name)}</dt><dd>${escape(clip(value,300))}</dd></div>`),extra?`<div><dt>Extra arguments</dt><dd>${escape(extra)}</dd></div>`:''].join('');
@@ -57,6 +59,14 @@
     const order=[...(keys || []).filter(key=>Object.hasOwn(args,key)),...Object.keys(args).filter(key=>!(keys || []).includes(key) && !HIDDEN.has(key))].slice(0,12);
     const rows=order.map(key=>row(key,args[key])).filter(Boolean).join('');
     return rows?`<dl class="approval-inputs">${rows}</dl>`:'';
+  }
+
+  /** A proposed connection: where requests go, how the owner signs in and each declared action. The bot wrote all of it; the engine's summary above names the hosts. */
+  function proposal(a){
+    const sign=a.authType==='oauth2'?`OAuth sign-in at ${host(a.oauth?.authorizationUrl) || 'an unknown address'}${plain(a.oauth) && Array.isArray(a.oauth.scopes) && a.oauth.scopes.length?` · permissions: ${a.oauth.scopes.slice(0,10).map(scope=>clip(scope,120)).join(' ')}`:''}`:a.authType==='header'?`API key in the ${clip(a.headerName || 'x-api-key',60)} header`:a.authType==='none'?'None':a.authType==='bearer'?'API key':'';
+    const actions=(Array.isArray(a.tools)?a.tools:[]).filter(plain).slice(0,12).map(item=>`${String(item.method || '').toUpperCase()==='GET'?'Reads':'Changes'} · ${clip(words(item.name),60)}${item.description?` — ${clip(item.description,120)}`:''}`);
+    const rows=[['Name',clip(a.name,100)],['Address',clip(a.baseUrl,300)],['Sign-in',sign],['Why',clip(a.reason,500)],['Actions',actions.join('\n')+(Array.isArray(a.tools) && a.tools.length>12?`\n…and ${a.tools.length-12} more`:'')],['Setup notes',clip(a.setupNotes,600)]].filter(([,value])=>value);
+    return rows.length?`<dl class="approval-inputs">${rows.map(([label,value])=>`<div><dt>${escape(label)}</dt><dd${/\n/.test(value) || value.length>120?' class="is-block"':''}>${escape(value)}</dd></div>`).join('')}</dl>`:'';
   }
 
   /** For a saved script: what changed since the version the owner approved, as words and a diff. */

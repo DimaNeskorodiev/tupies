@@ -1,0 +1,68 @@
+/* Connect card under a reply and in the Settings dialog; OAuth fields in the integration dialog. Colours come from the shared variables, so the phone dark theme applies. No motion. */
+.cr-list{display:grid;gap:8px;margin:10px 0 0;max-width:100%;min-width:0}
+.cr-card{display:grid;gap:8px;padding:12px 14px;min-width:0;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:12px;background:var(--pearl-soft,rgba(255,255,255,.55));color:var(--ink,#29313d);font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+.cr-card p{margin:0}
+.cr-title{margin:0;font-size:14px;font-weight:600;color:var(--ink,#29313d)}
+.cr-why{color:var(--ink,#29313d)}
+.cr-hosts,.cr-quiet,.cr-saved{color:var(--muted,#606e88);font-size:11px}
+.cr-hosts strong{color:var(--ink,#29313d);font-weight:600}
+.cr-saved{color:var(--ios-green,#2f7a52)}
+.cr-problem{color:var(--amber,#9a6514);font-size:11px}
+.cr-details{min-width:0}
+.cr-details>summary{display:inline-flex;align-items:center;min-height:32px;cursor:pointer;font-size:12px;font-weight:600;color:var(--ink,#29313d);border-radius:8px}
+.cr-details>summary{list-style:none}
+.cr-details>summary::-webkit-details-marker{display:none}
+.cr-details>summary::after{content:"";width:6px;height:6px;margin-left:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.6}
+.cr-details[open]>summary::after{transform:rotate(-135deg) translateY(-1px)}
+.cr-details>summary:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:2px}
+.cr-details>*:not(summary){margin-top:6px}
+.cr-notes{white-space:pre-wrap;padding:8px 10px;border-radius:10px;border:1px solid var(--line,rgba(84,96,121,.12));background:var(--pearl-surface,rgba(255,255,255,.6));font-size:12px;max-height:240px;overflow:auto}
+.cr-actions{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cr-actions li{display:grid;gap:1px;min-width:0}
+.cr-actions small{font-size:11px;color:var(--muted,#606e88)}
+.cr-action{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.cr-kind{font-size:10px;padding:1px 6px;border-radius:6px;border:1px solid var(--line,rgba(84,96,121,.14));color:var(--muted,#606e88)}
+.cr-kind.write{color:var(--amber,#9a6514);border-color:currentColor}
+.cr-steps{margin:0;padding-left:20px;display:grid;gap:12px}
+.cr-steps h4{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--ink,#29313d)}
+.cr-form{display:grid;gap:8px;min-width:0}
+.cr-field{display:grid;gap:4px;min-width:0}
+.cr-field label{font-size:11px;font-weight:600;color:var(--ink,#29313d)}
+.cr-optional{font-weight:400;color:var(--muted,#606e88)}
+.cr-field input,.cr-copy input{width:100%;min-width:0;min-height:36px;padding:7px 10px;border:1px solid var(--line,#d9dfe9);background:var(--pearl-surface,rgba(255,255,255,.75));color:var(--ink,#29313d);font-size:12px}
+.cr-copy{display:flex;gap:6px;min-width:0}
+.cr-copy input{flex:1;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+.cr-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cr-card .primary-button,.cr-card .secondary-button{min-height:34px;padding:0 14px;font-size:12px}
+.cr-text{padding:0;min-height:0;font-size:11px;text-decoration:underline}
+.cr-waiting{display:grid;gap:4px;margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--ios-tint-soft,rgba(112,99,144,.08))}
+.cr-status{font-size:11px;color:var(--muted,#606e88)}
+.cr-status:empty{display:none}
+.cr-status.is-error{color:var(--ios-red,#a14a4a)}
+.cr-done{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.cr-done p{flex:1;min-width:12em}
+.cr-check{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ios-green-soft,rgba(47,122,82,.14));color:var(--ios-green,#2f7a52);font-size:12px;font-weight:700}
+.cr-removed{color:var(--muted,#606e88);font-size:12px}
+.cr-card button:focus-visible,.cr-card input:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:2px}
+.cr-dialog .cr-card{border:0;padding:4px 0;background:none}
+.cr-dialog .cr-title:not(.is-again){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cr-pill-warn{color:var(--amber,#9a6514)}
+.cr-pill-warn .dot{background:var(--amber,#c48a2c)}
+.tag.cr-added{color:var(--purple,#706390)}
+.cr-proposal{display:grid;gap:6px;margin:12px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--line,rgba(84,96,121,.12));background:var(--pearl-soft,rgba(255,255,255,.5));font-size:12px;line-height:1.55;color:var(--ink,#29313d);overflow-wrap:anywhere}
+.cr-proposal p{margin:0}
+.cr-preset-notes{margin:12px 0}
+.cr-oauth-fields{margin:17px 0;padding:4px 14px 12px;border:1px solid var(--line,rgba(84,96,121,.14));border-radius:12px;min-width:0}
+.cr-oauth-fields[hidden]{display:none}
+.cr-oauth-fields legend{padding:0 6px;font-size:11px;font-weight:600;color:var(--ink,#29313d)}
+.cr-oauth-fields .field{margin:12px 0}
+.cr-oauth-state{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:11px}
+@media (max-width:760px){
+  .cr-card{font-size:calc(13px * var(--ios-s,1))}
+  .cr-card .primary-button,.cr-card .secondary-button,.cr-copy .secondary-button{min-height:44px}
+  .cr-buttons>button{flex:1}
+  .cr-field input,.cr-copy input{min-height:44px;font-size:16px}
+  .cr-details>summary,.cr-text{min-height:44px}
+  .cr-hosts,.cr-quiet,.cr-saved,.cr-status,.cr-actions small{font-size:calc(12px * var(--ios-s,1))}
+  .cr-steps{padding-left:16px}
+}
