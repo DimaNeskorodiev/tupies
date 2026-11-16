@@ -76,7 +76,8 @@ export async function verifierMain(){
     await fs.rm('/tmp/verifier-browser-probe',{recursive:true,force:true});
     await fs.cp(BASE,WORK,{recursive:true,verbatimSymlinks:true,errorOnExist:true,force:false});
     for(const change of candidate.request.changes){const target=path.join(WORK,change.path);await fs.mkdir(path.dirname(target),{recursive:true});await fs.writeFile(target,candidate.files[change.path]);}
-    const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-control.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
+    // Every file that launches Chrome runs alone: a Chrome is ~150 tasks, so several at once exhaust the 512-task limit and crash at random.
+    const selected=candidate.base.map(entry=>entry.path),before=await sourceHashes(WORK,selected),sequential=['browser-actions.test.mjs','browser-control.test.mjs','browser-files.test.mjs','browser-settle.test.mjs','browser-stream.test.mjs','browser.test.mjs','lsp.test.mjs','questions-history.test.mjs','team.test.mjs'];
     const rest=(await collectVerifierTests(WORK)).filter(name=>!sequential.some(file=>name==='test/'+file));
     await verifyDocumentWorker(WORK);
     const checks=[['syntax',process.execPath,['scripts/check.mjs']],['tests-sequential',process.execPath,['--test','--test-reporter=tap','--test-concurrency=1',...sequential.map(name=>'test/'+name)]],['tests-concurrent',process.execPath,['--test','--test-reporter=tap','--test-concurrency=4',...rest]],['build','/usr/local/bin/npm',['run','build']]];
