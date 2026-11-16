@@ -4,11 +4,31 @@
 
 Shipped in source: the owner operates the bot's browser through a live view (stream plus input batches) instead of single screenshots, with a phone layout, popups, website dialogs, a non-blocking address bar and automatic reconnect; the task browser identifies as regular Chrome. Not done yet: acceptance on a real iPhone (WKWebView keyboard, SMS code autofill), over the real VPS network, and against real third-party sign-ins and CAPTCHAs; then a signed Engine release to the Mac and the VPS.
 
+## Bots add their own connections — 16 November 2026 (source only)
+
+The owner asked that bots can create and add their own tools, for example Gmail when none exists. Built on branch `feature/bot-authored-tools-20261116`, not installed or released: richer REST actions (`{param}` paths, query lists, repeated array parameters, engine-side base64url encoding and decoding, fixed headers); OAuth 2.0 sign-in for REST and MCP integrations (PKCE, sealed tokens, renewal, needs_reauth, manual paste fallback); the `integration_propose` bot tool with exact owner approval, credential-free creation and a connect request under the reply; a connect card for that request, built in parallel as part of this change; and a Gmail preset. Proven end to end against a local Google/Gmail fixture; see [connections](connections.md) and [verification](verification.md). Also shipped in source: MCP OAuth metadata discovery and automatic client registration for hosted MCP servers (client ID metadata document or dynamic registration), proven against a local spec-shaped fixture.
+
+Follow-ups, not built:
+- Check the flow with a real Google account and a real model (consent screen, restricted-scope warnings, 7-day Testing expiry, how models write RFC 822 mail and label ids).
+- A redirect address for servers reached only by IP address: Google refuses such redirect URIs, so today a VPS needs a domain for Google sign-in, or a separate loopback return address that the owner reaches through an SSH tunnel plus the manual paste fallback.
+- Scripts that use a connection's credentials through an Engine broker, without the key entering the script.
+- Local (stdio) MCP servers inside the command sandbox.
+- An allowlist (or per-service confirmation) for services Tupies may register itself with, and a way to remove a dynamic registration at the service.
+- Services that take an API key as a query parameter.
+- Step-up sign-in when an MCP server answers `403 insufficient_scope`, and choosing among several listed authorization servers (today the first is used).
+- A real check of automatic MCP sign-in against hosted servers (Linear, Notion, Todoist, ClickUp, Atlassian) on the Mac and the VPS.
+- Token revocation at the provider when the owner disconnects.
+- A shared Tupies OAuth app, so the owner does not create a Google Cloud client.
+
+## Hyperliquid Vault report and tool-use fixes, recovered from the VPS — 16 November 2026 (source only)
+
+Recovered from a release that had only ever existed on the VPS, and lost from the running server when beta 11 replaced it: the report-only `hyperliquid_vault` routine step, `followRedirects:false` for `http_fetch`, script stdout as the default JSON source, earlier blocking of calls that failed on their arguments, and a bound on browsing a task's own run diagnostics. See [Routines](routines.md) and `PROJECT_CONTEXT.md`. Not done yet: publish a release that contains it, start the VPS update timer again and confirm the finance bot's routine on the server.
+
 ## Versions, one CI pipeline and in-app updates — 16 November 2026 (source only)
 
 Shipped in source: one `CI` workflow and one `Release` workflow replace four; every pull request and release says whether the Engine, the iPhone app and the Mac app need an update; Settings → Version & updates shows the installed version with **Check for updates** and, where the server allows it, **Update now**; the native build number lives in the repository (17). See [Versions, CI and releases](releases.md).
 
-Not done yet, each needing the owner: switch the `main` ruleset's required check to `CI passed`; create the App Store Connect app, API key and `ios-testflight` environment, then set `TESTFLIGHT_ENABLED` (the upload job has never run with real credentials); install the optional update-request path unit on the VPS for **Update now**; publish an Engine release and native build 17 so installed copies show any of this. Planned later: an arm64 Engine publishing job, a stable channel, and automatic TestFlight re-uploads before the 90-day expiry.
+Done since: the required check is `CI passed`, PR #59 is merged and Engine beta 11 is published (16 November 2026). Still not done, each needing the owner: create the App Store Connect app, API key and `ios-testflight` environment, then set `TESTFLIGHT_ENABLED` (the upload job has never run with real credentials); install the optional update-request path unit on the VPS for **Update now**; build and install native build 17 so the apps report their own version; roll the Mac engine out to beta 11 or later. Planned later: an arm64 Engine publishing job, a stable channel, and automatic TestFlight re-uploads before the 90-day expiry.
 
 ## Sandbox, saved scripts, describe-a-bot, chief of staff and proof of work — 10 November 2026 (installed on Mac and VPS, Engine beta 10)
 
