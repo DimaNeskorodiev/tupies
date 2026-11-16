@@ -14,7 +14,7 @@
   const host=value=>{try{const url=new URL(String(value));return ['https:','http:'].includes(url.protocol)?url.host:'';}catch{return '';}};
   const words=name=>String(name || '').replace(/[_.:-]+/g,' ').trim();
   const POLL_MS=3000,MAX_STATES=40,USED_KEY='tupies.connectionContinue.used';
-  const states=new Map(),missing=new Map();
+  const states=new Map(),missing=new Map(),manualNext=new Set();
   /** The app's context, read fresh each time: the app replaces its workspace data object on every state refresh. */
   const C=()=>typeof ctxSource==='function'?ctxSource():ctxSource;
   const use=ctx=>{if(ctx)ctxSource=ctx;};
@@ -22,12 +22,16 @@
 
   /* ---- what an integration needs, in plain words ---- */
   const tools=integration=>[...(Array.isArray(integration?.tools)?integration.tools:[]),...(Array.isArray(integration?.discoveredTools)?integration.discoveredTools:[])].filter(plain);
-  /** An MCP server is only useful once its tools were discovered, even when it needs no key. */
-  const done=integration=>plain(integration) && integration.ready===true && !(integration.type==='mcp' && !tools(integration).length && integration.status!=='connected');
+  /** An MCP server is only useful once its tools were discovered, even when it needs no key. A signed-in MCP server
+      (status 'connected' from the sign-in alone) still needs its tools listed. */
+  const done=integration=>plain(integration) && integration.ready===true && !(integration.type==='mcp' && !tools(integration).length && (integration.status!=='connected' || integration.authType==='oauth2'));
+  /** An MCP server whose sign-in address is found from the server itself (the MCP authorization flow): no client ID or secret to type. */
+  const auto=integration=>integration?.type==='mcp' && integration?.authType==='oauth2' && plain(integration?.oauth) && integration.oauth.auto===true;
+  const REGISTERED=new Set(['dynamic','metadata_document']);
   /** 'key' | 'oauth' | 'check' — what the owner still has to do. The integration's current sign-in method wins over the request's. */
   function need(integration,how){
     const auth=integration?.authType || (how==='oauth'?'oauth2':how==='none'?'none':'bearer');
-    if(auth==='oauth2')return 'oauth';
+    if(auth==='oauth2')return integration?.type==='mcp' && integration?.oauth?.connected && !tools(integration).length?'check':'oauth';
     if(auth==='none' || integration?.hasKey)return 'check';
     return 'key';
   }
@@ -48,7 +52,7 @@
   function stateOf(id){
     let st=states.get(id);
     if(st){states.delete(id);states.set(id,st);return st;}
-    st={busy:'',error:'',notice:'',clientId:null,paste:'',waiting:null,signInUrl:'',open:{}};
+    st={busy:'',error:'',notice:'',clientId:null,paste:'',waiting:null,signInUrl:'',open:{},found:null,failed:'',confirmToken:false};
     states.set(id,st);while(states.size>MAX_STATES)states.delete(states.keys().next().value);
     return st;
   }
@@ -70,8 +74,15 @@
       return `<ul class="cr-actions">${rows}</ul>${items.length>10?`<p class="cr-quiet">And ${items.length-10} more.</p>`:''}`;
     }
   }
-  function hosts(integration,need){
+  function hosts(integration,need,st){
     const api=host(integration.baseUrl),signIn=host(integration.oauth?.authorizationUrl),token=host(integration.oauth?.tokenUrl);
+    if(need==='oauth' && auto(integration)){
+      const where=found(integration,st);
+      if(!where || st?.failed)return `<p class="cr-hosts">Requests go only to <strong>${escape(api || 'an unknown address')}</strong>.</p>`;
+      const caution=site(where.signIn) && site(api) && site(where.signIn)!==site(api)?`<p class="cr-caution">The sign-in page is on a different site than the server. Check that it is ${escape(name(integration))}’s real sign-in page before you enter a password.</p>`:'';
+      const issuer=where.issuer && where.issuer!==where.signIn?` Sign-in provider: <strong>${escape(where.issuer)}</strong>.`:'';
+      return `<p class="cr-hosts">You will sign in at <strong>${escape(where.signIn)}</strong>. Tokens come from <strong>${escape(where.token || where.signIn)}</strong>. Requests go only to <strong>${escape(api || 'an unknown address')}</strong>.${issuer}</p>${caution}`;
+    }
     if(need==='oauth')return `<p class="cr-hosts">Sign-in happens at <strong>${escape(signIn || 'an unknown address')}</strong>${token && token!==signIn?` (tokens from <strong>${escape(token)}</strong>)`:''}. Requests go only to <strong>${escape(api || 'an unknown address')}</strong>.</p>`;
     if(need==='key')return `<p class="cr-hosts">Sends your key only to <strong>${escape(api || 'an unknown address')}</strong>.</p>`;
     return `<p class="cr-hosts">Connects to <strong>${escape(api || 'an unknown address')}</strong>.</p>`;
@@ -81,7 +92,7 @@
     const ask=who?`<p class="cr-why">${escape(who)} asked for this${reason?`: ${escape(reason)}`:'.'}</p>`:reason?`<p class="cr-why">${escape(reason)}</p>`:'';
     const how=notes?`<details class="cr-details" data-cr-open="how"${st.open.how?' open':''}><summary>How to get ${need==='oauth'?'the sign-in details':need==='key'?'the key':'this'}</summary><p class="cr-quiet">Written by ${escape(who || 'the bot')}. Check each step on the service’s own site.</p><p class="cr-notes">${escape(notes)}</p></details>`:'';
     const can=`<details class="cr-details" data-cr-open="can"${st.open.can?' open':''}><summary>What ${escape(who || 'the bot')} will be able to do</summary>${actionList(integration)}</details>`;
-    return `${ask}${hosts(integration,need)}${how}${can}`;
+    return `${ask}${hosts(integration,need,st)}${how}${can}`;
   }
   function status(st){
     return `<p class="cr-status${st.error?' is-error':''}" role="${st.error?'alert':'status'}" aria-live="polite">${escape(st.error || st.notice)}</p>`;
@@ -98,17 +109,64 @@
     const value=redirect.uri?`<div class="cr-copy"><input id="cr-redirect-${id}" type="text" readonly value="${escape(redirect.uri)}" aria-label="Return address" spellcheck="false"><button type="button" class="secondary-button" data-cr-act="copy">Copy</button></div>`:`<p class="cr-quiet">${escape(redirect.error || 'Loading the return address…')}</p>`;
     return value;
   }
+  function waitingBox(st){
+    return st.waiting?`<div class="cr-waiting"><p>Waiting for sign-in… Finish it in the window that opened. The link works until ${escape(clock(st.waiting.expiresAt))}.</p><button type="button" class="text-button cr-text" data-cr-act="reopen">Open the sign-in page again</button></div>`:'';
+  }
+  function manualBox(st,id){
+    return `<details class="cr-details cr-manual" data-cr-open="manual"${st.open.manual?' open':''}><summary>Finish manually</summary><p class="cr-quiet">If the page after sign-in doesn’t load, copy its whole address from the browser bar and paste it here.</p><form class="cr-form" data-cr-form="complete" novalidate><div class="cr-field"><label for="cr-paste-${id}">Address after sign-in</label><input id="cr-paste-${id}" type="url" data-cr-field="paste" value="${escape(st.paste)}" autocomplete="off" spellcheck="false" maxlength="8000"${st.busy?' disabled':''}></div><div class="cr-buttons"><button type="submit" class="secondary-button"${st.busy?' disabled':''}>${st.busy==='complete'?'Finishing…':'Finish'}</button></div></form></details>`;
+  }
   function oauthSteps(integration,st,id,{dialog=false}={}){
     const oauth=plain(integration.oauth)?integration.oauth:{},savedId=line(oauth.clientId,500),secret=integration.hasOAuthClientSecret===true;
     const clientId=st.clientId ?? savedId,again=reauth(integration);
     const saved=[savedId?'Client ID saved':'',secret?'client secret saved':''].filter(Boolean).join(' · ');
-    const waiting=st.waiting?`<div class="cr-waiting"><p>Waiting for sign-in… Finish it in the window that opened. The link works until ${escape(clock(st.waiting.expiresAt))}.</p><button type="button" class="text-button cr-text" data-cr-act="reopen">Open the sign-in page again</button></div>`:'';
-    const manual=`<details class="cr-details cr-manual" data-cr-open="manual"${st.open.manual?' open':''}><summary>Finish manually</summary><p class="cr-quiet">If the page after sign-in doesn’t load, copy its whole address from the browser bar and paste it here.</p><form class="cr-form" data-cr-form="complete" novalidate><div class="cr-field"><label for="cr-paste-${id}">Address after sign-in</label><input id="cr-paste-${id}" type="url" data-cr-field="paste" value="${escape(st.paste)}" autocomplete="off" spellcheck="false" maxlength="8000"${st.busy?' disabled':''}></div><div class="cr-buttons"><button type="submit" class="secondary-button"${st.busy?' disabled':''}>${st.busy==='complete'?'Finishing…':'Finish'}</button></div></form></details>`;
+    const waiting=waitingBox(st),manual=manualBox(st,id);
     const step1=again?'':`<li><h4>Add this return address to your OAuth app</h4>${redirectRow(id)}</li>`;
     const step2=again && savedId?'':`<li><h4>Enter the app’s client details</h4><form class="cr-form" data-cr-form="client" novalidate><div class="cr-field"><label for="cr-client-${id}">Client ID</label><input id="cr-client-${id}" type="text" data-cr-field="client" value="${escape(clientId)}" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="500"${st.busy?' disabled':''}></div><div class="cr-field"><label for="cr-secret-${id}">Client secret <span class="cr-optional">${secret?'(saved — leave empty to keep it)':'(if the app has one)'}</span></label><input id="cr-secret-${id}" type="password" data-cr-field="secret" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="4096"${st.busy?' disabled':''}></div>${saved?`<p class="cr-saved">${escape(saved)}</p>`:''}<div class="cr-buttons"><button type="submit" class="secondary-button"${st.busy?' disabled':''}>${st.busy==='client'?'Saving…':'Save'}</button></div></form></li>`;
     const ready=Boolean(savedId);
     const step3=`<li><h4>${again?'Sign in again':'Sign in'}</h4><div class="cr-buttons"><button type="button" class="primary-button" data-cr-act="sign-in"${st.busy || !ready?' disabled':''}${ready?'':` aria-describedby="cr-needs-${id}"`}>${st.busy==='start'?'Opening…':again?'Sign in again':'Sign in'}</button>${dialog && oauth.connected?`<button type="button" class="secondary-button" data-cr-act="disconnect"${st.busy?' disabled':''}>Disconnect</button>`:''}</div>${ready?'':`<p class="cr-quiet" id="cr-needs-${id}">Save the client ID first.</p>`}${waiting}${manual}</li>`;
     return `<ol class="cr-steps">${step1}${step2}${step3}</ol>`;
+  }
+  /* ---- automatic sign-in for MCP servers: the engine asks the server where to sign in and registers itself ---- */
+  /** A host name the engine reported; anything that is not plainly a host is treated as unknown. */
+  const cleanHost=value=>typeof value==='string' && /^(?:[a-z0-9-]{1,63}\.)*[a-z0-9-]{1,63}(?::\d{1,5})?$/i.test(value.trim())?value.trim().toLowerCase():'';
+  const hostname=value=>String(value || '').replace(/:\d+$/,'');
+  const SECOND_LEVEL=new Set(['co','com','net','org','gov','ac','edu','ne','or','go']);
+  /** The site a host belongs to (example.co.uk for a.b.example.co.uk), to notice a sign-in page on a different site. */
+  function site(value){
+    const name=hostname(value).toLowerCase().replace(/\.$/,'');if(!name || /^[\d.]+$/.test(name))return name;
+    const parts=name.split('.');if(parts.length<=2)return name;
+    return parts.slice(parts.at(-1).length===2 && SECOND_LEVEL.has(parts.at(-2))?-3:-2).join('.');
+  }
+  /** Where the owner will sign in, once the server said so. Signing in again asks the server first. */
+  function found(integration,st){
+    const o=plain(integration?.oauth)?integration.oauth:{},f=st?.found || {};
+    if(reauth(integration) && !o.connected && !st?.found)return null;
+    const signIn=host(o.authorizationUrl) || cleanHost(f.authorizationHost);if(!signIn)return null;
+    return {signIn,token:host(o.tokenUrl) || cleanHost(f.tokenHost),issuer:host(o.issuer) || cleanHost(f.issuer) || host(f.issuer),
+      scopes:Array.isArray(o.scopes) && o.scopes.length?o.scopes:Array.isArray(f.scopes)?f.scopes:[],registration:typeof o.registration==='string' && o.registration?o.registration:f.registration || ''};
+  }
+  function scopeList(scopes,st){
+    const all=(Array.isArray(scopes)?scopes:[]).filter(item=>typeof item==='string').map(item=>line(item,120)).filter(Boolean);
+    if(!all.length)return '<p class="cr-quiet">The server lists no specific permissions.</p>';
+    const items=`<ul class="cr-scopes">${all.slice(0,40).map(scope=>`<li><code>${escape(scope)}</code></li>`).join('')}</ul>${all.length>40?`<p class="cr-quiet">And ${all.length-40} more.</p>`:''}`;
+    if(all.length<=4)return `<div class="cr-scope-box"><p class="cr-quiet">Permissions it asks for:</p>${items}</div>`;
+    return `<details class="cr-details" data-cr-open="scopes"${st.open.scopes?' open':''}><summary>Permissions it asks for (${all.length})</summary>${items}</details>`;
+  }
+  function failedBox(integration,st){
+    const server=host(integration.baseUrl),who=server?`<strong>${escape(server)}</strong>`:'The server',busy=st.busy?' disabled':'';
+    const byHand=`<button type="button" class="secondary-button" data-action="edit-integration" data-cr-manual data-id="${escape(integration.id)}"${busy}>Enter details by hand</button>`;
+    const retry=`<button type="button" class="text-button cr-text" data-cr-act="discover"${busy}>${st.busy==='discover'?'Asking…':'Ask the server again'}</button>`;
+    if(st.failed==='registration')return `<div class="cr-failed" role="alert"><p>${who} did not let Tupies register itself for sign-in. Register an app with the service, then enter its details by hand.</p></div><div class="cr-buttons">${byHand}</div>${retry}`;
+    if(st.confirmToken)return `<div class="cr-failed"><p>Use a token for ${escape(name(integration))} instead of signing in? The name and address stay; automatic sign-in is turned off.</p></div><div class="cr-buttons"><button type="button" class="primary-button" data-cr-act="token"${busy}>${st.busy==='token'?'Switching…':'Use a token'}</button><button type="button" class="secondary-button" data-cr-act="token-cancel"${busy}>Cancel</button></div>`;
+    return `<div class="cr-failed" role="alert"><p>${who} did not say how to sign in. It may take a token instead, or need sign-in details entered by hand.</p></div><div class="cr-buttons"><button type="button" class="primary-button" data-cr-act="token-ask"${busy}>Use a token instead</button>${byHand}</div>${retry}`;
+  }
+  function autoSteps(integration,st,id,options={}){
+    if(st.failed)return failedBox(integration,st);
+    const o=integration.oauth,again=reauth(integration) && !o.connected,where=found(integration,st),busy=st.busy?' disabled':'';
+    if(!where)return `<p class="cr-quiet">Tupies asks the server${again?' again':''} where you sign in. You see the address before anything opens.</p><div class="cr-buttons"><button type="button" class="primary-button" data-cr-act="discover"${busy}>${st.busy==='discover'?'Finding…':'Find sign-in'}</button></div>`;
+    if(where.registration==='manual_required' || (!REGISTERED.has(where.registration) && !line(o.clientId,500)))return `<p class="cr-why">This server needs an app registered by hand before you can sign in.</p>${oauthSteps(integration,st,id,options)}`;
+    const disconnect=options.dialog && o.connected?`<button type="button" class="secondary-button" data-cr-act="disconnect"${busy}>Disconnect</button>`:'';
+    return `${scopeList(where.scopes,st)}<div class="cr-buttons"><button type="button" class="primary-button" data-cr-act="sign-in"${busy}>${st.busy==='start'?'Opening…':again?'Sign in again':'Sign in'}</button>${disconnect}</div>${waitingBox(st)}${manualBox(st,id)}`;
   }
   function clock(iso){const time=Date.parse(iso);return Number.isFinite(time)?new Date(time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'soon';}
   function connectedRow(integration,request,st,{dialog,continueShown}){
@@ -127,7 +185,7 @@
     const step=need(integration,request?.how),again=step==='oauth' && reauth(integration) && !integration.oauth?.connected;
     const title=again?`Sign in to ${name(integration)} again`:step==='check'?`Check ${name(integration)}`:`Connect ${name(integration)}`;
     const problem=integration.error && !st.error?`<p class="cr-problem">${escape(line(integration.error,240))}</p>`:'';
-    const body=step==='oauth'?oauthSteps(integration,st,id,options):step==='key'?keyForm(integration,st,id):checkForm(integration,st);
+    const body=step==='oauth'?(auto(integration)?autoSteps(integration,st,id,options):oauthSteps(integration,st,id,options)):step==='key'?keyForm(integration,st,id):checkForm(integration,st);
     return `<h3 class="cr-title${again?' is-again':''}">${escape(title)}</h3>${again?'<p class="cr-why">The service stopped accepting the saved sign-in.</p>':''}${about(integration,st,step)}${problem}${body}${status(st)}`;
   }
   function find(ctx,id){return (ctx?.data?.integrations || []).find(item=>item?.id===id) || null;}
@@ -243,10 +301,48 @@
     if(!safe)return false;
     window.open(safe,'_blank','noopener,noreferrer');return true;
   }
+  /** The engine's error code. `api()` passes `code` through; older shells only give the status and message. */
+  function codeOf(error){
+    if(typeof error?.code==='string' && error.code)return error.code;
+    const said=String(error?.message || '');
+    if(error?.status===502)return /regist/i.test(said)?'oauth_registration_failed':'oauth_discovery_failed';
+    if(error?.status===409 && /discover|find (?:the )?sign-in|where to sign in/i.test(said))return 'oauth_discovery_required';
+    return '';
+  }
+  /** Asks the MCP server where to sign in. Shows the hosts; never opens anything. */
+  async function runDiscover(id,st){
+    st.failed='';st.confirmToken=false;st.found=null;
+    let result;
+    try{result=await C().api(`${base(id)}/oauth/discover`,{method:'POST',body:{}});}
+    catch(error){
+      const code=codeOf(error);
+      if(code==='oauth_discovery_failed' || code==='oauth_registration_failed'){st.failed=code==='oauth_registration_failed'?'registration':'discovery';return '';}
+      throw error;
+    }
+    const registration=['dynamic','metadata_document','manual_required'].includes(result?.registration)?result.registration:'';
+    st.found={authorizationHost:result?.authorizationHost,tokenHost:result?.tokenHost,issuer:result?.issuer,scopes:Array.isArray(result?.scopes)?result.scopes.slice(0,200):[],registration};
+    return registration==='manual_required'?'This server needs an app registered by hand.':'Check where you will sign in, then press Sign in.';
+  }
+  function findSignIn(card){const id=card.dataset.crId;return act(card,'discover',st=>runDiscover(id,st));}
+  /** After the server said it has no sign-in information: keep the name and address, switch to a pasted token. */
+  function useToken(card){
+    const id=card.dataset.crId;
+    return act(card,'token',async st=>{
+      await C().api(base(id),{method:'PATCH',body:{authType:'bearer'}});
+      st.failed='';st.confirmToken=false;st.found=null;
+      return 'Now paste the token from the service.';
+    });
+  }
   function signIn(card){
     const id=card.dataset.crId;
-    return act(card,'start',async st=>{
-      const result=await C().api(`${base(id)}/oauth/start`,{method:'POST',body:{}});
+    return act(card,'start',async(st,integration)=>{
+      let result;
+      try{result=await C().api(`${base(id)}/oauth/start`,{method:'POST',body:{}});}
+      catch(error){
+        // The sign-in details went stale: ask the server again and show the hosts. The owner presses Sign in a second time.
+        if(auto(integration) && codeOf(error)==='oauth_discovery_required')return runDiscover(id,st);
+        throw error;
+      }
       const expiresAt=typeof result?.expiresAt==='string'?result.expiresAt:new Date(Date.now()+600_000).toISOString();
       if(!openSignIn(result?.authorizationUrl))throw new Error('The service returned a sign-in address Tupies cannot open.');
       st.signInUrl=result.authorizationUrl;st.waiting={expiresAt};schedule();
@@ -256,10 +352,10 @@
   function complete(card,form){
     const id=card.dataset.crId,field=form.querySelector('[data-cr-field="paste"]'),value=field?.value.trim() || '';
     if(!value){const st=stateOf(id);st.error='Paste the whole address from the browser bar.';refreshCards();return;}
-    return act(card,'complete',async st=>{
+    return act(card,'complete',async(st,integration)=>{
       await C().api(`${base(id)}/oauth/complete`,{method:'POST',body:{redirectUrl:value}});
-      st.paste='';if(field)field.value='';st.waiting=null;st.signInUrl='';st.open.manual=false;
-      return 'Signed in.';
+      st.paste='';if(field)field.value='';st.waiting=null;st.signInUrl='';st.open.manual=false;st.found=null;
+      return integration?.type==='mcp' && !tools(integration).length?listTools(id):'Signed in.';
     });
   }
   function disconnect(card){
@@ -267,6 +363,8 @@
     return act(card,'disconnect',async st=>{await C().api(`${base(id)}/oauth/disconnect`,{method:'POST',body:{}});st.waiting=null;st.signInUrl='';return 'Disconnected. The client details are kept.';});
   }
   function check(card){const id=card.dataset.crId;return act(card,'check',()=>discover(id));}
+  /** A signed-in MCP server lists its tools; if that fails, the card offers Check connection. */
+  async function listTools(id){try{return await discover(id);}catch{return 'Signed in. Press Check connection to list its tools.';}}
 
   /* ---- waiting for the provider to send the owner back ---- */
   function waitingIds(){return [...states.entries()].filter(([,st])=>st.waiting).map(([id])=>id);}
@@ -285,14 +383,17 @@
         if(![...document.querySelectorAll('.cr-card')].some(card=>card.dataset.crId===id))stateOf(id).waiting=null;
       }
       if(waitingIds().length && C()?.refresh){try{await C().refresh(false);}catch{}}
+      const toList=[];
       for(const id of waitingIds()){
         const st=stateOf(id),integration=find(C(),id);
         if(!integration){st.waiting=null;continue;}
-        if(integration.oauth?.connected){st.waiting=null;st.signInUrl='';st.error='';st.notice='Signed in.';}
+        if(integration.oauth?.connected){st.waiting=null;st.signInUrl='';st.error='';st.notice='Signed in.';st.found=null;if(integration.type==='mcp' && !tools(integration).length)toList.push(id);}
         else if(Date.parse(st.waiting.expiresAt)<=Date.now()){st.waiting=null;st.signInUrl='';st.error='The sign-in link expired. Press Sign in to try again.';}
       }
       if(C()?.route?.().view==='integrations' && !waitingIds().length)try{C().renderApp?.();}catch{}
       refreshCards();
+      // Signed in to an MCP server whose tools are not listed yet: list them, as Connect does after a pasted key.
+      for(const id of toList){const card=[...document.querySelectorAll('.cr-card')].find(node=>node.dataset.crId===id);if(card)check(card);}
     }finally{polling=false;schedule();}
   }
   window.addEventListener?.('focus',()=>{if(waitingIds().length)poll();});
@@ -327,6 +428,9 @@
     else if(act==='reopen'){const st=stateOf(card.dataset.crId);if(st.signInUrl)openSignIn(st.signInUrl);}
     else if(act==='disconnect')disconnect(card);
     else if(act==='check')check(card);
+    else if(act==='discover')findSignIn(card);
+    else if(act==='token-ask' || act==='token-cancel'){const st=stateOf(card.dataset.crId);st.confirmToken=act==='token-ask';st.error='';st.notice='';refreshCards();card.querySelector(act==='token-ask'?'[data-cr-act="token"]':'[data-cr-act="token-ask"]')?.focus();}
+    else if(act==='token')useToken(card);
     else if(act==='continue')sendContinue(card,button);
     else if(act==='copy')copy(card);
   });
@@ -391,13 +495,15 @@
     return `<div class="cr-proposal"><p><strong>${escape(who || 'A bot')} ${integration.proposedBy?'added this connection':'changed this connection'}.</strong>${reason?` ${escape(reason)}`:''}</p>${notes?`<details class="cr-details"><summary>Setup notes from ${escape(who || 'the bot')}</summary><p class="cr-notes">${escape(notes)}</p></details>`:''}</div>`;
   }
   /** OAuth fields for the integration dialog. Hidden unless the sign-in method is OAuth. */
-  function oauthFields(integration={},id='',ctx){
+  function oauthFields(integration={},id='',ctx,type){
     use(ctx);
-    const o=plain(integration.oauth)?integration.oauth:{},on=integration.authType==='oauth2';
+    const o=plain(integration.oauth)?integration.oauth:{},on=integration.authType==='oauth2',mcp=(type || integration.type || 'mcp')==='mcp';
+    // MCP servers find their sign-in automatically unless this connection was set up by hand (or the owner just asked to).
+    const automatic=!manualNext.delete(id) && (on?o.auto===true:true);
     const extra=Object.entries(plain(o.extraParams)?o.extraParams:{}).map(([key,value])=>`${key}=${value}`).join('\n');
     const state=!id?'<p class="cr-quiet">Save, then sign in.</p>':o.connected?`<p class="cr-saved">Signed in${o.connectedAt?` since ${escape(new Date(o.connectedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))}`:''}. Changing the client ID, secret or addresses signs it out.</p>`:`<p class="cr-quiet">${integration.status==='needs_reauth'?'The sign-in expired. Save, then sign in again.':'Not signed in yet. Save, then sign in.'}</p>`;
     const disconnect=id && o.connected?`<button type="button" class="secondary-button" data-cr-dialog-disconnect data-id="${escape(id)}">Disconnect</button>`:'';
-    return `<fieldset class="cr-oauth-fields" id="integration-oauth-field" ${on?'':'hidden'}><legend>OAuth 2.0 sign-in</legend>${redirectField()}<div class="field"><label for="integration-oauth-auth-url">Sign-in address (authorization URL)</label><input id="integration-oauth-auth-url" name="oauthAuthorizationUrl" type="url" value="${escape(o.authorizationUrl || '')}" placeholder="https://accounts.example.com/oauth/authorize" spellcheck="false"></div><div class="field"><label for="integration-oauth-token-url">Token address (token URL)</label><input id="integration-oauth-token-url" name="oauthTokenUrl" type="url" value="${escape(o.tokenUrl || '')}" placeholder="https://accounts.example.com/oauth/token" spellcheck="false"></div><div class="field"><label for="integration-oauth-scopes">Permissions (scopes)</label><input id="integration-oauth-scopes" name="oauthScopes" value="${escape((Array.isArray(o.scopes)?o.scopes:[]).join(' '))}" placeholder="read write" spellcheck="false"><small>Separate with spaces. Ask for as little as the bot needs.</small></div><div class="field"><label for="integration-oauth-client">Client ID</label><input id="integration-oauth-client" name="oauthClientId" value="${escape(o.clientId || '')}" autocomplete="off" spellcheck="false"></div><div class="field"><label for="integration-oauth-secret">Client secret <span class="optional-label">${integration.hasOAuthClientSecret?'saved':'optional'}</span></label><input id="integration-oauth-secret" name="oauthClientSecret" type="password" autocomplete="new-password" placeholder="${integration.hasOAuthClientSecret?'Leave empty to keep the saved secret':'If the app has one'}"></div><details class="cr-details"><summary>More sign-in options</summary><div class="field"><label for="integration-oauth-extra">Extra sign-in parameters</label><textarea id="integration-oauth-extra" name="oauthExtra" rows="2" spellcheck="false" placeholder="access_type=offline">${escape(extra)}</textarea><small>One name=value per line.</small></div><div class="field"><label for="integration-oauth-token-auth">Send the client secret</label><select id="integration-oauth-token-auth" name="oauthTokenAuth"><option value="body" ${o.tokenAuth!=='basic'?'selected':''}>In the request (most services)</option><option value="basic" ${o.tokenAuth==='basic'?'selected':''}>As a Basic login header</option></select></div></details><div class="cr-oauth-state" role="status" aria-live="polite">${state}${disconnect}</div></fieldset>`;
+    return `<fieldset class="cr-oauth-fields" id="integration-oauth-field" ${on?'':'hidden'}><legend>OAuth 2.0 sign-in</legend><div class="field cr-auto-field" id="integration-oauth-auto-field" ${mcp?'':'hidden'}><label class="checkbox-field"><input type="checkbox" id="integration-oauth-auto" name="oauthAuto" ${automatic?'checked':''} aria-describedby="integration-oauth-auto-help">Find sign-in automatically</label><small id="integration-oauth-auto-help">Tupies asks the server where to sign in and registers itself. You see the sign-in address before anything opens. Turn off to enter an OAuth app’s details by hand.</small></div><div id="integration-oauth-manual" ${mcp && automatic?'hidden':''}>${redirectField()}<div class="field"><label for="integration-oauth-auth-url">Sign-in address (authorization URL)</label><input id="integration-oauth-auth-url" name="oauthAuthorizationUrl" type="url" value="${escape(o.authorizationUrl || '')}" placeholder="https://accounts.example.com/oauth/authorize" spellcheck="false"></div><div class="field"><label for="integration-oauth-token-url">Token address (token URL)</label><input id="integration-oauth-token-url" name="oauthTokenUrl" type="url" value="${escape(o.tokenUrl || '')}" placeholder="https://accounts.example.com/oauth/token" spellcheck="false"></div><div class="field"><label for="integration-oauth-scopes">Permissions (scopes)</label><input id="integration-oauth-scopes" name="oauthScopes" value="${escape((Array.isArray(o.scopes)?o.scopes:[]).join(' '))}" placeholder="read write" spellcheck="false"><small>Separate with spaces. Ask for as little as the bot needs.</small></div><div class="field"><label for="integration-oauth-client">Client ID</label><input id="integration-oauth-client" name="oauthClientId" value="${escape(o.clientId || '')}" autocomplete="off" spellcheck="false"></div><div class="field"><label for="integration-oauth-secret">Client secret <span class="optional-label">${integration.hasOAuthClientSecret?'saved':'optional'}</span></label><input id="integration-oauth-secret" name="oauthClientSecret" type="password" autocomplete="new-password" placeholder="${integration.hasOAuthClientSecret?'Leave empty to keep the saved secret':'If the app has one'}"></div><details class="cr-details"><summary>More sign-in options</summary><div class="field"><label for="integration-oauth-extra">Extra sign-in parameters</label><textarea id="integration-oauth-extra" name="oauthExtra" rows="2" spellcheck="false" placeholder="access_type=offline">${escape(extra)}</textarea><small>One name=value per line.</small></div><div class="field"><label for="integration-oauth-token-auth">Send the client secret</label><select id="integration-oauth-token-auth" name="oauthTokenAuth"><option value="body" ${o.tokenAuth!=='basic'?'selected':''}>In the request (most services)</option><option value="basic" ${o.tokenAuth==='basic'?'selected':''}>As a Basic login header</option></select></div></details></div><div class="cr-oauth-state" role="status" aria-live="polite">${state}${disconnect}</div></fieldset>`;
   }
   function redirectField(){
     if(redirectStale())loadRedirect().then(()=>{const node=document.getElementById('integration-oauth-redirect');if(node)node.outerHTML=redirectField();});
@@ -422,7 +528,9 @@
       const at=entry.indexOf('=');if(at<1)throw new Error('Write each extra sign-in parameter as name=value on its own line.');
       extraParams[entry.slice(0,at).trim()]=entry.slice(at+1).trim();
     }
-    const payload={oauth:{authorizationUrl:get('oauthAuthorizationUrl'),tokenUrl:get('oauthTokenUrl'),scopes:get('oauthScopes').split(/[\s,]+/).filter(Boolean),clientId:get('oauthClientId'),extraParams,tokenAuth:get('oauthTokenAuth')==='basic'?'basic':'body'}};
+    const field=name=>form?.elements?.namedItem?.(name),mcp=String(field('type')?.value || '')==='mcp';
+    if(mcp && field('oauthAuto')?.checked)return {oauth:{auto:true}};
+    const payload={oauth:{...(mcp?{auto:false}:{}),authorizationUrl:get('oauthAuthorizationUrl'),tokenUrl:get('oauthTokenUrl'),scopes:get('oauthScopes').split(/[\s,]+/).filter(Boolean),clientId:get('oauthClientId'),extraParams,tokenAuth:get('oauthTokenAuth')==='basic'?'basic':'body'}};
     const secret=get('oauthClientSecret');if(secret)payload.oauthClientSecret=secret;
     return payload;
   }
@@ -430,7 +538,21 @@
   function toggleAuth(form,value){
     const oauth=form?.querySelector?.('#integration-oauth-field'),key=form?.querySelector?.('#integration-key-field');
     if(oauth)oauth.hidden=value!=='oauth2';if(key)key.hidden=value==='none' || value==='oauth2';
+    syncAuto(form);
   }
+  /** "Find sign-in automatically" is offered for MCP servers only; while it is on, the manual OAuth fields stay hidden. */
+  function syncAuto(form){
+    const row=form?.querySelector?.('#integration-oauth-auto-field'),manual=form?.querySelector?.('#integration-oauth-manual'),box=form?.querySelector?.('#integration-oauth-auto');
+    const mcp=String(form?.elements?.namedItem?.('type')?.value || '')==='mcp';
+    if(row)row.hidden=!mcp;if(manual)manual.hidden=mcp && box?.checked===true;
+  }
+  document.addEventListener?.('change',event=>{
+    const id=event.target?.id;if(id==='integration-oauth-auto' || id==='integration-type')syncAuto(event.target.form);
+  });
+  // "Enter details by hand" opens the integration dialog with automatic sign-in turned off.
+  document.addEventListener?.('click',event=>{
+    const button=event.target?.closest?.('[data-cr-manual]');if(button && !button.disabled)manualNext.add(button.dataset.id);
+  },true);
   /** A catalog preset with OAuth fills the OAuth fields; its setup notes show above the form. */
   function applyPreset(form,preset){
     if(!form || !plain(preset))return;

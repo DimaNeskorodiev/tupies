@@ -46,6 +46,12 @@
 .cr-card button:focus-visible,.cr-card input:focus-visible{outline:2px solid var(--purple,#706390);outline-offset:2px}
 .cr-dialog .cr-card{border:0;padding:4px 0;background:none}
 .cr-dialog .cr-title:not(.is-again){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cr-caution{padding:6px 10px;border-radius:10px;background:var(--ios-amber-soft,rgba(196,138,44,.1));color:var(--amber,#9a6514);font-size:11px}
+.cr-failed{padding:8px 10px;border-radius:10px;border:1px solid var(--line,rgba(84,96,121,.14));background:var(--pearl-surface,rgba(255,255,255,.6))}
+.cr-scopes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 6px;min-width:0}
+.cr-scopes code{display:inline-block;max-width:100%;padding:1px 6px;border-radius:6px;border:1px solid var(--line,rgba(84,96,121,.14));font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink,#29313d);overflow-wrap:anywhere}
+.cr-scope-box{display:grid;gap:4px}
+.cr-auto-field[hidden],#integration-oauth-manual[hidden]{display:none}
 .cr-pill-warn{color:var(--amber,#9a6514)}
 .cr-pill-warn .dot{background:var(--amber,#c48a2c)}
 .tag.cr-added{color:var(--purple,#706390)}
@@ -63,6 +69,6 @@
   .cr-buttons>button{flex:1}
   .cr-field input,.cr-copy input{min-height:44px;font-size:16px}
   .cr-details>summary,.cr-text{min-height:44px}
-  .cr-hosts,.cr-quiet,.cr-saved,.cr-status,.cr-actions small{font-size:calc(12px * var(--ios-s,1))}
+  .cr-hosts,.cr-quiet,.cr-saved,.cr-status,.cr-actions small,.cr-caution{font-size:calc(12px * var(--ios-s,1))}
   .cr-steps{padding-left:16px}
 }
