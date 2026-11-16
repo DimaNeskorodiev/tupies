@@ -48,7 +48,7 @@ Runs on every pull request and on every merge to `main`.
 | **Tests** | `npm run check` and the whole suite through `scripts/verify-release-tests.mjs`, the same command the release uses | always |
 | **Linux command sandbox** | Bot commands stay inside bubblewrap, directly and under the server's systemd hardening | always |
 | **Workshop container** | Bot-proposed Engine changes are verified in a locked-down container (`scripts/accept-engine-verifier.mjs`) | always |
-| **iPhone and Mac apps** | Swift logic tests, then both apps compile without signing | when `apps/apple/` changed, and on `main` |
+| **iPhone and Mac apps** | Swift logic tests, then both apps compile without signing | when `apps/apple/` changed (on a pull request or a merge to `main`), or when CI is started by hand |
 | **CI passed** | Every job above passed or did not apply | always |
 
 The container image holds only the Engine's own sources, and it refuses skipped tests, so a test under `test/` must not read `apps/apple/` or `.github/`; checks on those belong in **What to update** or **iPhone and Mac apps**.
