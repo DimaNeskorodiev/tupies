@@ -63,9 +63,11 @@
 
   /** A proposed connection: where requests go, how the owner signs in and each declared action. The bot wrote all of it; the engine's summary above names the hosts. */
   function proposal(a){
-    const sign=a.authType==='oauth2'?`OAuth sign-in at ${host(a.oauth?.authorizationUrl) || 'an unknown address'}${plain(a.oauth) && Array.isArray(a.oauth.scopes) && a.oauth.scopes.length?` · permissions: ${a.oauth.scopes.slice(0,10).map(scope=>clip(scope,120)).join(' ')}`:''}`:a.authType==='header'?`API key in the ${clip(a.headerName || 'x-api-key',60)} header`:a.authType==='none'?'None':a.authType==='bearer'?'API key':'';
+    // An MCP server with sign-in and no OAuth details: the engine finds the sign-in address from the server when the owner connects.
+    const found=a.type==='mcp' && a.authType==='oauth2' && !plain(a.oauth);
+    const sign=found?'Found from the server when you connect. You see the sign-in address before anything opens.':a.authType==='oauth2'?`OAuth sign-in at ${host(a.oauth?.authorizationUrl) || 'an unknown address'}${plain(a.oauth) && Array.isArray(a.oauth.scopes) && a.oauth.scopes.length?` · permissions: ${a.oauth.scopes.slice(0,10).map(scope=>clip(scope,120)).join(' ')}`:''}`:a.authType==='header'?`API key in the ${clip(a.headerName || 'x-api-key',60)} header`:a.authType==='none'?'None':a.authType==='bearer'?'API key':'';
     const actions=(Array.isArray(a.tools)?a.tools:[]).filter(plain).slice(0,12).map(item=>`${String(item.method || '').toUpperCase()==='GET'?'Reads':'Changes'} · ${clip(words(item.name),60)}${item.description?` — ${clip(item.description,120)}`:''}`);
-    const rows=[['Name',clip(a.name,100)],['Address',clip(a.baseUrl,300)],['Sign-in',sign],['Why',clip(a.reason,500)],['Actions',actions.join('\n')+(Array.isArray(a.tools) && a.tools.length>12?`\n…and ${a.tools.length-12} more`:'')],['Setup notes',clip(a.setupNotes,600)]].filter(([,value])=>value);
+    const rows=[['Name',clip(a.name,100)],['Address',clip(a.baseUrl,300)],['Sign-in',sign],['Why',clip(a.reason,500)],['Actions',a.type==='mcp' && !actions.length?'Its tools are listed after you connect it.':actions.join('\n')+(Array.isArray(a.tools) && a.tools.length>12?`\n…and ${a.tools.length-12} more`:'')],['Setup notes',clip(a.setupNotes,600)]].filter(([,value])=>value);
     return rows.length?`<dl class="approval-inputs">${rows.map(([label,value])=>`<div><dt>${escape(label)}</dt><dd${/\n/.test(value) || value.length>120?' class="is-block"':''}>${escape(value)}</dd></div>`).join('')}</dl>`:'';
   }
 
