@@ -5,10 +5,9 @@
 Owner report: two “Codex subscription” entries, one broken; picking an OpenRouter model was awkward; the chat model panel could not switch providers like Settings. Built on branch `feature/unified-model-picker-20261116`, not installed or released:
 - Cause of the duplicate: each **Continue to sign in** from the ChatGPT tile created a new connection (`POST /api/connections`), so an abandoned or failed sign-in stayed behind, never signed in, with the same name as the working one; Bot settings listed both as “ChatGPT / Codex subscription · ChatGPT / Codex subscription”. A retry now reuses the unfinished connection; nothing is deleted automatically.
 - `public/model-picker.js` + `.css`: one provider select plus a searchable model combobox (name and id, listbox roles, full keyboard, loading/empty/error-with-retry states) used by Bot settings and the chat panel; same-named providers are labelled apart and unusable ones are shown as errors.
-- The chat panel switches provider and model together through `PATCH /api/bots/{id}/inference` (`connectionId`), with a `GET …?connectionId=` preview; a provider switch requires an idle bot, keeps the fallback distinct and drops the old provider session. Bot settings save provider/model changes through the same route. Reasoning levels are ordered weakest-first for every provider.
+- The chat panel switches provider and model together through `PATCH /api/bots/{id}/inference` (`connectionId`), with a `GET …?connectionId=` preview; a provider switch requires an idle bot, keeps the fallback distinct and drops the old provider session. Bot settings save provider/model changes through the same route. Chat options › Model & reasoning became a read-only summary with **Change provider or model** (opens the composer panel), so only two surfaces edit the choice. Reasoning levels are ordered weakest-first for every provider.
 
 Follow-ups, not built:
-- **Chat options › Model & reasoning** still offers only models of the current provider (a plain select); move it onto the shared picker or link it to the panel.
 - A one-click way to remove an unfinished duplicate connection from the picker itself (today: Settings → Providers).
 - Real-account check on the Mac and the VPS with the owner's actual connections after installation.
 

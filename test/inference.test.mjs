@@ -339,6 +339,10 @@ test('retrying ChatGPT sign-in reuses the unfinished connection instead of addin
   const first=await create();assert.equal(first.status,201,JSON.stringify(first.body));
   const retry=await create();assert.equal(retry.status,200,JSON.stringify(retry.body));assert.equal(retry.body.id,first.body.id);assert.equal(retry.body.reused,true);
   assert.equal(subscriptions().length,1,'an unfinished sign-in is reused, not duplicated');
+  // Only a newly typed name is applied to the reused connection.
+  const renamed=await f.request('/api/connections',{method:'POST',data:{type:'chatgpt',name:'Work ChatGPT',baseUrl:`http://127.0.0.1:${f.provider.address().port}/v1`,defaultModel:'should-not-apply'}});
+  assert.equal(renamed.status,200,JSON.stringify(renamed.body));assert.equal(renamed.body.id,first.body.id);assert.equal(renamed.body.name,'Work ChatGPT');
+  assert.equal(subscriptions().length,1);assert.equal(subscriptions()[0].name,'Work ChatGPT');assert.equal(subscriptions()[0].defaultModel,'');
   // Once that connection holds an account, a new sign-in is a separate connection (for example a second account).
   await f.app.store.mutate(state=>{const current=state.connections.find(item=>item.id===first.body.id);current.oauthSecret=f.app.store.seal(JSON.stringify({access_token:'fixture-access',scopes:['chatgpt.tokens.use.direct','resource.invoke'],expiresAt:Date.now()+3_600_000}));current.oauthAccount={subject:'fixture-subject',email:'owner@example.test',planEnabled:true,needsLogin:false};current.status='connected';});
   const second=await create();assert.equal(second.status,201,JSON.stringify(second.body));assert.notEqual(second.body.id,first.body.id);

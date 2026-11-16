@@ -559,7 +559,9 @@ function syncSettings(form,{reset=false,status}={}){
   const dirty=settingsIdentity(form)!==settingsBaselines.get(form),saving=form.dataset.settingsSaving==='true';
   form.dataset.settingsDirty=String(dirty);
   const label=form.querySelector('[data-settings-status]');
-  if(label){const partial=dirty&&label.textContent.startsWith('Bot settings saved;');label.textContent=status??(saving?'Saving changes…':partial?label.textContent:dirty?'Unsaved changes':'All changes saved');}
+  // After a refused model change the picker is back on the saved value, so the form is clean but only partly saved.
+  if(reset)delete form.dataset.settingsPartial;
+  if(label){const partial=dirty&&label.textContent.startsWith('Bot settings saved;');label.textContent=status??(saving?'Saving changes…':partial?label.textContent:dirty?'Unsaved changes':form.dataset.settingsPartial||'All changes saved');}
   const save=form.querySelector('.bot-settings-save button[type="submit"]'),discard=form.querySelector('[data-profile-action="discard-settings"]');
   if(save){save.disabled=!dirty||saving;save.setAttribute('aria-busy',String(saving));}
   if(discard)discard.disabled=!dirty||saving;
