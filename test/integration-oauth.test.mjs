@@ -72,7 +72,7 @@ test('oauth2 validation accepts a proposal without client or tokens and refuses 
   await assert.rejects(f.integrations.oauth.start('integration_missing'),/not found/);
   await add(f,{...oauthInput(p),oauth:{...oauthInput(p).oauth,clientId:''}});
   await assert.rejects(f.integrations.oauth.start('integration_oauth'),/client ID/);
-  await assert.rejects(call(f,'read_items'),/not signed in yet/);assert.equal(p.apiRequests.length,0);
+  await assert.rejects(call(f,'read_items'),/not connected yet/);assert.equal(p.apiRequests.length,0);
 });
 
 test('start builds a PKCE S256 authorization URL; the callback exchanges once and stores sealed tokens only',async t=>{
@@ -192,7 +192,7 @@ test('endpoint, client or secret changes drop tokens; scope changes keep them an
   assert.deepEqual(bundle(f),{client_secret:CLIENT_SECRET});assert.equal(current(f).oauth.clientId,'client-123');
   assert.notEqual(f.integrations.fingerprint(current(f)),fingerprint);
   assert.equal(f.store.state.activity[0].type,'integration.oauth_disconnected');
-  await assert.rejects(call(f,'read_items'),/not signed in yet/);
+  await assert.rejects(call(f,'read_items'),/not connected yet/);
 });
 
 test('basic client authentication and an MCP server use the same bearer path',async t=>{
