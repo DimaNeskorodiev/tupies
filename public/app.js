@@ -249,7 +249,7 @@ async function api(path, options={}) {
   let response=await fetch(path,{...requestOptions,method,headers,credentials:'same-origin'});currentSession();
   if(conditional&&response.status===304)return {notModified:true};
   let result;
-  const readResponse=async value=>{if(value.ok&&options.responseType==='blob')return value.blob();try{return await value.json();}catch{return {error:`Request failed (${value.status})`};}};
+  const readResponse=async value=>{if(value.ok&&options.responseType==='blob')return value.blob();if(value.ok&&options.responseType==='stream')return value;try{return await value.json();}catch{return {error:`Request failed (${value.status})`};}};
   result=await readResponse(response);currentSession();
   // This exact guard runs before mutation dispatch, so one retry cannot repeat an action.
   if(method!=='GET'&&response.status===403&&result.code==='csrf_mismatch'){
@@ -1227,7 +1227,6 @@ async function loadChat(id,{poll=false}={}){
 }
 function openDialog(title,body,{wide=false}={}){
   closeInferencePicker(true,false);
-  window.StudioBrowser?.reset();
   if(loginPollTimer){clearInterval(loginPollTimer);loginPollTimer=null;}
   const root=$('#dialog-root');window.StudioRich?.dispose(root);
   root.innerHTML=`<dialog class="modal ${wide?'wide':''}" aria-label="${esc(title)}"><button type="button" class="sheet-grabber" data-action="close-dialog" aria-label="Dismiss sheet"><span></span></button><div class="modal-head"><h2 tabindex="-1" ${phoneLayout()?'autofocus':''}>${esc(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Close dialog">${icon('close')}</button></div><div class="modal-body">${body}</div></dialog>`;
@@ -1238,9 +1237,9 @@ function openDialog(title,body,{wide=false}={}){
   document.body.classList.add('scroll-lock');
 }
 function closeDialog(){
-  window.StudioBrowser?.reset();
   if(loginPollTimer){clearInterval(loginPollTimer);loginPollTimer=null;}
-  const dialog=$('dialog');if(!dialog)return;
+  // The owner browser window is its own dialog (browser-control.js) and outlives ordinary dialogs.
+  const root=$('#dialog-root'),dialog=root&&$('dialog',root);if(!dialog)return;
   if(window.StudioMobile?.closeSheet(dialog,()=>dialog.close()))return;
   dialog.close();
 }
@@ -1683,8 +1682,11 @@ document.addEventListener('click',async event=>{
       case 'stop-process':el.disabled=true;try{await stopManagedProcess(JSON.parse(el.dataset.process||'{}'));}finally{if(el.isConnected)el.disabled=false;}break;
       case 'stop-run':el.disabled=true;await api(`/api/bots/${encodeURIComponent(id)}/stop`,{method:'POST',body:JSON.parse(el.dataset.run||'{}')});await loadChat(id);window.StudioMissions?.reload();toast('Stop requested.');break;
       case 'browser-handoff':{
-        const generation=sendSessionGeneration,missionPage=route().view==='missions'?route().id:null,identity=JSON.parse(el.dataset.browserIdentity||'{}');
-        window.StudioBrowser?.open({api,openDialog,closeDialog,loadChat,toast,valid:()=>generation===sendSessionGeneration&&auth?.authenticated&&(route().view==='bot'&&route().id===id||route().view==='missions'&&route().id===missionPage&&el.isConnected&&!!el.closest('.mission-owner-controls'))},id,identity);break;
+        // Stays open across navigation; the Engine ends the stream when this exact handoff ends, and sign-out resets it.
+        const generation=sendSessionGeneration,identity=JSON.parse(el.dataset.browserIdentity||'{}');
+        // Refreshes only what is on screen: the window outlives navigation, and loading another bot's chat would replace the visible one.
+        const refreshAfterHandoff=botId=>{const current=route();if(current.view==='bot'&&current.id===botId)return loadChat(botId);window.StudioMissions?.reload();};
+        window.StudioBrowser?.open({api,loadChat:refreshAfterHandoff,toast,botName:botById(id)?.name,reason:el.dataset.browserReason||'',valid:()=>generation===sendSessionGeneration&&!!auth?.authenticated},id,identity);break;
       }
       case 'answer-mission-proposal':case 'decline-mission-proposal':case 'answer-question':case 'skip-question':{
         const card=el.closest('.question-card'),skip=el.dataset.action==='skip-question';
@@ -1774,7 +1776,7 @@ document.addEventListener('keydown',event=>{
 });
 // A new screen starts at the top; switching tabs inside one screen (a bot profile's sections) keeps the place.
 let screenKey=`${route().view}/${route().id||''}`;
-window.addEventListener('hashchange',()=>{if(document.querySelector('.browser-control-panel'))closeDialog();window.StudioBrowser?.reset();conversationRouteResolution=null;clearSearchAnchor?.();directionNavigationGeneration++;clearPendingDirections();conversationSearchNavigation++;const target=pendingSearchMessage,current=route();if(target&&(target.navigation!==conversationSearchNavigation||target.scope!==current.view||target.id!==current.id))pendingSearchMessage=null;dismissConversationSearch();cleanupSpeech();search='';const next=`${current.view}/${current.id||''}`;if(next!==screenKey){screenKey=next;if(!window.StudioMobile||!phoneLayout())window.scrollTo?.(0,0);}renderApp();});
+window.addEventListener('hashchange',()=>{conversationRouteResolution=null;clearSearchAnchor?.();directionNavigationGeneration++;clearPendingDirections();conversationSearchNavigation++;const target=pendingSearchMessage,current=route();if(target&&(target.navigation!==conversationSearchNavigation||target.scope!==current.view||target.id!==current.id))pendingSearchMessage=null;dismissConversationSearch();cleanupSpeech();search='';const next=`${current.view}/${current.id||''}`;if(next!==screenKey){screenKey=next;if(!window.StudioMobile||!phoneLayout())window.scrollTo?.(0,0);}renderApp();});
 window.addEventListener('scroll',updateTopbarScroll,{passive:true});
 let menuWidth=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth!==menuWidth){menuWidth=window.innerWidth;closeMenu();}});
 window.visualViewport?.addEventListener('resize',()=>$('.menu-layer')?.reposition?.());
