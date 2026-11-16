@@ -327,11 +327,13 @@ export async function createStudioServer(options={}) {
           const bot=await store.mutate(async state=>{const bot=validateBot(input,{id:id('bot'),createdAt:now(),connectionId:state.settings.defaultConnectionId||''});ensure(state.bots.length<100,400,'Workspace supports up to 100 bots.');validateBinding(bot,state,integrations);await validateSkillAssignments(store,state,bot);await ensureWorkspaceLayout(await getWorkspaceRoot(store,bot.id));state.bots.push(bot);store.audit('bot.created',`${bot.name} joined your team`,bot.id);return bot;});
           return json(res,bot,201);
         }
-        const browserControlMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/browser\/(view|action|resume)$/);
+        const browserControlMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/browser\/(stream|input|resume)$/);
         if(browserControlMatch && method==='POST') {
           const [,botId,action]=browserControlMatch;ensure(store.state.bots.some(bot=>bot.id===botId),404,'Bot not found.');
           res.setHeader('Cache-Control','no-store');
-          return json(res,await runtime.browserControl[action](botId,await body(req,32_000)));
+          // The owner's live view is a long-lived, uncompressed SSE response; it does not hold engine updates while it is open.
+          if(action==='stream')return await runtime.browserControl.stream(botId,await body(req,32_768),{res,idleUpdateWait,authorized:()=>{try{return auth(req).token===session.token;}catch{return false;}}});
+          return json(res,await runtime.browserControl[action](botId,await body(req,32_768)));
         }
         const chatMatch=pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/sessions(?:\/([a-zA-Z0-9_-]{1,120})(?:\/(resume|messages))?)?$/);
         if(chatMatch) {
@@ -513,7 +515,7 @@ export async function createStudioServer(options={}) {
       const encoded=await staticEncoding(req,file,stat),data=encoded?.data || await fs.readFile(file);
       res.writeHead(200,{'Content-Type':MIME[path.extname(file)],'Content-Length':data.length,...(encoded?{'Content-Encoding':encoded.encoding}:{})});res.end(method==='HEAD'?undefined:data);
     } catch(err) {
-      if(!res.headersSent)json(res,{error:err instanceof HttpError ? store.redact(err.message) : 'An internal error occurred. Check the Tupies terminal.',...(err.code==='csrf_mismatch' || err instanceof HttpError && /^(oauth_[a-z_]{1,40}|not_auto_oauth)$/.test(err.code || '')?{code:err.code}:{})},err.status || 500);
+      if(!res.headersSent)json(res,{error:err instanceof HttpError ? store.redact(err.message) : 'An internal error occurred. Check the Tupies terminal.',...(err.code==='csrf_mismatch' || err instanceof HttpError && /^(oauth_[a-z_]{1,40}|not_auto_oauth|handoff_ended)$/.test(err.code || '')?{code:err.code}:{})},err.status || 500);
       else res.end();
       if(!(err instanceof HttpError) && options.logErrors!==false)console.error('Tupies internal error:',store.redact(err.stack || err.message));
     }
@@ -594,6 +596,8 @@ export async function createStudioServer(options={}) {
       // Ends open sync long-polls first so the listener can close promptly.
       await sync.close();
       await channels.close();
+      // Open owner browser streams end now; their handoffs end with the runtime below.
+      runtime.browserControl?.closeStreams();
       // Polling clients (browser tabs, app web views) can keep keep-alive sockets busy indefinitely; give them two seconds.
       const listenerClosed=new Promise(resolve=>server.close(resolve));server.closeIdleConnections();
       const force=setTimeout(()=>server.closeAllConnections(),2000);force.unref?.();

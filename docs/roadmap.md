@@ -1,5 +1,9 @@
 # Product roadmap
 
+## Live browser handoff — 16 November 2026 (source only)
+
+Shipped in source: the owner operates the bot's browser through a live view (stream plus input batches) instead of single screenshots, with a phone layout, popups, website dialogs, a non-blocking address bar and automatic reconnect; the task browser identifies as regular Chrome. Not done yet: acceptance on a real iPhone (WKWebView keyboard, SMS code autofill), over the real VPS network, and against real third-party sign-ins and CAPTCHAs; then a signed Engine release to the Mac and the VPS.
+
 ## Bots add their own connections — 16 November 2026 (source only)
 
 The owner asked that bots can create and add their own tools, for example Gmail when none exists. Built on branch `feature/bot-authored-tools-20261116`, not installed or released: richer REST actions (`{param}` paths, query lists, repeated array parameters, engine-side base64url encoding and decoding, fixed headers); OAuth 2.0 sign-in for REST and MCP integrations (PKCE, sealed tokens, renewal, needs_reauth, manual paste fallback); the `integration_propose` bot tool with exact owner approval, credential-free creation and a connect request under the reply; a connect card for that request, built in parallel as part of this change; and a Gmail preset. Proven end to end against a local Google/Gmail fixture; see [connections](connections.md) and [verification](verification.md). Also shipped in source: MCP OAuth metadata discovery and automatic client registration for hosted MCP servers (client ID metadata document or dynamic registration), proven against a local spec-shaped fixture.
