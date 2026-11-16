@@ -1,5 +1,11 @@
 # Tupies — project context
 
+## Automatic Engine betas from `main` — 16 November 2026
+
+- **What changed.** `.github/workflows/auto-release.yml` publishes the next prerelease `v0.5.0-engine.beta.N` after every merge to `main` whose CI passes and that changes something the Engine ships, then starts `release.yml` on that tag (`workflow_dispatch`, `publish_engine=true`), because a release created with the workflow token does not fire the "published" event. `release.yml` reads the publication time and channel from the release in that case; a manual TestFlight re-run (dispatch without `publish_engine`) is unchanged. Off switch: repository variable `AUTO_BETA_RELEASE=false`. See `docs/releases.md`.
+- **Consequence.** With the VPS timer running, every Engine merge reaches the VPS within about an hour; hand-installed server variants are replaced.
+- **Not verified yet.** The workflow only runs once it is on `main`; its first real run is the first Engine merge after this one.
+
 ## Live browser handoff — 16 November 2026 (source only, nothing installed)
 
 Branch `feature/browser-handoff-stream-20261116` on `main` `b8e1502`. The owner handoff changed from one screenshot per request to a live view of the bot's browser that the owner uses directly.
