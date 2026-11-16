@@ -25,6 +25,17 @@ Branch `work/bt-acceptance` from the integration branch `feature/bot-authored-to
 - Not part of this evidence: the full suite and a real-browser check of the connect card are run by the orchestrator after both branches are merged; `npm run docs:build` was not run, so the generated guide does not yet include the new page. Not verified at all: a real Google account, a real model, a VPS behind a domain or a bare IP address.
 - After merging all five work branches and `origin/main` `b8e1502` into `feature/bot-authored-tools-20261116` (orchestrator, same Mac): `npm run check` 249 modules; `node scripts/verify-release-tests.mjs` 98 sequential + 2,438 parallel = 2,536 tests, 0 failed, 0 skipped; `npm run docs:build` 36 guide pages. `test/connection-request-ui.test.mjs` (14) covers the connect card. In-app browser on a disposable engine (temporary data, scripted model, local stand-ins for the OAuth provider and the API, generated password): the approval card for a proposed OAuth connection, the connect card, saving client details, sign-in through the provider page to “Connected — you can close this tab”, the card collapsing to connected, Continue, an approved call returning the fixture's data, the Settings row with “Added by” and Connected, and the Gmail preset filling the OAuth fields. `node scripts/update-impact.mjs --base origin/main`: Engine yes, iPhone app no, Mac app no.
 
+## Hyperliquid Vault report and tool-use fixes recovered from the VPS — 16 November 2026 (source only)
+
+Branch `feature/finance-vault-port` on `main` `b8e1502`, Node 22.23.1 on the maintainer Mac.
+
+- Provenance: the eight engine files were copied from `/opt/hermes-studio/releases/0.5.0-engine.beta.10.finance-0041c0b0` on the VPS; the seven that also exist in `/opt/hermes-studio/releases/0.5.0-engine.beta.10` were compared there with `diff -rq`, and that release's copies equal tag `v0.5.0-engine.beta.10` byte for byte. The difference was committed on the tag and cherry-picked onto `main` with no conflict.
+- `npm run check`: 245 modules. `node scripts/verify-release-tests.mjs`: 98 sequential + 2,394 parallel = 2,492 tests, 0 failed, 0 skipped.
+- New suite `test/routine-hyperliquid.test.mjs` (8 tests, written from the code because the release's own tests were not on the server): target validation; one exact POST per wallet with redirects off, totals rounded after addition, masked wallet labels; eleven incomplete, redirected, mismatched or malformed answers and a stopped run; the report-only routine step, its template output and checkpoint replay; script stdout as the default JSON source; `followRedirects` on `http_fetch`; a call that failed on its arguments blocked on its first repeat; own run diagnostics readable twice while a named earlier run stays readable.
+- `test/routine-workflow.test.mjs`, `test/work-quality-outcomes.test.mjs` and `test/autonomous-engine.test.mjs` (45 tests) pass unchanged on the ported code.
+
+Not verified: no request was sent to Hyperliquid (every answer in the tests is synthetic), so the live response shape is taken from the recovered code, not observed; the autonomous-task stop after exhausted diagnostics is not covered by a test; nothing was installed, and the finance bot's own routine was not run.
+
 ## Versions, one CI pipeline and in-app updates — 16 November 2026 (source only)
 
 Branch `feature/ci-versioning-20261116` on `main` `8c17afe`, Node 22.23.1 and Xcode 26.4.1 on the maintainer Mac.
