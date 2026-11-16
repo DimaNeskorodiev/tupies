@@ -43,6 +43,28 @@ It never comes from a request's Host header.
 
 **Manual fallback.** If the provider's redirect cannot reach the Engine (a certificate warning, a phone, a tunnel), copy the full address from the browser's address bar after you approve at the provider and paste it into the connect card (`POST /api/integrations/{id}/oauth/complete {redirectUrl}`). The same state and PKCE checks apply.
 
+## Hosted MCP servers: automatic sign-in
+
+Source only (16 November 2026), not installed or released. Official hosted MCP servers (Linear, Notion, Todoist, ClickUp, Atlassian and others) publish how to sign in. For those, a bot proposes only the server address with `authType:'oauth2'` and no `oauth` settings, and the approval card says: *Sign-in: found from the server when you connect; you see the sign-in address before you sign in.* No developer console, client ID or secret is needed.
+
+What you do:
+
+1. Approve the proposal. Nothing is sent to the server yet.
+2. In the connect card or Settings → Integrations, press the control that prepares the sign-in (`POST /api/integrations/{id}/oauth/discover`). Tupies shows the **sign-in host** and the **token host** it found.
+3. If those hosts are what you expect, press **Sign in** and approve at the service. Tupies lists the server's tools right after the sign-in; if that fails, **Test** lists them.
+
+What the Engine does (MCP authorization, 2026-07-28 revision with the earlier fallbacks):
+
+- It sends one `initialize` request without any credential and reads the `401` answer's `WWW-Authenticate` header for `resource_metadata` and `scope`; otherwise it tries `/.well-known/oauth-protected-resource/<path>` and then `/.well-known/oauth-protected-resource`.
+- From that document it takes the first authorization server and fetches its metadata in the order the specification requires (OAuth metadata with the path inserted, OpenID Connect with the path inserted, OpenID Connect with the path appended; for an issuer without a path, OAuth then OpenID Connect). The `issuer` must match exactly, the resource must be this server (same origin, the same path or a parent of it), and **PKCE S256 must be declared**, or the server is refused.
+- Older servers (2025-03-26) without that document: the authorization-server metadata at the MCP server's own origin, and if that is missing (404) the default `/authorize`, `/token` and `/register` there, but only when the server answered `401` and its `/register` exists.
+- Client: with a public HTTPS address (`STUDIO_PUBLIC_URL`) and a server that supports client ID metadata documents, the client ID is `https://<your address>/api/integrations/oauth/client.json`, which the Engine serves. Otherwise Tupies registers itself (RFC 7591) as a public client named “Tupies” for exactly this Engine's return address (`application_type` native on a Mac, web on a VPS). A secret the server issues anyway is sealed like a typed one. Re-preparing reuses the registration while the sign-in server and return address stay the same, and registers again when the Engine's return address changed.
+- The sign-in and every token request carry `resource=<the MCP server>` (RFC 8707). When the server promises the `iss` response parameter (RFC 9207), a sign-in answer without it, or from another issuer, is dropped before its code is used.
+
+Fallbacks: if the server publishes nothing usable, preparing fails with “It may need a token instead”: choose **bearer token** (or an API key header) when the service documents one, or turn automatic sign-in off and enter the OAuth details by hand. If the server offers no registration, the endpoints are still filled and only the client ID is missing: create a client at the service and enter it. If the server refuses registration, the message says so; the same two fallbacks apply.
+
+What it never does: discovery runs only when you ask for it, never from a bot or after a failed call. A sign-in the server stops accepting becomes **needs_reauth** as usual; a different sign-in server found later only takes effect when you prepare the sign-in again and sign in, so you always see the new host first. Changing the server address forgets the discovery, the registration and the sign-in.
+
 ## Gmail step by step
 
 Tupies includes a **Gmail** preset (`lib/gmail.mjs`) with search, read, send and label actions. A bot can propose the same definition itself.
@@ -64,7 +86,7 @@ Things to know:
 
 - One connection per proposal; at most 12 proposed by one bot and 100 integrations in all. At most 64 actions, 8 static headers and 8 extra sign-in parameters.
 - A proposed connection is assigned only to the bot that proposed it. Assign it to other bots in their settings.
-- Remote MCP servers over Streamable HTTP only, with a bearer key, an API key header or OAuth with endpoints you enter. No local (stdio) MCP servers, no OAuth metadata discovery and no dynamic client registration.
+- Remote MCP servers over Streamable HTTP only, with a bearer key, an API key header, OAuth with endpoints you enter, or automatic sign-in (above). No local (stdio) MCP servers. Automatic sign-in uses the first authorization server a server lists, and has no allowlist of services Tupies may register with.
 - Disconnecting forgets the tokens in Tupies; it does not revoke them at the provider. Revoke access in the provider's account settings if needed.
 - Linked engines share the sealed client secret and tokens through sync, and each engine renews them by itself. Google keeps its refresh token on renewal, so that is safe; a provider that issues a new refresh token on every renewal can invalidate the other engine's copy, which then shows needs_reauth.
 - Scripts and Workshop tools cannot use a connection's credentials; only `integration_call` (and the Workshop API gateway for approved REST GET reads) can.

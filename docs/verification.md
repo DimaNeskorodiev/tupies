@@ -1,5 +1,16 @@
 # Verification — Tupies Engine 0.5
 
+## Automatic sign-in for hosted MCP servers — 16 November 2026 (source only)
+
+Branch `work/bt-mcp-oauth` from `feature/bot-authored-tools-20261116` at `3b1e95e`, Node 22.23.1 on the maintainer Mac. Not installed, not released.
+
+- `npm run check`: 250 modules.
+- New `test/integration-mcp-oauth.test.mjs` (10, 0 skipped) against one local spec-shaped MCP and authorization server: a scripted bot's proposal and its exact approval line, no request before the owner's discovery, `oauth_discovery_required` before discovery, discovery → hosts → registration → start → browser callback with `iss` → connected → tools listed after sign-in → an approved `tools/call`; each well-known order; the 2025-03-26 origin metadata and default endpoints; no metadata, missing PKCE S256, issuer and resource mismatches, unsafe, oversized and malformed documents; `manual_required` with an owner client ID; refused registration; a new address clearing discovery, registration and tokens; re-registration after a return-address change; `resource` on renewals; RFC 9207 `iss`; the client ID metadata document; REST refusing `auto`; error codes in JSON bodies; switching between automatic, manual and token sign-in; secrets absent from API answers, `/api/state`, events, activity, model requests and the state file.
+- `node --test test/integration-*.test.mjs test/integrations.test.mjs test/workshop-gateway.test.mjs test/setup-tools.test.mjs test/managed-tools-engine.test.mjs test/action-review.test.mjs test/tool-catalog.test.mjs test/chief-of-staff.test.mjs test/connection-request-ui.test.mjs`: 117 tests, 0 failed, 0 skipped.
+- `node scripts/measure-prompt.mjs` before and after: identical (default bot 5,279 fixed tokens per step, fully enabled 5,592); the measured profiles do not load the Integrations group. Its loaded text grows by 185 characters (tool definition +74, guidance +111), about 46 tokens, only when Integrations is loaded.
+- Public metadata of hosted MCP servers, read once with unauthenticated GETs on 16 November 2026 (no registration, no sign-in, generic user agent): Linear (`mcp.linear.app/mcp`), Notion (`mcp.notion.com/mcp`) and ClickUp (`mcp.clickup.com/mcp`) serve path-specific protected-resource metadata naming their own origin as issuer; Todoist (`ai.todoist.net/mcp`) names `https://todoist.com`. All four authorization servers declare S256 and a registration endpoint; Linear, Notion and Todoist declare client ID metadata documents; Linear, Notion and ClickUp declare the `iss` parameter. Atlassian (`mcp.atlassian.com/v1/…`) has no protected-resource metadata but authorization-server metadata at its origin (the 2025-03-26 path) with S256 and registration. This shows which path each would take; no sign-in was tried.
+- Not part of this evidence: the full suite and the browser check are the orchestrator's after merging; no real hosted server was signed in to.
+
 ## Bots add their own connections — 16 November 2026 (source only)
 
 Branch `work/bt-acceptance` from the integration branch `feature/bot-authored-tools-20261116` at `62bfeb1`, Node 22.23.1 on the maintainer Mac. Not installed, not released.
