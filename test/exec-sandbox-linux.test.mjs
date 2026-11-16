@@ -21,7 +21,7 @@ const status=linux?await sandboxBackend.available():{ok:false,reason:'not Linux'
 const skipLinux=!linux?'bubblewrap runs only on Linux.':status.ok?false:`bubblewrap cannot run here: ${status.reason}`;
 // Platform-bound cases are defined only where they can run. The release verifier counts a skipped test as a failed
 // suite, so a case that cannot apply on this platform is not registered instead of being skipped.
-// The real bubblewrap cases run where the self-test passes, and always in .github/workflows/linux-sandbox.yml, which
+// The real bubblewrap cases run where the self-test passes, and always in the Linux command sandbox job of .github/workflows/ci.yml, which
 // sets TUPIES_REQUIRE_LINUX_SANDBOX=1 so a sandbox that is not ready fails there instead of going unnoticed.
 const linuxTest=linux && (status.ok || required)?test:()=>{},readinessTest=linux && required?test:()=>{};
 if(linux)console.log(`# Linux sandbox self-test: ${status.ok?'ready':status.reason}`);

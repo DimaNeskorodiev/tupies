@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "ios": {
+    "version": "0.5.0",
+    "build": 17,
+    "minimumBuild": 10,
+    "testflightURL": ""
+  },
+  "mac": {
+    "version": "0.5.0",
+    "build": 17,
+    "minimumBuild": 10
+  }
+}
