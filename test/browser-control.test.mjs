@@ -17,7 +17,7 @@ function fakeSession(){
   const session={botId:'bot_atlas',retained:false,tabId:'tab_one',session:'page_one',dialog:null,allowPrivate:false,actions:[],ownerSecrets:new Set(),ownerTouched:false,hang:false,fail:null,
     keepPrivate(value){if(value)this.ownerSecrets.add(value);},
     redact(value){for(const secret of this.ownerSecrets)value=String(value).split(secret).join('[private]');return value;},
-    async switchTab(){},async close(){},
+    async switchTab(){},async close(){},async botView(){},
     pipe:{handlers:new Set(),closed:false,async send(method,params={},sessionId,timeout=30_000){
       if(/^(?:Input\.|Page\.navigate)/.test(method)){
         session.actions.push({method,params});

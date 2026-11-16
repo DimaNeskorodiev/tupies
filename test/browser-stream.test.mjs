@@ -205,8 +205,17 @@ test('a stream opened while a dialog is already open reports it right after read
 test('screen metrics are never smaller than the viewport for the owner and the bot',chrome,async t=>{
   const base=await pageServer(t),b=await browser(t,base,'long',{width:1000,height:1100,dpr:1,touch:false});
   assert.deepEqual(await b.evaluate(function(){return [innerWidth,innerHeight,screen.width,screen.height];}),[1000,1100,1000,1100]);
+  // Chrome on Linux sometimes acknowledges the restore override yet keeps the owner's viewport: the first one is acknowledged here without being applied.
+  const send=b.session.pipe.send.bind(b.session.pipe);let swallowed=0;
+  b.session.pipe.send=(method,params,...rest)=>method==='Emulation.setDeviceMetricsOverride' && params.width===1280 && !swallowed++?Promise.resolve({}):send(method,params,...rest);
   await b.control.close('resumed','done');
+  assert.ok(swallowed>=2,'the restore was confirmed from the page and sent again');
   assert.deepEqual(await b.evaluate(function(){return [innerWidth,innerHeight,screen.width,screen.height];}),[1280,900,1280,900]);
+  assert.equal(b.session.viewPending.size,0);
+  // A restore close() could not confirm in its bound is redone before the bot's next action on that tab.
+  await send('Emulation.setDeviceMetricsOverride',{width:1000,height:1100,deviceScaleFactor:1,mobile:false,screenWidth:1000,screenHeight:1100},b.session.session);b.session.viewPending.add(b.session.session);
+  await b.session.botView();
+  assert.deepEqual(await b.evaluate(function(){return [innerWidth,innerHeight,screen.width,screen.height];}),[1280,900,1280,900]);assert.equal(b.session.viewPending.size,0);
 });
 
 test('the stream route serves SSE under normal auth, refuses stale leases and repeated input, resumes promptly and keeps typed text out of state',chrome,async t=>{

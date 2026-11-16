@@ -193,11 +193,14 @@ test('the phone field forwards insertions, Backspace and Enter immediately, mask
 test('a stalled stream is reconnected by the watchdog with the same identity, and visibility returns reconnect',async t=>{
   const h=fixture(t);h.timing.watchdog=80;await h.live();
   assert.equal(h.streams.length,1);
-  await wait(140);await tick();
-  assert.ok(h.streams.length>=2,'watchdog reconnected');
+  // Only the first stream stalls: the reconnected one is opened with a long watchdog, so a loaded host cannot stall it again mid-test.
+  const api=h.context.api;h.context.api=async(...args)=>{if(args[0].endsWith('/stream'))h.timing.watchdog=60_000;return api(...args);};
+  for(const started=Date.now();h.streams.length<2 && Date.now()-started<10_000;)await wait(10);
+  await tick();
+  assert.equal(h.streams.length,2,'watchdog reconnected once');
   assert.deepEqual(plain(h.streams[1].options.body).request_id,identity.request_id);
   assert.equal(h.$('[data-browser-resume=resume]').disabled,false);
-  h.streams.at(-1).push(sse('ready',ready({streamId:'stream_2'})));await tick();
+  h.streams[1].push(sse('ready',ready({streamId:'stream_2'})));await tick();
   assert.equal(h.$('.browser-control-panel').dataset.phase,'live');
   Object.defineProperty(h.window.document,'hidden',{configurable:true,get:()=>true});h.window.document.dispatchEvent(new h.window.Event('visibilitychange'));
   const count=h.streams.length;assert.equal(h.$('.browser-control-panel').dataset.phase,'paused');
