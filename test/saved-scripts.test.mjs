@@ -137,7 +137,7 @@ test('Approve for me in the owner chat runs a new script on the host without a c
   const h=await fixture(t,{policy:'auto',sandbox:false});await h.save(saveArgs());
   const run=await h.task([{name:'script_run',arguments:{id:'echo-args',inputs:{target:'a'}}},null]);
   assert.equal(run.status,'completed',run.error);assert.equal(h.events('approval.request').length,0);
-  assert.match(h.events('approval.automatic')[0].reason,/^Approve for me: “Echo arguments” \(new script\) runs without asking in your chat\. It runs on this computer without isolation\.$/);
+  assert.match(h.events('approval.automatic')[0].reason,/^Approve for me: “Echo arguments” \(new script\) runs without asking\. It runs on this computer without isolation\.$/);
   assert.equal(JSON.parse(h.result('call_1').stdout).sandbox,'','ran on the host');
   const ledger=await loadLedger(h.store,h.bot.id);
   assert.equal(ledger.scripts['echo-args'].approved.length,0,'an automatic run never approves the version for Balanced or other lanes');
