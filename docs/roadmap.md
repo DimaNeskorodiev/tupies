@@ -1,5 +1,18 @@
 # Product roadmap
 
+## Bots add their own connections — 16 November 2026 (source only)
+
+The owner asked that bots can create and add their own tools, for example Gmail when none exists. Built on branch `feature/bot-authored-tools-20261116`, not installed or released: richer REST actions (`{param}` paths, query lists, repeated array parameters, engine-side base64url encoding and decoding, fixed headers); OAuth 2.0 sign-in for REST and MCP integrations (PKCE, sealed tokens, renewal, needs_reauth, manual paste fallback); the `integration_propose` bot tool with exact owner approval, credential-free creation and a connect request under the reply; a connect card for that request, built in parallel as part of this change; and a Gmail preset. Proven end to end against a local Google/Gmail fixture; see [connections](connections.md) and [verification](verification.md).
+
+Follow-ups, not built:
+- Check the flow with a real Google account and a real model (consent screen, restricted-scope warnings, 7-day Testing expiry, how models write RFC 822 mail and label ids).
+- A redirect address for servers reached only by IP address: Google refuses such redirect URIs, so today a VPS needs a domain for Google sign-in, or a separate loopback return address that the owner reaches through an SSH tunnel plus the manual paste fallback.
+- Scripts that use a connection's credentials through an Engine broker, without the key entering the script.
+- Local (stdio) MCP servers inside the command sandbox.
+- MCP OAuth metadata discovery and dynamic client registration.
+- Token revocation at the provider when the owner disconnects.
+- A shared Tupies OAuth app, so the owner does not create a Google Cloud client.
+
 ## Sandbox, saved scripts, describe-a-bot, chief of staff and proof of work — 10 November 2026 (installed on Mac and VPS, Engine beta 10)
 
 Built by parallel executors on branch `feature/wave1-20261110` after PR #56 landed: a per-bot "Where commands run" choice (sandbox on this computer, Docker, another machine over SSH, or ask me) with ordinary commands running unattended inside a ready sandbox; saved scripts with one owner approval per exact version, a Scripts tab, a save-as-script suggestion and zero-model runs; creating a bot from a one-sentence description; a chief of staff with a read-only team report and an optional daily brief; and a "Checked / Needs a look" line under replies. The owner's priority is the VPS: the Linux sandbox (bubblewrap) is implemented with real Linux tests and a GitHub check under the documented unit's hardening (a subset of the real VPS unit's). Installed on 11 November 2026 as `v0.5.0-engine.beta.10` (`main` `a1f4d82`) on the VPS through the updater, with backup and offline restore verified, and on the Mac Engine. On the VPS bubblewrap is installed and mount namespaces are allowed; four further settings of the real unit (`ProtectHostname`, `ProtectKernelLogs`, `ProtectKernelTunables`, `RestrictSUIDSGID`) stop bubblewrap, and with the owner's approval they were relaxed after being checked as redundant there, so the operator check now reports the sandbox ready under the live unit. Not yet done: a real bot command in sandbox mode on the VPS; the operator check script ships from the next Engine release. Remaining from the plans: waking a bot when a background job ends, `execute_code` calling tools, routines (P3), media and streaming in channels (P4), providers and routing (P5), connected apps starting with Google (G12), fewer places (G11), watch and take over (G9). See [terminal](terminal.md#where-commands-run), [workspaces](workspaces.md), [deployment](deployment.md) and the [flexibility plan](plans/flexibility-plan-20261110.md).

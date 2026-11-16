@@ -271,12 +271,29 @@ An integration uses `{name,type:mcp-or-rest,baseUrl,authType:bearer-or-header-or
 
 | Route | Behavior |
 | --- | --- |
-| GET /api/integrations/catalog | MCP/custom API and GitHub/Slack template metadata. |
+| GET /api/integrations/catalog | MCP/custom API, Exa, Gmail and GitHub/Slack/search template metadata. |
 | POST /api/integrations | Save an integration with sealed credential. |
 | PATCH or DELETE /api/integrations/{id} | Change/remove an integration while its assigned bots are idle. |
-| POST /api/integrations/{id}/test | MCP initialization/tool discovery, or REST declaration validation without action execution. |
+| POST /api/integrations/{id}/test | MCP initialization/tool discovery, or REST declaration validation without action execution. A connection without its key or sign-in answers 409 and keeps its status. |
 
-Model tool integration_call requires a bot assignment, declared/discovered tool name and exact approval. REST arguments map to scalar GET query parameters or JSON request bodies. MCP maintains negotiated session/version headers. Unknown tools, unmatched protocol responses and unsafe destinations are refused. Mutating calls are not automatically retried.
+Model tool integration_call requires a bot assignment, declared/discovered tool name and exact approval. REST arguments map to GET query parameters (lists repeat the parameter) or JSON request bodies. MCP maintains negotiated session/version headers. Unknown tools, unmatched protocol responses and unsafe destinations are refused. Mutating calls are not automatically retried.
+
+**Action fields, OAuth sign-in and bot proposals (16 November 2026, source only).** See [connections](connections.md) for the owner guide and a complete Gmail example.
+
+- REST actions may also carry `query:[input names]` (non-GET only), `encode:{input:'base64'|'base64url'}` and `decode:{keys:[…],as:'base64'|'base64url'}`; `path` may contain `{input}` placeholders bound to required string/integer inputs. An integration may carry `headers` (up to 8 fixed non-secret headers). An empty successful response reaches the model as `{status, note}`.
+- `authType` may be `oauth2` with `oauth:{authorizationUrl, tokenUrl, scopes[], clientId, extraParams{}, tokenAuth:'body'|'basic'}` and the write-only `oauthClientSecret` (`null` clears it). The Engine adds `oauth.connected`, `connectionId`, `connectedAt`, `expiresAt` and `reauthSuggested`. The client secret and tokens are sealed in `oauthSecret`, which is never returned.
+- Public integration records (`GET /api/state`, POST/PATCH replies) add `ready` (key stored, sign-in connected or no auth), `hasKey`, `hasOAuthClientSecret`, and for bot proposals `proposedBy:{botId,botName,runId?,at}`, `changedBy`, `setupNotes` and `reason`. `status` can be `needs_credentials` (waiting for the owner's key or sign-in), `needs_reauth` (the provider refused the renewal; sign in again), `connected`, `configured`, `untested` or `error`.
+- A finished assistant message whose run proposed or changed a connection that still waits for the owner carries `connectionRequests:[{integrationId,name,how:'api_key'|'oauth'|'none'}]` (up to 5) for the connect card.
+
+| Route | Behavior |
+| --- | --- |
+| GET /api/integrations/oauth/redirect | `{redirectUri}`: the return address to register at the provider (`STUDIO_PUBLIC_URL`, or the loopback address the Engine serves, + `/api/integrations/oauth/callback`). |
+| POST /api/integrations/{id}/oauth/start | `{authorizationUrl,redirectUri,expiresAt}`: a PKCE S256 authorization URL with a single-use state valid for 10 minutes. Starting again retires the earlier link. Needs the client ID. |
+| GET /api/integrations/oauth/callback | The provider's top-level redirect. No owner session is needed or used; the single-use state and PKCE verifier authenticate it. Answers a small HTML page; never shows a credential. |
+| POST /api/integrations/{id}/oauth/complete | Manual fallback: `{redirectUrl}` (the address the browser showed) or `{state,code}`. Same checks as the callback. |
+| POST /api/integrations/{id}/oauth/disconnect | Forgets the tokens and keeps the client ID and secret. Does not revoke them at the provider. |
+
+Bot tool `integration_propose {name?, type?, baseUrl?, authType?, headerName?, oauth?, headers?, tools?, setupNotes?, reason, integrationId?}` (integrations group) needs the owner's exact approval, only in the owner's direct chat, and refuses credential fields. `integration_list` lists a connection that is not ready once, with `ready:false`, `status` and a notice; `integration_call` on it is refused before approval with `errorCode:'integration_not_connected'`.
 
 ## Messaging channels
 
