@@ -82,6 +82,7 @@ test('a JSON step after a saved script reads its stdout when no path is given',a
   const script={id:'collect',op:'script',scriptId:'collect-fixture',digest:'a'.repeat(64),args:[]};
   const run=steps=>prepareRoutineWorkflow({version:1,mode:'report',steps,report:'Count: {{parsed.count}}'},{callTool:async()=>({scriptId:'collect-fixture',digest:'a'.repeat(64),status:'completed',exitCode:0,stdout:'{"count":7}',stderr:'',timedOut:false,truncated:false})});
   assert.equal((await run([script,{id:'parsed',op:'json',from:'collect'}])).output,'Count: 7');
+  assert.equal((await run([script,{id:'parsed',op:'json',from:'collect',path:''}])).output,'Count: 7');
   assert.equal((await run([script,{id:'parsed',op:'json',from:'collect',path:'stdout'}])).output,'Count: 7');
 });
 
