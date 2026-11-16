@@ -1,5 +1,13 @@
 # Tupies for iPhone, iPad and Mac
 
+## Version, build number and updates — 16 November 2026 (source only)
+
+The build number is `CURRENT_PROJECT_VERSION` in the project, **17** now, one above the last build published in the Mac update feed (16). Earlier builds were numbered on the `xcodebuild` command line while the project kept saying 10; do not do that again. Raise it with `node scripts/update-impact.mjs --bump` whenever anything under `apps/apple/` changes; CI fails when native sources changed since the last release and the number did not, and when the project, `package.json` and `assets/updates/native-apps.json` disagree.
+
+From build 17 the bridge script also sets `<html data-studio-app-version>` and `data-studio-app-build`, so the Engine's **Settings → Version & updates** page can show this app's version and tell when a newer build exists or is required. An app that sets neither is treated as older than 17. On the Mac the page's **Check for Mac app updates** button posts `{type: "check-app-updates"}`, accepted only from the engine page on screen, which opens Sparkle's own user-driven check; it grants the page nothing else. The iPhone has no such message: the page links to TestFlight.
+
+CI compiles both apps without signing and runs `Tests/run-logic-tests.sh` whenever `apps/apple/` changes and on every merge to `main`. A release uploads the iPhone build to TestFlight once that is switched on. Setup, and what changes for push notifications, is in [Versions, CI and releases](../../docs/releases.md). Build 17 has compiled for the iOS Simulator and macOS and archived unsigned for a generic iPhone on this Mac; it has not been signed, installed or uploaded.
+
 ## Platform build schemes
 
 Use the shared **Tupies** scheme for macOS and **Tupies-iOS** for iPhone, iPad and iOS Simulator. The targets share the same Swift sources, bundle identifier and Keychain configuration. The iOS target embeds NotificationService and has no Sparkle dependency; Sparkle remains pinned to 2.10.1 on the Mac target. A framework link's platform filter alone does not prevent Xcode from validating the macOS-only binary package during an iOS build.

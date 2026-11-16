@@ -1,0 +1,223 @@
+# Runs when a versioned GitHub release (tag vX.Y.Z…) is published.
+#
+#   What this release updates  compares with the previous release: Engine, iPhone app, Mac app
+#   Engine update              tests, signs and publishes the server update; servers then install it by themselves
+#   Mac update feed            only when the notarized Tupies.dmg was attached to the release
+#   iPhone app (TestFlight)    only when the iPhone app changed and TESTFLIGHT_ENABLED is "true"
+#   Release notes              appends "What to update" and what each job did to the release page
+#
+# Run it by hand from a tag (Actions → Release → Run workflow → choose the tag) to send that tag's iPhone build to TestFlight again.
+name: Release
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  plan:
+    name: What this release updates
+    if: github.event_name != 'release' || github.event.release.tag_name != 'update-feeds'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    outputs:
+      engine: ${{ steps.impact.outputs.engine }}
+      ios: ${{ steps.impact.outputs.ios }}
+      mac: ${{ steps.impact.outputs.mac }}
+      build: ${{ steps.impact.outputs.build }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Compare with the previous release
+        id: impact
+        run: |
+          node scripts/update-impact.mjs --head HEAD --before-head --heading 'What to update' | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/update-impact.mjs --head HEAD --before-head --format github >> "$GITHUB_OUTPUT"
+
+  # Deliberately independent of the job above: a problem describing the release must never hold back the server update.
+  engine:
+    name: Engine update
+    if: github.event_name == 'release' && github.event.release.tag_name != 'update-feeds'
+    runs-on: ubuntu-22.04
+    environment: engine-updates
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: engine-update-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Initialize the runner browser before timed regressions
+        run: |
+          TUPIES_RELEASE_BROWSER="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium)"
+          timeout 60 "$TUPIES_RELEASE_BROWSER" --headless --no-first-run --no-default-browser-check --user-data-dir="$RUNNER_TEMP/tupies-browser-warmup" --dump-dom about:blank > "$RUNNER_TEMP/tupies-browser-warmup.html"
+      - name: Verify and prepare shipped assets
+        run: |
+          npm ci
+          npm run check
+          node scripts/verify-release-tests.mjs
+          npm run assets:build
+          npm run docs:build
+          npm run licenses:build
+      - name: Stage production Engine
+        run: |
+          node scripts/stage-engine-release.mjs --output "$RUNNER_TEMP/engine-source"
+          npm ci --prefix "$RUNNER_TEMP/engine-source" --omit=dev --ignore-scripts
+      - name: Sign and publish exact release, then advance channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_KEY: ${{ secrets.TUPIES_ENGINE_RELEASE_PRIVATE_KEY }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PUBLISHED: ${{ github.event.release.published_at }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/publish-engine-update.mjs
+  mac:
+    name: Mac update feed
+    if: github.event_name == 'release' && github.event.release.tag_name != 'update-feeds' && contains(github.event.release.assets.*.name, 'Tupies.dmg')
+    runs-on: macos-14
+    environment: mac-updates
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: mac-update-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Verify notarized release and publish its signed feed last
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_KEY: ${{ secrets.TUPIES_SPARKLE_PRIVATE_KEY }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/publish-mac-update.mjs
+  iphone:
+    name: iPhone app (TestFlight)
+    needs: plan
+    # Switched on with the repository variable TESTFLIGHT_ENABLED=true once the ios-testflight environment holds its four secrets.
+    if: vars.TESTFLIGHT_ENABLED == 'true' && (needs.plan.outputs.ios == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: macos-26
+    environment: ios-testflight
+    timeout-minutes: 60
+    concurrency:
+      group: ios-testflight-upload
+      cancel-in-progress: false
+    env:
+      ARCHIVE: ${{ runner.temp }}/Tupies.xcarchive
+      KEY_DIR: ${{ runner.temp }}/app-store-connect
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+          persist-credentials: false
+      - name: Record the Xcode in use
+        run: xcodebuild -version
+      - name: Place the App Store Connect key for this job only
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY APPLE_TEAM_ID; do
+            if [ -z "${!name}" ]; then echo "::error::The ios-testflight environment has no value for $name. See docs/releases.md."; exit 1; fi
+          done
+          umask 077
+          mkdir -p "$KEY_DIR"
+          printf '%s\n' "$ASC_PRIVATE_KEY" > "$KEY_DIR/AuthKey_$ASC_KEY_ID.p8"
+      - name: Archive the iPhone app, signed for distribution
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          REQUIRE_TRANSFER: ${{ vars.TUPIES_REQUIRE_TRANSFER || 'NO' }}
+        run: |
+          set -o pipefail
+          xcodebuild archive -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" -derivedDataPath "$RUNNER_TEMP/dd-testflight" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" TUPIES_REQUIRE_TRANSFER="$REQUIRE_TRANSFER" \
+            -allowProvisioningUpdates -authenticationKeyPath "$KEY_DIR/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -n 60
+      - name: The archive is the build this release names
+        env:
+          EXPECTED_BUILD: ${{ needs.plan.outputs.build }}
+        run: |
+          build="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleVersion' "$ARCHIVE/Info.plist")"
+          bundle="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' "$ARCHIVE/Info.plist")"
+          echo "Archived $bundle build $build"
+          if [ "$bundle" != dev.tupies.app ] || [ "$build" != "$EXPECTED_BUILD" ]; then echo "::error::Expected dev.tupies.app build $EXPECTED_BUILD."; exit 1; fi
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -o pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/testflight-export" -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_DIR/AuthKey_$ASC_KEY_ID.p8" -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -n 60
+      - name: Remove the App Store Connect key
+        if: always()
+        run: rm -rf "$KEY_DIR"
+
+  notes:
+    name: Release notes
+    needs: [plan, engine, mac, iphone]
+    if: always() && github.event_name == 'release' && needs.plan.result == 'success'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Append what to update, and what each job did, to the release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          OUTCOME: engine=${{ needs.engine.result }},mac=${{ needs.mac.result }},iphone=${{ needs.iphone.result }},testflight=${{ vars.TESTFLIGHT_ENABLED == 'true' }}
+        run: |
+          gh release view "$RELEASE_TAG" --json body --jq .body > "$RUNNER_TEMP/release-body.md"
+          node scripts/update-impact.mjs --head HEAD --before-head --heading 'What to update' --outcome "$OUTCOME" --merge-into "$RUNNER_TEMP/release-body.md" > "$RUNNER_TEMP/release-notes.md"
+          gh release edit "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"

@@ -41,6 +41,7 @@ import { Notifications, notificationsApi } from './lib/notifications.mjs';
 import { SkillsService, assertSkillIntegrity } from './lib/skills.mjs';
 import { prepareSkillImport } from './lib/skill-import.mjs';
 import { UpdateMaintenance } from './lib/update-maintenance.mjs';
+import { EngineUpdates } from './lib/update-status.mjs';
 
 export { controlSocketPath, controlSocketLive };
 
@@ -160,6 +161,8 @@ export async function createStudioServer(options={}) {
   let updateWrites=0;
   const maintenance=new UpdateMaintenance({held:updateHold,busy:()=>updateWrites>0 || ticking || sync.topologyChanging || runtime.starting.size>0 || runtime.submitting.size>0 || runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || runtime.tasks.size>0 || runtime.polling.size>0 || rooms.working.size>0 || rooms.submitting.size>0 || Object.values(store.state.runs).some(isActive) || Object.values(store.state.roomDrives || {}).some(isDriveActive) || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging'||attempt.status==='pending'&&attempt.expiresAt>Date.now()) || channels.receiving.size>0 || [...channels.requests.keys()].some(operation=>channels.requestMethods.get(operation)!=='getUpdates') || !!channels.tickPromise || !!notifications.delivery});
   updatePaused=()=>maintenance.paused;
+  // Settings → Version & updates. Reads the installed release and the signed channel; installing stays with the operator updater.
+  const updates=new EngineUpdates({root:ROOT,maintenance,...options.updates});
   const runtime=new Runtime(store,{...options,missionPriceFor:options.missionPriceFor || missionPricing.priceFor,missionPricingConfigured:missionPricing.configured,missionPricingCount:missionPricing.count,providers,integrations,skills,setup,speech,ownerEngineId:()=>sync.nodeId,ownerEngineName:()=>sync.identity.name,busyElsewhere:botId=>sync.busyElsewhere(botId),automation:()=>!maintenance.paused && sync.runsAutomation(),assertAdmission:()=>{maintenance.assertAdmission();sync.assertAdmission();},admissionPaused:()=>maintenance.paused || !!sync.topologyChanging});
   sync.locallyActive=botId=>isActive(store.state.runs[botId]) || runtime.starting.has(botId);
   await runtime.recover();
@@ -303,7 +306,7 @@ export async function createStudioServer(options={}) {
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
         if(method==='GET' && pathname==='/api/state')return json(res,{...store.publicState(),missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),sync:sync.summary(),browser:runtime.browsers.status()});
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
-        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,sync,clientAddress:access.client(req)}))return;
+        if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,sync,updates,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
         const receiptMatch=method==='GET' && pathname.match(/^\/api\/bots\/([a-zA-Z0-9_-]+)\/submissions\/([A-Za-z0-9_-]{8,80})$/);
         if(receiptMatch) {
@@ -543,7 +546,7 @@ export async function createStudioServer(options={}) {
     throw new HttpError(400,'Unknown command.');
   }
   return {
-    server,bootstrapToken,store,runtime,rooms,providers,integrations,channels,sync,access,notifications,skills,
+    server,bootstrapToken,store,runtime,rooms,providers,integrations,channels,sync,access,notifications,skills,updates,
     /** Shell commands of the same user (npm run pair) reach the engine through a socket inside the private data directory. */
     async openControl(file,localUrl) {
       await prepareControlDirectory(file);

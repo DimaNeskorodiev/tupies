@@ -1,5 +1,17 @@
 # Verification — Tupies Engine 0.5
 
+## Versions, one CI pipeline and in-app updates — 16 November 2026 (source only)
+
+Branch `feature/ci-versioning-20261116` on `main` `8c17afe`, Node 22.23.1 and Xcode 26.4.1 on the maintainer Mac.
+
+- `npm run check`: 244 modules. `node scripts/verify-release-tests.mjs`: 98 sequential + 2,386 parallel = 2,484 tests, 0 failed, 0 skipped. A first run failed three existing tests that pin the exact Settings card list, the Settings tab list and the neighbours of `usage.css` in `index.html`; the two lists now include `updates`, and the new assets moved to the end of the asset list.
+- New suites: `test/update-status.test.mjs` (release labels; a newer signed release is found only when asked; another key's signature is refused; an expired feed is named but not installable; a staged build compared by commit and by time; the request file written only for a known newer release and at most once a minute; the three routes refuse an unauthenticated request; path sorting, version agreement, the stale build number rule, the note and the release-note merge) and `test/updates-ui.test.mjs` (which control appears per install mode, escaping, the app card for a current, older, required and Mac build). Neither reads `apps/apple/`, which the container job does not have.
+- In-app browser on a disposable engine (temporary data, a locally signed synthetic channel offering beta 11 over an installed beta 10, a stand-in for the updater, generated password): Settings showed the Version & updates card; the page checked by itself and showed "0.5.0 beta 11 is available" with Update now; pressing it showed "Update requested", then "Updated to 0.5.0 beta 11", the page reloaded by itself and read "Up to date". With the app markers set by hand on the page, an iPhone app that reports no build was offered build 17 through TestFlight and marked on the Settings card; build 17 read "Up to date". Phone width (375 px) had no horizontal overflow. The fixture was stopped and its data and password removed.
+- Apple: `apps/apple/Tests/run-logic-tests.sh` passed; `Tupies-iOS` built for a generic iOS Simulator and `Tupies` for macOS with `CODE_SIGNING_ALLOWED=NO`; `Tupies-iOS` archived unsigned in Release for a generic iPhone. All three report build 17.
+- `node scripts/stage-engine-release.mjs` staged `assets/updates/` with `release-channels.json`, `native-apps.json` and a `build.json` naming the checkout's commit.
+
+Not verified: neither workflow has run on GitHub (including whether the `macos-26` runner label and `gh pr comment --create-if-none` behave as written); the TestFlight job has never run with credentials; the systemd path unit has not been installed anywhere; no signed app was built, installed or opened against a real engine, so the native bridge's new markers were compiled but not observed in the app; no release was published and nothing was installed on the Mac, the VPS or the iPhone.
+
 ## Sandbox, saved scripts, describe-a-bot, chief of staff, proof of work — 10 November 2026 (source only)
 
 Branch `feature/wave1-20261110` (eight executor branches merged on top of `110b8a7`; `main` is `1a12258` after PR #56), Node 22 on the maintainer Mac.
