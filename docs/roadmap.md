@@ -1,5 +1,17 @@
 # Product roadmap
 
+## One provider and model picker — 16 November 2026 (source only)
+
+Owner report: two “Codex subscription” entries, one broken; picking an OpenRouter model was awkward; the chat model panel could not switch providers like Settings. Built on branch `feature/unified-model-picker-20261116`, not installed or released:
+- Cause of the duplicate: each **Continue to sign in** from the ChatGPT tile created a new connection (`POST /api/connections`), so an abandoned or failed sign-in stayed behind, never signed in, with the same name as the working one; Bot settings listed both as “ChatGPT / Codex subscription · ChatGPT / Codex subscription”. A retry now reuses the unfinished connection; nothing is deleted automatically.
+- `public/model-picker.js` + `.css`: one provider select plus a searchable model combobox (name and id, listbox roles, full keyboard, loading/empty/error-with-retry states) used by Bot settings and the chat panel; same-named providers are labelled apart and unusable ones are shown as errors.
+- The chat panel switches provider and model together through `PATCH /api/bots/{id}/inference` (`connectionId`), with a `GET …?connectionId=` preview; a provider switch requires an idle bot, keeps the fallback distinct and drops the old provider session. Bot settings save provider/model changes through the same route. Reasoning levels are ordered weakest-first for every provider.
+
+Follow-ups, not built:
+- **Chat options › Model & reasoning** still offers only models of the current provider (a plain select); move it onto the shared picker or link it to the panel.
+- A one-click way to remove an unfinished duplicate connection from the picker itself (today: Settings → Providers).
+- Real-account check on the Mac and the VPS with the owner's actual connections after installation.
+
 ## Bots add their own connections — 16 November 2026 (source only)
 
 The owner asked that bots can create and add their own tools, for example Gmail when none exists. Built on branch `feature/bot-authored-tools-20261116`, not installed or released: richer REST actions (`{param}` paths, query lists, repeated array parameters, engine-side base64url encoding and decoding, fixed headers); OAuth 2.0 sign-in for REST and MCP integrations (PKCE, sealed tokens, renewal, needs_reauth, manual paste fallback); the `integration_propose` bot tool with exact owner approval, credential-free creation and a connect request under the reply; a connect card for that request, built in parallel as part of this change; and a Gmail preset. Proven end to end against a local Google/Gmail fixture; see [connections](connections.md) and [verification](verification.md). Also shipped in source: MCP OAuth metadata discovery and automatic client registration for hosted MCP servers (client ID metadata document or dynamic registration), proven against a local spec-shaped fixture.
