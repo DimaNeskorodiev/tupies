@@ -57,9 +57,10 @@ The container image holds only the Engine's own sources, and it refuses skipped 
 
 ## Releasing: `.github/workflows/release.yml`
 
-1. Merge to `main` with CI green.
-2. Publish a GitHub release whose tag follows the scheme above, targeting `main`. Tick "pre-release" for the beta channel. Attach the notarized `Tupies.dmg` to the draft first if the Mac app changed.
-3. The workflow does the rest:
+1. Check what each server actually runs before anything else: `sudo -n cat /opt/…/current/engine-release.json` on the VPS, and compare its `id` with the last published release. The updater installs any release with a higher sequence, so a variant installed by hand is replaced without a word. If the server runs something that is not in `main`, bring that into `main` first or pause its update timer. On 16 November 2026 beta 11 replaced a hand-installed finance variant this way.
+2. Merge to `main` with CI green.
+3. Publish a GitHub release whose tag follows the scheme above, targeting `main`. Tick "pre-release" for the beta channel. Attach the notarized `Tupies.dmg` to the draft first if the Mac app changed.
+4. The workflow does the rest:
 
 | Job | What it does | Runs |
 | --- | --- | --- |
