@@ -1,0 +1,91 @@
+# Publishes the next Engine beta by itself after a merge to main passes CI.
+#
+#   CI passed on a push to main  →  the commit changes the Engine  →  prerelease vX.Y.Z-engine.beta.N+1 on that commit
+#   →  Release (release.yml) on the new tag signs it and advances the beta feed  →  servers install it with their update timer
+#
+# Skipped when the merge reaches nothing the Engine ships (docs, tests, workflows), when a newer commit is already on
+# main (its own CI run releases it), or when the commit already has a release tag.
+# Switch it off without a code change: set the repository variable AUTO_BETA_RELEASE to "false".
+# The Mac DMG and the iPhone build are not made here; see docs/releases.md.
+name: Automatic beta
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: automatic-beta-release
+  cancel-in-progress: false
+jobs:
+  beta:
+    name: Publish the next Engine beta
+    if: >-
+      vars.AUTO_BETA_RELEASE != 'false' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Decide whether this commit gets a beta
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          skip() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; echo "publish=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          tip="$(gh api "repos/$GH_REPO/commits/main" --jq .sha)"
+          [ "$tip" = "$SHA" ] || skip "Not released: main has moved on to $tip, whose own CI run decides."
+          existing="$(git tag --points-at "$SHA" --list 'v[0-9]*' | head -n 1)"
+          [ -z "$existing" ] || skip "Not released: this commit is already $existing."
+          node scripts/update-impact.mjs --head HEAD --heading 'What this merge updates' | tee -a "$GITHUB_STEP_SUMMARY"
+          engine="$(node scripts/update-impact.mjs --head HEAD --format github | sed -n 's/^engine=//p')"
+          [ "$engine" = true ] || skip "Not released: nothing the Engine ships changed since the last release."
+          version="$(node -p "require('./package.json').version")"
+          prefix="v${version}-engine.beta."
+          last="$( { git tag --list "${prefix}*"; gh release list --limit 200 --json tagName --jq '.[].tagName'; } \
+            | sed -n "s/^v${version//./\\.}-engine\.beta\.\([0-9][0-9]*\)$/\1/p" | sort -n | tail -n 1)"
+          next=$(( ${last:-0} + 1 ))
+          tag="${prefix}${next}"
+          previous="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)"
+          pr_title="$(gh api "repos/$GH_REPO/commits/$SHA/pulls" --jq '[.[] | select(.merged_at != null)][0].title // empty' || true)"
+          [ -n "$pr_title" ] || pr_title="$(git log -1 --format=%s "$SHA")"
+          {
+            echo "publish=true"
+            echo "tag=$tag"
+            echo "previous=$previous"
+            echo "title=Tupies Engine $version beta $next — $pr_title"
+          } >> "$GITHUB_OUTPUT"
+      - name: Publish the prerelease and start its Engine signing
+        if: steps.decide.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          TAG: ${{ steps.decide.outputs.tag }}
+          PREVIOUS: ${{ steps.decide.outputs.previous }}
+          TITLE: ${{ steps.decide.outputs.title }}
+        run: |
+          set -euo pipefail
+          notes=(--generate-notes)
+          [ -z "$PREVIOUS" ] || notes+=(--notes-start-tag "$PREVIOUS")
+          gh release create "$TAG" --target "$SHA" --prerelease --title "$TITLE" "${notes[@]}"
+          # A release made with the workflow token does not fire "published"; start the signing run on the tag directly.
+          gh workflow run release.yml --ref "$TAG" -f publish_engine=true
+          echo "Published $TAG on $SHA and started Release for it." | tee -a "$GITHUB_STEP_SUMMARY"
