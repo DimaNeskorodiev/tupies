@@ -210,33 +210,38 @@ test('a bot Settings refusal received on another page remains visible with its r
   assert.equal(reopened.querySelector('[type=submit]').disabled,false);
 });
 
-test('asynchronous chat options expose model and reasoning while retaining form values',async t=>{
+test('asynchronous chat options show the saved model and point to the one shared picker while retaining form values',async t=>{
   let finish;const pending=new Promise(resolve=>{finish=resolve;}),h=ui(t,{inferenceRequest:()=>pending});
   h.chat();h.doc.querySelector('#message-input').value='A draft stays in the composer.';
   const loading=h.run("chatOptionsDialog('bot_atlas')"),form=h.doc.querySelector('#chat-options-form');
   assert.equal(form.dataset.inferenceReady,'false');assert.equal(form.querySelector('details').open,true);
-  assert.equal(form.querySelector('#chat-model'),null);
-  finish({model:'model-a',effectiveModel:'model-a',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A',reasoning:{supported:true,efforts:['low','high']}}],reasoning:{supported:true,efforts:['low','high']},conversation:{tokens:12000}});await loading;
+  finish({connectionId:'provider',model:'model-a',effectiveModel:'model-a',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A',reasoning:{supported:true,efforts:['low','high']}}],reasoning:{supported:true,efforts:['low','high']},conversation:{tokens:12000}});await loading;
   const model=form.querySelector('#chat-inference-options').closest('details'),history=form.querySelector('#chat-context-tools');
-  assert.equal(model.open,true);assert.equal(model.querySelector('summary').textContent,'Model & reasoning');
-  assert.equal(history.open,false);assert.equal(history.querySelector('summary').textContent,'Conversation history');
   assert.deepEqual([...form.querySelectorAll('details')].map(details=>[details.querySelector('summary').textContent,details.open]),[['Model & reasoning',true],['Conversation history',false],['Voice & dictation',false]]);
   assert.equal(form.dataset.inferenceReady,'true');assert.match(history.textContent,/12K tokens/);
-  const data=new h.win.FormData(form);assert.equal(data.get('model'),'model-a');assert.equal(data.get('reasoningEffort'),'high');
-  assert.deepEqual([...history.querySelectorAll('button')].map(button=>[button.dataset.action,button.disabled]),[['compact-context',false],['new-chat',false]]);
-  form.querySelector('#chat-reasoning').value='low';
-  form.querySelector('#chat-reasoning').dispatchEvent(new h.win.Event('change',{bubbles:true}));
+  // No third editor: the saved choice is shown and changed only in the composer panel or Bot settings.
+  assert.equal(form.querySelector('#chat-model'),null);assert.equal(form.querySelector('#chat-reasoning'),null);assert.equal(model.querySelector('select'),null);
+  assert.match(model.querySelector('#chat-inference-summary').textContent,/^Fixture provider · openai · Model A · Reasoning: High$/);
+  assert.match(model.textContent,/tuning button in the message field or in Bot settings › Model/);
+  assert.equal(model.querySelector('[data-action="chat-model-panel"]').textContent,'Change provider or model');assert.equal(model.querySelector('a').getAttribute('href'),'#/bots/bot_atlas/settings');
   form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
-  assert.deepEqual(h.requests.find(request=>request.method==='PATCH')?.body,{model:'model-a',reasoningEffort:'low'},JSON.stringify(h.toasts));
+  assert.equal(h.requests.some(request=>request.method==='PATCH'),false,'saving Chat options never changes the model');
   assert.equal(h.doc.querySelector('#message-input').value,'A draft stays in the composer.');
   assert.equal(h.toasts.some(item=>item.error),false);
 });
 
-test('saving voice preferences preserves an unavailable model override in visible options',async t=>{
+test('Change provider or model opens the composer panel on its provider and model view',async t=>{
+  const h=ui(t);h.chat();await h.run("chatOptionsDialog('bot_atlas')");
+  h.doc.querySelector('[data-action="chat-model-panel"]').click();await tick();
+  assert.equal(h.doc.querySelector('dialog')?.open??false,false);
+  const panel=h.doc.querySelector('.inference-panel');assert.ok(panel);assert.ok(panel.querySelector('[data-model-picker]'));assert.match(panel.querySelector('h2').textContent,/Provider and model/);
+  h.run('closeInferencePicker(true,false)');
+});
+
+test('saving voice preferences never touches an unavailable model override',async t=>{
   const h=ui(t,{bot:{model:'retired-model'},inferenceRequest:()=>({model:'retired-model',effectiveModel:'retired-model',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A'}],reasoning:{supported:false,efforts:[]}})});
   await h.run("chatOptionsDialog('bot_atlas')");const form=h.doc.querySelector('#chat-options-form');
-  const model=form.querySelector('#chat-model');assert.equal(model.value,'retired-model');
-  assert.equal(model.closest('details').open,true);assert.equal(form.dataset.inferenceDirty,'false');
+  assert.match(form.querySelector('#chat-inference-summary').textContent,/retired-model/);
   form.querySelector('#speech-language').value='uk-UA';form.querySelector('[name=autoRead]').checked=true;
   form.querySelector('#speech-language').dispatchEvent(new h.win.Event('change',{bubbles:true}));
   form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
@@ -246,49 +251,19 @@ test('saving voice preferences preserves an unavailable model override in visibl
   assert.equal(h.toasts.some(item=>item.error),false);
 });
 
-test('an inference-only save leaves unconfigured OpenRouter voice preferences untouched',async t=>{
-  const h=ui(t);h.controller.setPreferences({engine:'openrouter',connectionId:'',cloudConsent:false,language:'pl-PL',autoRead:false});
-  const before=plain(h.controller.preferences),setPreferences=h.controller.setPreferences;let voiceChanges=0;
-  h.controller.setPreferences=function(update){voiceChanges++;return setPreferences.call(this,update);};
-  await h.run("chatOptionsDialog('bot_atlas')");const form=h.doc.querySelector('#chat-options-form');
-  assert.equal(form.querySelector('[data-voice-settings]').open,false);assert.equal(form.dataset.voiceDirty,'false');
-  assert.equal(form.querySelector('[name=cloudSpeechConsent]').required,false,'untouched optional speech cannot block a basic model save');
-  assert.equal(form.checkValidity(),true);
-  const reasoning=form.querySelector('#chat-reasoning');reasoning.value='low';reasoning.dispatchEvent(new h.win.Event('change',{bubbles:true}));
-  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
-  assert.deepEqual(h.requests.map(request=>[request.path,request.method||'GET']),[['/api/bots/bot_atlas/inference','GET'],['/api/bots/bot_atlas/inference','PATCH']]);
-  assert.deepEqual(h.requests[1].body,{model:'model-a',reasoningEffort:'low'});
-  assert.equal(voiceChanges,0);assert.deepEqual(plain(h.controller.preferences),before);
-  assert.equal(h.doc.querySelector('dialog'),null);assert.equal(h.toasts.some(item=>item.error),false);
-});
-
-test('an explicit paid voice still requires consent before either voice or inference can save',async t=>{
+test('an explicit paid voice still requires consent before it can save',async t=>{
   const catalog={connectionId:'router',speech:[{id:'elevenlabs/eleven-v4-turbo',name:'Eleven v4 Turbo',voices:['george','sarah']}],transcription:[{id:'elevenlabs/scribe-v2',name:'Scribe'}]};
   const h=ui(t,{speechCatalog:catalog});h.controller.setPreferences({engine:'openrouter',connectionId:'router',cloudConsent:false});
   const before=plain(h.controller.preferences);await h.run("chatOptionsDialog('bot_atlas')");await tick();
   const form=h.doc.querySelector('#chat-options-form'),voice=form.querySelector('#speech-ai-voice');
   assert.deepEqual([...voice.options].map(option=>option.value),['george','sarah']);
   voice.value='sarah';voice.dispatchEvent(new h.win.Event('change',{bubbles:true}));
-  const reasoning=form.querySelector('#chat-reasoning');reasoning.value='low';reasoning.dispatchEvent(new h.win.Event('change',{bubbles:true}));
   assert.equal(form.dataset.voiceDirty,'true');assert.equal(form.querySelector('[name=cloudSpeechConsent]').required,true);assert.equal(form.checkValidity(),false);
   form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
   assert.match(form.querySelector('.form-error').textContent,/Allow OpenRouter speech processing/);
   assert.equal(h.requests.some(request=>request.method==='PATCH'),false);
   assert.equal(h.requests.some(request=>/synthesize|transcribe/.test(request.path)),false,'consent failure makes no paid speech request');
   assert.deepEqual(plain(h.controller.preferences),before);assert.equal(h.doc.querySelector('#chat-options-form'),form);
-});
-
-test('changing reasoning preserves the actual unavailable model value for engine validation',async t=>{
-  const h=ui(t,{bot:{model:'retired-model'},inferenceRequest:()=>({model:'retired-model',effectiveModel:'retired-model',defaultModel:'model-a',reasoningEffort:'high',models:[{id:'model-a',name:'Model A'}],reasoning:{supported:true,efforts:['low','high']}})});
-  await h.run("chatOptionsDialog('bot_atlas')");const form=h.doc.querySelector('#chat-options-form');
-  assert.equal(form.querySelector('#chat-model').value,'retired-model');
-  assert.equal(form.querySelector('#chat-model').selectedOptions[0].disabled,true);
-  // This JSDOM version includes disabled selected options. Match browsers'
-  // successful-control serialization to exercise the omitted-value boundary.
-  const NativeFormData=h.win.FormData;h.win.FormData=class extends NativeFormData{constructor(element){super(element);if(element===form)this.delete('model');}};
-  const reasoning=form.querySelector('#chat-reasoning');reasoning.value='low';reasoning.dispatchEvent(new h.win.Event('change',{bubbles:true}));
-  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();
-  assert.deepEqual(h.requests.find(request=>request.method==='PATCH')?.body,{model:'retired-model',reasoningEffort:'low'},'the engine receives the original override, never an implicit reset to default');
 });
 
 test('active work keeps history mutations disabled inside the collapsed conversation disclosure',async t=>{
@@ -415,4 +390,16 @@ test('chat review ignores late sign-out responses and stale workspace snapshots'
   finish({...h.saved,approvalPolicy:'balanced'});await late;
   assert.equal(h.run("botById('bot_atlas')?.approvalPolicy"),'auto','late response cannot overwrite the retained cached mode after sign-out');
   assert.equal(h.doc.querySelector('#chat-approval-policy'),null);
+});
+
+test('a refused provider change in embedded Settings reports partial success instead of "All changes saved"',async t=>{
+  const h=ui(t);h.run("data.connections.push({id:'router',name:'Router',type:'openrouter',hasKey:true,status:'connected',models:[{id:'r-1',name:'R1'}]});var beforeRefusal=api;api=async(path,options={})=>{if(path.endsWith('/inference')&&options.method==='PATCH')throw new Error('The provider catalog is unavailable.');if(path.endsWith('/models'))return {models:[{id:'r-1',name:'R1'}]};return beforeRefusal(path,options);}");
+  const form=showBotSettings(h),select=form.querySelector('#bot-connection');
+  select.value='router';select.dispatchEvent(new h.win.Event('change',{bubbles:true}));await tick();
+  assert.equal(form.querySelector('[data-settings-status]').textContent,'Unsaved changes');
+  form.dispatchEvent(new h.win.Event('submit',{bubbles:true,cancelable:true}));await tick();await tick();
+  assert.match(form.querySelector('.form-error').textContent,/The model change wasn’t saved: The provider catalog is unavailable/);
+  assert.equal(select.value,'provider','the picker is back on the saved provider');
+  assert.equal(form.querySelector('[data-settings-status]').textContent,'Other settings saved · model not changed');
+  assert.equal(h.toasts.some(item=>!item.error),false);
 });

@@ -65,7 +65,7 @@ A connection uses `{name,type,baseUrl?,apiKey?,defaultModel?,maxOutputTokens?,co
 
 | Route | Behavior |
 | --- | --- |
-| POST /api/connections | Add a direct provider; optionally assigns the first provider to unconfigured bots. For `type:'chatgpt'` an existing ChatGPT connection that never completed sign-in (no credentials, no account) is returned instead with HTTP 200 and `reused:true`, so a sign-in retry does not add a same-named duplicate. |
+| POST /api/connections | Add a direct provider; optionally assigns the first provider to unconfigured bots. For `type:'chatgpt'` an existing ChatGPT connection that never completed sign-in (no credentials, no account) is returned instead with HTTP 200 and `reused:true`, so a sign-in retry does not add a same-named duplicate; only a newly supplied `name` is applied to it. |
 | PATCH /api/connections/{id} | Edit provider metadata/model; type/destination changes require appropriate fresh credentials. |
 | DELETE /api/connections/{id} | Remove an unused provider. Active tasks and assigned bots must be resolved first. |
 | POST /api/connections/{id}/test | Fetch model metadata without a paid inference request. |

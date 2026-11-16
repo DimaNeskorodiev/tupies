@@ -2,7 +2,7 @@
 
 ## One provider and model picker — 16 November 2026 (source only, not installed or released)
 
-Branch `feature/unified-model-picker-20261116`. Bot settings and the chat composer's model panel share one picker (`public/model-picker.js` + `.css`) that edits the same saved bot provider/model through `PATCH /api/bots/{id}/inference` (now accepts `connectionId`; `GET …?connectionId=` previews another provider). The duplicate “Codex subscription” entry came from every ChatGPT sign-in retry creating a new connection; `POST /api/connections` now reuses an unfinished one, and the picker labels same-named connections apart and shows unusable ones as errors (`connectionProblem` in `lib/providers.mjs`, `oauthBlocked` on `/api/state`). Chat options' own model select is unchanged. See docs/chat-controls.md and docs/roadmap.md.
+Branch `feature/unified-model-picker-20261116`. Bot settings and the chat composer's model panel share one picker (`public/model-picker.js` + `.css`) that edits the same saved bot provider/model through `PATCH /api/bots/{id}/inference` (now accepts `connectionId`; `GET …?connectionId=` previews another provider). The duplicate “Codex subscription” entry came from every ChatGPT sign-in retry creating a new connection; `POST /api/connections` now reuses an unfinished one, and the picker labels same-named connections apart and shows unusable ones as errors (`connectionProblem` in `lib/providers.mjs`, `oauthBlocked` on `/api/state`). Chat options › Model & reasoning is now read-only and opens the composer panel to change it. See docs/chat-controls.md and docs/roadmap.md.
 
 ## Bots add their own connections — 16 November 2026 (source only, not installed or released)
 
