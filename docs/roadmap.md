@@ -1,10 +1,14 @@
 # Product roadmap
 
+## Hyperliquid Vault report and tool-use fixes, recovered from the VPS — 16 November 2026 (source only)
+
+Recovered from a release that had only ever existed on the VPS, and lost from the running server when beta 11 replaced it: the report-only `hyperliquid_vault` routine step, `followRedirects:false` for `http_fetch`, script stdout as the default JSON source, earlier blocking of calls that failed on their arguments, and a bound on browsing a task's own run diagnostics. See [Routines](routines.md) and `PROJECT_CONTEXT.md`. Not done yet: publish a release that contains it, start the VPS update timer again and confirm the finance bot's routine on the server.
+
 ## Versions, one CI pipeline and in-app updates — 16 November 2026 (source only)
 
 Shipped in source: one `CI` workflow and one `Release` workflow replace four; every pull request and release says whether the Engine, the iPhone app and the Mac app need an update; Settings → Version & updates shows the installed version with **Check for updates** and, where the server allows it, **Update now**; the native build number lives in the repository (17). See [Versions, CI and releases](releases.md).
 
-Not done yet, each needing the owner: switch the `main` ruleset's required check to `CI passed`; create the App Store Connect app, API key and `ios-testflight` environment, then set `TESTFLIGHT_ENABLED` (the upload job has never run with real credentials); install the optional update-request path unit on the VPS for **Update now**; publish an Engine release and native build 17 so installed copies show any of this. Planned later: an arm64 Engine publishing job, a stable channel, and automatic TestFlight re-uploads before the 90-day expiry.
+Done since: the required check is `CI passed`, PR #59 is merged and Engine beta 11 is published (16 November 2026). Still not done, each needing the owner: create the App Store Connect app, API key and `ios-testflight` environment, then set `TESTFLIGHT_ENABLED` (the upload job has never run with real credentials); install the optional update-request path unit on the VPS for **Update now**; build and install native build 17 so the apps report their own version; roll the Mac engine out to beta 11 or later. Planned later: an arm64 Engine publishing job, a stable channel, and automatic TestFlight re-uploads before the 90-day expiry.
 
 ## Sandbox, saved scripts, describe-a-bot, chief of staff and proof of work — 10 November 2026 (installed on Mac and VPS, Engine beta 10)
 

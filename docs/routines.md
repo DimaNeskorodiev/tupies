@@ -76,11 +76,17 @@ In `mode:"report"`, the engine renders `report`, such as `"New records: {{fresh}
 
 Seen-item markers commit only after the entire task succeeds, including an optional report save. Failed analysis or saving does not consume the candidates. Items beyond `select.limit` remain eligible for later runs. The engine keeps up to 2000 recent key hashes per select step; this bounded cursor is not a permanent archive. Changing the saved workflow invalidates its cursor.
 
-Workflows allow up to 16 steps, 1000 source items and 100 selected items per select step, with 64 KiB of combined results. Oversize or truncated data fails instead of silently losing items. Fetch/read steps cannot select executable code or tools from source content. Open-ended research, changing page layouts, authentication and CAPTCHA still need the appropriate agent/browser workflow.
+Workflows allow up to 16 steps, 1000 source items and 100 selected items per select step, with 64 KiB of combined results. Oversize or truncated data fails instead of silently losing items. A JSON step referring to a saved script uses successful stdout when its path is empty. Fetch/read steps cannot select executable code or tools from source content. Open-ended research, changing page layouts, authentication and CAPTCHA still need the appropriate agent/browser workflow.
 
 ## Pre-approve exact commands
 
 A routine can carry exact terminal commands that run unattended: `routines_create`/`routines_update` (or the owner routine API) accept `commands: ["npm run report", …]`, up to 20. The approval card lists every command and the owner approves them; Approve for me never decides this. Dangerous commands (deletion, pushes, publishing, sends, privilege and the rest of the classifier's list) are refused and always ask at run time. In a run of that routine a `terminal` call with the identical command string runs without asking; any other command follows the bot's normal policy and allowlist. Changing the routine's bot drops its pre-approvals. See [Terminal, code snippets and command approval](terminal.md).
+
+## Hyperliquid Vault report
+
+A report workflow can use a `hyperliquid_vault` step with a fixed `vault` address and one to four distinct public `wallets`. The Engine sends a separate `vaultDetails` Info request for each wallet to Hyperliquid over HTTPS, with redirects disabled. The step uses the bot’s Web capability and ordinary Web POST review policy. It does not run shell code or send credentials.
+
+The step provides `observedAt`, `positions` with masked wallet labels, and `total`. Each row supplies `equity` (Your Deposits), `pnl` (current participation) and `allTimePnl` from the wallet’s verified follower state. Values are formatted in USDC to two decimals, with totals rounded after addition. A failed request, missing position or mismatched identity stops the report.
 
 ## Reuse a registered script
 
