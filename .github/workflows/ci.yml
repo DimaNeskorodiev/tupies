@@ -4,7 +4,8 @@
 #   Tests               syntax check and the whole regression suite, exactly as the release runs them
 #   Linux command sandbox   bot commands stay inside bubblewrap under the server's systemd hardening
 #   Workshop container  bot-proposed Engine changes are verified in a locked-down container
-#   iPhone and Mac apps compiles both apps; runs only when the native app changed, and on main
+#   iPhone and Mac apps compiles both apps; runs only when the native app changed (or by hand), so a
+#                       shortage of hosted macOS runners cannot fail a merge that never touched the apps
 #   CI passed           the single check that protects main
 name: CI
 on:
@@ -229,7 +230,7 @@ jobs:
   apple:
     name: iPhone and Mac apps
     needs: update-guide
-    if: needs.update-guide.outputs.native == 'true' || github.event_name != 'pull_request'
+    if: needs.update-guide.outputs.native == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     timeout-minutes: 45
     steps:
