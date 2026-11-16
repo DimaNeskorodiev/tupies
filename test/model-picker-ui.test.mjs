@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const source=(await readFile(new URL('../public/app.js',import.meta.url),'utf8')).replace(/\nstart\(\);\s*$/,'\n');
+const pickerSource=await readFile(new URL('../public/model-picker.js',import.meta.url),'utf8');
 const decode=value=>String(value||'').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
 const attribute=(tag,name)=>decode(tag.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1]);
 
@@ -49,6 +50,7 @@ function harness({connection={},models=[{id:'model-latest',name:'Latest model'},
     querySelectorAll(){return [];}
   };
   const ctx=vm.createContext({document,window:{addEventListener(){}},location:{hash:'#/connections'},HTMLFormElement:Form,FormData:Data,URL,setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){},console});
+  vm.runInContext(pickerSource,ctx,{filename:'model-picker.js'});
   vm.runInContext(source,ctx,{filename:'app.js'});
   const provider={id:'provider_chatgpt',type:'chatgpt',name:'My ChatGPT',status:'connected',hasOAuth:true,defaultModel:'',...connection};
   ctx.fixtureData={settings:{},bots:[],connections:[provider],integrations:[],channels:[],routines:[],skills:[],activity:[],rooms:[],runs:{},roomDrives:{}};
@@ -121,9 +123,9 @@ test('empty or unavailable model catalogs offer retry without changing the conne
 });
 
 test('new bot dialog inherits the workspace provider and leaves its model override empty',()=>{
-  const h=harness({connection:{defaultModel:'model-fast'}});h.run('data.settings={defaultConnectionId:"provider_chatgpt",defaultModel:"model-fast"};botDialog()');
+  const h=harness({connection:{defaultModel:'model-fast',oauthAccount:{email:'owner@example.test',planEnabled:true}}});h.run('data.settings={defaultConnectionId:"provider_chatgpt",defaultModel:"model-fast"};botDialog()');
   assert.match(h.dom.dialog.html,/<option value="provider_chatgpt"\s+selected>/);
-  assert.match(h.dom.dialog.html,/<input id="bot-model" name="model" value=""/);
+  assert.match(h.dom.dialog.html,/<input type="hidden" id="bot-model" class="mp-model-value" name="model" value="">/);
 });
 
 

@@ -559,7 +559,9 @@ function syncSettings(form,{reset=false,status}={}){
   const dirty=settingsIdentity(form)!==settingsBaselines.get(form),saving=form.dataset.settingsSaving==='true';
   form.dataset.settingsDirty=String(dirty);
   const label=form.querySelector('[data-settings-status]');
-  if(label){const partial=dirty&&label.textContent.startsWith('Bot settings saved;');label.textContent=status??(saving?'Saving changes…':partial?label.textContent:dirty?'Unsaved changes':'All changes saved');}
+  // After a refused model change the picker is back on the saved value, so the form is clean but only partly saved.
+  if(reset)delete form.dataset.settingsPartial;
+  if(label){const partial=dirty&&label.textContent.startsWith('Bot settings saved;');label.textContent=status??(saving?'Saving changes…':partial?label.textContent:dirty?'Unsaved changes':form.dataset.settingsPartial||'All changes saved');}
   const save=form.querySelector('.bot-settings-save button[type="submit"]'),discard=form.querySelector('[data-profile-action="discard-settings"]');
   if(save){save.disabled=!dirty||saving;save.setAttribute('aria-busy',String(saving));}
   if(discard)discard.disabled=!dirty||saving;
@@ -639,6 +641,7 @@ function after(root,v){
   if(form&&!settingsBaselines.has(form))settingsBaselines.set(form,settingsIdentity(form));
   if(form&&v.settingsDraft){
     for(const field of v.settingsDraft.fields){const element=[...form.elements].find(element=>element.name===field.name&&element.type===field.type&&(!['checkbox','radio'].includes(field.type)||element.value===field.value));if(!element)continue;if(['checkbox','radio'].includes(field.type))element.checked=field.checked;else element.value=field.value;}
+    window.StudioModelPicker?.syncAll(form);
     form.dataset.settingsDirty='true';const error=form.querySelector('.form-error');if(error)error.textContent=v.settingsDraft.error;
     const status=form.querySelector('[data-settings-status]');if(status)status.textContent=v.settingsDraft.status||'Unsaved changes';
     const bot=ctx.botById(v.id),preview=form.querySelector('#bot-avatar-preview');if(preview)preview.innerHTML=ctx.avatar({...bot,icon:form.elements.icon.value,color:form.elements.color.value},'large');
