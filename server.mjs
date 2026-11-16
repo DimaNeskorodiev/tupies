@@ -28,6 +28,7 @@ import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
 import { nativeApi, oauthCallback } from './lib/api-native.mjs';
+import { integrationOAuthCallback, oauthRedirectBase, OAUTH_CALLBACK_PATH } from './lib/integration-oauth.mjs';
 import { LoopbackCallback } from './lib/oauth-callback.mjs';
 import { dashboard } from './lib/dashboard.mjs';
 import { Speech } from './lib/speech.mjs';
@@ -150,6 +151,8 @@ export async function createStudioServer(options={}) {
   if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}
   const speech=new Speech(store,options);
   const integrations=options.integrations || new Integrations(store,options);
+  // Integration sign-in returns to the configured public origin, or else to the loopback address this engine serves; never to a request's Host header.
+  if(integrations.oauth)integrations.oauth.redirectBase=()=>oauthRedirectBase({publicOrigin,scheme,address:server.address()?.address,port:server.address()?.port});
   const skills=new SkillsService(store,{...options.skills,busyElsewhere:botId=>sync.busyElsewhere(botId),assertAdmission:()=>sync.assertAdmission(),isBusy:botId=>runtime.starting.has(botId) || runtime.compactions.has(botId) || rooms.reserved(botId)});
   // Bots that manage Tupies from chat (lib/setup-tools.mjs) create and change bots with the same checks as the bot API.
   const botIdle=botId=>ensure(!runtime.starting.has(botId) && !runtime.compactions.has(botId) && !isActive(store.state.runs[botId]) && !rooms.reserved(botId),409,'Wait for this bot and its room turn to finish before changing it.');
@@ -264,8 +267,10 @@ export async function createStudioServer(options={}) {
       verifyHost(req);verifyOrigin(req);
       const url=new URL(req.url,`http://${req.headers.host}`),pathname=url.pathname;
       const method=req.method;
-      if(method==='POST'&&['/api/pair','/api/device/session','/api/setup','/api/login'].includes(pathname)||method==='GET'&&['/auth/device','/auth/callback'].includes(pathname))trackUpdateRequest(res);
+      if(method==='POST'&&['/api/pair','/api/device/session','/api/setup','/api/login'].includes(pathname)||method==='GET'&&['/auth/device','/auth/callback',OAUTH_CALLBACK_PATH].includes(pathname))trackUpdateRequest(res);
       if(method==='GET' && pathname==='/auth/callback'){await oauthCallback(req,res,url,providers);return;}
+      // The provider's redirect is a cross-site navigation that never carries the SameSite=Strict session, so the single-use state is its authority.
+      if(method==='GET' && pathname===OAUTH_CALLBACK_PATH && integrations.oauth){await integrationOAuthCallback(req,res,url,integrations);return;}
       if(await syncPublicApi(req,res,url,{sync,body,json,login,rateLimit,access}))return;
       if(method==='GET' && pathname==='/api/auth') {
         const session=getSession(req);return json(res,{setupRequired:!store.state.password,authenticated:!!session,csrf:session?.csrf || null,passwordSignIn:access.passwordAllowed(req)});
