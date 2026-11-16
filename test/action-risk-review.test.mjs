@@ -109,7 +109,7 @@ test('assigned API review includes the actual destination/method, excludes crede
 
 test('an API DELETE cannot be auto-approved even by an approving reviewer',async t=>{
   const h=await fixture(t,{initialCall:{id:'delete-api',name:'integration_call',arguments:{integrationId:'fixture-api',tool:'items',arguments:{}}}});
-  await h.store.mutate(state=>{state.bots[0].tools.push('integrations');state.bots[0].integrationIds=['fixture-api'];state.integrations=[{id:'fixture-api',type:'rest',baseUrl:'https://example.test',tools:[{name:'items',method:'DELETE',path:'/items',inputSchema:{type:'object'}}]}];});
+  await h.store.mutate(state=>{state.bots[0].tools.push('integrations');state.bots[0].integrationIds=['fixture-api'];state.integrations=[{id:'fixture-api',type:'rest',baseUrl:'https://example.test',secret:'SEALED-API-SECRET',tools:[{name:'items',method:'DELETE',path:'/items',inputSchema:{type:'object'}}]}];});
   await h.start();await until(()=>h.run()?.status==='waiting_for_approval');assert.equal(h.reviews.length,0);assert.match(h.run().pending_controls[0].review.riskReason,/delete/);await h.stop();
 });
 
