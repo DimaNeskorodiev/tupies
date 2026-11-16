@@ -61,6 +61,20 @@ async function copyTree(source,destination,allowed) {
 /** Operator scripts shipped in every Engine release (the docs tell operators to run them from the installed app). */
 export const ENGINE_OPERATIONAL_SCRIPTS=Object.freeze(['pair.mjs','link-engine.mjs','runtime-backup.mjs','prepare-mac-update.mjs','update-backup.mjs','check-sandbox.mjs']);
 
+/**
+ * Records which commit a staged Engine was built from, so Settings → Version & updates can name it.
+ * A copy staged outside a git checkout simply has no stamp.
+ */
+async function writeBuildStamp(repo,file) {
+  const git=args=>new Promise(resolve=>{let text='';const child=spawn('git',args,{cwd:repo,stdio:['ignore','pipe','ignore']});child.stdout.on('data',bytes=>{text+=bytes;});child.once('error',()=>resolve(''));child.once('close',code=>resolve(code===0?text.trim():''));});
+  // Only a checkout whose own root is `repo` may be named: a folder nested in some other repository is not that commit.
+  const top=await git(['rev-parse','--show-toplevel']),commit=await git(['rev-parse','HEAD']);
+  if(!top||await fs.realpath(top)!==await fs.realpath(repo)||!/^[a-f0-9]{40,64}$/.test(commit))return;
+  const committedAt=await git(['show','-s','--format=%cI','HEAD']),tag=await git(['describe','--tags','--exact-match','--match','v[0-9]*','HEAD']);
+  await fs.mkdir(path.dirname(file),{recursive:true,mode:0o755});
+  await fs.writeFile(file,JSON.stringify({commit,committedAt,...(/^v\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$/.test(tag)?{release:tag.slice(1)}:{})})+'\n',{mode:0o644});
+}
+
 /** Positive source allowlist: no .env, data, workspaces, tests, prototypes or installed dependencies. */
 export async function stageEngineSource(repo,destination) {
   if(await exists(destination))fail('The source staging destination already exists.');
@@ -87,6 +101,9 @@ export async function stageEngineSource(repo,destination) {
   await copyTree(path.join(repo,'public'),path.join(destination,'public'),name=>publicExtensions.has(path.extname(name))||/^(?:LICENSE|NOTICE)(?:_|$)/.test(name));
   await copyTree(path.join(repo,'assets','fonts'),path.join(destination,'assets','fonts'),name=>['.ttf','.woff','.woff2'].includes(path.extname(name))||/^(?:OFL|LICENSE|NOTICE)(?:\.|_|$)/.test(name));
   if(await exists(path.join(repo,'assets','tool-catalog')))await copyTree(path.join(repo,'assets','tool-catalog'),path.join(destination,'assets','tool-catalog'),name=>name.endsWith('.json'));
+  // Public update channel, pinned public keys and the native app builds this web UI expects. No private key lives here.
+  if(await exists(path.join(repo,'assets','updates')))await copyTree(path.join(repo,'assets','updates'),path.join(destination,'assets','updates'),name=>['release-channels.json','native-apps.json'].includes(name));
+  await writeBuildStamp(repo,path.join(destination,'assets','updates','build.json'));
   await fs.mkdir(path.join(destination,'assets','licenses'),{recursive:true,mode:0o755});
   for(const name of ['THIRD_PARTY_LICENSES.txt','dependencies.json']) {
     const source=path.join(repo,'assets','licenses',name);
