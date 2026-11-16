@@ -18,6 +18,8 @@ For Ollama, run the local service with a tool-capable model and use its OpenAI-c
 
 Choose **ChatGPT / Codex subscription**, save the connection, and click **Continue with ChatGPT**. Tupies uses the documented public-client flow for open-source and locally hosted apps. The account authorizes Tupies to use eligible ChatGPT plan allowance for Responses requests. A Codex CLI, a Hermes installation and an OpenAI Platform API key are not required for this path.
 
+Starting again from the provider tile after an abandoned or failed sign-in reuses that unfinished connection instead of adding a second one with the same name. A connection that has held an account is never reused, so adding another account creates a separate connection. Bot settings and the chat model picker label same-named connections with their account email and show an unfinished or expired sign-in as an error rather than as a normal choice.
+
 Tupies generates a stable opaque installation identifier, fresh state, nonce and PKCE values. First-time registration uses OpenAI's documented dynamic client entrypoint. The callback supplies an issued client ID; Tupies verifies the signed ID token, issuer, audience, expiry, nonce and account identity before retaining credentials. The account's granted scopes must include plan usage before inference.
 
 The installation identifier, app name and requested scopes are sent to OpenAI during sign-in. Tupies does not import existing Codex/Hermes logins or read their credential stores. Access, refresh and ID tokens are encrypted with Tupies's local vault. Reauthorization reuses the selected account registration and host identifier. Add a separate connection for a different account.

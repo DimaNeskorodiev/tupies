@@ -108,8 +108,9 @@ test('inference changes require authentication and CSRF and reject unknown model
   const before=structuredClone(savedBot(f));
   for(const data of [
     {model:'missing-model',reasoningEffort:''},{model:'plain-model',reasoningEffort:'high'},{model:'reasoning-a',reasoningEffort:'ultra'},{model:'reasoning-a',reasoningEffort:'bogus'},
-    {model:3,reasoningEffort:''},{model:'reasoning-a',reasoningEffort:null},{model:'reasoning-a',reasoningEffort:'high',connectionId:'unrelated'}
+    {model:3,reasoningEffort:''},{model:'reasoning-a',reasoningEffort:null},{model:'reasoning-a',reasoningEffort:'high',connectionId:3},{model:'reasoning-a',provider:'unrelated'}
   ]){const rejected=await f.request(inference,{method:'PATCH',data});assert.equal(rejected.status,400,JSON.stringify(rejected.body));assert.deepEqual(savedBot(f),before);}
+  assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a',reasoningEffort:'high',connectionId:'unrelated'}})).status,404);assert.deepEqual(savedBot(f),before);
   f.remote.models={data:[]};assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a',reasoningEffort:''}})).status,409);assert.deepEqual(savedBot(f),before);
   f.remote.modelStatus=503;f.remote.models={error:{message:'Fixture discovery unavailable'}};assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a',reasoningEffort:''}})).status,502);assert.deepEqual(savedBot(f),before);assert.equal(modelRequests(f.remote).length,0);
 });
@@ -271,4 +272,88 @@ test('preset reasoning reaches the inference API and requests: OpenRouter reason
     const chosen=await f.request(inference,{method:'PATCH',data:{reasoningEffort:effort}});assert.equal(chosen.status,200,JSON.stringify(chosen.body));assert.equal(chosen.body.effectiveReasoningEffort,effort);
     expected(await run('Use the chosen effort.'));
   });
+});
+
+test('chat can browse a second provider and switch provider plus model atomically',async t=>{
+  const f=await fixture(t),codex=await f.connect('openai','Codex subscription'),openrouter=await f.connect('openrouter','OpenRouter');
+  f.remote.models={data:[
+    reasoningModel('codex-model',['low','medium','high']),
+    {id:'deepseek/deepseek-v4-pro',name:'DeepSeek V4 Pro',supported_parameters:['reasoning_effort'],reasoning:{supported_efforts:['xhigh','high','none'],default_effort:'high'}}
+  ]};
+  await f.app.store.mutate(state=>{state.connections.find(item=>item.id===codex.id).defaultModel='codex-model';state.connections.find(item=>item.id===openrouter.id).defaultModel='deepseek/deepseek-v4-pro';state.bots.find(bot=>bot.id==='bot_atlas').sessionId='provider-session-fixture';});
+  const initial=await f.request(inference,{method:'PATCH',data:{model:'codex-model',reasoningEffort:'high'}});assert.equal(initial.status,200,JSON.stringify(initial.body));
+  const before=structuredClone(savedBot(f));
+
+  // Browsing another provider returns its live catalog without changing the bot.
+  const browsed=await f.request(`${inference}?connectionId=${encodeURIComponent(openrouter.id)}`);
+  assert.equal(browsed.status,200,JSON.stringify(browsed.body));assert.equal(browsed.body.connectionId,openrouter.id);assert.equal(browsed.body.preview,true);assert.equal(browsed.body.savedConnectionId,codex.id);assert.equal(browsed.body.savedModel,'codex-model');assert.equal(browsed.body.model,'');assert.equal(browsed.body.effectiveModel,'deepseek/deepseek-v4-pro');
+  assert.deepEqual(browsed.body.models.find(model=>model.id==='deepseek/deepseek-v4-pro').reasoning,{supported:true,efforts:['none','high','xhigh'],defaultEffort:'high',parameter:'reasoning',source:'provider'});
+  assert.deepEqual(savedBot(f),before);
+
+  // A switch is one validated save: the target catalog is authoritative and the old connection is untouched.
+  const switched=await f.request(inference,{method:'PATCH',data:{connectionId:openrouter.id,model:'deepseek/deepseek-v4-pro',reasoningEffort:'xhigh'}});
+  assert.equal(switched.status,200,JSON.stringify(switched.body));assert.equal(switched.body.bot.connectionId,openrouter.id);assert.equal(switched.body.bot.model,'deepseek/deepseek-v4-pro');assert.equal(switched.body.bot.reasoningEffort,'xhigh');assert.equal(switched.body.savedConnectionId,openrouter.id);assert.equal(switched.body.effectiveReasoningEffort,'xhigh');
+  assert.equal(savedBot(f).connectionId,openrouter.id);assert.equal(savedBot(f).sessionId,undefined,'a provider switch drops the old provider session, like Bot settings');
+  assert.equal(f.app.store.state.connections.find(item=>item.id===codex.id).defaultModel,'codex-model');
+  assert.ok(!JSON.stringify(switched.body).includes(KEY));
+  assert.equal(f.app.store.state.activity.find(item=>item.type==='bot.inference_updated')?.connectionId,openrouter.id);
+
+  // Returning to the first provider keeps the explicit preference; an unsupported level stays dormant.
+  const returned=await f.request(inference,{method:'PATCH',data:{connectionId:codex.id,model:''}});assert.equal(returned.status,200,JSON.stringify(returned.body));assert.equal(returned.body.bot.connectionId,codex.id);assert.equal(returned.body.bot.model,'');assert.equal(returned.body.bot.reasoningEffort,'xhigh');assert.equal(returned.body.effectiveReasoningEffort,'');
+
+  assert.equal((await f.request(inference,{method:'PATCH',data:{connectionId:openrouter.id}})).status,400,'a switch names a model from the new provider');
+  assert.equal((await f.request(inference,{method:'PATCH',data:{connectionId:'missing-provider',model:'codex-model'}})).status,404);
+  assert.equal((await f.request(`${inference}?connectionId=missing-provider`)).status,404);
+});
+
+test('a provider switch cannot commit after the target provider changed while its catalog was loading',async t=>{
+  const f=await fixture(t),codex=await f.connect('openai','Codex subscription'),openrouter=await f.connect('openrouter','OpenRouter');
+  f.remote.models={data:[reasoningModel('codex-model'),{id:'deepseek/deepseek-v4-pro',name:'DeepSeek V4 Pro',supported_parameters:['reasoning_effort'],reasoning:{supported_efforts:['xhigh','high','none'],default_effort:'high'}}]};
+  await f.app.store.mutate(state=>{state.connections.find(item=>item.id===codex.id).defaultModel='codex-model';state.connections.find(item=>item.id===openrouter.id).defaultModel='deepseek/deepseek-v4-pro';});
+  assert.equal((await f.request(inference,{method:'PATCH',data:{model:'codex-model',reasoningEffort:'high'}})).status,200);
+  const original=f.app.store.state.connections.find(item=>item.id===openrouter.id).secret;
+  let entered=false;const held=gate();f.remote.beforeModels=async()=>{entered=true;await held.promise;};
+  const switching=f.request(inference,{method:'PATCH',data:{connectionId:openrouter.id,model:'deepseek/deepseek-v4-pro'}});await until(()=>entered);
+  await f.app.store.mutate(state=>{state.connections.find(item=>item.id===openrouter.id).secret=f.app.store.seal('replacement-provider-secret');});
+  held.release();const blocked=await switching;assert.equal(blocked.status,409,JSON.stringify(blocked.body));assert.equal(savedBot(f).connectionId,codex.id);assert.equal(savedBot(f).model,'codex-model');
+  await f.app.store.mutate(state=>{state.connections.find(item=>item.id===openrouter.id).secret=original;});f.remote.beforeModels=null;
+});
+
+test('a provider switch waits for the bot to be idle and keeps the fallback distinct; same-provider model changes still apply to the next task',async t=>{
+  const f=await fixture(t),first=await f.connect('openai','First provider'),second=await f.connect('openrouter','Second provider');
+  assert.equal((await f.request(inference,{method:'PATCH',data:{model:'reasoning-a'}})).status,200);
+  await f.app.store.mutate(state=>{state.runs.bot_atlas={id:'run_fixture_active',botId:'bot_atlas',status:'running',connectionId:first.id,model:'reasoning-a',updatedAt:new Date().toISOString()};});
+  const refused=await f.request(inference,{method:'PATCH',data:{connectionId:second.id,model:'plain-model'}});
+  assert.equal(refused.status,409,JSON.stringify(refused.body));assert.match(refused.body.error,/current task to finish/);assert.equal(savedBot(f).connectionId,first.id);
+  const sameProvider=await f.request(inference,{method:'PATCH',data:{model:'reasoning-b'}});assert.equal(sameProvider.status,200,JSON.stringify(sameProvider.body));assert.equal(savedBot(f).model,'reasoning-b');assert.equal(f.app.store.state.runs.bot_atlas.model,'reasoning-a','the active task keeps its own model');
+  await f.app.store.mutate(state=>{state.runs.bot_atlas.status='completed';state.bots.find(bot=>bot.id==='bot_atlas').fallback={connectionId:second.id,model:'plain-model'};});
+  const sameAsFallback=await f.request(inference,{method:'PATCH',data:{connectionId:second.id,model:'plain-model'}});assert.equal(sameAsFallback.status,400,JSON.stringify(sameAsFallback.body));assert.match(sameAsFallback.body.error,/fallback must differ/);assert.equal(savedBot(f).connectionId,first.id);
+  const switched=await f.request(inference,{method:'PATCH',data:{connectionId:second.id,model:'reasoning-a'}});assert.equal(switched.status,200,JSON.stringify(switched.body));assert.equal(savedBot(f).connectionId,second.id);
+});
+
+test('retrying ChatGPT sign-in reuses the unfinished connection instead of adding a same-named duplicate',async t=>{
+  // Reproduces the owner's two "ChatGPT / Codex subscription" entries: every "Continue to sign in" used to POST a new
+  // connection, so an abandoned or failed sign-in stayed behind, never signed in, beside the working one.
+  const f=await fixture(t),create=()=>f.request('/api/connections',{method:'POST',data:{type:'chatgpt',name:'ChatGPT / Codex subscription',baseUrl:`http://127.0.0.1:${f.provider.address().port}/v1`}});
+  const subscriptions=()=>f.app.store.state.connections.filter(item=>item.type==='chatgpt');
+  const first=await create();assert.equal(first.status,201,JSON.stringify(first.body));
+  const retry=await create();assert.equal(retry.status,200,JSON.stringify(retry.body));assert.equal(retry.body.id,first.body.id);assert.equal(retry.body.reused,true);
+  assert.equal(subscriptions().length,1,'an unfinished sign-in is reused, not duplicated');
+  // Only a newly typed name is applied to the reused connection.
+  const renamed=await f.request('/api/connections',{method:'POST',data:{type:'chatgpt',name:'Work ChatGPT',baseUrl:`http://127.0.0.1:${f.provider.address().port}/v1`,defaultModel:'should-not-apply'}});
+  assert.equal(renamed.status,200,JSON.stringify(renamed.body));assert.equal(renamed.body.id,first.body.id);assert.equal(renamed.body.name,'Work ChatGPT');
+  assert.equal(subscriptions().length,1);assert.equal(subscriptions()[0].name,'Work ChatGPT');assert.equal(subscriptions()[0].defaultModel,'');
+  // Once that connection holds an account, a new sign-in is a separate connection (for example a second account).
+  await f.app.store.mutate(state=>{const current=state.connections.find(item=>item.id===first.body.id);current.oauthSecret=f.app.store.seal(JSON.stringify({access_token:'fixture-access',scopes:['chatgpt.tokens.use.direct','resource.invoke'],expiresAt:Date.now()+3_600_000}));current.oauthAccount={subject:'fixture-subject',email:'owner@example.test',planEnabled:true,needsLogin:false};current.status='connected';});
+  const second=await create();assert.equal(second.status,201,JSON.stringify(second.body));assert.notEqual(second.body.id,first.body.id);
+  assert.equal(subscriptions().length,2);
+  // The unfinished one is refused before any catalog request, both for a preview and for a save.
+  const catalogRequests=()=>f.remote.requests.filter(item=>item.url==='/v1/models').length,requestsBefore=catalogRequests();
+  const preview=await f.request(`${inference}?connectionId=${encodeURIComponent(second.body.id)}`);assert.equal(preview.status,409,JSON.stringify(preview.body));assert.match(preview.body.error,/sign-in was never completed/);
+  assert.equal((await f.request(inference,{method:'PATCH',data:{connectionId:second.body.id,model:''}})).status,409);
+  assert.equal(catalogRequests(),requestsBefore);
+  // A sign-in that belongs to a former home server is reported to the browser and refused here as well.
+  f.app.sync.config={...f.app.sync.config,detachedOAuth:[first.body.id]};
+  const state=await f.request('/api/state');assert.equal(state.body.connections.find(item=>item.id===first.body.id).oauthBlocked,true);assert.equal(state.body.connections.find(item=>item.id===second.body.id).oauthBlocked,undefined);
+  assert.equal((await f.request(inference,{method:'PATCH',data:{connectionId:first.body.id,model:''}})).status,409);
 });

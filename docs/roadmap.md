@@ -4,6 +4,27 @@
 
 Shipped in source: the owner operates the bot's browser through a live view (stream plus input batches) instead of single screenshots, with a phone layout, popups, website dialogs, a non-blocking address bar and automatic reconnect; the task browser identifies as regular Chrome. Not done yet: acceptance on a real iPhone (WKWebView keyboard, SMS code autofill), over the real VPS network, and against real third-party sign-ins and CAPTCHAs; then a signed Engine release to the Mac and the VPS.
 
+## One provider and model picker — 16 November 2026 (source only)
+
+Owner report: two “Codex subscription” entries, one broken; picking an OpenRouter model was awkward; the chat model panel could not switch providers like Settings. Built on branch `feature/unified-model-picker-20261116`, not installed or released:
+- Cause of the duplicate: each **Continue to sign in** from the ChatGPT tile created a new connection (`POST /api/connections`), so an abandoned or failed sign-in stayed behind, never signed in, with the same name as the working one; Bot settings listed both as “ChatGPT / Codex subscription · ChatGPT / Codex subscription”. A retry now reuses the unfinished connection; nothing is deleted automatically.
+- `public/model-picker.js` + `.css`: one provider select plus a searchable model combobox (name and id, listbox roles, full keyboard, loading/empty/error-with-retry states) used by Bot settings and the chat panel; same-named providers are labelled apart and unusable ones are shown as errors.
+- The chat panel switches provider and model together through `PATCH /api/bots/{id}/inference` (`connectionId`), with a `GET …?connectionId=` preview; a provider switch requires an idle bot, keeps the fallback distinct and drops the old provider session. Bot settings save provider/model changes through the same route. Chat options › Model & reasoning became a read-only summary with **Change provider or model** (opens the composer panel), so only two surfaces edit the choice. Reasoning levels are ordered weakest-first for every provider.
+
+Follow-ups, not built:
+- A one-click way to remove an unfinished duplicate connection from the picker itself (today: Settings → Providers).
+- Real-account check on the Mac and the VPS with the owner's actual connections after installation.
+
+## Approve for me without cards for scripts, services and GitHub — 16 November 2026 (source only)
+
+Built on branch `feature/allowed-mode-no-approvals-20261116`, not installed or released. Under Approve for me, in lanes the owner started (own chat, own Telegram DM, routines, rooms and teammate work for those), these run without an approval card or model review: ordinary commands, non-force `git push` and `gh pr`/`gh issue` writes, saved scripts (unless dangerous) and every assigned connected-service action (GitHub and others, reads and writes). Deletion, force pushes, credentials, billing, forced overwrites, sending messages to people and access changes still ask in every lane; other people's Telegram chats and group chats keep their cards; Balanced/Strict are unchanged. `integration_list` reports the effective approval per action. See [security](security.md#approve-for-me).
+
+Follow-ups, not built:
+- Confirm with the owner that GitHub issues and comments are not "sending" (today they run without a card).
+- Replace the name-based service gate with per-action owner marks (like `approval:'auto'` for GETs) for the classes it cannot see.
+- Decide whether Missions and the model-reviewed browser/desktop actions follow the trusted-lane rule.
+- Recognise the owner in Telegram group chats (today only the owner's direct messages count as the owner).
+
 ## Bots add their own connections — 16 November 2026 (source only)
 
 The owner asked that bots can create and add their own tools, for example Gmail when none exists. Built on branch `feature/bot-authored-tools-20261116`, not installed or released: richer REST actions (`{param}` paths, query lists, repeated array parameters, engine-side base64url encoding and decoding, fixed headers); OAuth 2.0 sign-in for REST and MCP integrations (PKCE, sealed tokens, renewal, needs_reauth, manual paste fallback); the `integration_propose` bot tool with exact owner approval, credential-free creation and a connect request under the reply; a connect card for that request, built in parallel as part of this change; and a Gmail preset. Proven end to end against a local Google/Gmail fixture; see [connections](connections.md) and [verification](verification.md). Also shipped in source: MCP OAuth metadata discovery and automatic client registration for hosted MCP servers (client ID metadata document or dynamic registration), proven against a local spec-shaped fixture.
