@@ -1,0 +1,278 @@
+# One workflow for every pull request and every merge to main.
+#
+#   What to update      says whether a change needs an Engine release, a new iPhone build or a new Mac build
+#   Tests               syntax check and the whole regression suite, exactly as the release runs them
+#   Linux command sandbox   bot commands stay inside bubblewrap under the server's systemd hardening
+#   Workshop container  bot-proposed Engine changes are verified in a locked-down container
+#   iPhone and Mac apps compiles both apps; runs only when the native app changed, and on main
+#   CI passed           the single check that protects main
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  update-guide:
+    name: What to update
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      native: ${{ steps.impact.outputs.ios == 'true' || steps.impact.outputs.mac == 'true' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Work out which parts this change reaches
+        id: impact
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -- --head HEAD
+          if [ "$EVENT" = pull_request ]; then
+            set -- "$@" --base "origin/$BASE_REF" --heading 'What to update after this merges'
+          elif [ "$EVENT" = push ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            set -- "$@" --base "$BEFORE" --heading 'What this change needs'
+          fi
+          node scripts/update-impact.mjs "$@" > "$RUNNER_TEMP/update-guide.md"
+          cat "$RUNNER_TEMP/update-guide.md" >> "$GITHUB_STEP_SUMMARY"
+          node scripts/update-impact.mjs "$@" --format github >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$@" > "$RUNNER_TEMP/update-guide.args"
+      - name: Post the note on the pull request
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --body-file "$RUNNER_TEMP/update-guide.md" --edit-last --create-if-none \
+            || gh pr comment "$PR" --body-file "$RUNNER_TEMP/update-guide.md"
+      - name: Version numbers agree and the native build number is not reused
+        run: |
+          set --
+          while IFS= read -r argument; do set -- "$@" "$argument"; done < "$RUNNER_TEMP/update-guide.args"
+          node scripts/update-impact.mjs "$@" --check > /dev/null
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Initialize the runner browser before timed regressions
+        run: |
+          TUPIES_RELEASE_BROWSER="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium)"
+          timeout 60 "$TUPIES_RELEASE_BROWSER" --headless --no-first-run --no-default-browser-check --user-data-dir="$RUNNER_TEMP/tupies-browser-warmup" --dump-dom about:blank > "$RUNNER_TEMP/tupies-browser-warmup.html"
+      - name: Prepare dependencies
+        run: npm ci
+      - name: Syntax check
+        run: npm run check
+      - name: Whole regression suite, as the release runs it
+        run: node scripts/verify-release-tests.mjs
+
+  linux-sandbox:
+    name: Linux command sandbox
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      WORK: /srv/tupies-sandbox-ci
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Prepare dependencies
+        run: npm ci
+      - name: Install bubblewrap and record the runner's kernel and systemd facts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap
+          bwrap --version
+          command -v setpriv
+          uname -r
+          systemctl --version | head -n 1
+          for setting in kernel.unprivileged_userns_clone user.max_user_namespaces kernel.apparmor_restrict_unprivileged_userns; do
+            printf '%s = %s\n' "$setting" "$(sysctl -n "$setting" 2>/dev/null || echo absent)"
+          done
+      - name: Lift Ubuntu's AppArmor user-namespace restriction on this disposable runner only (Debian 13 has none)
+        run: |
+          if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo absent)" = 1 ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          else
+            echo 'No AppArmor user-namespace restriction on this runner.'
+          fi
+      - name: Sandbox and policy tests as the runner user (bubblewrap started directly)
+        env:
+          TUPIES_REQUIRE_LINUX_SANDBOX: '1'
+        run: node --test --test-reporter=spec test/exec-sandbox.test.mjs test/exec-sandbox-linux.test.mjs test/exec-policy.test.mjs
+      - name: Prepare the read-write folder and runner script for the hardened service
+        run: |
+          sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0700 "$WORK" "$WORK/tmp"
+          cat > "$WORK/run.sh" <<'SCRIPT'
+          #!/bin/bash
+          # Runs a command inside the transient service, copies its output to RESULT.log and its exit code to RESULT.
+          set -u
+          result="$1"
+          shift
+          "$@" | tee "$result.log"
+          echo "${PIPESTATUS[0]}" > "$result"
+          SCRIPT
+          chmod 0700 "$WORK/run.sh"
+      - name: Sandbox tests inside a transient service with the VPS unit's hardening and RestrictNamespaces=user pid net mnt
+        run: |
+          rm -f "$WORK/tests" "$WORK/tests.log"
+          sudo systemd-run --wait --collect --pipe \
+            -p User="$(id -un)" \
+            -p WorkingDirectory="$GITHUB_WORKSPACE" \
+            -p NoNewPrivileges=true \
+            -p ProtectSystem=strict \
+            -p ProtectHome=read-only \
+            -p ReadWritePaths="$WORK" \
+            -p PrivateTmp=true \
+            -p UMask=0077 \
+            -p MemoryMax=1200M \
+            -p TasksMax=512 \
+            -p AmbientCapabilities=CAP_NET_BIND_SERVICE \
+            -p CapabilityBoundingSet=CAP_NET_BIND_SERVICE \
+            -p "RestrictNamespaces=user pid net mnt" \
+            -E TMPDIR="$WORK/tmp" \
+            -E TUPIES_REQUIRE_LINUX_SANDBOX=1 \
+            /bin/bash "$WORK/run.sh" "$WORK/tests" "$(command -v node)" --test --test-reporter=spec test/exec-sandbox.test.mjs test/exec-sandbox-linux.test.mjs || echo "systemd-run returned $?"
+          code="$(cat "$WORK/tests" 2>/dev/null || echo missing)"
+          echo "Sandbox tests inside the hardened service exited with: $code"
+          if [ "$code" != 0 ]; then echo "::error::The sandbox tests failed inside the hardened service (exit $code); the failing test and its assertion are in the output above."; exit 1; fi
+      - name: The operator check inside the same hardened service reports the sandbox ready
+        run: |
+          rm -f "$WORK/ready" "$WORK/ready.log"
+          sudo systemd-run --wait --collect --pipe \
+            -p User="$(id -un)" -p WorkingDirectory="$GITHUB_WORKSPACE" \
+            -p NoNewPrivileges=true -p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths="$WORK" -p PrivateTmp=true -p UMask=0077 \
+            -p AmbientCapabilities=CAP_NET_BIND_SERVICE -p CapabilityBoundingSet=CAP_NET_BIND_SERVICE \
+            -p "RestrictNamespaces=user pid net mnt" \
+            /bin/bash "$WORK/run.sh" "$WORK/ready" "$(command -v node)" scripts/check-sandbox.mjs || echo "systemd-run returned $?"
+          code="$(cat "$WORK/ready" 2>/dev/null || echo missing)"
+          echo "check-sandbox exited with: $code"
+          if [ "$code" != 0 ]; then echo "::error::scripts/check-sandbox.mjs did not report the sandbox ready inside the hardened service (exit $code)."; exit 1; fi
+      - name: Without mnt in RestrictNamespaces (today's VPS drop-in) the sandbox reports itself unavailable and names the fix
+        run: |
+          rm -f "$WORK/negative" "$WORK/negative.log"
+          sudo systemd-run --wait --collect --pipe \
+            -p User="$(id -un)" -p WorkingDirectory="$GITHUB_WORKSPACE" \
+            -p NoNewPrivileges=true -p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths="$WORK" -p PrivateTmp=true -p UMask=0077 \
+            -p AmbientCapabilities=CAP_NET_BIND_SERVICE -p CapabilityBoundingSet=CAP_NET_BIND_SERVICE \
+            -p "RestrictNamespaces=user pid net" \
+            /bin/bash "$WORK/run.sh" "$WORK/negative" "$(command -v node)" scripts/check-sandbox.mjs --json || echo "systemd-run returned $?"
+          code="$(cat "$WORK/negative" 2>/dev/null || echo missing)"
+          echo "check-sandbox exited with: $code"
+          if [ "$code" != 1 ]; then echo "::error::Expected exit 1 (sandbox not ready) without mnt, got $code."; exit 1; fi
+          if ! grep -q '"sandboxReady":false' "$WORK/negative.log"; then echo '::error::The sandbox did not report itself unavailable without mnt.'; exit 1; fi
+          if ! grep -qF 'RestrictNamespaces=user pid net mnt' "$WORK/negative.log"; then echo '::error::The unavailable reason does not name RestrictNamespaces=user pid net mnt.'; exit 1; fi
+          echo 'Without mnt the sandbox is unavailable and its reason names RestrictNamespaces=user pid net mnt.'
+
+  workshop-container:
+    name: Workshop container
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Prepare dependencies
+        run: npm ci
+      - name: Enable user namespaces on this disposable runner only
+        run: |
+          sudo systemctl stop docker.service docker.socket
+          sudo install -d /etc/docker
+          node -e 'require("fs").writeFileSync(process.env.RUNNER_TEMP+"/verifier-daemon.json",JSON.stringify({"userns-remap":"default"}))'
+          sudo install -m 600 "$RUNNER_TEMP/verifier-daemon.json" /etc/docker/daemon.json
+          sudo systemctl start docker
+          docker info --format '{{json .SecurityOptions}}'
+      - name: Build immutable verifier image from this checkout
+        run: docker build --iidfile "$RUNNER_TEMP/verifier-image" -f Dockerfile.engine-verifier .
+      - name: Verify real container suite, build, boundary, Stop and stale base
+        run: |
+          node scripts/accept-engine-verifier.mjs "$(cat "$RUNNER_TEMP/verifier-image")" /usr/bin/docker /var/run/docker.sock "$RUNNER_TEMP/verifier-receipts"
+      - name: Retain bounded synthetic receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: engine-verifier-receipts
+          path: ${{ runner.temp }}/verifier-receipts/*.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  apple:
+    name: iPhone and Mac apps
+    needs: update-guide
+    if: needs.update-guide.outputs.native == 'true' || github.event_name != 'pull_request'
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.4
+      - name: Prepare dependencies
+        run: npm ci
+      - name: Record the Xcode in use
+        run: xcodebuild -version
+      - name: Swift logic checked against the Engine's own crypto
+        run: sh apps/apple/Tests/run-logic-tests.sh
+      - name: Build the iPhone app for the simulator (no signing)
+        run: |
+          set -o pipefail
+          xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies-iOS \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/dd-ios" \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 40
+      - name: Build the Mac app (no signing)
+        run: |
+          set -o pipefail
+          xcodebuild -project apps/apple/Tupies.xcodeproj -scheme Tupies \
+            -destination 'platform=macOS' -derivedDataPath "$RUNNER_TEMP/dd-mac" \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 40
+
+  passed:
+    name: CI passed
+    if: always()
+    needs: [update-guide, tests, linux-sandbox, workshop-container, apple]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed, or was skipped because it did not apply
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node -e '
+            const results=Object.entries(JSON.parse(process.env.RESULTS)).map(([job,value])=>[job,value.result]);
+            for(const [job,result] of results)console.log(`${job}: ${result}`);
+            const failed=results.filter(([,result])=>!["success","skipped"].includes(result));
+            for(const [job,result] of failed)console.log(`::error::${job} ${result}`);
+            process.exit(failed.length?1:0);
+          '
