@@ -91,7 +91,7 @@ For fully determined work (fetching and parsing, calculations, conversions, bulk
   - keychain and security settings
   - remote code: downloaded content piped or substituted into an interpreter (`curl … | sh`, `bash <(curl …)`)
   - data sends and remote access: POST/upload/credential flags, `nc`, `ssh`, `scp`
-  - publishing: `git push`, `npm publish` and other registry publishes, `docker push`, cloud deletes or applies, global or system package installs
+  - publishing: `git push`, `gh` writes, `npm publish` and other registry publishes, `docker push`, cloud deletes or applies, global or system package installs
   - writes outside the workspace or to a computed path
   - credentials, keys, `.env` files and shell profiles
   - Git metadata or configuration writes
@@ -105,21 +105,22 @@ When the session folder is outside the workspace, reads become normal and writes
 
 ## Approval policy
 
-The owner chose (9 November 2026) that Approve for me in the owner's own chat runs ordinary (non-dangerous) commands without asking; dangerous commands always ask.
+The owner chose (9 November 2026) that Approve for me in the owner's own chat runs ordinary (non-dangerous) commands without asking. On 16 November 2026 the owner extended this to every *trusted lane* (own chat, own Telegram DM, routines, rooms, and teammate work rooted in those; see [security](security.md#approve-for-me)) and allowed ordinary GitHub writes: a dangerous verdict whose only hazards are a non-force `git push` of a workspace repository (typed directly, no `-C`/`-c`/environment prefix/wrapper, only known push options, no `+refspec` or `:ref`/`ref:` deletion) or `gh pr create|edit|comment|merge` / `gh issue create|edit|comment|close|reopen` (no `--admin`, no delete flags, no body file outside the workspace, no computed argument) carries `githubWrite:true`, and Approve for me runs it in a trusted lane. Every other dangerous command, including any force push, always asks.
 
 `decideAction` uses the stricter of the task's snapshot and the saved bot's Action review setting; an unknown setting counts as Strict. The decision is re-checked just before execution.
 
 For a bot whose commands run in a ready sandbox (see “Where commands run”), read_only and normal commands run in every lane under Balanced and Approve for me; dangerous ones ask and Strict asks for everything. The table below is the host behaviour.
 
-| Command | Strict | Balanced | Approve for me, owner chat | Approve for me, routines / teammates / other chats |
+| Command | Strict | Balanced | Approve for me, trusted lane | Approve for me, other people's chats / untraced work |
 | --- | --- | --- | --- | --- |
 | read_only | ask | runs | runs | runs |
 | normal on the bot's allowlist | ask | runs | runs | runs |
 | exact routine pre-approved command (routine lane) | runs | runs | runs | runs |
 | other normal | ask | ask | runs | ask |
-| dangerous | ask | ask | ask | ask |
+| ordinary GitHub write (`githubWrite`) | ask | ask | runs | ask |
+| other dangerous | ask | ask | ask | ask |
 
-- **`shell_run` / `shell_start`** keep their earlier meaning: exact approval in every lane and policy, except that Approve for me in the owner's chat now auto-runs non-dangerous calls on the classifier's verdict instead of a model review. Dangerous calls always ask. The allowlist and routine pre-approval apply to `terminal` (and the allowlist not to `execute_code`).
+- **`shell_run` / `shell_start`** keep their earlier meaning: exact approval in every lane and policy, except that Approve for me in a trusted lane auto-runs non-dangerous calls (and ordinary GitHub writes) on the classifier's verdict instead of a model review. Dangerous calls always ask. The allowlist and routine pre-approval apply to `terminal` (and the allowlist not to `execute_code`).
 - **Dangerous always asks** with the existing exact approval card. The card now carries `review.command {risk, reasons, cwd}`. Denial is remembered for the task, and nothing is replayed after a restart.
 - **Per-bot allowlist** (`commandAllowlist` on the bot): up to 50 owner patterns where `*` matches any text, such as `npm test`, `npm run *` or `python3 scripts/*.py`. Patterns describe one simple command (no `; & | < > $ \` ( )`). A command line is allowlisted when it is classified normal, every non-read-only simple command matches a pattern, and at least one matched. Both the task snapshot and the saved bot must allow it. Owner-only: Bot settings → Tools → Automation & development → Allowed commands, or `PATCH /api/bots/:id {commandAllowlist}`. Manage Tupies tools cannot set it. It does not apply to `execute_code`.
 - **Routine pre-approval:** `routines_create`/`routines_update` (and the owner routine API) accept `commands: [exact command strings]` (up to 20). Dangerous commands are refused. They are stored as `approvedCommands [{command, digest}]`, and the approval card lists each exact command. Adding commands is never decided by the model reviewer, even with Approve for me; the owner approves it. In a run of that routine, a `terminal` call whose sha256 digest matches an entry in both the run snapshot and the current routine runs unattended. Changing a routine's bot drops its pre-approvals.
