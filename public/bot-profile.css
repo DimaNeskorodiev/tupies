@@ -27,7 +27,7 @@
 .bot-settings-section .field :is(input,textarea,select){font-size:14px}
 .bot-settings-section :is(.field small,.subtle-label){font-size:12px;line-height:1.7}
 .bot-settings-section .permission-option{display:flex;gap:12px;align-items:start}
-.bot-settings-section .permission-option>input{flex:none;margin-top:5px}
+.bot-settings-section .permission-option>input:not(.switch){flex:none;margin-top:5px}
 .bot-settings-section .permission-option span{display:grid;gap:4px}
 .bot-settings-section .permission-option strong{color:var(--ink)}
 .bot-settings-section .permission-option small{font-size:12px;line-height:1.6}
@@ -208,7 +208,7 @@ button.bp-stat:hover{transform:translateY(-2px);box-shadow:0 12px 26px #4650740d
 .bp-fact-form .field{margin:12px 0}
 .bp-check{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#4f6276;line-height:1.5}
 .bp-check small{display:block;font-size:10.5px;color:#8a94a3}
-.bp-check input{margin-top:3px;accent-color:#5f7f6c}
+.bp-check input{margin-top:3px}
 .bp-form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .bp-facts>.bp-empty,.bp-facts>.bp-none{grid-column:1/-1}
 
@@ -577,8 +577,6 @@ body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option){d
 body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option)>span{display:grid;flex:1;min-width:0;gap:4px;overflow-wrap:anywhere}
 body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option) strong{font-size:14px;font-weight:550;color:var(--ink);line-height:1.45}
 body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option) small{font-size:12px;color:var(--muted);line-height:1.6}
-body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option)>input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:42px;height:26px;min-height:0;margin:0;padding:0;border:1px solid var(--line);border-radius:30px;background:radial-gradient(circle at 12px 12px,var(--pearl-solid) 0 9px,transparent 10px) 0 0/42px 24px no-repeat;background-color:color-mix(in srgb,var(--muted) 25%,var(--pearl-base));transition:background-position .18s,background-color .18s;cursor:pointer}
-body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option)>input[type=checkbox]:checked{background-color:var(--pearl-blue);background-position:16px 0}
 body.pearl-studio .bot-settings-form :is(.permission-option,.bot-skill-option):has(input:checked){border-color:color-mix(in srgb,var(--pearl-blue) 28%,var(--line))}
 body.pearl-studio .bot-settings-form .bot-settings-toolbar{display:flex;align-items:stretch;gap:10px;margin:22px 0 10px;min-width:0}
 body.pearl-studio .bot-settings-form .bot-settings-toolbar .bp-search{padding:10px 12px;flex:1;min-width:0}

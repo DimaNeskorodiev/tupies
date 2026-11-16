@@ -345,7 +345,7 @@
   .field{gap:8px;margin:22px 0}
   .field label,.field-label,.field legend{font-size:var(--phone-secondary);font-weight:600;color:#454953;line-height:1.4}
   .field :is(input,textarea,select),.question-text,.speech-preview textarea{font-size:max(16px,1rem);line-height:1.45;color:#30343c;background:#fff;border:1px solid #dcdde3;border-radius:13px;padding:13px 14px;min-height:48px;box-shadow:none}
-  .field :is(input[type=checkbox],input[type=radio]){min-height:0;width:22px;height:22px;padding:0;accent-color:#383c44;flex:none}
+  .field input[type=radio]{min-height:0;width:22px;height:22px;padding:0;accent-color:#383c44;flex:none}
   .field :is(input,textarea)::placeholder{color:#858891}
   .field :is(input,textarea,select):focus{border-color:#8e919b;box-shadow:0 0 0 3px #b8bbc326}
   .field small,.permission-option small,.team-mode-option small,.checkbox-field,.skill-checklist label,.voice-setting small{font-size:var(--phone-caption);line-height:1.5;color:var(--muted)}
@@ -594,10 +594,6 @@
   body.pearl-studio .field select,body.pearl-studio .bp-select{-webkit-appearance:none;appearance:none;padding-right:40px;background-image:var(--ios-select-chevron);background-repeat:no-repeat;background-position:right 16px center;background-size:12px 18px}
   body.pearl-studio .field-row{gap:0 12px}
   body.pearl-studio .modal :is(.field :is(input,textarea,select),.question-text),body.pearl-studio :is(.checkbox-field,.skill-checklist,.permission-option,.team-mode-option,.default-model-option){box-shadow:none}
-  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;width:51px;height:31px;min-height:0;margin:0;padding:0;border:0;border-radius:31px;background:radial-gradient(circle at 15.5px 15.5px,#fff 0 12.5px,rgba(0,0,0,.07) 13px,transparent 14.5px) 0 0/51px 31px no-repeat;background-color:var(--ios-switch-off);cursor:pointer;transition:background-position .25s var(--spring),background-color .2s}
-  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]:checked{background-color:var(--ios-switch-on);background-position:20px 0}
-  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]:disabled{opacity:.45}
-  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]:focus-visible{outline:3px solid var(--pearl-focus);outline-offset:2px}
   body.pearl-studio .checkbox-field{display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:12px;min-height:52px;margin:24px 0 0;padding:8px 16px;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);color:var(--ios-label);font:var(--ios-body);letter-spacing:var(--ios-track-body)}
   body.pearl-studio .checkbox-field small{display:block;margin-top:2px;font:var(--ios-footnote);color:var(--ios-label-2)}
   body.pearl-studio .skill-checklist{display:block;padding:0;border:0;border-radius:var(--ios-radius-field);background:var(--ios-cell-solid);overflow:hidden}
@@ -959,7 +955,6 @@
 }
 @media(prefers-reduced-motion:reduce){
   body.pearl-studio .chat-thread:empty::before,body.pearl-studio .chat-thread:empty::after,body.pearl-studio :is(.dash-skeleton span,.rich-loading){animation:none}
-  body.pearl-studio :is(.checkbox-field,.skill-checklist label,.permission-option)>input[type=checkbox]{transition:none}
 }
 
 /* Routine cards on a phone: the name and task get the row beside the avatar and the controls move underneath,
