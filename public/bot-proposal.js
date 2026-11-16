@@ -38,7 +38,7 @@
     const skillLabel=id=>{const skill=skills.find(item=>item.id===id);return skill?.title||skill?.name||id;};
     const serviceLabel=id=>services.find(item=>item.id===id)?.name||id;
     const chips=[...p.tools.filter(tool=>tool!=='skills'||!p.skills.length).map(tool=>chip('tool',tool,TOOL_LABELS[tool]||tool)),...p.skills.map(id=>chip('skill',id,`Skill: ${skillLabel(id)}`)),...p.integrationIds.map(id=>chip('integration',id,serviceLabel(id)))];
-    const routine=p.routine?`<label class="bprop-routine"><input type="checkbox" data-bprop-routine ${state.routine?'checked':''}><span><strong>Also set up a routine</strong><small>${e(p.routine.name)}: ${e(when(p.routine.schedule))}. ${e(p.routine.prompt)}</small></span></label>`:'';
+    const routine=p.routine?`<label class="bprop-routine"><input type="checkbox" class="switch" role="switch" data-bprop-routine ${state.routine?'checked':''}><span><strong>Also set up a routine</strong><small>${e(p.routine.name)}: ${e(when(p.routine.schedule))}. ${e(p.routine.prompt)}</small></span></label>`:'';
     const notes=p.notes.filter(note=>!/without a model/.test(note));
     return `<div class="bprop-step" data-bprop-step="proposal">
       ${p.source==='rules'?`<p class="bprop-banner" role="status">Suggested without a model — adjust anything you like.</p>`:''}

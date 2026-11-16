@@ -119,7 +119,53 @@
 .dash-tone-ok .dash-badge-mark{background:#22a55a}.dash-tone-warn .dash-badge-mark{background:#f08c1b}.dash-tone-error .dash-badge-mark{background:#e5534b}.dash-tone-question .dash-badge-mark{background:#6c63ff}
 @keyframes liquid-pulse{0%{box-shadow:0 0 0 0 rgba(108,99,255,.55)}70%{box-shadow:0 0 0 6px rgba(108,99,255,0)}100%{box-shadow:0 0 0 0 rgba(108,99,255,0)}}
 
+/* Switch: the one on/off control. Use <button class="switch" role="switch" aria-checked> or <input type="checkbox" class="switch" role="switch">.
+   Tracks and thumbs come from the pearl tokens, so light, dark and phone all share one look. */
+.switch{
+  appearance:none;-webkit-appearance:none;position:relative;display:inline-block;flex:none;box-sizing:border-box;
+  width:42px;height:26px;min-width:0;min-height:0;margin:0;padding:0;
+  border:1px solid color-mix(in srgb,var(--muted,#8a92a4) 30%,transparent);border-radius:999px;
+  background:color-mix(in srgb,var(--muted,#8a92a4) 26%,var(--pearl-base,#eef0f6));
+  box-shadow:inset 0 1px 2px rgba(30,38,70,.12);cursor:pointer;
+  transition:background-color .2s,border-color .2s,box-shadow .2s;
+}
+.switch::before{
+  content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(30,38,70,.32),inset 0 1px 0 rgba(255,255,255,.8);
+  transition:transform .4s var(--spring),background-color .2s;
+}
+.switch::after{content:"";position:absolute;inset:-9px -4px}
+.switch:is(:checked,[aria-checked=true]){background:var(--pearl-blue,var(--accent-mid));border-color:transparent;box-shadow:inset 0 1px 2px rgba(10,20,50,.22)}
+.switch:is(:checked,[aria-checked=true])::before{transform:translateX(16px);background:var(--pearl-base,#fff)}
+.switch:active:not(:disabled)::before{transform:scaleX(1.18)}
+.switch:active:not(:disabled):is(:checked,[aria-checked=true])::before{transform:translateX(13px) scaleX(1.18)}
+.switch:focus-visible{outline:2px solid var(--pearl-focus,var(--accent-mid));outline-offset:2px}
+.switch:disabled{opacity:.45;cursor:not-allowed}
+
+/* Checkbox: the same family, for choosing several things from a list. */
+input[type=checkbox]:not(.switch){
+  appearance:none;-webkit-appearance:none;position:relative;display:inline-block;flex:none;box-sizing:border-box;
+  width:20px;height:20px;min-height:0;margin:0;padding:0;cursor:pointer;
+  border:1.5px solid color-mix(in srgb,var(--muted,#8a92a4) 60%,transparent);border-radius:6px;
+  background:var(--pearl-solid,#fff);box-shadow:inset 0 1px 1px rgba(30,38,70,.06);
+  transition:background-color .2s,border-color .2s;
+}
+input[type=checkbox]:not(.switch)::before{
+  content:"";position:absolute;left:5px;top:2px;width:6px;height:10px;border:solid var(--pearl-base,#fff);border-width:0 2px 2px 0;
+  transform:rotate(45deg) scale(0);transition:transform .3s var(--spring);
+}
+input[type=checkbox]:not(.switch):checked{background:var(--pearl-blue,var(--accent-mid));border-color:transparent}
+input[type=checkbox]:not(.switch):checked::before{transform:rotate(45deg) scale(1)}
+input[type=checkbox]:not(.switch):focus-visible{outline:2px solid var(--pearl-focus,var(--accent-mid));outline-offset:2px}
+input[type=checkbox]:not(.switch):disabled{opacity:.45;cursor:not-allowed}
+
+/* Run / play: a round glass icon button with the accent glyph. */
+html body .icon-button.run-button{color:var(--pearl-blue,var(--accent-ink));background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));border-color:var(--pearl-border,rgba(255,255,255,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 9px -3px rgba(30,38,70,.2)}
+html body .icon-button.run-button:hover:not(:disabled){color:var(--pearl-blue,var(--accent-ink));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 14px -4px rgba(30,38,70,.28)}
+html body .icon-button.run-button svg{width:16px;height:16px;fill:currentColor;stroke-linejoin:round}
+
 @media(prefers-reduced-motion:reduce){
+  .switch,.switch::before,input[type=checkbox]:not(.switch),input[type=checkbox]:not(.switch)::before{transition:none}
   .is-dropping::after{animation:none}
   :is(.primary-button,.secondary-button,.accent-button,.danger-button,.open-chat,.icon-button,.segment,.settings-tab,.composer-footer .send):is(:hover,:active){transform:none}
 }

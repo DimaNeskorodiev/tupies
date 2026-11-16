@@ -101,10 +101,12 @@ test('OpenRouter maps efforts to reasoning.effort from its catalog or the preset
   assert.deepEqual(f.requests.at(-1).body.reasoning,{effort:'none'});assert.equal(f.requests.at(-1).body.max_tokens,4096);
   await assert.rejects(f.providers.complete(f.connection,{model:'mistralai/mistral-7b-instruct',messages,reasoningEffort:'high'}),/does not advertise this reasoning effort/);
   // Catalog listing: reasoning object with supported efforts and mandatory reasoning.
-  f.state.handler=(_req,res)=>json(res,{data:[{id:'x/mandatory',reasoning:{supported_efforts:['high','medium','low','none'],mandatory:true,default_effort:'medium'}},{id:'x/params',supported_parameters:['reasoning','tools']},{id:'deepseek/deepseek-r1',supported_parameters:['tools']}]});
+  f.state.handler=(_req,res)=>json(res,{data:[{id:'x/mandatory',reasoning:{supported_efforts:['high','medium','low','none'],mandatory:true,default_effort:'medium'}},{id:'x/params',supported_parameters:['reasoning','tools']},{id:'deepseek/deepseek-r1',supported_parameters:['tools']},{id:'deepseek/deepseek-v4-pro',supported_parameters:['reasoning_effort'],reasoning:{supported_efforts:['xhigh','high','none'],default_effort:'high'}}]});
   const {models}=await f.providers.models(f.connection);
-  assert.deepEqual(models[0].reasoning,{supported:true,efforts:['high','medium','low'],defaultEffort:'medium',parameter:'reasoning',source:'provider'});
+  // Catalogs list intensity strongest-first; the engine normalizes to weakest-first for the reasoning rail and validation.
+  assert.deepEqual(models[0].reasoning,{supported:true,efforts:['low','medium','high'],defaultEffort:'medium',parameter:'reasoning',source:'provider'});
   assert.deepEqual(models[1].reasoning.efforts,['none','low','medium','high']);assert.equal(models[2].reasoning.supported,false);
+  assert.deepEqual(models[3].reasoning,{supported:true,efforts:['none','high','xhigh'],defaultEffort:'high',parameter:'reasoning',source:'provider'});
 });
 
 test('Anthropic thinking: budgets with a max_tokens floor on 3.7-4.5, adaptive effort on 4.6+, nothing for unknown families',async t=>{

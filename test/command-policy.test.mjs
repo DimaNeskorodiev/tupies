@@ -24,12 +24,14 @@ test('policy is the stricter of the task snapshot and the saved bot; unknown mea
 });
 
 test('decision matrix: read-only, ordinary and dangerous commands across policies and lanes',()=>{
-  const lanes={owner:owner,routine:policy=>({...owner(policy),source:'routine',routine:{id:'r1'}}),teammate:policy=>({...owner(policy),source:'delegation',delegation:{depth:1}}),telegram:policy=>({...owner(policy),source:'telegram',sessionId:'telegram:42'})};
+  // Approve for me runs ordinary commands in lanes the owner started (own chat, routines, owner-rooted teammate work);
+  // a teammate task without a traced owner root and another person's Telegram chat keep their cards.
+  const lanes={owner:owner,routine:policy=>({...owner(policy),source:'routine',routine:{id:'r1'}}),teammate:policy=>({...owner(policy),source:'delegation',delegation:{depth:1}}),ownerTeammate:policy=>({...owner(policy),source:'delegation',delegation:{depth:1,rootTrusted:true}}),telegram:policy=>({...owner(policy),source:'telegram',sessionId:'telegram:42'})};
   const expected={
     // [read_only, normal, dangerous] automatic?
-    auto:{owner:[true,true,false],routine:[true,false,false],teammate:[true,false,false],telegram:[true,false,false]},
-    balanced:{owner:[true,false,false],routine:[true,false,false],teammate:[true,false,false],telegram:[true,false,false]},
-    strict:{owner:[false,false,false],routine:[false,false,false],teammate:[false,false,false],telegram:[false,false,false]},
+    auto:{owner:[true,true,false],routine:[true,true,false],teammate:[true,false,false],ownerTeammate:[true,true,false],telegram:[true,false,false]},
+    balanced:{owner:[true,false,false],routine:[true,false,false],teammate:[true,false,false],ownerTeammate:[true,false,false],telegram:[true,false,false]},
+    strict:{owner:[false,false,false],routine:[false,false,false],teammate:[false,false,false],ownerTeammate:[false,false,false],telegram:[false,false,false]},
   };
   for(const [policy,byLane] of Object.entries(expected))for(const [lane,results] of Object.entries(byLane)) {
     ['git status','npm test','rm -rf build'].forEach((command,index)=>{
@@ -37,8 +39,8 @@ test('decision matrix: read-only, ordinary and dangerous commands across policie
       assert.equal(decision.automatic,results[index],`${policy}/${lane}/${command}: ${decision.reason}`);
     });
   }
-  const dangerous=decide({call:terminal('git push')});
-  assert.match(dangerous.reason,/^Dangerous: git push/);assert.equal(dangerous.review.command.risk,'dangerous');assert.equal(dangerous.review.command.cwd,'.');
+  const dangerous=decide({call:terminal('git push --force')});
+  assert.match(dangerous.reason,/^Dangerous: git push uses --force/);assert.equal(dangerous.review.command.risk,'dangerous');assert.equal(dangerous.review.command.cwd,'.');
   assert.equal(decide({call:terminal('ls'),session:{root,cwd:`${root}/src`}}).review.command.cwd,'src');
 });
 
@@ -125,11 +127,13 @@ test('shell_run and shell_start use the same classifier with their literal argum
   assert.equal(classifyToolCall(call('shell_run',{executable:'ls',args:['-la']}),{root}).risk,'read_only');
   assert.equal(classifyToolCall(call('shell_run',{executable:'cat',args:['../notes.md'],cwd:'sub'}),{root}).risk,'read_only');
   assert.equal(classifyToolCall(call('shell_start',{executable:'rm',args:['-rf','x']}),{root}).risk,'dangerous');
-  // The legacy tools keep exact approval outside Approve for me in the owner's chat; the classifier replaces only the model review.
+  // The legacy tools keep exact approval outside Approve for me in a lane the owner started; the classifier replaces only the model review.
   assert.equal(decide({context:owner('balanced'),call:call('shell_run',{executable:'git',args:['status']})}).automatic,false);
   assert.equal(decide({context:owner('auto'),call:call('shell_run',{executable:process.execPath,args:['build.mjs']})}).automatic,true);
-  assert.equal(decide({context:owner('auto'),call:call('shell_start',{executable:'git',args:['push']})}).automatic,false);
-  assert.equal(decide({context:{...owner('auto'),source:'routine',routine:{id:'r1'}},call:call('shell_run',{executable:'ls',args:[]})}).automatic,false);
+  assert.equal(decide({context:owner('auto'),call:call('shell_start',{executable:'git',args:['push']})}).automatic,true,'an ordinary push under Approve for me');
+  assert.equal(decide({context:owner('auto'),call:call('shell_start',{executable:'git',args:['push','--force']})}).automatic,false);
+  assert.equal(decide({context:{...owner('auto'),source:'routine',routine:{id:'r1'}},call:call('shell_run',{executable:'ls',args:[]})}).automatic,true);
+  assert.equal(decide({context:{...owner('auto'),source:'telegram',sessionId:'telegram:42'},call:call('shell_run',{executable:'ls',args:[]})}).automatic,false);
   assert.equal(decide({context:owner('balanced',{commandAllowlist:['npm test']}),call:call('shell_run',{executable:'npm',args:['test']})}).automatic,false);
 });
 
