@@ -1,5 +1,9 @@
 # Product roadmap
 
+## Live browser handoff — 16 November 2026 (source only)
+
+Shipped in source: the owner operates the bot's browser through a live view (stream plus input batches) instead of single screenshots, with a phone layout, popups, website dialogs, a non-blocking address bar and automatic reconnect; the task browser identifies as regular Chrome. Not done yet: acceptance on a real iPhone (WKWebView keyboard, SMS code autofill), over the real VPS network, and against real third-party sign-ins and CAPTCHAs; then a signed Engine release to the Mac and the VPS.
+
 ## Versions, one CI pipeline and in-app updates — 16 November 2026 (source only)
 
 Shipped in source: one `CI` workflow and one `Release` workflow replace four; every pull request and release says whether the Engine, the iPhone app and the Mac app need an update; Settings → Version & updates shows the installed version with **Check for updates** and, where the server allows it, **Update now**; the native build number lives in the repository (17). See [Versions, CI and releases](releases.md).

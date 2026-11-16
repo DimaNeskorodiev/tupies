@@ -1,5 +1,14 @@
 # Tupies — project context
 
+## Live browser handoff — 16 November 2026 (source only, nothing installed)
+
+Branch `feature/browser-handoff-stream-20261116` on `main` `b8e1502`. The owner handoff changed from one screenshot per request to a live view of the bot's browser that the owner uses directly.
+
+- **Engine.** `lib/browser-stream.mjs` (new) owns one handoff's live control: a CDP screencast sent as SSE-over-fetch (`POST /api/bots/{id}/browser/stream`: `ready`, `frame`, `state`, `dialog`, `end`, heartbeats), ordered input batches (`/browser/input`: pointer, touch, wheel, key, text, navigate, history, tab, dialog, resize) and redaction of owner-typed text. `lib/browser-control.mjs` keeps the exact run/handoff/generation checks, one stream lease, never-replayed `seq`, a 30-minute idle limit inside a 2-hour absolute limit, and ends an open stream when its sign-in or paired device ends, its browser dies or the handoff ends. The remote viewport follows the owner's window (touch on phones) and the bot's 1280×900 desktop view is restored before it continues. Popups are followed, JavaScript dialogs (kept per tab in `lib/browser.mjs`) appear over the page, navigation never blocks, and the task browser reports a regular `Chrome/` user agent with `navigator.webdriver` false.
+- **Panel.** `public/browser-control.js` + `.css`: a browser-like window (back/forward/reload, address field, tabs, connection light, Keep sign-in, Resume bot, Skip help), direct typing and paste on desktop, a compact typing field on phones, automatic reconnect and Take control here. It is its own dialog: other dialogs and in-app navigation do not close it.
+- **Verified here.** Focused browser suites and the release runner (counts in `docs/verification.md`), and the real panel against a real disposable engine in headless Chrome at 1440×900 and at 375×812 with touch: sign-in with typing/paste/Tab/Enter and a 6-digit code, a churning page, a cross-origin slider and checkbox, popups, dialogs, a 40-second navigation, history/address/tabs, reconnects, Resume/Keep/Skip and the Missions entry point.
+- **Not verified.** A real iPhone or WKWebView (keyboard, SMS code autofill), a real VPS network path, and any third-party CAPTCHA or identity provider. Not released: no Engine on the Mac or the VPS runs this.
+
 ## Versions, one CI pipeline and in-app updates — 16 November 2026 (source only, nothing installed)
 
 The owner found the GitHub pipeline overcomplicated and unclear, and asked for versioning in the app with **Check for updates** and **Update now**, more attention to the iPhone build (GitHub or the building model must say when the mobile app needs updating) and TestFlight. Branch `feature/ci-versioning-20261116`.
