@@ -150,7 +150,7 @@
 .skills-assignment-copy{min-width:0;flex:1;display:grid;gap:4px;overflow-wrap:anywhere}
 .skills-assignment-copy strong{font-size:13px;font-weight:550}
 .skills-assignment-copy small{font-size:11px;line-height:1.5;color:var(--muted);font-weight:400}
-.skills-assignment-row input[type=checkbox]{width:21px;height:21px;min-height:0;padding:0;margin:0 2px;flex:none;accent-color:#8497c5;cursor:pointer}
+.skills-assignment-row input[type=checkbox]{margin:0 2px}
 .skills-assignment-status{min-height:20px;overflow-wrap:anywhere}
 .skills-manager .modal-footer{flex-wrap:wrap}
 @media(max-width:760px){

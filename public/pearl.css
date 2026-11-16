@@ -499,7 +499,8 @@ body.pearl-studio .chat-message.live-run.is-quiet:not(.user):not(.thinking-messa
 .pearl-studio .field label, .pearl-studio .field-label { font-size: 13px; font-weight: 500; }
 .pearl-studio .field small { font-size: 12px; line-height: 1.6; }
 .pearl-studio .field :is(input, textarea, select) { min-height: 44px; font-size: 14px; padding: 11px 13px; }
-.pearl-studio .field :is(input[type=checkbox], input[type=radio]) { min-height: 0; padding: 0; accent-color: var(--pearl-blue); }
+.pearl-studio .field :is(input[type=checkbox], input[type=radio]) { min-height: 0; padding: 0; }
+.pearl-studio .field input[type=radio] { accent-color: var(--pearl-blue); }
 .pearl-studio :is(.permission-option strong, .team-mode-option strong, .provider-choice strong, .default-model-option strong, .memory-card strong, .workspace-file strong) { color: var(--ink); }
 .pearl-studio :is(.permission-option small, .team-mode-option small, .provider-choice small, .default-model-option small, .memory-card p, .memory-card small, .workspace-file small) { color: var(--muted); }
 .pearl-studio .field :is(input, textarea)::placeholder { color: var(--muted); }
