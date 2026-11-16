@@ -1,0 +1,53 @@
+/* Provider + model picker (public/model-picker.js), shared by Bot settings and the chat model panel. */
+.model-picker{display:grid;gap:12px;min-width:0}
+.model-picker .field{margin:0;min-width:0}
+.mp-provider-select{width:100%}
+.mp-provider-status{margin:6px 2px 0;font-size:12px;line-height:1.45;color:var(--muted,#737b89)}
+.mp-provider-status:empty{display:none}
+.mp-provider-status.is-error,.mp-error p{color:#b4473f}
+.mp-combobox{position:relative;display:flex;align-items:center}
+.mp-combobox .mp-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);display:grid;place-items:center;color:var(--muted,#737b89);pointer-events:none}
+.mp-combobox .mp-search-icon svg{width:15px;height:15px}
+.model-picker .mp-combobox input.mp-search{width:100%;min-width:0;padding-left:36px;padding-right:40px;text-overflow:ellipsis}
+.model-picker.is-inline .mp-combobox input.mp-search{padding-right:12px}
+.mp-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:50%;background:transparent;color:var(--muted,#737b89)}
+.mp-toggle svg{width:15px;height:15px}
+.mp-current{margin:6px 2px 0;font-size:12px;line-height:1.45;color:var(--muted,#737b89);overflow-wrap:anywhere}
+.mp-current strong{color:var(--ink,#29313d);font-weight:600}
+.mp-current small{opacity:.85}
+.mp-warning{color:#a5672b}
+.mp-list{list-style:none;margin:6px 0 0;padding:4px;max-height:280px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:14px;background:var(--pearl-raised,#fff);box-shadow:0 14px 40px rgba(36,46,62,.14)}
+.model-picker.is-inline .mp-list{box-shadow:none;max-height:252px}
+.mp-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:8px 10px;border-radius:10px;cursor:pointer;color:var(--ink,#29313d)}
+.mp-option>span:first-child{display:grid;gap:2px;min-width:0}
+.mp-option strong{font-size:13px;font-weight:500;overflow-wrap:anywhere}
+.mp-option small{font-size:11px;color:var(--muted,#737b89);overflow-wrap:anywhere}
+.mp-option.is-active{background:rgba(112,99,144,.12);outline:2px solid rgba(112,99,144,.35);outline-offset:-2px}
+.mp-option.is-current strong{font-weight:650}
+.mp-option[aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.mp-check{display:inline-flex;align-items:center;gap:4px;flex:none;font-size:11px;font-weight:600;color:var(--green,#537b63)}
+.mp-check svg{width:15px;height:15px}
+.mp-state{margin:6px 2px 0;font-size:12px;color:var(--muted,#737b89)}
+.mp-state:empty{display:none}
+.mp-state.is-loading::before{content:"";display:inline-block;width:10px;height:10px;margin-right:7px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;vertical-align:-1px;animation:mp-spin .8s linear infinite}
+.mp-error{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding:10px 12px;border-radius:12px;border:1px solid rgba(180,71,63,.35);background:rgba(180,71,63,.08)}
+.mp-error p{margin:0;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.mp-error .mp-retry{flex:none;min-height:32px;padding:4px 12px}
+.mp-note{margin:8px 2px 0;font-size:11px;line-height:1.5;color:var(--muted,#737b89)}
+.model-picker.has-error .mp-combobox input{border-color:rgba(180,71,63,.45)}
+@keyframes mp-spin{to{transform:rotate(360deg)}}
+/* Inside the chat composer's glass panel. */
+.inference-panel .model-picker{gap:10px;margin-top:2px}
+.inference-panel .model-picker label{display:block;margin:0 4px 6px;font-size:11px;font-weight:550;color:var(--ip-text)}
+.inference-panel .mp-provider-select,.inference-panel .mp-combobox input.mp-search{width:100%;min-height:42px;border:1px solid var(--ip-line);border-radius:14px;background:var(--ip-hover);color:var(--ip-text);font-size:12px}
+.inference-panel .mp-provider-select{padding:0 12px}
+.inference-panel .mp-list{background:transparent;border-color:var(--ip-line)}
+.inference-panel .mp-option{color:var(--ip-text)}
+.inference-panel :is(.mp-current,.mp-state,.mp-note,.mp-option small,.mp-provider-status:not(.is-error)){color:var(--ip-muted)}
+.inference-panel .mp-current strong{color:var(--ip-text)}
+.inference-panel .mp-option.is-active{background:var(--ip-hover)}
+:is([data-theme=dark],[data-appearance=dark]) :is(.mp-provider-status.is-error,.mp-error p){color:#f0a39c}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-appearance=light]) :is(.mp-provider-status.is-error,.mp-error p){color:#f0a39c}}
+@media(prefers-reduced-motion:reduce){.mp-state.is-loading::before{animation:none}}
+.inference-current-provider{display:block;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:450;color:var(--ip-muted)}
+.inference-panel .inference-note:empty{min-height:0;margin:0}
