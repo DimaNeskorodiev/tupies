@@ -1,5 +1,15 @@
 # Product roadmap
 
+## Approve for me without cards for scripts and services — 16 November 2026 (source only)
+
+Built on branch `feature/allowed-mode-no-approvals-20261116`, not installed or released: under Approve for me, in the owner's own chat, saved scripts (unless dangerous) and every assigned connected-service action (GitHub and others, reads and writes) run without an approval card or model review; deletion, credentials, billing, forced overwrites and access changes still ask, and Balanced/Strict are unchanged. See [security](security.md#approve-for-me).
+
+Owner decisions pending, not built:
+- Let ordinary `git push` (not `--force`) and `gh` write commands run under Approve for me; today the command classifier rates them dangerous, so they always ask.
+- Extend the mode to routines, teammate work and rooms, which keep their cards today.
+- Keep a card for sending (email, Slack posts) as protection against prompt injection from pages, mail and issues.
+- Replace the name-based service gate with per-action owner marks (like `approval:'auto'` for GETs) for the classes it cannot see.
+
 ## Bots add their own connections — 16 November 2026 (source only)
 
 The owner asked that bots can create and add their own tools, for example Gmail when none exists. Built on branch `feature/bot-authored-tools-20261116`, not installed or released: richer REST actions (`{param}` paths, query lists, repeated array parameters, engine-side base64url encoding and decoding, fixed headers); OAuth 2.0 sign-in for REST and MCP integrations (PKCE, sealed tokens, renewal, needs_reauth, manual paste fallback); the `integration_propose` bot tool with exact owner approval, credential-free creation and a connect request under the reply; a connect card for that request, built in parallel as part of this change; and a Gmail preset. Proven end to end against a local Google/Gmail fixture; see [connections](connections.md) and [verification](verification.md). Also shipped in source: MCP OAuth metadata discovery and automatic client registration for hosted MCP servers (client ID metadata document or dynamic registration), proven against a local spec-shaped fixture.

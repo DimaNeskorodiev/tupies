@@ -9,21 +9,25 @@ import { Providers } from '../lib/providers.mjs';
 import { automaticReview } from '../lib/action-review.mjs';
 import { reviewActionRisk,actionReviewDefinition } from '../lib/action-risk-review.mjs';
 
-// Terminal/code actions use the deterministic classifier (test/command-policy.test.mjs); the model reviewer
-// remains for actions such as assigned API calls whose effects depend on the remote service.
-const command={id:'compute',name:'integration_call',arguments:{integrationId:'fixture-api',tool:'compute',arguments:{}}};
+// Terminal/code actions, saved scripts and assigned service calls use deterministic Engine rules
+// (test/command-policy.test.mjs, test/allowed-mode.test.mjs); the model reviewer remains for actions such as
+// ordinary routine and team changes, browser steps and Mac input. The pure reviewer tests below still cover its
+// service-call payload.
+const command={id:'schedule',name:'routines_create',arguments:{name:'Daily product',prompt:'Calculate six times seven and report it.',schedule:{kind:'interval',minutes:60}}};
+const serviceCall={id:'compute',name:'integration_call',arguments:{integrationId:'fixture-api',tool:'compute',arguments:{}}};
 const fixtureIntegration=()=>({id:'fixture-api',name:'Fixture API',type:'rest',baseUrl:'https://example.test',secret:'SEALED-API-SECRET',tools:[{name:'compute',method:'POST',path:'/compute',inputSchema:{type:'object'}},{name:'list_items',method:'GET',path:'/items',inputSchema:{type:'object'}}]});
 const verdict=(request,overrides={})=>({toolCalls:[{name:'action_review_result',arguments:{actionDigest:JSON.parse(request.messages[1].content).actionDigest,decision:'approve',risks:[],reason:'Compute the requested value locally.',...overrides}}],usage:{input_tokens:20,output_tokens:15}});
 const until=async predicate=>{for(let i=0;i<1000;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,5));}throw new Error('Review fixture timed out.');};
 async function fixture(t,{review=async request=>verdict(request),policy='auto',initialCall=command}={}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-risk-review-')),store=await new Store(directory).init();
-  await store.mutate(state=>{state.connections=[{id:'fixture',type:'custom',defaultModel:'fixture-model'}];Object.assign(state.bots[0],{connectionId:'fixture',approvalPolicy:policy,tools:['workspace','terminal','integrations'],integrationIds:['fixture-api']});state.integrations=[fixtureIntegration()];});
+  await store.mutate(state=>{state.connections=[{id:'fixture',type:'custom',defaultModel:'fixture-model'}];Object.assign(state.bots[0],{connectionId:'fixture',approvalPolicy:policy,tools:['workspace','terminal','integrations','automation'],integrationIds:['fixture-api']});state.integrations=[fixtureIntegration()];});
   let step=0;const reviews=[];
   const engine=new NativeEngine(store,{runTimeout:15000,providers:{complete:async()=>++step===1?{toolCalls:[structuredClone(initialCall)]}:{text:'The result is 42.',toolCalls:[]},reviewAction:async(_connection,request)=>{reviews.push(request);return review(request);}}});
-  let calls=0;engine.tools.options.integrations={call:async()=>{calls++;return {result:42};}};
+  // The reviewed side effect is the saved routine.
+  const calls=()=>(store.state.routines || []).filter(routine=>routine.name==='Daily product').length;
   await engine.recover();t.after(async()=>{await engine.close();await store.queue;await fs.rm(directory,{recursive:true,force:true});});
   const bot=store.state.bots[0],run=()=>store.state.runs[bot.id],start=()=>engine.start(bot.id,'Calculate six times seven using a local command.'),stop=async()=>{await engine.control(bot.id,'stop',{runId:run().id,remoteRunId:run().remoteRunId});await engine.tasks.get(run().id);};
-  return {store,engine,bot,run,start,stop,reviews,calls:()=>calls};
+  return {store,engine,bot,run,start,stop,reviews,calls};
 }
 
 test('ordinary command runs after independent auto review without a human prompt; counts review usage',async t=>{
@@ -31,16 +35,16 @@ test('ordinary command runs after independent auto review without a human prompt
   assert.equal(h.run().status,'completed');assert.equal(h.reviews.length,1);
   assert.equal(h.run().events.some(row=>row.type==='approval.request'),false);
   assert.equal(h.run().events.filter(row=>row.type==='approval.automatic').length,1);
-  assert.ok(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='integration_call' && row.preview.includes('42')));
+  assert.ok(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='routines_create' && !row.error));assert.equal(h.calls(),1);
   assert.equal(h.run().usage.input_tokens,20);assert.equal(h.run().usage.output_tokens,15);
   const request=h.reviews[0];assert.equal(request.model,'fixture-model');assert.equal(request.timeoutMs,20000);assert.deepEqual(request.tools,[actionReviewDefinition]);
   assert.match(request.messages[0].content,/ANY deletion/);assert.equal(JSON.parse(request.messages[1].content).owner.request,'Calculate six times seven using a local command.');
 });
 
 test('risk, missing context, invalid output and provider failure all retain the manual boundary',async t=>{
-  for(const review of [r=>verdict(r,{decision:'manual',risks:['deletion'],reason:'This command deletes saved work.'}),r=>verdict(r,{risks:['unknown']}),r=>verdict(r,{actionDigest:'wrong'}),r=>verdict(r,{extra:true}),()=>({toolCalls:[{name:'integration_call',arguments:command.arguments}]}),()=>{throw new Error('PRIVATE-PROVIDER-ERROR');}]){
+  for(const review of [r=>verdict(r,{decision:'manual',risks:['deletion'],reason:'This command deletes saved work.'}),r=>verdict(r,{risks:['unknown']}),r=>verdict(r,{actionDigest:'wrong'}),r=>verdict(r,{extra:true}),()=>({toolCalls:[{name:'routines_create',arguments:command.arguments}]}),()=>{throw new Error('PRIVATE-PROVIDER-ERROR');}]){
     const h=await fixture(t,{review}),started=await h.start();await until(()=>h.run()?.status==='waiting_for_approval');
-    assert.equal(h.run().events.some(row=>row.type==='approval.automatic'),false);assert.equal(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='integration_call'),false);assert.equal(h.calls(),0);
+    assert.equal(h.run().events.some(row=>row.type==='approval.automatic'),false);assert.equal(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='routines_create'),false);assert.equal(h.calls(),0);
     assert.ok(!JSON.stringify(h.run()).includes('PRIVATE-PROVIDER-ERROR'));await h.stop();await h.engine.tasks.get(started.id);
   }
 });
@@ -67,43 +71,48 @@ test('Stop, changed policy and revoked tools during review cannot dispatch',asyn
     if(change==='stop')h.engine.controllers.get(started.id).abort(new Error('Fixture Stop'));
     else await h.store.mutate(state=>{if(change==='policy')state.bots[0].approvalPolicy='strict';else state.bots[0].tools=[];});
     release();if(change!=='stop'){await until(()=>h.run()?.status==='waiting_for_approval');await h.stop();}await h.engine.tasks.get(started.id);
-    assert.equal(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='integration_call'),false);assert.equal(h.calls(),0);
+    assert.equal(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='routines_create'),false);assert.equal(h.calls(),0);
   }
 });
 
 test('Stop at the automatic receipt prevents command execution',async t=>{
   const h=await fixture(t),event=h.engine.event.bind(h.engine);h.engine.event=async(context,type,details)=>{await event(context,type,details);if(type==='approval.automatic')context.controller.abort(new Error('Stop'));};
-  const started=await h.start();await h.engine.tasks.get(started.id);assert.equal(h.run().status,'cancelled');assert.equal(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='integration_call'),false);assert.equal(h.calls(),0);
+  const started=await h.start();await h.engine.tasks.get(started.id);assert.equal(h.run().status,'cancelled');assert.equal(h.run().events.some(row=>row.type==='tool.completed' && row.tool==='routines_create'),false);assert.equal(h.calls(),0);
 });
 
 test('independent review never truncates action or owner evidence, and cannot trust foreign owner claims',async()=>{
   const bot={id:'fixture',approvalPolicy:'auto'},context={bot,source:'chat',sessionId:'fixture',runId:'run',task:'Requested task',controller:new AbortController(),connection:{},inference:{model:'fixture'}},state={bots:[bot],messages:{fixture:[]},conversations:{fixture:[]},integrations:[fixtureIntegration()]};
   const engine={store:{state,redactValue:value=>value,redact:value=>value},providers:{reviewAction:()=>{throw new Error('must not run');}}};
-  let result=await reviewActionRisk(engine,context,{...command,arguments:{...command.arguments,arguments:{text:'x'.repeat(100000)}}});assert.match(result.reason,/exceed/);
-  result=await reviewActionRisk(engine,{...context,source:'delegation'},command);assert.match(result.reason,/owner review/);
+  let result=await reviewActionRisk(engine,context,{...serviceCall,arguments:{...serviceCall.arguments,arguments:{text:'x'.repeat(100000)}}});assert.match(result.reason,/exceed/);
+  result=await reviewActionRisk(engine,{...context,source:'delegation'},serviceCall);assert.match(result.reason,/owner review/);
 });
 
 test('successful reviews do not impose an arbitrary human-confirmation count',async()=>{
   const bot={id:'fixture',approvalPolicy:'auto'},context={bot,source:'chat',sessionId:'fixture',runId:'run',task:'Compute the requested value.',controller:new AbortController(),connection:{},inference:{model:'fixture'},actionReviewCount:1000};
   const state={bots:[bot],messages:{fixture:[]},conversations:{fixture:[]},integrations:[fixtureIntegration()]};
   const engine={store:{state,redactValue:value=>value,redact:value=>value},providers:{reviewAction(){}},assertRunning(){},assertNoPendingSteer(){},event:async()=>{},infer:async(_context,_connection,request)=>verdict(request),current:()=>({usage:{}}),update:async()=>{}};
-  assert.equal((await reviewActionRisk(engine,context,command)).automatic,true);
+  assert.equal((await reviewActionRisk(engine,context,serviceCall)).automatic,true);
 });
 
 test('provider review surface uses the existing configured transport',async()=>{
   const request={model:'original',messages:[]};let seen;await Providers.prototype.reviewAction.call({complete:async(c,r)=>{seen=[c,r];return {}; }},{id:'connection'},request);assert.equal(seen[0].id,'connection');assert.equal(seen[1],request);
 });
 
-test('assigned API review includes the actual destination/method, excludes credentials and rejects changed configuration',async t=>{
-  const initialCall={id:'read-api',name:'integration_call',arguments:{integrationId:'fixture-api',tool:'list_items',arguments:{}}};
+test('assigned API review includes the actual destination/method, excludes credentials and rejects changed configuration',async()=>{
+  // Under Approve for me the owner's chat no longer sends assigned service calls to the reviewer (Engine rule);
+  // the reviewer's own service evidence and change detection stay covered here directly.
+  const call={id:'read-api',name:'integration_call',arguments:{integrationId:'fixture-api',tool:'list_items',arguments:{}}};
   for(const changed of [false,true]){
-    let h,calls=0;h=await fixture(t,{initialCall,review:async request=>{
-      const payload=JSON.parse(request.messages[1].content);assert.equal(payload.service.baseUrl,'https://example.test');assert.equal(payload.service.tool.method,'GET');assert.ok(!JSON.stringify(payload).includes('SEALED-API-SECRET'));
-      if(changed)await h.store.mutate(state=>{state.integrations[0].baseUrl='https://different.test';});return verdict(request);
-    }});
-    await h.store.mutate(state=>{state.bots[0].tools.push('integrations');state.bots[0].integrationIds=['fixture-api'];state.integrations=[{id:'fixture-api',name:'Fixture API',type:'rest',baseUrl:'https://example.test',secret:'SEALED-API-SECRET',tools:[{name:'list_items',method:'GET',path:'/items',inputSchema:{type:'object'}}]}];});
-    h.engine.tools.options.integrations={call:async()=>{calls++;return {items:['fixture']};}};
-    const started=await h.start();if(changed){await until(()=>h.run()?.status==='waiting_for_approval');await h.stop();}await h.engine.tasks.get(started.id);assert.equal(calls,changed?0:1);
+    const bot={id:'fixture',approvalPolicy:'auto'},context={bot,source:'chat',sessionId:'fixture',runId:'run',task:'List the items.',controller:new AbortController(),connection:{},inference:{model:'fixture'}};
+    const state={bots:[bot],messages:{fixture:[]},conversations:{fixture:[]},integrations:[fixtureIntegration()]};
+    const engine={store:{state,redactValue:value=>value,redact:value=>value},providers:{reviewAction(){}},assertRunning(){},assertNoPendingSteer(){},event:async()=>{},current:()=>({usage:{}}),update:async()=>{},
+      infer:async(_context,_connection,request)=>{
+        const payload=JSON.parse(request.messages[1].content);assert.equal(payload.service.baseUrl,'https://example.test');assert.equal(payload.service.tool.method,'GET');assert.ok(!JSON.stringify(payload).includes('SEALED-API-SECRET'));
+        if(changed)state.integrations[0]={...state.integrations[0],baseUrl:'https://different.test'};return verdict(request);
+      }};
+    const result=await reviewActionRisk(engine,context,call);
+    if(changed){assert.equal(result.automatic,false);assert.match(result.reason,/changed/);}
+    else {assert.equal(result.automatic,true);assert.equal(result.matches(),true);}
   }
 });
 

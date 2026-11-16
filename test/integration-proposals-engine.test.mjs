@@ -83,7 +83,8 @@ test('an auto-policy bot proposes a connection, the owner approves and adds the 
   assert.equal(keyed.body.proposedBy.botId,'bot_atlas');
   const second=await f.send('Connected. Check my items now.');
   assert.equal(second.run.status,'completed',second.run.error);assert.equal(second.reply.content,'You have two items: first and second.');assert.equal(second.reply.connectionRequests,undefined);
-  assert.deepEqual(f.api,[{method:'GET',url:'/items',authorization:`Bearer ${KEY}`}]);assert.ok(f.reviews.includes('integration_call'),'the call follows the ordinary Approve for me review');
+  assert.deepEqual(f.api,[{method:'GET',url:'/items',authorization:`Bearer ${KEY}`}]);assert.ok(!f.reviews.includes('integration_call'),'Approve for me decides an assigned service call by Engine rule, without a model review');
+  assert.match((second.run.events || []).find(row=>row.type==='approval.automatic' && row.tool==='integration_call')?.reason || '',/^Approve for me: .* runs without asking in your chat \(read\)\.$/);
   assert.ok(!(await fs.readFile(f.store.file,'utf8')).includes(KEY));
   // Removing it unassigns it from the bot.
   assert.equal((await f.request(`/api/integrations/${integrationId}`,{method:'DELETE'})).status,200);
