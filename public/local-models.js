@@ -50,6 +50,7 @@
   /** Badges for a local model row, from whatever the catalog reports. Unknown capabilities show nothing rather than a guess. */
   function modelBadges(model){
     const badges=[];
+    if(/[:-]cloud$/i.test(String(model?.id||'')))badges.push({key:'cloud',label:'Runs on ollama.com'});
     if(supportsTools(model)===true)badges.push({key:'tools',label:'Tools'});
     if(supportsThinking(model)===true)badges.push({key:'thinking',label:'Thinking'});
     if(supportsVision(model)===true)badges.push({key:'vision',label:'Vision'});
@@ -72,7 +73,9 @@
   let context=null,host=null,request=0,state={loaded:false,loading:false,error:'',platform:'',runtimes:[],busy:''};
   const current=()=>Boolean(context&&host?.isConnected&&host.querySelector('[data-local-models]'));
   const SHORT={ollama:'Ollama',mlx:'MLX'};
-  const chatModels=runtime=>(runtime.models||[]).filter(model=>!model.embedding);
+  const chatModels=runtime=>(runtime.models||[]).filter(model=>!model.embedding&&!model.cloud);
+  const cloudModels=runtime=>(runtime.models||[]).filter(model=>model.cloud);
+  const cloudNote=runtime=>{const n=cloudModels(runtime).length;return n?`<p class="lm-hint">${n} cloud ${n===1?'model runs':'models run'} on ollama.com, not on this Mac, so ${n===1?'it is':'they are'} not listed here.</p>`:'';};
   /** A saved connection that already points at this runtime on this engine. */
   function existing(runtime){
     const origin=url=>{try{const parsed=new URL(url);return `${parsed.hostname.replace(/^localhost$/,'127.0.0.1')}:${parsed.port}`;}catch{return '';}};
@@ -85,6 +88,7 @@
     if(runtime.running){
       status=`<span class="status-pill ready"><i class="dot"></i>Running · ${models.length} ${models.length===1?'model':'models'}</span>`;
       body=models.length?`<p class="lm-models">${esc(models.slice(0,4).map(model=>shortModelName(model.id,model.name)).join(', '))}${models.length>4?` and ${models.length-4} more`:''}</p>`:`<p class="lm-hint">No models yet. ${runtime.type==='ollama'?'Download one with <code>ollama pull &lt;model&gt;</code>.':'Start the server with <code>--model</code> and a model from Hugging Face.'}</p>`;
+      body+=runtime.type==='ollama'?cloudNote(runtime):'';
       action=saved?`<span class="tag">Added as ${esc(saved.name)}</span><button type="button" class="secondary-button" data-action="assign-provider" data-id="${esc(saved.id)}">Use for a bot</button>`:`<button type="button" class="primary-button" data-local-action="use" data-type="${esc(runtime.type)}" ${busy?'disabled aria-busy="true"':''}>${busy?'Adding…':'Use'}</button>`;
     }else{
       const missing=runtime.installed===false;
