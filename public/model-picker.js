@@ -64,7 +64,9 @@
   function providerLabel(connectionId,connections){return providerChoices(connections).find(item=>item.id===connectionId)?.label||'';}
 
   /* ---- model names ---- */
-  const cachedModels=connectionId=>(context.connections().find(item=>item.id===connectionId)?.models||[]).filter(item=>item&&typeof item.id==='string');
+  // A local runtime's embedding models cannot chat; they are never offered (public/local-models.js isEmbedding).
+  const chatOnly=(connectionId,models)=>{const helper=local(),connection=context.connections().find(item=>item.id===connectionId);return helper?.isEmbedding&&helper.isLocal(connection)?models.filter(item=>!helper.isEmbedding(item)):models;};
+  const cachedModels=connectionId=>chatOnly(connectionId,(context.connections().find(item=>item.id===connectionId)?.models||[]).filter(item=>item&&typeof item.id==='string'));
   const modelName=(connectionId,model,models)=>((models||cachedModels(connectionId)).find(item=>item.id===model)?.name)||model;
   const defaultModelOf=(connectionId,catalog)=>catalog?.defaultModel||context.connections().find(item=>item.id===connectionId)?.defaultModel||'';
   function modelDisplay(connectionId,model,catalog){
@@ -212,7 +214,7 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
         const loader=c.options.load||context.loadModels;if(!loader)throw new Error('Model lists are unavailable here.');
         const result=await loader(connectionId);if(request!==c.request||!root.isConnected)return;
         // Capability fields (tools, thinking, vision, window, size) stay on each model for the local badges.
-        const models=(Array.isArray(result?.models)?result.models:[]).filter(item=>item&&typeof item.id==='string'&&item.id).map(item=>({...item,id:item.id,name:String(item.name||item.id)}));
+        const models=chatOnly(connectionId,(Array.isArray(result?.models)?result.models:[]).filter(item=>item&&typeof item.id==='string'&&item.id).map(item=>({...item,id:item.id,name:String(item.name||item.id)})));
         c.catalogs.set(connectionId,{models,defaultModel:result?.defaultModel||defaultModelOf(connectionId)});
         const connection=connectionOf(connectionId);if(connection&&Array.isArray(result?.models)&&result.models.length)connection.models=result.models;
         root.dispatchEvent(new CustomEvent('modelpickerload',{bubbles:true,detail:{connectionId}}));
