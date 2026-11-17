@@ -138,7 +138,7 @@ LM Studio is deferred. Each runtime multiplies the L0 and L4 work, and LM Studio
    - Time limits on local connections, from L0 (thinking off: action 11–16 s, memory 12–15 s):
      - memory and skill review: **30 s**;
      - action review: **45 s**.
-   - Before choosing thinking off for action review, run a small A/B of decisions with thinking on and off. In L0's single sample, thinking off approved a webhook POST that thinking on sent to manual, and it broke the digest length.
+   - **A/B done 17 November 2026** on eight fixed actions: thinking off gave 8/8 correct decisions in 11–17 s, thinking on gave 7/8 in 24–104 s. Thinking off is confirmed ([live check](../research/local-qwen38-27b-20261117.md#live-check-of-the-implementation--17-november-2026)).
    - **Action review** stays on the task's model. If it still cannot answer in time, the result is the existing manual approval, stated plainly in the chat. It is never silently moved to another model.
    - **Memory and skill reviews** stay local, with thinking off and longer limits. If L0 shows they evict the chat's prefix cache, they run deferred while the bot is idle. They are never moved to a cloud model by default.
    - `docs/security.md` is updated in the same change.
