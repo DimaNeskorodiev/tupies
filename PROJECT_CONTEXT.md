@@ -1,5 +1,81 @@
 # Tupies — project context
 
+## Local models on the Mac, used from every engine — 17 November 2026 (source only, not installed or released)
+
+Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/local-models-20261117.md`, which was revised after an independent architecture review. Measurements: `docs/research/local-qwen38-27b-20261117.md`.
+
+**L0, measured on the owner's M4 Pro (48 GB) with `mlx-community/Qwen3.8-27B-4bit`:**
+- Tool calls are structured and valid on `mlx_lm.server` and `mlx_vlm.server`.
+- Thinking arrives in `reasoning` / `reasoning_content`.
+- Cold prefill runs at about 125 tok/s, so a 5.3K prompt waits about 42 s for the first token. A prefix cache cuts the next step to 0.2–2 s.
+- A 76K prompt nearly exhausted memory.
+- With thinking on, reviews take 80–135 s.
+- Live eval: 3 of 3 scored cases passed on `mlx_vlm` with prefix caching.
+- Ollama is unmeasured; the owner deferred the download.
+
+**Engine (L1):**
+- **Transport.** Request bodies are always sent with `Content-Length`; Tupies's chunked bodies were refused by `mlx_lm.server` with HTTP 411. `serviceRequest` has a `firstEventTimeoutMs` (headers don't count) and a `maxEvents` option.
+- **Presets.** New `mlx` preset (`http://127.0.0.1:8080/v1`, optional key). `ollama`, `mlx` and loopback `custom` endpoints count as local; the owner can opt out with `local:false`, for example for a local proxy to a cloud service.
+- **Qwen3.8 family preset** (`lib/local-models.mjs`):
+  - efforts none/low/medium/xhigh, sent as `chat_template_kwargs.enable_thinking` plus `reasoning_effort`;
+  - model-card sampling, or `sampling:'runtime'` to keep the runtime's own;
+  - native window 262K, with a 16K thinking output floor and the 600 s reasoning idle limit.
+- **Local defaults:** 32K window unless stated, with a memory warning from 64K; a 45 min total limit (Missions included) and 15 min to the first data.
+- **Connection test** on a local connection also checks prefix-cache reuse.
+- **Queue.** At most 2 requests per runtime, interactive work first.
+- **Reviews** on local connections run with thinking off. Limits are 30 s for memory and skill review and 45 s for action review, at background priority. The action review never moves to another model.
+- **Tool arguments.** Invalid tool-argument JSON gets one re-send of the same step on every provider. Nothing from the failed attempt is stored or run.
+
+**Relay (L2), `lib/inference-relay.mjs`:**
+- **Hosts.** A local connection records `host` (the creating engine's nodeId). Only the host may change its type or URL, or write learned and test state.
+- **Non-host engines** serve the synced model list, relay the connection test, and relay `complete()` as hub jobs.
+- **Transport.** The host claims jobs over `POST /api/sync/inference/claim` (long-poll that doesn't block maintenance) and streams sealed, sequenced event batches to `/api/sync/inference/events`, with a heartbeat at least every 3 s. Replies are continue, cancel or unknown.
+- **Failures.** `node_offline` / `node_lost` go straight to the bot's fallback without autonomous retries; `node_incompatible` fails clearly.
+- **Busy state.** A relayed job keeps the host busy for unlink and updates.
+
+**UI (L3):**
+- **"On this Mac" card** in Settings › Models (`lib/local-runtimes.mjs`, `GET /api/local-runtimes`, loopback-only probes). It shows a running runtime, a copyable start command, or an install link. **Use** creates the connection in one click. Ollama `:cloud` models are not offered as local.
+- **Cloud | On my Mac switch** in the composer picker and Bot settings. It is disabled without a local provider and shows "Mac offline" when the host is gone. Model rows have Thinking, Vision and window badges.
+- **Chat run status** for `node_offline` / `node_lost`.
+
+**Live status and sleep:**
+- The chat shows "Waiting for this Mac…", "Reading the conversation (about N tokens)…" and the relayed host's name while a local or relayed step waits.
+- `lib/sleep-guard.mjs` holds `caffeinate -i -w <pid>` on macOS while local or relayed work runs, with a 30 s grace after the last request.
+- Embedding models are hidden from local model lists.
+
+**Independent code review** of the integrated diff found no high-severity issues. Fixed:
+- an invented tool name no longer fails a relayed task;
+- a job queued behind a busy host fails only if the host stops claiming;
+- shutdown aborts without recording a fallback;
+- queue-full and too-large requests carry failure codes;
+- only reasoning items and numeric usage cross from the host;
+- action review is interactive work;
+- the prefix-cache probe is queued, bounded and skipped for Ollama;
+- loopback `custom` connections saved before this change keep cloud behaviour (`local:false`, once).
+
+Documented as a known limit: last-writer-wins edits from a non-host.
+
+**Verification:**
+- full `npm test` 2,722/2,722 on the integrated branch;
+- `npm run check`;
+- browser checks on a disposable engine with a fake MLX runtime and the owner's real Ollama:
+  - the card, with an Ollama that lists only a `:cloud` model reported as having no local models;
+  - Use;
+  - the picker switch and the reasoning slider;
+  - a chat turn that sent `Content-Length`, thinking, sampling and the 16K floor;
+  - the live "Reading the conversation" status.
+
+**Live check on the real model** (`mlx_lm.server`):
+- **Connection test:** 7 s; prefix reuse reported.
+- **Action-review A/B:** thinking off 8/8 correct in 11–17 s, against thinking on 7/8 in 24–104 s, so thinking off is confirmed.
+- **Live eval:** 3 of 3 scored cases passed through the new engine, with no 411; the delegation case is still out of time.
+- **Browser:** a chat turn wrote a file and listed the workspace in 1 min 21 s, 62% cached.
+
+**Not done:**
+- native Ollama `/api/chat` with `num_ctx`;
+- a live relay check between the Mac and the VPS;
+- release and installation.
+
 ## Automatic Engine betas from `main` — 16 November 2026
 
 - **What changed.** `.github/workflows/auto-release.yml` publishes the next prerelease `v0.5.0-engine.beta.N` after every merge to `main` whose CI passes and that changes something the Engine ships, then starts `release.yml` on that tag (`workflow_dispatch`, `publish_engine=true`), because a release created with the workflow token does not fire the "published" event. `release.yml` reads the publication time and channel from the release in that case; a manual TestFlight re-run (dispatch without `publish_engine`) is unchanged. Off switch: repository variable `AUTO_BETA_RELEASE=false`. See `docs/releases.md`.

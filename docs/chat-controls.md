@@ -151,11 +151,39 @@ The panel preserves the draft and applies selections to the next task. During a 
 - **In chat** choosing another provider only shows its catalog; picking one of its models saves the provider and the model together, validated by the Engine against a fresh catalog. The panel then shows what the Engine saved. If the save is refused, the panel shows the reason as an alert and goes back to the saved provider and model. Switching the provider waits until the bot is idle (the same rule as Bot settings); while a task runs the provider list is locked with that explanation, and models on the same provider can still be chosen for the next task.
 - **In Bot settings** a provider change starts on that provider's default model; **Save changes** sends a changed provider or model through the same validated route as the chat panel (`PATCH /api/bots/{id}/inference`), after the rest of the settings. If that part is refused, the error says the other settings were saved, the status reads **Other settings saved · model not changed**, and the picker returns to the saved provider and model. Choosing **Choose later** still clears the provider as an ordinary settings edit.
 
+#### Cloud | On my Mac
+
+When a picker opens, a two-part switch sits above the provider list, both in the chat panel's **Provider and model** view and in **Bot settings › Model**:
+
+- **Cloud** lists hosted providers.
+- **On my Mac** lists providers that run on the owner's Mac: Ollama, MLX, or a compatible endpoint on loopback. The engine marks these connections `local`.
+
+Choosing a segment works like choosing a provider:
+
+- In the chat panel it shows that provider's models. Nothing is saved until a model is picked.
+- In Bot settings it fills the form, saved with **Save changes**.
+- Going back to a segment lands on the bot's saved provider, or on the provider and model last used there, marked **Last used here**. That memory is per bot and kept only in this browser.
+- While a task runs, the switch is locked together with the provider list.
+
+When no local provider exists, **On my Mac** is disabled. The line under it says so and links to **Settings › Models**, where the **On this Mac** card sets one up ([Models on your Mac](hermes-setup.md#models-on-your-mac-ollama-and-mlx)).
+
+A local provider hosted by another engine shows **Mac offline** when that Mac is not connected, both on the switch and in the provider list. The line under the switch says that tasks use the bot's fallback model until the Mac is back, or stop if there is none.
+
+Local model rows use a readable name (“Qwen3.8 27B” for `mlx-community/Qwen3.8-27B-4bit`) above the id. They carry badges for **Tools**, **Thinking**, **Vision**, the window and the size, but only when the catalog reports them. A model that reports no tool support stays in the list with a note that a bot on it can only chat. The composer trigger reads, for example, **Mac · Qwen3.8 27B**.
+
+When the Mac cannot serve a run (relay codes `node_offline` and `node_lost`):
+
+- while the run is live, the chat says **The Mac is offline — answered by ‹fallback›** when the fallback model takes over;
+- the same line stays under a finished run;
+- a run without a fallback fails with **The Mac is offline**, and a hint to add a fallback model.
+
+The switch was checked against the picker as merged in PR #65: there are no provider chips. Switching back used to mean choosing the provider again and then a model. The per-bot memory reduces it to the segment plus one model tap.
+
 Choose a model from any configured provider's current catalog. Choose **Provider default** to follow that provider's default model. Changing a model or provider does not erase the transcript, memory or files.
 
 Retrying **Continue with ChatGPT** from the provider tiles reuses a ChatGPT connection whose sign-in was never finished instead of adding another one with the same name (a newly typed name is applied to it, nothing else); a connection that has held an account is never reused, so a second account stays a separate connection. Existing duplicates are not removed automatically: remove the one marked “sign-in not finished” in **Settings → Providers** after moving any bots off it.
 
-Chat options also shows the selected model's context window and where Tupies starts summarizing older material (55% of the window by default, about 150K of the default 272K ceiling). When a provider does not report a window, Tupies assumes 128K; set the real one for a local or compatible service in the provider's **Advanced endpoint settings › Context window**.
+Chat options also shows the selected model's context window and where Tupies starts summarizing older material (55% of the window by default, about 150K of the default 272K ceiling). When a provider does not report a window, Tupies assumes 128K (32K for a local runtime on your Mac); set the real one for a local or compatible service in the provider's **Advanced endpoint settings › Context window**.
 
 The **Conversation history** section in Chat options shows how large the conversation is and when it was last summarized:
 
@@ -170,7 +198,7 @@ The **+** button in the chat header (and **New chat** in the chat menu) starts a
 
 Reasoning defaults to **Tupies default · High** for new bots and bots that previously had an implicit provider default. High is sent only when the selected model explicitly advertises it; otherwise the automatic preference uses the provider default and the UI says so. Existing explicit effort choices are kept. **Provider default** is a separate, persistent owner choice that omits the effort parameter. Reasoning levels are always listed from weakest to strongest, whatever order the provider's catalog uses. Reasoning choices come from the provider’s catalog metadata when it declares them, and otherwise from a per-provider preset for known model families (OpenRouter `reasoning.effort`, Anthropic adaptive thinking with `output_config.effort` or a thinking budget on older Claude models, DeepSeek and GLM `thinking`, Gemini and grok-mini `reasoning_effort`). On every provider except OpenAI and ChatGPT/Codex, the automatic preference sends no effort parameter and leaves the provider default in place. Changing the shared model preserves the reasoning preference; an explicit level unsupported by the new model uses its provider default until a supported level is chosen. A change is validated against a fresh catalog before it is saved. Models and account entitlement remain provider-controlled.
 
-For OpenAI and ChatGPT/Codex Responses requests, selected efforts use `reasoning.effort`, following the [official reasoning guide](https://developers.openai.com/api/docs/guides/reasoning). The supported native values are model-dependent subsets of none, minimal, low, medium, high, xhigh and max. Codex catalog orchestration labels such as ultra are not offered as a native reasoning effort. Other providers use the model catalog's declared capability first, then a provider preset by type, base-URL host and model family: OpenRouter `reasoning.effort`, Anthropic `thinking` (token budgets for Claude 3.7–4.5, adaptive thinking with `output_config.effort` for 4.6 and later), DeepSeek and Z.ai GLM `thinking.type`, Gemini and xAI grok-3-mini `reasoning_effort`; Groq, Mistral, Together, Fireworks, Moonshot, MiniMax, Ollama and unknown compatible endpoints send nothing unless their catalog declares it. Outside OpenAI/ChatGPT the automatic preference sends no effort, so the provider default applies, and thinking requests get at least 16K output tokens. Streamed reasoning (`reasoning_content`, `reasoning`, `reasoning_details`, Responses summaries, Anthropic thinking) is delivered separately from the answer text.
+For OpenAI and ChatGPT/Codex Responses requests, selected efforts use `reasoning.effort`, following the [official reasoning guide](https://developers.openai.com/api/docs/guides/reasoning). The supported native values are model-dependent subsets of none, minimal, low, medium, high, xhigh and max. Codex catalog orchestration labels such as ultra are not offered as a native reasoning effort. Other providers use the model catalog's declared capability first, then a provider preset by type, base-URL host and model family: OpenRouter `reasoning.effort`, Anthropic `thinking` (token budgets for Claude 3.7–4.5, adaptive thinking with `output_config.effort` for 4.6 and later), DeepSeek and Z.ai GLM `thinking.type`, Gemini and xAI grok-3-mini `reasoning_effort`; Groq, Mistral, Together, Fireworks, Moonshot, MiniMax, Ollama and unknown compatible endpoints send nothing unless their catalog declares it. Known model families on a local MLX runtime or loopback compatible endpoint (Qwen3.8 first) always send the thinking setting explicitly: off sends `chat_template_kwargs.enable_thinking:false`, low/medium/xhigh send `reasoning_effort` with thinking on, and they get the model card's sampling values. Outside OpenAI/ChatGPT the automatic preference sends no effort, so the provider default applies, and thinking requests get at least 16K output tokens. Streamed reasoning (`reasoning_content`, `reasoning`, `reasoning_details`, Responses summaries, Anthropic thinking) is delivered separately from the answer text.
 
 ## OpenRouter AI voices
 

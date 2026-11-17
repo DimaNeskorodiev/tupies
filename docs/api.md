@@ -39,6 +39,7 @@ Native push registration is a device-only exception: **GET/PUT/DELETE `/api/devi
 | GET /api/capabilities | Tupies engine version and implemented feature flags. |
 | GET /api/conversations/search?query=words&scope=all | Owner-facing search of stored bot/room display transcripts, including hidden bots. Optional `scope=bot\|room`, `conversationId` and `limit=1..30`. Returns `{results:[{scope,conversationId,name,messageId,role,createdAt,excerpt}],total,scanned,truncated,hasMore,notice}`. Queries are 2–200 characters and at most 20 words; all words must match, with exact phrases ranked first, then recent messages. Scans at most 20,000 messages/8 million characters, with a partial-search notice. Redaction precedes matching and snippets. This is separate from a model's scoped history tools. |
 | GET /api/providers | Direct provider catalog and setup metadata. |
+| GET /api/local-runtimes | Which local runtimes answer on this engine's loopback (Ollama on 11434, MLX LM/VLM on 8080), with a timeout of at most 1.5 s each: `{platform,checkedAt,runtimes:[{type,name,baseUrl,running,version?,models:[{id,…}],conflict?,installed:true\|false\|null,startCommand,alternativeCommands,installUrl}]}`. Read-only. It never probes another host and never starts a runtime. |
 
 ## Missions
 
@@ -69,6 +70,7 @@ A connection uses `{name,type,baseUrl?,apiKey?,defaultModel?,maxOutputTokens?,co
 | PATCH /api/connections/{id} | Edit provider metadata/model; type/destination changes require appropriate fresh credentials. |
 | DELETE /api/connections/{id} | Remove an unused provider. Active tasks and assigned bots must be resolved first. |
 | POST /api/connections/{id}/test | Fetch model metadata without a paid inference request. |
+| POST /api/connections/{id}/host | `{confirm:true}`: this engine becomes the host of a local-model connection (Ollama, MLX, loopback). Refused while the current host is online. Connections in `/api/state` and these routes carry `local` and `host:{nodeId,name,online,here,queue?}` or `null`; a connection hosted elsewhere lists its synced models, relays `test` through the home server and refuses `type`/`baseUrl` edits. See [Sync](sync.md#local-models-hosted-by-a-linked-engine). |
 | GET /api/connections/{id}/models | Current provider model choices. |
 | POST /api/connections/{id}/default-model | Validate `{model,applyToAllBots?}` against the current catalog; save workspace/provider defaults atomically. applyToAllBots defaults to true and makes all existing bots inherit; false preserves individual model/provider overrides. Active affected tasks must finish first. |
 | POST /api/connections/{id}/login | Start ChatGPT OAuth, return pending authUrl/loginId/message. |
