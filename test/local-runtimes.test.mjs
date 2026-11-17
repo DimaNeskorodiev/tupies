@@ -89,6 +89,8 @@ test('GET /api/local-runtimes requires the owner session and returns the detecti
   const body=await response.json();
   assert.equal(body.platform,'linux');assert.deepEqual(body.runtimes.map(item=>[item.type,item.running]),[['ollama',true],['mlx',false]]);
   assert.equal(body.runtimes[0].models[0].id,'qwen3.8:27b');
+  assert.deepEqual(body.engine,{nodeId:app.sync.nodeId,name:app.sync.identity.name,role:'standalone',platform:process.platform});
+  assert.deepEqual(body.macs,[],'A standalone engine has no linked Macs.');
   assert.equal((await fetch(`${url}/api/local-runtimes`,{method:'POST',signal:AbortSignal.timeout(10000),headers:{Cookie:cookie,'Content-Type':'application/json'},body:'{}'})).status>=400,true,'the route is read-only');
 });
 
@@ -102,4 +104,28 @@ test('Ollama cloud models are marked as not local',async t=>{
   const result=await detectLocalRuntimes({urls:{ollama:f.origin,mlx:'http://127.0.0.1:9'},timeoutMs:500,platform:'darwin',exists:async()=>true});
   const ollama=result.runtimes.find(item=>item.type==='ollama');
   assert.deepEqual(ollama.models.map(model=>[model.id,!!model.cloud]),[['gemma4:cloud',true],['mystery:latest',true],['qwen3.8:27b',false]]);
+});
+
+test('a new Ollama or MLX connection without a chosen model is tested at once and gets the first chat model',async t=>{
+  const directory=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'tupies-local-default-')));
+  const m=await fixture(t,(req,res)=>{
+    if(req.url==='/v1/models')return json(res,{object:'list',data:[{id:'sentence-transformers/all-MiniLM-L6-v2'},{id:'mlx-community/Qwen3.8-27B-MTP-draft'},{id:'mlx-community/Qwen3.8-27B-4bit'},{id:'mlx-community/Llama-3.2-3B'}]});
+    json(res,{error:'not found'},404);
+  });
+  const closed=await closedPort();let app;
+  t.after(async()=>{if(app)await app.close();await fs.rm(directory,{recursive:true,force:true});});
+  app=await createStudioServer({dataDir:path.join(directory,'data'),scheduler:false,logErrors:false,sleepGuard:false,localRuntimes:{urls:{ollama:closed,mlx:closed},platform:'linux'}});
+  const {url}=await app.listen(0,'127.0.0.1');
+  const setup=await fetch(`${url}/api/setup`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:app.bootstrapToken,password:'disposable-local-default-password'})});
+  const cookie=setup.headers.get('set-cookie').split(';')[0],csrf=(await setup.json()).csrf;
+  const create=async body=>{const response=await fetch(`${url}/api/connections`,{method:'POST',headers:{Cookie:cookie,'X-CSRF-Token':csrf,'Content-Type':'application/json'},body:JSON.stringify(body)});return {status:response.status,body:await response.json()};};
+  const picked=await create({type:'mlx',name:'Mac · MLX',baseUrl:`${m.origin}/v1`});
+  assert.equal(picked.status,201);assert.equal(picked.body.defaultModel,'mlx-community/Qwen3.8-27B-4bit','Embedding and draft models are skipped.');
+  assert.equal(picked.body.status,'connected');assert.equal(picked.body.test.connected,true);assert.equal(picked.body.host.nodeId,app.sync.nodeId);
+  const kept=await create({type:'mlx',name:'Chosen',baseUrl:`${m.origin}/v1`,defaultModel:'mlx-community/Llama-3.2-3B'});
+  assert.equal(kept.status,201);assert.equal(kept.body.defaultModel,'mlx-community/Llama-3.2-3B');assert.equal(kept.body.test,undefined,'A chosen model is kept and not tested on creation.');
+  const stopped=await create({type:'ollama',baseUrl:`${closed}/v1`});
+  assert.equal(stopped.status,201,'A stopped runtime is still added.');assert.equal(stopped.body.defaultModel,'');assert.equal(stopped.body.test.connected,false);assert.equal(stopped.body.status,'error');
+  const remote=await create({type:'ollama',hostNodeId:'node_somewhere'});
+  assert.equal(remote.status,409);assert.match(remote.body.error,/Only the home server/);
 });
