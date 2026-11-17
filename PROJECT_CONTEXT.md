@@ -65,9 +65,14 @@ Documented as a known limit: last-writer-wins edits from a non-host.
   - a chat turn that sent `Content-Length`, thinking, sampling and the 16K floor;
   - the live "Reading the conversation" status.
 
+**Live check on the real model** (`mlx_lm.server`):
+- **Connection test:** 7 s; prefix reuse reported.
+- **Action-review A/B:** thinking off 8/8 correct in 11–17 s, against thinking on 7/8 in 24–104 s, so thinking off is confirmed.
+- **Live eval:** 3 of 3 scored cases passed through the new engine, with no 411; the delegation case is still out of time.
+- **Browser:** a chat turn wrote a file and listed the workspace in 1 min 21 s, 62% cached.
+
 **Not done:**
 - native Ollama `/api/chat` with `num_ctx`;
-- the action-review thinking A/B, which needs the model loaded;
 - a live relay check between the Mac and the VPS;
 - release and installation.
 
