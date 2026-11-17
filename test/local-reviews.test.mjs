@@ -36,7 +36,9 @@ test('action review on a local runtime keeps the task model, turns thinking off,
 });
 
 test('a local model that cannot turn thinking off keeps the task reasoning but still gets the local limit and priority',async()=>{
-  const h=actionHarness(localConnection({supported:false,efforts:[]}));
+  // A model with no family preset, so only its catalog entry decides that thinking cannot be turned off.
+  const connection={...localConnection({supported:false,efforts:[]}),defaultModel:'local-model-without-preset'};connection.models=[{id:'local-model-without-preset',reasoning:{supported:false,efforts:[]}}];
+  const h=actionHarness(connection);
   await reviewActionRisk(h.engine,h.context,serviceCall);
   const [request]=h.requests;
   assert.equal(request.reasoningEffort,'');assert.deepEqual(request.reasoningCapabilities,{supported:false,efforts:[]});

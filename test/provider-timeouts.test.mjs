@@ -67,7 +67,8 @@ test('a stalled inference stream fails with a distinct idle deadline and closes 
 });
 
 test('inference stops waiting for its first response at the idle allowance',async t=>{
-  const f=await fixture(t,()=>{}),{providers,connection}=provider(t,f.origin,{inferenceTimeout:2000,inferenceIdleTimeout:60});
+  // The fixture is on loopback, so it counts as a local runtime: the wait before the first data uses the first-event allowance.
+  const f=await fixture(t,()=>{}),{providers,connection}=provider(t,f.origin,{inferenceTimeout:2000,inferenceIdleTimeout:60,firstEventTimeout:60});
   await assert.rejects(providers.complete(connection,{messages}),error=>providerFailure(error)?.timeoutPhase==='idle');
   assert.equal(f.requests.length,1);
 });
