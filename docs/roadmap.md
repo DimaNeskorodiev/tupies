@@ -1,6 +1,6 @@
 # Product roadmap
 
-## Local models on the Mac — 17 November 2026 (source only, not installed)
+## Local models on the Mac — 17 November 2026 (installed on Mac and VPS as Engine beta 13)
 
 Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was revised after an independent architecture review.
 
