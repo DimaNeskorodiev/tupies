@@ -151,6 +151,34 @@ The panel preserves the draft and applies selections to the next task. During a 
 - **In chat** choosing another provider only shows its catalog; picking one of its models saves the provider and the model together, validated by the Engine against a fresh catalog. The panel then shows what the Engine saved. If the save is refused, the panel shows the reason as an alert and goes back to the saved provider and model. Switching the provider waits until the bot is idle (the same rule as Bot settings); while a task runs the provider list is locked with that explanation, and models on the same provider can still be chosen for the next task.
 - **In Bot settings** a provider change starts on that provider's default model; **Save changes** sends a changed provider or model through the same validated route as the chat panel (`PATCH /api/bots/{id}/inference`), after the rest of the settings. If that part is refused, the error says the other settings were saved, the status reads **Other settings saved · model not changed**, and the picker returns to the saved provider and model. Choosing **Choose later** still clears the provider as an ordinary settings edit.
 
+#### Cloud | On my Mac
+
+When a picker opens, a two-part switch sits above the provider list, both in the chat panel's **Provider and model** view and in **Bot settings › Model**:
+
+- **Cloud** lists hosted providers.
+- **On my Mac** lists providers that run on the owner's Mac: Ollama, MLX, or a compatible endpoint on loopback. The engine marks these connections `local`.
+
+Choosing a segment works like choosing a provider:
+
+- In the chat panel it shows that provider's models. Nothing is saved until a model is picked.
+- In Bot settings it fills the form, saved with **Save changes**.
+- Going back to a segment lands on the bot's saved provider, or on the provider and model last used there, marked **Last used here**. That memory is per bot and kept only in this browser.
+- While a task runs, the switch is locked together with the provider list.
+
+When no local provider exists, **On my Mac** is disabled. The line under it says so and links to **Settings › Models**, where the **On this Mac** card sets one up ([Models on your Mac](hermes-setup.md#models-on-your-mac-ollama-and-mlx)).
+
+A local provider hosted by another engine shows **Mac offline** when that Mac is not connected, both on the switch and in the provider list. The line under the switch says that tasks use the bot's fallback model until the Mac is back, or stop if there is none.
+
+Local model rows use a readable name (“Qwen3.8 27B” for `mlx-community/Qwen3.8-27B-4bit`) above the id. They carry badges for **Tools**, **Thinking**, **Vision**, the window and the size, but only when the catalog reports them. A model that reports no tool support stays in the list with a note that a bot on it can only chat. The composer trigger reads, for example, **Mac · Qwen3.8 27B**.
+
+When the Mac cannot serve a run (relay codes `node_offline` and `node_lost`):
+
+- while the run is live, the chat says **The Mac is offline — answered by ‹fallback›** when the fallback model takes over;
+- the same line stays under a finished run;
+- a run without a fallback fails with **The Mac is offline**, and a hint to add a fallback model.
+
+The switch was checked against the picker as merged in PR #65: there are no provider chips. Switching back used to mean choosing the provider again and then a model. The per-bot memory reduces it to the segment plus one model tap.
+
 Choose a model from any configured provider's current catalog. Choose **Provider default** to follow that provider's default model. Changing a model or provider does not erase the transcript, memory or files.
 
 Retrying **Continue with ChatGPT** from the provider tiles reuses a ChatGPT connection whose sign-in was never finished instead of adding another one with the same name (a newly typed name is applied to it, nothing else); a connection that has held an account is never reused, so a second account stays a separate connection. Existing duplicates are not removed automatically: remove the one marked “sign-in not finished” in **Settings → Providers** after moving any bots off it.

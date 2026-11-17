@@ -7,7 +7,10 @@
    Two modes: in a form (Bot settings) a choice fills the named fields and the form's Save button saves it; with
    onSelect (the chat panel) a choice is saved at once and the picker shows what the engine returned, or restores the
    previous value when the save fails. The engine stays the authority: models come from the provider's live catalog
-   and every save is validated there. */
+   and every save is validated there.
+   When public/local-models.js is loaded, a Cloud | On my Mac toggle sits above the provider list: each segment lists only
+   its providers, local model rows get capability badges, and the toggle explains when no local model is set up or the
+   Mac is offline. The last provider and model used in each segment are remembered per bot in this browser only. */
 (()=>{
   'use strict';
   const esc=value=>String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -15,6 +18,8 @@
   const MAX_ROWS=200;
   const controllers=new WeakMap();
   let context={connections:()=>[],catalog:()=>[],loadModels:null,icon:()=>''};
+  const local=()=>window.StudioLocalModels||null;
+  const scopeOfConnection=connection=>local()?.isLocal(connection)?'local':'cloud';
 
   /* ---- providers ---- */
   function providerName(type){const meta=context.catalog().find(item=>item.type===type);return meta?.name||(type==='legacy-hermes'?'Previous Hermes gateway':String(type||'Model provider'));}
@@ -39,7 +44,8 @@
   function providerChoices(connections=context.connections()){
     const rows=(Array.isArray(connections)?connections:[]).filter(item=>item&&item.id&&item.type!=='legacy-hermes').map(connection=>{
       const kind=providerName(connection.type),name=String(connection.name||kind),problem=providerProblem(connection);
-      return {id:connection.id,type:connection.type,name,providerName:kind,base:fold(name)===fold(kind)?name:`${name} · ${kind}`,account:String(connection.oauthAccount?.email||''),createdAt:connection.createdAt||'',problem,usable:!problem,warning:!problem&&connection.status==='error'?'last check failed':''};
+      const offline=!!local()?.offline(connection);
+      return {id:connection.id,type:connection.type,name,providerName:kind,base:fold(name)===fold(kind)?name:`${name} · ${kind}`,account:String(connection.oauthAccount?.email||''),createdAt:connection.createdAt||'',problem,usable:!problem,scope:scopeOfConnection(connection),offline,warning:problem?'':offline?'Mac offline':connection.status==='error'?'last check failed':''};
     });
     const groups=new Map();for(const row of rows)groups.set(fold(row.base),[...(groups.get(fold(row.base))||[]),row]);
     for(const group of groups.values())for(const row of group){
@@ -71,15 +77,45 @@
     return `Saved: <strong>${esc(provider?.title||'Unavailable provider')}</strong> · ${esc(name)}${model&&name!==model?` <small>${esc(model)}</small>`:''}${missing?' <small class="mp-warning">not in this provider’s current list</small>':''}`;
   }
 
+  /* ---- Cloud | On my Mac ---- */
+  /** The segment a provider belongs to, or '' when the toggle is not shown (local-models.js not loaded). */
+  function scopeFor(connectionId,choices=providerChoices()){if(!local())return '';const choice=choices.find(item=>item.id===connectionId);return choice?choice.scope:choices.some(item=>item.scope==='cloud')||!choices.some(item=>item.scope==='local')?'cloud':'local';}
+  function providerOptions({choices,connectionId,allowNone,scope}){
+    const current=choices.find(item=>item.id===connectionId),shown=scope?choices.filter(item=>item.scope===scope):choices;
+    return `${allowNone?`<option value="" ${connectionId?'':'selected'}>Choose later</option>`:connectionId?'':'<option value="" selected disabled>Choose a provider</option>'}${shown.map(item=>`<option value="${esc(item.id)}"${item.id===connectionId?' selected':''}${item.usable?'':' disabled'}>${esc(item.label)}</option>`).join('')}${connectionId&&!current?`<option value="${esc(connectionId)}" selected disabled>Unavailable provider — choose another</option>`:''}`;
+  }
+  /** Why a segment can't be used, the offline notice, or ''. Plain text plus an optional setup link (data-nav). */
+  function scopeNote(scope,choices,browsing){
+    if(!choices.some(item=>item.scope==='local'))return {text:'No model runs on your Mac yet.',link:'Set one up in Settings › Models'};
+    if(!choices.some(item=>item.scope==='cloud'))return {text:'No cloud provider yet.',link:'Add one in Settings › Models'};
+    const chosen=choices.find(item=>item.id===browsing);
+    if(scope==='local'&&chosen?.offline)return {text:'Mac offline. Tasks on these models use the bot’s fallback model until the Mac is back, or stop if it has none.',link:''};
+    return {text:'',link:''};
+  }
+  function scopeNoteMarkup(note){return `${esc(note.text)}${note.link?` <button type="button" class="text-button mp-scope-setup" data-nav="/connections" data-close="true">${esc(note.link)}</button>`:''}`;}
+  function scopeMarkup(id,scope,choices,connectionId,lockedReason){
+    const hasLocal=choices.some(item=>item.scope==='local'),hasCloud=choices.some(item=>item.scope==='cloud'),offline=hasLocal&&choices.filter(item=>item.scope==='local').every(item=>item.offline),note=scopeNote(scope,choices,connectionId);
+    const segment=(value,label,icon,enabled,extra='')=>`<button type="button" class="mp-scope-option" data-mp-scope="${value}" aria-pressed="${scope===value}" aria-describedby="${esc(id)}-scope-note"${enabled&&!lockedReason?'':' disabled'}>${context.icon(icon)}<span>${label}</span>${extra}</button>`;
+    return `<div class="mp-scope" role="group" aria-label="Where the model runs">${segment('cloud','Cloud','globe',hasCloud)}${segment('local','On my Mac','laptop',hasLocal,`<span class="mp-scope-badge"${offline?'':' hidden'}>Mac offline</span>`)}</div><p id="${esc(id)}-scope-note" class="mp-scope-note" role="status">${scopeNoteMarkup(note)}</p>`;
+  }
+  /* Per-bot memory of the last provider and model in each segment, so switching back lands where the owner left it.
+     A browser-only convenience: the saved choice still lives on the engine. */
+  const MEMORY='tupies.modelScope.v1';
+  function recall(key,scope){if(!key)return null;try{return JSON.parse(window.localStorage.getItem(MEMORY)||'{}')?.[key]?.[scope]||null;}catch{return null;}}
+  function remember(key,value){
+    if(!key||!value?.connectionId)return;const scope=scopeFor(value.connectionId);if(!scope)return;
+    try{const all=JSON.parse(window.localStorage.getItem(MEMORY)||'{}')||{};all[key]={...(all[key]||{}),[scope]:{connectionId:value.connectionId,model:value.model||''}};const keys=Object.keys(all);for(const extra of keys.slice(0,Math.max(0,keys.length-200)))delete all[extra];window.localStorage.setItem(MEMORY,JSON.stringify(all));}catch{}
+  }
+
   /* ---- markup ---- */
   /** Static markup so a form has its named fields at once; attach() adds behaviour on first use. */
-  function markup({id='model-picker',connectionId='',model='',connectionName='',modelName:fieldName='',allowNone=false,inline=false,label='Model provider',note='',lockedReason=''}={}){
-    const choices=providerChoices(),current=choices.find(item=>item.id===connectionId);
-    const options=`${allowNone?`<option value="" ${connectionId?'':'selected'}>Choose later</option>`:connectionId?'':'<option value="" selected disabled>Choose a provider</option>'}${choices.map(item=>`<option value="${esc(item.id)}"${item.id===connectionId?' selected':''}${item.usable?'':' disabled'}>${esc(item.label)}</option>`).join('')}${connectionId&&!current?`<option value="${esc(connectionId)}" selected disabled>Unavailable provider — choose another</option>`:''}`;
+  function markup({id='model-picker',connectionId='',model='',connectionName='',modelName:fieldName='',allowNone=false,inline=false,label='Model provider',note='',lockedReason='',memoryKey=''}={}){
+    const choices=providerChoices(),current=choices.find(item=>item.id===connectionId),scope=scopeFor(connectionId,choices);
+    const options=providerOptions({choices,connectionId,allowNone,scope});
     const problem=current?.problem||(connectionId&&!current?'This provider was removed. Choose another one.':'');
     const unusable=!connectionId||!!problem;
-    return `<div class="model-picker${inline?' is-inline':''}" data-model-picker data-picker-id="${esc(id)}" data-saved-connection="${esc(connectionId)}" data-saved-model="${esc(model)}"${inline?' data-inline="true"':''}>
-<div class="field mp-provider"><label for="${esc(id)}-connection">${esc(label)}</label><select id="${esc(id)}-connection" class="mp-provider-select"${connectionName?` name="${esc(connectionName)}"`:''} aria-describedby="${esc(id)}-provider-status"${lockedReason?' disabled':''}>${options}</select><p id="${esc(id)}-provider-status" class="mp-provider-status${problem?' is-error':''}" role="${problem?'alert':'status'}">${esc(problem||lockedReason)}</p></div>
+    return `<div class="model-picker${inline?' is-inline':''}" data-model-picker data-picker-id="${esc(id)}" data-saved-connection="${esc(connectionId)}" data-saved-model="${esc(model)}"${inline?' data-inline="true"':''}${allowNone?' data-allow-none="true"':''}${memoryKey?` data-memory="${esc(memoryKey)}"`:''}${scope?` data-scope="${scope}"`:''}>
+${scope?scopeMarkup(id,scope,choices,connectionId,lockedReason):''}<div class="field mp-provider"><label for="${esc(id)}-connection">${esc(label)}</label><select id="${esc(id)}-connection" class="mp-provider-select"${connectionName?` name="${esc(connectionName)}"`:''} aria-describedby="${esc(id)}-provider-status"${lockedReason?' disabled':''}>${options}</select><p id="${esc(id)}-provider-status" class="mp-provider-status${problem?' is-error':''}" role="${problem?'alert':'status'}">${esc(problem||lockedReason)}</p></div>
 <div class="field mp-model"><label id="${esc(id)}-model-label" for="${esc(id)}-model-search">Model</label><div class="mp-combobox"><span class="mp-search-icon" aria-hidden="true">${context.icon('search')}</span><input id="${esc(id)}-model-search" class="mp-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="${inline}" aria-controls="${esc(id)}-model-list" aria-describedby="${esc(id)}-model-state" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${inline?'Search models by name or id':'Search models'}" value="${inline||unusable?'':esc(modelDisplay(connectionId,model))}"${unusable?' disabled':''}>${inline?'':`<button type="button" class="mp-toggle" tabindex="-1" aria-label="Show models"${unusable?' disabled':''}>${context.icon('chevronDown')}</button>`}</div>${fieldName?`<input type="hidden" id="${esc(id)}-model" class="mp-model-value" name="${esc(fieldName)}" value="${esc(model)}">`:''}
 <p class="mp-current" data-mp-current>${savedLine(connectionId,model)}</p>
 <ul id="${esc(id)}-model-list" class="mp-list" role="listbox" aria-labelledby="${esc(id)}-model-label"${inline?'':' hidden'}></ul>
@@ -95,11 +131,36 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
     const select=$('.mp-provider-select'),input=$('.mp-search'),list=$('.mp-list'),hidden=$('.mp-model-value'),stateLine=$('.mp-state'),errorBox=$('.mp-error'),savedNode=$('[data-mp-current]'),providerStatus=$('.mp-provider-status');
     const inline=root.dataset.inline==='true';
     // server: what the engine has saved. selected: the picker's current value (unsaved until the form is saved in Settings).
-    const c={root,options,inline,server:{connectionId:root.dataset.savedConnection||'',model:root.dataset.savedModel||''},selected:{connectionId:select.value,model:hidden?hidden.value:(root.dataset.savedModel||'')},browsing:select.value,catalogs:new Map(),loading:false,error:'',query:'',filtered:[],active:-1,open:inline,request:0,busy:false};
+    const c={root,options,inline,server:{connectionId:root.dataset.savedConnection||'',model:root.dataset.savedModel||''},selected:{connectionId:select.value,model:hidden?hidden.value:(root.dataset.savedModel||'')},browsing:select.value,catalogs:new Map(),loading:false,error:'',query:'',filtered:[],active:-1,open:inline,request:0,busy:false,scope:root.dataset.scope||'',memory:root.dataset.memory||'',hint:null};
     controllers.set(root,c);
+    remember(c.memory,c.server);
     const catalogFor=connectionId=>c.catalogs.get(connectionId);
     const optionId=index=>`${id}-option-${index}`;
     const connectionOf=connectionId=>context.connections().find(item=>item.id===connectionId);
+    const localBrowsing=()=>c.scope==='local'&&!!local()?.isLocal(connectionOf(c.browsing));
+    /** Show only the current segment's providers in the select, keeping `connectionId` selected. */
+    function rebuildOptions(connectionId){
+      if(!c.scope)return;select.innerHTML=providerOptions({choices:providerChoices(),connectionId,allowNone:root.dataset.allowNone==='true',scope:c.scope});select.value=connectionId;root.dataset.scope=c.scope;
+    }
+    function follow(connectionId){const scope=c.scope?scopeFor(connectionId):'';if(scope&&connectionId&&scope!==c.scope){c.scope=scope;rebuildOptions(connectionId);}}
+    function renderScope(){
+      const group=$('.mp-scope');if(!group)return;const choices=providerChoices(),note=scopeNote(c.scope,choices,c.browsing),locals=choices.filter(item=>item.scope==='local');
+      for(const button of group.querySelectorAll('[data-mp-scope]')){const value=button.dataset.mpScope;button.setAttribute('aria-pressed',String(value===c.scope));button.disabled=c.busy||!!c.options.lockedReason||!choices.some(item=>item.scope===value);}
+      const badge=$('.mp-scope-badge');if(badge)badge.hidden=!(locals.length&&locals.every(item=>item.offline));
+      const line=$('.mp-scope-note');if(line&&line.dataset.text!==note.text+note.link){line.dataset.text=note.text+note.link;line.innerHTML=scopeNoteMarkup(note);}
+    }
+    /** Switch segments: browse (chat) or choose (form) the saved, last-used or first usable provider in that segment. */
+    function switchScope(scope){
+      if(!c.scope||scope===c.scope||c.busy||c.options.lockedReason)return;
+      const pool=providerChoices().filter(item=>item.scope===scope);if(!pool.length)return;
+      const remembered=recall(c.memory,scope),saved=pool.find(item=>item.id===c.server.connectionId&&item.usable);
+      const target=saved||pool.find(item=>item.id===remembered?.connectionId&&item.usable)||pool.find(item=>item.usable)||pool[0];
+      const model=saved?c.server.model:remembered?.connectionId===target.id?remembered.model:'';
+      c.scope=scope;c.hint=!saved&&remembered?.connectionId===target.id&&remembered.model?{connectionId:target.id,model:remembered.model}:null;rebuildOptions(target.id);
+      if(!c.options.onSelect)set({connectionId:target.id,model});
+      else{c.browsing=target.id;c.query='';c.active=-1;if(inline)input.value='';setProviderStatus();render();}
+      void load(target.id);
+    }
     const display=()=>c.browsing?modelDisplay(c.browsing,c.selected.connectionId===c.browsing?c.selected.model:'',catalogFor(c.browsing)):'';
     function setProviderStatus(){
       const chosen=providerChoices().find(item=>item.id===select.value),problem=select.value&&!chosen?'This provider was removed. Choose another one.':chosen?.problem||'';
@@ -109,7 +170,12 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
       const connectionId=c.browsing,catalog=catalogFor(connectionId),models=catalog?.models||[],fallback=defaultModelOf(connectionId,catalog);
       const rows=[{id:'',name:'Provider default',detail:fallback?`Follows the provider default · ${modelName(connectionId,fallback,models)}`:'Follows the provider’s default model'}];
       if(c.selected.connectionId===connectionId&&c.selected.model&&catalog&&!models.some(item=>item.id===c.selected.model))rows.push({id:c.selected.model,name:c.selected.model,detail:'Not in this provider’s current list',disabled:true});
-      for(const item of models)rows.push({id:item.id,name:item.name||item.id,detail:item.name&&item.name!==item.id?item.id:''});
+      const named=localBrowsing();
+      for(const item of models){
+        const name=named?local().shortModelName(item.id,item.name&&item.name!==item.id?item.name:''):item.name||item.id;
+        const last=c.hint&&c.hint.connectionId===connectionId&&c.hint.model===item.id?'Last used here':'';
+        rows.push({id:item.id,name,detail:[name!==item.id?item.id:'',last].filter(Boolean).join(' · '),meta:named?item:null});
+      }
       return rows;
     }
     const isSelected=row=>c.selected.connectionId===c.browsing&&row.id===c.selected.model;
@@ -119,7 +185,7 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
       c.filtered=words.length?rows.filter(row=>{const text=fold(`${row.name} ${row.id}`);return words.every(word=>text.includes(word));}):rows;
       const catalog=catalogFor(c.browsing),shown=c.filtered.slice(0,MAX_ROWS),loading=c.loading&&!catalog,error=!catalog&&!c.loading?c.error:'';
       if(c.active>=shown.length)c.active=shown.length-1;
-      list.innerHTML=loading||error?'':shown.map((row,index)=>`<li role="option" id="${esc(optionId(index))}" class="mp-option${index===c.active?' is-active':''}${isSelected(row)?' is-current':''}" data-value="${esc(row.id)}" aria-selected="${isSelected(row)}"${row.disabled?' aria-disabled="true"':''}><span><strong>${esc(row.name)}</strong>${row.detail?`<small>${esc(row.detail)}</small>`:''}</span>${isSelected(row)?`<span class="mp-check">${context.icon('check')}<span>${isSaved(row)?'Current':'Selected'}</span></span>`:''}</li>`).join('');
+      list.innerHTML=loading||error?'':shown.map((row,index)=>`<li role="option" id="${esc(optionId(index))}" class="mp-option${index===c.active?' is-active':''}${isSelected(row)?' is-current':''}" data-value="${esc(row.id)}" aria-selected="${isSelected(row)}"${row.disabled?' aria-disabled="true"':''}><span><strong>${esc(row.name)}</strong>${row.detail?`<small>${esc(row.detail)}</small>`:''}${row.meta?local().badgesMarkup(row.meta):''}${row.meta&&local().modelNote(row.meta)?`<small class="mp-model-note">${esc(local().modelNote(row.meta))}</small>`:''}</span>${isSelected(row)?`<span class="mp-check">${context.icon('check')}<span>${isSaved(row)?'Current':'Selected'}</span></span>`:''}</li>`).join('');
       list.hidden=!(c.open&&!loading&&!error&&c.browsing);
       input.setAttribute('aria-expanded',String(!list.hidden));
       if(c.active>=0&&!list.hidden){input.setAttribute('aria-activedescendant',optionId(c.active));list.children[c.active]?.scrollIntoView?.({block:'nearest'});}else input.removeAttribute('aria-activedescendant');
@@ -135,6 +201,7 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
       const unusable=!c.browsing||!!providerProblem(connectionOf(c.browsing));
       input.disabled=unusable;const toggle=$('.mp-toggle');if(toggle)toggle.disabled=unusable;
       select.disabled=c.busy||!!c.options.lockedReason;
+      renderScope();
       root.setAttribute('aria-busy',String(c.busy||loading));
     }
     async function load(connectionId,{force=false}={}){
@@ -144,7 +211,8 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
       try{
         const loader=c.options.load||context.loadModels;if(!loader)throw new Error('Model lists are unavailable here.');
         const result=await loader(connectionId);if(request!==c.request||!root.isConnected)return;
-        const models=(Array.isArray(result?.models)?result.models:[]).filter(item=>item&&typeof item.id==='string'&&item.id).map(item=>({id:item.id,name:String(item.name||item.id)}));
+        // Capability fields (tools, thinking, vision, window, size) stay on each model for the local badges.
+        const models=(Array.isArray(result?.models)?result.models:[]).filter(item=>item&&typeof item.id==='string'&&item.id).map(item=>({...item,id:item.id,name:String(item.name||item.id)}));
         c.catalogs.set(connectionId,{models,defaultModel:result?.defaultModel||defaultModelOf(connectionId)});
         const connection=connectionOf(connectionId);if(connection&&Array.isArray(result?.models)&&result.models.length)connection.models=result.models;
         root.dispatchEvent(new CustomEvent('modelpickerload',{bubbles:true,detail:{connectionId}}));
@@ -156,13 +224,13 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
     /** Show a value. In a form this fills the named fields and announces the change; markSaved also records it as saved. */
     function set({connectionId,model},{announce=!c.options.onSelect}={}){
       const changed=connectionId!==c.selected.connectionId||model!==c.selected.model;
-      c.selected={connectionId,model};c.browsing=connectionId;
+      follow(connectionId);c.selected={connectionId,model};c.browsing=connectionId;
       if(select.value!==connectionId){if(![...select.options].some(option=>option.value===connectionId))select.insertAdjacentHTML('beforeend',`<option value="${esc(connectionId)}" disabled>Unavailable provider</option>`);select.value=connectionId;}
       if(hidden)hidden.value=model;
       c.query='';c.active=-1;input.value=inline?'':display();setProviderStatus();render();
       if(changed&&announce&&hidden)hidden.dispatchEvent(new Event('change',{bubbles:true}));
     }
-    function markSaved(value){c.server={connectionId:value.connectionId||'',model:value.model||''};root.dataset.savedConnection=c.server.connectionId;root.dataset.savedModel=c.server.model;set(c.server,{announce:false});}
+    function markSaved(value){c.server={connectionId:value.connectionId||'',model:value.model||''};remember(c.memory,c.server);c.hint=null;root.dataset.savedConnection=c.server.connectionId;root.dataset.savedModel=c.server.model;set(c.server,{announce:false});}
     async function choose(row){
       if(!row||row.disabled||c.busy)return;
       const next={connectionId:c.browsing,model:row.id},previous={...c.selected};
@@ -174,7 +242,7 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
       finally{c.busy=false;if(root.isConnected)render();}
     }
     /** Re-read the form fields (for example after a restored Bot settings draft). */
-    function sync(){c.selected={connectionId:select.value,model:hidden?hidden.value:c.selected.model};c.browsing=select.value;c.query='';c.active=-1;if(!inline)input.value=display();setProviderStatus();render();}
+    function sync(){const value=select.value;if(c.scope){c.scope=scopeFor(value);rebuildOptions(value);}c.selected={connectionId:value,model:hidden?hidden.value:c.selected.model};c.browsing=value;c.query='';c.active=-1;if(!inline)input.value=display();setProviderStatus();render();}
 
     select.addEventListener('change',()=>{
       c.browsing=select.value;c.query='';c.active=-1;if(inline)input.value='';setProviderStatus();
@@ -204,8 +272,9 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
     list.addEventListener('pointermove',event=>{const option=event.target.closest('.mp-option'),index=option?[...list.children].indexOf(option):-1;if(index<0||index===c.active)return;c.active=index;for(const [i,node] of [...list.children].entries())node.classList.toggle('is-active',i===index);input.setAttribute('aria-activedescendant',optionId(index));});
     $('.mp-toggle')?.addEventListener('click',()=>{if(c.open)setOpen(false);else{input.focus();setOpen(true);}});
     errorBox.querySelector('.mp-retry').addEventListener('click',()=>void load(c.browsing,{force:true}));
+    root.querySelector('.mp-scope')?.addEventListener('click',event=>{const button=event.target.closest('[data-mp-scope]');if(button&&!button.disabled)switchScope(button.dataset.mpScope);});
 
-    Object.assign(c,{value:()=>({...c.selected}),saved:()=>({...c.server}),set,markSaved,restore:()=>set(c.server),sync,render,load,setBusy(busy){c.busy=!!busy;render();},setLocked(reason){c.options.lockedReason=reason||'';setProviderStatus();render();},focus(){input.focus();},catalog:catalogFor});
+    Object.assign(c,{value:()=>({...c.selected}),saved:()=>({...c.server}),switchScope,set,markSaved,restore:()=>set(c.server),sync,render,load,setBusy(busy){c.busy=!!busy;render();},setLocked(reason){c.options.lockedReason=reason||'';setProviderStatus();render();},focus(){input.focus();},catalog:catalogFor});
     setProviderStatus();render();if(c.browsing&&(inline||options.preload))void load(c.browsing);
     return c;
   }
