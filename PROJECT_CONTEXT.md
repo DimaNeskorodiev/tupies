@@ -1,5 +1,11 @@
 # Tupies — project context
 
+## CI Chrome warm-up through the Engine's own start — 17 November 2026 (CI tooling only; nothing reaches an Engine)
+
+- **Problem.** The first browser test ("form fields use real DOM updates…") failed on GitHub runners with "The browser did not answer Browser.getVersion in time" (CI on `main` after PR #70, PR #73, and the beta 10 and 11 release jobs), always passing on rerun. That blocks automatic betas until someone reruns the job.
+- **Cause.** Some freshly provisioned runners are slow for their first minute or two. Across 18 Tests-job logs, the old one-shot warm-up (`chrome --dump-dom about:blank`) took 6–7 s on normal runners and 11–23 s on slow ones, and on the slow ones the next one to three Engine browser starts took over 15 s before starts dropped to about a second. The one-shot warm-up also ran with the runner's own home folder and default flags, not the Engine's private profile, so it did not exercise the Engine's start.
+- **Fix.** `scripts/warm-browser.mjs` (run after `npm ci` in `ci.yml` Tests and in `release.yml`'s Engine job) starts real task browsers through `BrowserSession.start` until one starts in under 5 s, for at most 3 minutes and 12 starts, and logs each start's time. The Engine's 15 s limit and every test are unchanged; a runner that stays slow only produces a warning, so real failures still show. See `docs/releases.md` → Chrome warm-up.
+
 ## Local models on the Mac, used from every engine — 17 November 2026 (source only, not installed or released)
 
 Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/local-models-20261117.md`, which was revised after an independent architecture review. Measurements: `docs/research/local-qwen38-27b-20261117.md`.
