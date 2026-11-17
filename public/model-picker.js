@@ -9,8 +9,9 @@
    previous value when the save fails. The engine stays the authority: models come from the provider's live catalog
    and every save is validated there.
    When public/local-models.js is loaded, a Cloud | On my Mac toggle sits above the provider list: each segment lists only
-   its providers, local model rows get capability badges, and the toggle explains when no local model is set up or the
-   Mac is offline. The last provider and model used in each segment are remembered per bot in this browser only. */
+   its providers, local model rows get capability badges, and the toggle explains when the Mac is offline. With no
+   local provider yet, On my Mac still opens: it shows "No model on your Mac yet" and Set up a model on your Mac, which
+   goes to Settings › Models (#/connections?setup=local&bot=…) with the setup card focused. The last provider and model used in each segment are remembered per bot in this browser only. */
 (()=>{
   'use strict';
   const esc=value=>String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -86,19 +87,27 @@
     const current=choices.find(item=>item.id===connectionId),shown=scope?choices.filter(item=>item.scope===scope):choices;
     return `${allowNone?`<option value="" ${connectionId?'':'selected'}>Choose later</option>`:connectionId?'':'<option value="" selected disabled>Choose a provider</option>'}${shown.map(item=>`<option value="${esc(item.id)}"${item.id===connectionId?' selected':''}${item.usable?'':' disabled'}>${esc(item.label)}</option>`).join('')}${connectionId&&!current?`<option value="${esc(connectionId)}" selected disabled>Unavailable provider — choose another</option>`:''}`;
   }
+  /** Where Set up a model on your Mac goes: the Settings › Models setup card, for this bot when there is one. */
+  const setupHref=bot=>`/connections?setup=local${bot?`&bot=${encodeURIComponent(bot)}`:''}`;
   /** Why a segment can't be used, the offline notice, or ''. Plain text plus an optional setup link (data-nav). */
-  function scopeNote(scope,choices,browsing){
-    if(!choices.some(item=>item.scope==='local'))return {text:'No model runs on your Mac yet.',link:'Set one up in Settings › Models'};
-    if(!choices.some(item=>item.scope==='cloud'))return {text:'No cloud provider yet.',link:'Add one in Settings › Models'};
+  function scopeNote(scope,choices,browsing,bot=''){
+    if(!choices.some(item=>item.scope==='local'))return scope==='local'?{text:'',link:''}:{text:'No model on your Mac yet.',link:'Set one up',href:setupHref(bot),bot};
+    if(!choices.some(item=>item.scope==='cloud'))return {text:'No cloud provider yet.',link:'Add one in Settings › Models',href:'/connections'};
     const chosen=choices.find(item=>item.id===browsing);
     if(scope==='local'&&chosen?.offline)return {text:'Mac offline. Tasks on these models use the bot’s fallback model until the Mac is back, or stop if it has none.',link:''};
     return {text:'',link:''};
   }
-  function scopeNoteMarkup(note){return `${esc(note.text)}${note.link?` <button type="button" class="text-button mp-scope-setup" data-nav="/connections" data-close="true">${esc(note.link)}</button>`:''}`;}
-  function scopeMarkup(id,scope,choices,connectionId,lockedReason){
-    const hasLocal=choices.some(item=>item.scope==='local'),hasCloud=choices.some(item=>item.scope==='cloud'),offline=hasLocal&&choices.filter(item=>item.scope==='local').every(item=>item.offline),note=scopeNote(scope,choices,connectionId);
+  const setupAttributes=bot=>`data-close="true" data-local-setup="${esc(bot||'')}"`;
+  function scopeNoteMarkup(note){return `${esc(note.text)}${note.link?` <button type="button" class="text-button mp-scope-setup" data-nav="${esc(note.href||'/connections')}" ${note.href===setupHref(note.bot)?setupAttributes(note.bot):'data-close="true"'}>${esc(note.link)}</button>`:''}`;}
+  /** On my Mac with no local provider yet: one line and one button to the setup card, never a dead end. */
+  function setupMarkup(bot,shown){
+    return `<div class="mp-setup" data-mp-setup${shown?'':' hidden'}><p class="mp-setup-title">No model on your Mac yet</p><p class="mp-setup-text">Tupies finds Ollama or MLX running on your Mac and adds it in one click.</p><button type="button" class="primary-button mp-setup-button" data-nav="${esc(setupHref(bot))}" ${setupAttributes(bot)}>${context.icon('laptop')}<span>Set up a model on your Mac</span></button></div>`;
+  }
+  function scopeMarkup(id,scope,choices,connectionId,lockedReason,bot){
+    const hasLocal=choices.some(item=>item.scope==='local'),hasCloud=choices.some(item=>item.scope==='cloud'),offline=hasLocal&&choices.filter(item=>item.scope==='local').every(item=>item.offline),note=scopeNote(scope,choices,connectionId,bot);
     const segment=(value,label,icon,enabled,extra='')=>`<button type="button" class="mp-scope-option" data-mp-scope="${value}" aria-pressed="${scope===value}" aria-describedby="${esc(id)}-scope-note"${enabled&&!lockedReason?'':' disabled'}>${context.icon(icon)}<span>${label}</span>${extra}</button>`;
-    return `<div class="mp-scope" role="group" aria-label="Where the model runs">${segment('cloud','Cloud','globe',hasCloud)}${segment('local','On my Mac','laptop',hasLocal,`<span class="mp-scope-badge"${offline?'':' hidden'}>Mac offline</span>`)}</div><p id="${esc(id)}-scope-note" class="mp-scope-note" role="status">${scopeNoteMarkup(note)}</p>`;
+    // On my Mac stays enabled without a local provider: choosing it shows the setup step instead of a provider list.
+    return `<div class="mp-scope" role="group" aria-label="Where the model runs">${segment('cloud','Cloud','globe',hasCloud)}${segment('local','On my Mac','laptop',true,`<span class="mp-scope-badge"${offline?'':' hidden'}>Mac offline</span>`)}</div><p id="${esc(id)}-scope-note" class="mp-scope-note" role="status">${scopeNoteMarkup(note)}</p>${hasLocal?'':setupMarkup(bot,false)}`;
   }
   /* Per-bot memory of the last provider and model in each segment, so switching back lands where the owner left it.
      A browser-only convenience: the saved choice still lives on the engine. */
@@ -111,13 +120,13 @@
 
   /* ---- markup ---- */
   /** Static markup so a form has its named fields at once; attach() adds behaviour on first use. */
-  function markup({id='model-picker',connectionId='',model='',connectionName='',modelName:fieldName='',allowNone=false,inline=false,label='Model provider',note='',lockedReason='',memoryKey=''}={}){
+  function markup({id='model-picker',connectionId='',model='',connectionName='',modelName:fieldName='',allowNone=false,inline=false,label='Model provider',note='',lockedReason='',memoryKey='',setupBot=memoryKey}={}){
     const choices=providerChoices(),current=choices.find(item=>item.id===connectionId),scope=scopeFor(connectionId,choices);
     const options=providerOptions({choices,connectionId,allowNone,scope});
     const problem=current?.problem||(connectionId&&!current?'This provider was removed. Choose another one.':'');
     const unusable=!connectionId||!!problem;
-    return `<div class="model-picker${inline?' is-inline':''}" data-model-picker data-picker-id="${esc(id)}" data-saved-connection="${esc(connectionId)}" data-saved-model="${esc(model)}"${inline?' data-inline="true"':''}${allowNone?' data-allow-none="true"':''}${memoryKey?` data-memory="${esc(memoryKey)}"`:''}${scope?` data-scope="${scope}"`:''}>
-${scope?scopeMarkup(id,scope,choices,connectionId,lockedReason):''}<div class="field mp-provider"><label for="${esc(id)}-connection">${esc(label)}</label><select id="${esc(id)}-connection" class="mp-provider-select"${connectionName?` name="${esc(connectionName)}"`:''} aria-describedby="${esc(id)}-provider-status"${lockedReason?' disabled':''}>${options}</select><p id="${esc(id)}-provider-status" class="mp-provider-status${problem?' is-error':''}" role="${problem?'alert':'status'}">${esc(problem||lockedReason)}</p></div>
+    return `<div class="model-picker${inline?' is-inline':''}" data-model-picker data-picker-id="${esc(id)}" data-saved-connection="${esc(connectionId)}" data-saved-model="${esc(model)}"${inline?' data-inline="true"':''}${allowNone?' data-allow-none="true"':''}${memoryKey?` data-memory="${esc(memoryKey)}"`:''}${setupBot?` data-setup-bot="${esc(setupBot)}"`:''}${scope?` data-scope="${scope}"`:''}>
+${scope?scopeMarkup(id,scope,choices,connectionId,lockedReason,setupBot):''}<div class="field mp-provider"><label for="${esc(id)}-connection">${esc(label)}</label><select id="${esc(id)}-connection" class="mp-provider-select"${connectionName?` name="${esc(connectionName)}"`:''} aria-describedby="${esc(id)}-provider-status"${lockedReason?' disabled':''}>${options}</select><p id="${esc(id)}-provider-status" class="mp-provider-status${problem?' is-error':''}" role="${problem?'alert':'status'}">${esc(problem||lockedReason)}</p></div>
 <div class="field mp-model"><label id="${esc(id)}-model-label" for="${esc(id)}-model-search">Model</label><div class="mp-combobox"><span class="mp-search-icon" aria-hidden="true">${context.icon('search')}</span><input id="${esc(id)}-model-search" class="mp-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="${inline}" aria-controls="${esc(id)}-model-list" aria-describedby="${esc(id)}-model-state" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${inline?'Search models by name or id':'Search models'}" value="${inline||unusable?'':esc(modelDisplay(connectionId,model))}"${unusable?' disabled':''}>${inline?'':`<button type="button" class="mp-toggle" tabindex="-1" aria-label="Show models"${unusable?' disabled':''}>${context.icon('chevronDown')}</button>`}</div>${fieldName?`<input type="hidden" id="${esc(id)}-model" class="mp-model-value" name="${esc(fieldName)}" value="${esc(model)}">`:''}
 <p class="mp-current" data-mp-current>${savedLine(connectionId,model)}</p>
 <ul id="${esc(id)}-model-list" class="mp-list" role="listbox" aria-labelledby="${esc(id)}-model-label"${inline?'':' hidden'}></ul>
@@ -133,7 +142,7 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
     const select=$('.mp-provider-select'),input=$('.mp-search'),list=$('.mp-list'),hidden=$('.mp-model-value'),stateLine=$('.mp-state'),errorBox=$('.mp-error'),savedNode=$('[data-mp-current]'),providerStatus=$('.mp-provider-status');
     const inline=root.dataset.inline==='true';
     // server: what the engine has saved. selected: the picker's current value (unsaved until the form is saved in Settings).
-    const c={root,options,inline,server:{connectionId:root.dataset.savedConnection||'',model:root.dataset.savedModel||''},selected:{connectionId:select.value,model:hidden?hidden.value:(root.dataset.savedModel||'')},browsing:select.value,catalogs:new Map(),loading:false,error:'',query:'',filtered:[],active:-1,open:inline,request:0,busy:false,scope:root.dataset.scope||'',memory:root.dataset.memory||'',hint:null};
+    const c={root,options,inline,server:{connectionId:root.dataset.savedConnection||'',model:root.dataset.savedModel||''},selected:{connectionId:select.value,model:hidden?hidden.value:(root.dataset.savedModel||'')},browsing:select.value,catalogs:new Map(),loading:false,error:'',query:'',filtered:[],active:-1,open:inline,request:0,busy:false,scope:root.dataset.scope||'',memory:root.dataset.memory||'',setupBot:root.dataset.setupBot||'',setup:false,hint:null};
     controllers.set(root,c);
     remember(c.memory,c.server);
     const catalogFor=connectionId=>c.catalogs.get(connectionId);
@@ -144,17 +153,27 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
     function rebuildOptions(connectionId){
       if(!c.scope)return;select.innerHTML=providerOptions({choices:providerChoices(),connectionId,allowNone:root.dataset.allowNone==='true',scope:c.scope});select.value=connectionId;root.dataset.scope=c.scope;
     }
-    function follow(connectionId){const scope=c.scope?scopeFor(connectionId):'';if(scope&&connectionId&&scope!==c.scope){c.scope=scope;rebuildOptions(connectionId);}}
+    function follow(connectionId){const scope=c.scope?scopeFor(connectionId):'';if(scope&&connectionId&&(scope!==c.scope||c.setup)){c.scope=scope;c.setup=false;rebuildOptions(connectionId);}}
     function renderScope(){
-      const group=$('.mp-scope');if(!group)return;const choices=providerChoices(),note=scopeNote(c.scope,choices,c.browsing),locals=choices.filter(item=>item.scope==='local');
-      for(const button of group.querySelectorAll('[data-mp-scope]')){const value=button.dataset.mpScope;button.setAttribute('aria-pressed',String(value===c.scope));button.disabled=c.busy||!!c.options.lockedReason||!choices.some(item=>item.scope===value);}
+      const group=$('.mp-scope');if(!group)return;const choices=providerChoices(),locals=choices.filter(item=>item.scope==='local');
+      if(locals.length)c.setup=false;
+      const note=scopeNote(c.setup?'local':c.scope,choices,c.browsing,c.setupBot);
+      for(const button of group.querySelectorAll('[data-mp-scope]')){const value=button.dataset.mpScope;button.setAttribute('aria-pressed',String(value===c.scope));button.disabled=c.busy||!!c.options.lockedReason||(value==='cloud'&&!choices.some(item=>item.scope==='cloud'));}
+      // The setup step replaces the provider and model fields while On my Mac has nothing to list.
+      const setup=$('[data-mp-setup]');if(setup)setup.hidden=!c.setup;
+      for(const field of root.querySelectorAll('.mp-provider,.mp-model'))field.hidden=c.setup;root.classList.toggle('is-setup',c.setup);
       const badge=$('.mp-scope-badge');if(badge)badge.hidden=!(locals.length&&locals.every(item=>item.offline));
       const line=$('.mp-scope-note');if(line&&line.dataset.text!==note.text+note.link){line.dataset.text=note.text+note.link;line.innerHTML=scopeNoteMarkup(note);}
     }
     /** Switch segments: browse (chat) or choose (form) the saved, last-used or first usable provider in that segment. */
     function switchScope(scope){
-      if(!c.scope||scope===c.scope||c.busy||c.options.lockedReason)return;
-      const pool=providerChoices().filter(item=>item.scope===scope);if(!pool.length)return;
+      if(!c.scope||scope===c.scope&&!c.setup||c.busy||c.options.lockedReason)return;
+      const pool=providerChoices().filter(item=>item.scope===scope);
+      if(!pool.length){
+        // No local provider yet: show the setup step. Nothing is chosen, browsed or saved.
+        if(scope!=='local')return;c.scope='local';c.setup=true;root.dataset.scope='local';render();root.querySelector('.mp-setup-button')?.focus?.({preventScroll:true});return;
+      }
+      c.setup=false;
       const remembered=recall(c.memory,scope),saved=pool.find(item=>item.id===c.server.connectionId&&item.usable);
       const target=saved||pool.find(item=>item.id===remembered?.connectionId&&item.usable)||pool.find(item=>item.usable)||pool[0];
       const model=saved?c.server.model:remembered?.connectionId===target.id?remembered.model:'';
@@ -244,7 +263,7 @@ ${note?`<p class="mp-note">${esc(note)}</p>`:''}</div></div>`;
       finally{c.busy=false;if(root.isConnected)render();}
     }
     /** Re-read the form fields (for example after a restored Bot settings draft). */
-    function sync(){const value=select.value;if(c.scope){c.scope=scopeFor(value);rebuildOptions(value);}c.selected={connectionId:value,model:hidden?hidden.value:c.selected.model};c.browsing=value;c.query='';c.active=-1;if(!inline)input.value=display();setProviderStatus();render();}
+    function sync(){const value=select.value;if(c.scope){c.scope=scopeFor(value);c.setup=false;rebuildOptions(value);}c.selected={connectionId:value,model:hidden?hidden.value:c.selected.model};c.browsing=value;c.query='';c.active=-1;if(!inline)input.value=display();setProviderStatus();render();}
 
     select.addEventListener('change',()=>{
       c.browsing=select.value;c.query='';c.active=-1;if(inline)input.value='';setProviderStatus();

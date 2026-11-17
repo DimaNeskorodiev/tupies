@@ -193,7 +193,7 @@
   // underneath while the finger drags, and push/pop can slide the outgoing screen away like UIKit.
   const snapshots = new Map();
   let outgoing = null;
-  const routeKey = value => {const [view, id] = String(value || '').replace(/^#?\/?/, '').split('/'); return `${view || 'dashboard'}/${id || ''}`;};
+  const routeKey = value => {const [view, id] = String(value || '').replace(/^#?\/?/, '').split('?')[0].split('/'); return `${view || 'dashboard'}/${id || ''}`;};
   const backControl = () => query('#app .chat-back, #app .topbar-back');
   function cloneDeep(node) {
     const copy = node.cloneNode(true);

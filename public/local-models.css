@@ -30,3 +30,29 @@
 :is([data-theme=dark],[data-appearance=dark]) .lm-command code{color:inherit}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-appearance=light]) :is(.lm-runtime,.lm-command){background:rgba(255,255,255,.05)}:root:not([data-theme=light]):not([data-appearance=light]) .lm-command code{color:inherit}}
 @media(max-width:760px){.lm-card{padding:18px 16px}.lm-card-head{flex-wrap:wrap}.lm-card-head .secondary-button,.lm-runtime-actions button{min-height:44px}.lm-runtime-actions{width:100%}.lm-runtime-actions .primary-button{flex:1}}
+/* Arriving from the chat's "Set up a model on your Mac" (#/connections?setup=local): the card is focused and ringed. */
+.lm-card.is-setup{box-shadow:0 0 0 2px rgba(112,99,144,.38),0 14px 40px rgba(36,46,62,.1);scroll-margin-top:84px}
+.lm-card:focus{outline:none}
+.lm-card:focus-visible{outline:2px solid rgba(112,99,144,.55);outline-offset:3px}
+.lm-card.is-arriving{animation:lm-arrive 1.2s cubic-bezier(.2,.85,.2,1) 2}
+@keyframes lm-arrive{0%,100%{box-shadow:0 0 0 2px rgba(112,99,144,.38),0 14px 40px rgba(36,46,62,.1)}50%{box-shadow:0 0 0 6px rgba(112,99,144,.22),0 14px 40px rgba(36,46,62,.12)}}
+.lm-setup:empty{display:none}
+.lm-setup-line,.lm-done{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:rgba(112,99,144,.08)}
+.lm-setup-line p,.lm-done p{margin:0;font-size:13px;line-height:1.5;color:var(--ink,#29313d);min-width:0;flex:1 1 220px}
+.lm-done{background:rgba(83,123,99,.12)}
+.lm-done.is-warning{background:rgba(165,103,43,.12)}
+.lm-setup-line .text-button{flex:none}
+/* Home server: each linked Mac and its runtimes. */
+.lm-mac{display:grid;gap:8px;min-width:0}
+.lm-mac-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 2px 0;font-size:12px;font-weight:600;color:var(--muted,#737b89)}
+.lm-mac-name .status-pill{margin-left:0}
+/* Add provider › Ollama / MLX: what was found, with Advanced closed. */
+.lm-detect{display:grid;gap:8px;margin:4px 0 14px;padding:14px 16px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:16px;background:rgba(255,255,255,.28);min-width:0}
+.lm-detect p{margin:0}
+.lm-detect .text-button{justify-self:start}
+.lm-detect-status .status-pill{margin-left:0}
+:is([data-theme=dark],[data-appearance=dark]) :is(.lm-detect){background:rgba(255,255,255,.04)}
+:is([data-theme=dark],[data-appearance=dark]) :is(.lm-setup-line p,.lm-done p){color:inherit}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-appearance=light]) .lm-detect{background:rgba(255,255,255,.05)}:root:not([data-theme=light]):not([data-appearance=light]) :is(.lm-setup-line p,.lm-done p){color:inherit}}
+@media(max-width:760px){.lm-setup-line,.lm-done{padding:12px}.lm-done .primary-button,.lm-setup-line .text-button,.lm-detect .text-button{min-height:44px}.lm-done .primary-button{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.lm-card.is-arriving{animation:none}}
