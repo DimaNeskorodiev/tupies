@@ -66,7 +66,8 @@
   /* ---- embedding models ---- */
   /** Same pattern as isEmbeddingModel in lib/local-models.mjs: embedding models cannot chat, so local model lists hide them. */
   const EMBEDDING=/(^|[^a-z])(embed|embedding|bge|e5|minilm|nomic-embed)([^a-z]|$)/i;
-  function isEmbedding(model){const id=typeof model==='string'?model:model?.id;return model?.embedding===true||EMBEDDING.test(String(id||''));}
+  const DRAFT=/(^|[-_/])(mtp|draft|eagle3?|dflash)([-_]|$)/i; // speculative-decoding draft heads, as DRAFT_MODEL in lib/local-models.mjs
+  function isEmbedding(model){const id=typeof model==='string'?model:model?.id;return model?.embedding===true||EMBEDDING.test(String(id||''))||DRAFT.test(String(id||''));}
 
   /* ---- chat words ---- */
   /** Plain words for a local model step that waits: queued, loading the model, or reading the prompt. "" for other states. */

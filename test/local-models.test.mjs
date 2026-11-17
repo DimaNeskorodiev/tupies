@@ -261,3 +261,9 @@ test('an owner can mark a loopback compatible endpoint as not local, and only a 
   const mlx=providers.validate({type:'mlx',local:false});assert.equal(mlx.local,undefined);assert.equal(isLocalConnection(mlx),true);
   assert.throws(()=>providers.validate({type:'custom',baseUrl:'http://127.0.0.1:4000/v1',local:'yes'}),/Local must be/);
 });
+
+test('speculative-decoding draft heads are not offered as local chat models',async()=>{
+  const {isEmbeddingModel}=await import('../lib/local-models.mjs');
+  for(const id of ['mlx-community/Qwen3.8-27B-MTP-4bit','some/model-draft','x/eagle3-head','y/dflash-1b'])assert.equal(isEmbeddingModel(id),true,id);
+  for(const id of ['mlx-community/Qwen3.8-27B-4bit','qwen3.8:27b','llama3.2:3b','smtp-helper'])assert.equal(isEmbeddingModel(id),false,id);
+});
