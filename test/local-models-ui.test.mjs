@@ -103,9 +103,9 @@ test('the card shows not installed, an existing connection, a failed check and t
   assert.match(failed.main.textContent,/Engine unavailable\./);
 });
 
-function scopePicker({connections,model='',connectionId,form=false,storage=true,memoryKey='bot_atlas'}={}){
+function scopePicker({connections,model='',connectionId,form=false,storage=true,memoryKey='bot_atlas',localList=localModels,cloudList=cloudModels}={}){
   const h=page(form?'<form id="form"><div id="host"></div></form>':'<div id="host"></div>',{storage});const loads=[],saves=[];
-  h.picker.configure({connections:()=>connections,catalog:()=>CATALOG,icon:()=>'',loadModels:async id=>{loads.push(id);return {models:id===macMlx.id?localModels:cloudModels};}});
+  h.picker.configure({connections:()=>connections,catalog:()=>CATALOG,icon:()=>'',loadModels:async id=>{loads.push(id);return {models:id===macMlx.id?localList:cloudList};}});
   h.doc.querySelector('#host').innerHTML=h.picker.markup({id:'p',connectionId,model,inline:!form,memoryKey,...(form?{connectionName:'connectionId',modelName:'model',allowNone:true}:{})});
   const root=h.doc.querySelector('[data-model-picker]');
   const controller=h.picker.attach(root,form?{}:{onSelect:async next=>{saves.push(next);return next;}});
@@ -199,4 +199,44 @@ test('Ollama cloud models are not counted or offered as local, and say where the
   assert.match(ollama.textContent,/Running · 1 model(?!s)/);assert.match(ollama.textContent,/1 cloud model runs on ollama\.com, not on this Mac/);
   assert.doesNotMatch(ollama.querySelector('.lm-models').textContent,/Gemma/i);
   assert.deepEqual([...h.win.StudioLocalModels.modelBadges({id:'gemma4:cloud'})].map(item=>item.label),['Runs on ollama.com']);
+});
+
+test('embedding models are hidden from local model lists and never become the Use default; cloud lists are unchanged',async t=>{
+  const embedding={id:'sentence-transformers/all-MiniLM-L6-v2'};
+  const h=scopePicker({connections:[openrouter,macMlx],connectionId:macMlx.id,model:'mlx-community/Qwen3.8-27B-4bit',localList:[embedding,...localModels],cloudList:[...cloudModels,{id:'openai/text-embedding-3-small'}]});t.after(()=>h.win.close());await settle();
+  assert.equal(h.segment('local').getAttribute('aria-pressed'),'true');
+  assert.equal(h.root.querySelector(`.mp-option[data-value="${embedding.id}"]`),null,'the embedding model is not offered');
+  assert.ok(h.root.querySelector('.mp-option[data-value="mlx-community/Qwen3.8-27B-4bit"]'),'chat models stay');
+  assert.ok(h.root.querySelector('.mp-option[data-value="mlx-community/tiny-chat-1b-8bit"]'));
+  h.segment('cloud').click();await settle();h.root.querySelector('.mp-provider-select').value=openrouter.id;h.root.querySelector('.mp-provider-select').dispatchEvent(new h.win.Event('change',{bubbles:true}));await settle();
+  assert.ok(h.root.querySelector('.mp-option[data-value="openai/text-embedding-3-small"]'),'cloud catalogs are not filtered');
+  for(const id of ['sentence-transformers/all-MiniLM-L6-v2','nomic-embed-text:latest','bge-m3','mxbai-embed-large'])assert.equal(h.local.isEmbedding({id}),true,id);
+  for(const id of ['qwen3.8:27b','mlx-community/Qwen3.8-27B-4bit','llama3.2:3b'])assert.equal(h.local.isEmbedding({id}),false,id);
+
+  // Use picks the first chat model, even when the runtime lists an embedding model first without the probe's flag.
+  const runtime={...ollamaRunning,models:[{id:'all-minilm:latest'},{id:'qwen3.8:27b'}]};
+  const card=cardHarness({runtimes:[runtime,mlxStopped]});t.after(()=>card.win.close());await settle();
+  assert.match(card.main.querySelector('[data-runtime="ollama"]').textContent,/Running · 1 model(?!s)/);
+  card.main.querySelector('[data-local-action="use"]').click();await settle();
+  assert.equal(card.requests.find(item=>item.path==='/api/connections').body.defaultModel,'qwen3.8:27b');
+});
+
+test('a local step’s live state reads as plain text in the chat strip, by where the model runs',t=>{
+  const bot={id:'bot_atlas',name:'Atlas',connectionId:macMlx.id,model:'',tools:[],skills:[],enabled:true};
+  const h=appHarness({connections:[macMlx,openrouter],bot});t.after(()=>h.win.close());
+  const at=new Date().toISOString();
+  const label=event=>h.run(`runWaitLabel(runActivity({events:[{type:'model.started',step:1,model:'q'},${JSON.stringify({type:'model.waiting',createdAt:at,step:1,elapsedMs:0,...event})}]}).wait)`);
+  assert.equal(label({state:'queued',host:{here:true,mac:true}}),'Waiting for this Mac…');
+  assert.equal(label({state:'queued',host:{here:false,name:'Studio Mac'}}),'Waiting for “Studio Mac”…');
+  assert.equal(label({state:'queued',host:{here:false}}),'Waiting for the Mac…');
+  assert.equal(label({state:'loading',host:{here:true,mac:true}}),'Loading the model on this Mac…');
+  assert.equal(label({state:'loading',host:{here:false,name:'Studio Mac'}}),'Loading the model on “Studio Mac”…');
+  assert.equal(label({state:'reading',tokens:24_300,host:{here:true,mac:true}}),'Reading the conversation (about 24K tokens)…');
+  assert.equal(label({state:'reading',tokens:640,host:{here:true,mac:true}}),'Reading the conversation (about 640 tokens)…');
+  assert.equal(label({state:'reading',host:{here:true,mac:true}}),'Reading the conversation…');
+  assert.equal(label({state:'reading',tokens:5000,elapsedMs:45_000,host:{here:true,mac:true}}),'Reading the conversation (about 5K tokens)… · 45 s','a long wait shows its time');
+  assert.equal(label({state:'queued',host:{here:true,mac:false}}),'Waiting for the local model…','a server running the runtime itself is not called a Mac');
+  assert.equal(label({elapsedMs:45_000}),'waiting for model · 45 s','cloud waits keep their words');
+  assert.equal(label({state:'generating',elapsedMs:15_000}),'waiting for model · 15 s','an unknown state is not shown as a local state');
+  assert.equal(h.run(`runActivity({events:[{type:'model.started',step:1},${JSON.stringify({type:'model.waiting',createdAt:at,state:'reading',tokens:100})},{type:'model.resumed',step:1}]}).wait`),null,'streamed text clears the notice');
 });

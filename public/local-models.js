@@ -5,7 +5,8 @@
    - The "On this Mac" card at the top of Settings › Models: what runs here, a copyable start command or an install
      link, and Use, which adds the runtime as a provider in one click. Tupies never starts a runtime or downloads weights.
    - Labels and badges the model picker and the chat use: "Mac · Qwen3.8 27B", tools/thinking/vision/window badges,
-     and the plain words for a Mac that is offline. */
+     the plain words for a Mac that is offline, and the live step states ("Loading the model on this Mac…").
+   - Embedding models a runtime lists next to chat models are hidden from local model lists. */
 (()=>{
   'use strict';
   const LOCAL_TYPES=new Set(['ollama','mlx']);
@@ -62,7 +63,21 @@
   function modelNote(model){return supportsTools(model)===false?NO_TOOLS:'';}
   function badgesMarkup(model){const list=modelBadges(model);return list.length?`<span class="lm-badges">${list.map(item=>`<span class="lm-badge is-${esc(item.key)}">${esc(item.label)}</span>`).join('')}</span>`:'';}
 
+  /* ---- embedding models ---- */
+  /** Same pattern as isEmbeddingModel in lib/local-models.mjs: embedding models cannot chat, so local model lists hide them. */
+  const EMBEDDING=/(^|[^a-z])(embed|embedding|bge|e5|minilm|nomic-embed)([^a-z]|$)/i;
+  function isEmbedding(model){const id=typeof model==='string'?model:model?.id;return model?.embedding===true||EMBEDDING.test(String(id||''));}
+
   /* ---- chat words ---- */
+  /** Plain words for a local model step that waits: queued, loading the model, or reading the prompt. "" for other states. */
+  function stateText(state,{tokens,host}={}){
+    const here=host?.here===true,name=!here&&typeof host?.name==='string'&&host.name.trim()?host.name.trim():'';
+    const where=here?(host.mac===false?'':'this Mac'):name?`“${name}”`:'the Mac';
+    if(state==='queued')return where?`Waiting for ${where}…`:'Waiting for the local model…';
+    if(state==='loading')return where?`Loading the model on ${where}…`:'Loading the model…';
+    if(state==='reading'){const n=Number(tokens);return Number.isFinite(n)&&n>0?`Reading the conversation (about ${n>=1000?`${Math.round(n/1000)}K`:Math.round(n)} tokens)…`:'Reading the conversation…';}
+    return '';
+  }
   /** Plain words for a relay failure: "The Mac is offline — answered by ‹fallback›", or "" for other codes. */
   function failureText(code,fallbackModel=''){
     if(!NODE_CODES.has(code))return '';
@@ -73,7 +88,7 @@
   let context=null,host=null,request=0,state={loaded:false,loading:false,error:'',platform:'',runtimes:[],busy:''};
   const current=()=>Boolean(context&&host?.isConnected&&host.querySelector('[data-local-models]'));
   const SHORT={ollama:'Ollama',mlx:'MLX'};
-  const chatModels=runtime=>(runtime.models||[]).filter(model=>!model.embedding&&!model.cloud);
+  const chatModels=runtime=>(runtime.models||[]).filter(model=>!isEmbedding(model)&&!model.cloud);
   const cloudModels=runtime=>(runtime.models||[]).filter(model=>model.cloud);
   const cloudNote=runtime=>{const n=cloudModels(runtime).length;return n?`<p class="lm-hint">${n} cloud ${n===1?'model runs':'models run'} on ollama.com, not on this Mac, so ${n===1?'it is':'they are'} not listed here.</p>`:'';};
   /** A saved connection that already points at this runtime on this engine. */
@@ -154,5 +169,5 @@
   });
   function reset(){request++;context=null;host=null;state={loaded:false,loading:false,error:'',platform:'',runtimes:[],busy:''};}
 
-  window.StudioLocalModels={isLocal,hostOf,offline,remote,shortModelName,modelBadges,modelNote,badgesMarkup,supportsTools,failureText,card,mount,reset,_state:()=>state};
+  window.StudioLocalModels={isLocal,hostOf,offline,remote,shortModelName,modelBadges,modelNote,badgesMarkup,supportsTools,isEmbedding,failureText,stateText,card,mount,reset,_state:()=>state};
 })();

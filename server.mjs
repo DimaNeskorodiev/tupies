@@ -29,6 +29,7 @@ import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
 import { nativeApi, oauthCallback, recordConnectionTest } from './lib/api-native.mjs';
 import { InferenceRelay, connectionHostView } from './lib/inference-relay.mjs';
+import { SleepGuard } from './lib/sleep-guard.mjs';
 import { integrationOAuthCallback, integrationOAuthClientMetadata, oauthRedirectBase, OAUTH_CALLBACK_PATH, OAUTH_CLIENT_METADATA_PATH } from './lib/integration-oauth.mjs';
 import { LoopbackCallback } from './lib/oauth-callback.mjs';
 import { dashboard } from './lib/dashboard.mjs';
@@ -150,7 +151,8 @@ export async function createStudioServer(options={}) {
   const access=await new Access(dataDir,{publicHost:publicOrigin?new URL(publicOrigin).host:'',...(tlsMode?{trustProxy:'none'}:options.trustProxy?{trustProxy:options.trustProxy}:{})}).init();
   const providers=options.providers || new Providers(store,options);
   // Local models: a linked engine that hosts a runtime answers this engine's requests for it (lib/inference-relay.mjs).
-  const relay=new InferenceRelay({store,sync,options:options.relay,onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
+  // While a local model request runs here, a Mac stays awake (lib/sleep-guard.mjs); `sleepGuard:false` turns it off for tests.
+  const relay=new InferenceRelay({store,sync,options:options.relay,sleepGuard:options.sleepGuard===false?null:options.sleepGuard || new SleepGuard(),onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
   sync.inference=relay;
   providers.oauth && (providers.oauth.refreshDelegate=connectionId=>sync.role()==='replica'?sync.delegateRefresh(connectionId):null);
   if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}

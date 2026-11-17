@@ -1048,7 +1048,7 @@ function runActivity(run){
   const activity={step:0,model:'',modelAt:'',wait:null,tools:[]},calls=new Map(),call=(event,outcome)=>({id:event.toolCallId||event.id,tool:String(event.tool||'tool'),argument:toolArgumentSummary(event.arguments),startedAt:event.createdAt||'',endedAt:'',outcome,retries:0});
   for(const event of Array.isArray(run?.events)?run.events:[]){
     if(event?.type==='model.started'){const step=Number(event.step);activity.step=Number.isInteger(step)&&step>0?step:activity.step+1;activity.model=String(event.model||activity.model||'');activity.modelAt=event.createdAt||'';activity.wait=null;}
-    else if(event?.type==='model.waiting'){activity.wait={kind:'waiting',at:event.createdAt||'',elapsedMs:Number(event.elapsedMs)||0};}
+    else if(event?.type==='model.waiting'){activity.wait={kind:'waiting',at:event.createdAt||'',elapsedMs:Number(event.elapsedMs)||0,...(['queued','loading','reading'].includes(event.state)?{state:event.state,tokens:Number(event.tokens)||0,host:event.host&&typeof event.host==='object'?event.host:null}:{})};}
     else if(event?.type==='model.retry'){activity.wait={kind:'retry',at:event.createdAt||'',attempt:Number(event.attempt)||1,max:Number(event.maxAttempts)||6,delayMs:Number(event.delayMs)||0};}
     else if(event?.type==='model.fallback'){activity.wait={kind:'fallback',at:event.createdAt||'',model:String(event.to?.model||''),reason:String(event.reason||'')};}
     else if(['model.resumed','model.completed'].includes(event?.type)){activity.wait=null;}
@@ -1063,10 +1063,14 @@ function runActivity(run){
   }
   activity.tools=activity.tools.slice(-200);return activity;
 }
-/** Live wait state of the current model call: "waiting for model · 45 s", "retrying 2/6 in 10 s" or the fallback notice. */
+/** Live wait state of the current model call: "waiting for model · 45 s", "retrying 2/6 in 10 s" or the fallback notice.
+    A local model's step says what it waits for instead ("Loading the model on this Mac…"), with the time after 10 s. */
 function runWaitLabel(wait,now=Date.now()){
   if(!wait)return '';const since=liveSeconds(wait.at,now)||0;
-  if(wait.kind==='waiting')return `waiting for model · ${Math.round(wait.elapsedMs/1000+since)} s`;
+  if(wait.kind==='waiting'){
+    const seconds=Math.round(wait.elapsedMs/1000+since),text=wait.state?window.StudioLocalModels?.stateText(wait.state,wait):'';
+    return text?`${text}${seconds>=10?` · ${seconds} s`:''}`:`waiting for model · ${seconds} s`;
+  }
   if(wait.kind==='retry')return `retrying ${wait.attempt}/${wait.max} in ${Math.max(0,Math.ceil(wait.delayMs/1000-since))} s`;
   return window.StudioLocalModels?.failureText(wait.reason,wait.model||'the fallback model')||`switched to fallback model${wait.model?` · ${wait.model}`:''}`;
 }
