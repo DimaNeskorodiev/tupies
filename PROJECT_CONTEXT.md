@@ -1,6 +1,14 @@
 # Tupies — project context
 
-## Local models on the Mac, used from every engine — 17 November 2026 (source only, not installed or released)
+## Local models on the Mac, used from every engine — 17 November 2026 (installed on Mac and VPS as Engine beta 13)
+
+**Installed 17 November 2026.**
+- **Release.** PR #70 merged as `main` `dde7da9`, and the automatic beta published `v0.5.0-engine.beta.13`. The first CI run on `main` hit the known `Browser.getVersion` runner flake and passed on a rerun of the failed jobs.
+- **VPS** installed it with its own update timer at 14:54 CET (NRestarts 0).
+- **Mac** was rolled out with the reviewed operator scripts: a candidate from `dde7da9` (2,723/2,723 tests on Node 22.23.4), an encrypted stopped backup, a held start, verification of 8,902 preserved runtime entries, then activation.
+- **The Mac engine had been down since a reboot on 16 November.** It is started detached and is not a launch agent, so it does not come back after a reboot.
+- **Desktop driver pin.** The rollout's Desktop driver pin check failed only because the APFS device number (`st_dev`) changed with that reboot. With the owner's approval, the operator check ignores `device`. The Engine's own check in `lib/desktop-driver.mjs` still compares it, so Desktop actions ask to reconnect the driver after a reboot (follow-up).
+- **Live relay check** (a VPS bot answered by the model on the Mac) is still to do.
 
 Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/local-models-20261117.md`, which was revised after an independent architecture review. Measurements: `docs/research/local-qwen38-27b-20261117.md`.
 
