@@ -78,8 +78,12 @@ test('a local connection belongs to the engine that adds it; the home server rel
   assert.equal(hub.model.calls.length,0,'The home server never dials the Mac runtime itself.');
   const sent=mac.model.calls.at(-1);assert.equal(sent.connectionId,id);assert.equal(sent.request.model,MODEL);assert.deepEqual(sent.request.messages,userMessage);assert.equal(sent.request.priority,undefined,'Relay-only fields never reach the provider.');
 
-  // A tool outside the offered catalog is refused rather than stored.
+  // A tool name outside the offered catalog is passed back as the model said it: the engine answers it with a tool error,
+  // as it does when the model runs on this engine directly. A malformed call is still refused.
   mac.model.behaviour=async()=>({text:'',toolCalls:[{id:'call_2',name:'delete_everything',arguments:{}}],usage:{},finishReason:'tool_calls'});
+  const unknownTool=await hub.app.providers.complete(structuredClone(connection()),{model:MODEL,messages:userMessage,tools:[{name:'lookup',parameters:{type:'object'}}]});
+  assert.deepEqual(unknownTool.toolCalls,[{id:'call_2',name:'delete_everything',arguments:{}}]);
+  mac.model.behaviour=async()=>({text:'',toolCalls:[{id:'call_3',name:'lookup',arguments:'not an object'}],usage:{},finishReason:'tool_calls'});
   await assert.rejects(hub.app.providers.complete(structuredClone(connection()),{model:MODEL,messages:userMessage,tools:[{name:'lookup',parameters:{type:'object'}}]}),error=>providerFailure(error)?.code==='tool_call_invalid');
 
   // A provider error on the Mac reaches the home server with its code; it is not replayed.

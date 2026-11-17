@@ -27,12 +27,12 @@ function actionHarness(connection,infer=async(_c,_n,request)=>verdict(request)) 
   return {engine,context,requests};
 }
 
-test('action review on a local runtime keeps the task model, turns thinking off, waits 45 s and runs as background work',async()=>{
+test('action review on a local runtime keeps the task model, turns thinking off, waits 45 s and runs as interactive work',async()=>{
   const h=actionHarness(localConnection());
   assert.equal((await reviewActionRisk(h.engine,h.context,serviceCall)).automatic,true);
   const [request]=h.requests;
   assert.equal(request.model,LOCAL_MODEL);assert.equal(request.reasoningEffort,'none');assert.ok(request.reasoningCapabilities.efforts.includes('none'));
-  assert.equal(request.timeoutMs,45_000);assert.equal(request.priority,'background');
+  assert.equal(request.timeoutMs,45_000);assert.equal(request.priority,'interactive','an action review blocks its task, so it does not wait behind other work');
 });
 
 test('a local model that cannot turn thinking off keeps the task reasoning but still gets the local limit and priority',async()=>{
@@ -42,7 +42,7 @@ test('a local model that cannot turn thinking off keeps the task reasoning but s
   await reviewActionRisk(h.engine,h.context,serviceCall);
   const [request]=h.requests;
   assert.equal(request.reasoningEffort,'');assert.deepEqual(request.reasoningCapabilities,{supported:false,efforts:[]});
-  assert.equal(request.timeoutMs,45_000);assert.equal(request.priority,'background');
+  assert.equal(request.timeoutMs,45_000);assert.equal(request.priority,'interactive','an action review blocks its task, so it does not wait behind other work');
 });
 
 test('action review on a cloud connection sends exactly the same request as before',async()=>{
