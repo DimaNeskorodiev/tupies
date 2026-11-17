@@ -104,7 +104,7 @@
       status=`<span class="status-pill ready"><i class="dot"></i>Running · ${models.length} ${models.length===1?'model':'models'}</span>`;
       body=models.length?`<p class="lm-models">${esc(models.slice(0,4).map(model=>shortModelName(model.id,model.name)).join(', '))}${models.length>4?` and ${models.length-4} more`:''}</p>`:`<p class="lm-hint">No models yet. ${runtime.type==='ollama'?'Download one with <code>ollama pull &lt;model&gt;</code>.':'Start the server with <code>--model</code> and a model from Hugging Face.'}</p>`;
       body+=runtime.type==='ollama'?cloudNote(runtime):'';
-      action=saved?`<span class="tag">Added as ${esc(saved.name)}</span><button type="button" class="secondary-button" data-action="assign-provider" data-id="${esc(saved.id)}">Use for a bot</button>`:`<button type="button" class="primary-button" data-local-action="use" data-type="${esc(runtime.type)}" ${busy?'disabled aria-busy="true"':''}>${busy?'Adding…':'Use'}</button>`;
+      action=saved?`<span class="tag">Added as ${esc(saved.name)}</span><button type="button" class="secondary-button" data-action="assign-provider" data-id="${esc(saved.id)}">Use for a bot</button>`:models.length?`<button type="button" class="primary-button" data-local-action="use" data-type="${esc(runtime.type)}" ${busy?'disabled aria-busy="true"':''}>${busy?'Adding…':'Use'}</button>`:'';
     }else{
       const missing=runtime.installed===false;
       status=`<span class="status-pill"><i class="dot"></i>${missing?'Not installed':runtime.conflict?'Port in use by another program':'Not running'}</span>`;

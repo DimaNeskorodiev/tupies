@@ -198,6 +198,9 @@ test('Ollama cloud models are not counted or offered as local, and say where the
   const ollama=h.main.querySelector('[data-local-models] [data-runtime="ollama"]');
   assert.match(ollama.textContent,/Running · 1 model(?!s)/);assert.match(ollama.textContent,/1 cloud model runs on ollama\.com, not on this Mac/);
   assert.doesNotMatch(ollama.querySelector('.lm-models').textContent,/Gemma/i);
+  const onlyCloud=cardHarness({runtimes:[{...ollamaRunning,models:[{id:'gemma4:cloud',cloud:true}]},mlxStopped]});t.after(()=>onlyCloud.win.close());await settle();
+  const cloudOnly=onlyCloud.main.querySelector('[data-local-models] [data-runtime="ollama"]');
+  assert.match(cloudOnly.textContent,/Running · 0 models/);assert.equal(cloudOnly.querySelector('[data-local-action="use"]'),null,'nothing to use until a model runs on this Mac');
   assert.deepEqual([...h.win.StudioLocalModels.modelBadges({id:'gemma4:cloud'})].map(item=>item.label),['Runs on ollama.com']);
 });
 
