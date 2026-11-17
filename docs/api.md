@@ -39,6 +39,7 @@ Native push registration is a device-only exception: **GET/PUT/DELETE `/api/devi
 | GET /api/capabilities | Tupies engine version and implemented feature flags. |
 | GET /api/conversations/search?query=words&scope=all | Owner-facing search of stored bot/room display transcripts, including hidden bots. Optional `scope=bot\|room`, `conversationId` and `limit=1..30`. Returns `{results:[{scope,conversationId,name,messageId,role,createdAt,excerpt}],total,scanned,truncated,hasMore,notice}`. Queries are 2–200 characters and at most 20 words; all words must match, with exact phrases ranked first, then recent messages. Scans at most 20,000 messages/8 million characters, with a partial-search notice. Redaction precedes matching and snippets. This is separate from a model's scoped history tools. |
 | GET /api/providers | Direct provider catalog and setup metadata. |
+| GET /api/local-runtimes | Which local runtimes answer on this engine's loopback (Ollama on 11434, MLX LM/VLM on 8080), with a timeout of at most 1.5 s each: `{platform,checkedAt,runtimes:[{type,name,baseUrl,running,version?,models:[{id,…}],conflict?,installed:true\|false\|null,startCommand,alternativeCommands,installUrl}]}`. Read-only. It never probes another host and never starts a runtime. |
 
 ## Missions
 
