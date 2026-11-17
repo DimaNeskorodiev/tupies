@@ -1,6 +1,6 @@
 # Product roadmap
 
-## Local models on the Mac — 17 November 2026 (in progress)
+## Local models on the Mac — 17 November 2026 (source only, not installed)
 
 Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was revised after an independent architecture review.
 
@@ -19,6 +19,17 @@ Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was re
 - Cold prefill is about 125 tok/s, so a prefix cache is required.
 - Tupies's chunked request bodies are refused by `mlx_lm.server` (HTTP 411).
 - 3 of 3 scored live eval cases passed on `mlx_vlm` with prefix caching.
+
+**Implemented in source on `feature/local-models-20261117`:**
+- L1: the engine changes listed above.
+- L2: the relay.
+- L3: the On this Mac card and the Cloud | On my Mac switch.
+
+**Remaining:**
+- native Ollama transport, once Ollama is measured;
+- the action-review thinking A/B;
+- a live Mac↔VPS relay check;
+- release.
 
 See [local models plan](plans/local-models-20261117.md).
 
