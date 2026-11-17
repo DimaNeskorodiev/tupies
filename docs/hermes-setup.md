@@ -14,6 +14,21 @@ Bots may share a provider account while keeping separate memory, workspaces and 
 
 For Ollama, run the local service with a tool-capable model and use its OpenAI-compatible endpoint, normally `http://127.0.0.1:11434/v1`. Tupies does not download model weights or start Ollama. In a container, loopback refers to the container; use a deliberately configured trusted private service or HTTPS endpoint.
 
+### Models on your Mac (Ollama and MLX)
+
+**Settings › Models** opens with an **On this Mac** card. The engine checks only this machine's loopback interface, with a short timeout (`GET /api/local-runtimes`), for:
+
+- **Ollama** on `http://127.0.0.1:11434` (`/api/version`, `/api/tags`);
+- **MLX LM** or **MLX VLM** on `http://127.0.0.1:8080` (`/v1/models`, and `/health`, which `mlx_vlm.server` exposes).
+
+Each runtime shows one of three states:
+
+- **Running · N models.** **Use** adds it as a provider in one click, named “Mac · Ollama” or “Mac · MLX”, with its first chat model as the default, and checks it once. A runtime that is already added shows **Added as …** and **Use for a bot**.
+- **Not running.** A copyable start command: `ollama serve`, or `mlx_lm.server --model <model> --port 8080`. For images and a prefix cache, the alternative is `APC_ENABLED=1 mlx_vlm.server --model <model> --port 8080`.
+- **Not installed.** A link to [Ollama](https://ollama.com/download) or [MLX LM](https://github.com/ml-explore/mlx-lm). Ollama is looked for in its usual install places. MLX often lives in a Python virtual environment, so when it is not found the card shows both the start command and the link.
+
+Tupies never starts a runtime, never downloads weights and never probes another machine. On a server (a VPS) the card lists the local providers the paired Mac hosts, with **Mac online** or **Mac offline**, or explains that local models run on the Mac. Choose the model for a bot with **On my Mac** in the model picker (see [Model and reasoning](chat-controls.md#model-and-reasoning)).
+
 ## ChatGPT / Codex subscription
 
 Choose **ChatGPT / Codex subscription**, save the connection, and click **Continue with ChatGPT**. Tupies uses the documented public-client flow for open-source and locally hosted apps. The account authorizes Tupies to use eligible ChatGPT plan allowance for Responses requests. A Codex CLI, a Hermes installation and an OpenAI Platform API key are not required for this path.
