@@ -36,7 +36,7 @@ function fakeProviders() {
 }
 async function engine(t,options={}) {
   const directory=await fs.mkdtemp(path.join(tmpdir(),'tupies-relay-')),model=fakeProviders();
-  const app=await createStudioServer({dataDir:directory,scheduler:false,logErrors:false,retryDelay:1,providers:model,sync:{longPollMs:100,fileScanInterval:200},relay:RELAY,...options}),{url}=await app.listen(0);
+  const app=await createStudioServer({dataDir:directory,scheduler:false,logErrors:false,retryDelay:1,providers:model,sleepGuard:false,sync:{longPollMs:100,fileScanInterval:200},relay:RELAY,...options}),{url}=await app.listen(0);
   let cookie='',csrf='';
   t.after(async()=>{await app.close();await fs.rm(directory,{recursive:true,force:true});});
   const request=async(route,{method='GET',body}={})=>{const response=await fetch(url+route,{method,headers:{...(cookie?{Cookie:cookie}:{}),...(csrf?{'X-CSRF-Token':csrf}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,body:await response.json()};};
@@ -260,7 +260,7 @@ test('the host queue runs at most two requests per runtime, interactive work bef
   const relay=new InferenceRelay({store,sync}).install(providers);
   const connection=store.state.connections[0],states=[];
   const first=providers.complete(connection,{label:'a'}),second=providers.complete(connection,{label:'b'});
-  const review=providers.reviewMemory(connection,{label:'review'}),interactive=providers.complete(connection,{label:'c',onRelayState:state=>states.push(state)});
+  const review=providers.reviewMemory(connection,{label:'review'}),interactive=providers.complete(connection,{label:'c',onRelayState:state=>states.push(state.state)});
   await eventually(()=>order.length===2);assert.equal(peak,2);assert.deepEqual(states,['queued']);
   gates.shift()();await eventually(()=>order.length===3);assert.equal(order[2],'c','Interactive work overtakes a queued background review.');assert.deepEqual(states,['queued','reading']);
   while(gates.length || order.length<4){if(gates.length)gates.shift()();await delay(5);}
