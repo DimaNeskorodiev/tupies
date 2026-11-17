@@ -799,7 +799,7 @@ let inferencePicker=null;
 const pickerQuiet=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
 const pickerHaptic=style=>window.StudioMobile?.haptic?.(style);
 function inferenceCapabilities(bot){const cached=reasoningCatalogs.get(bot.id);return botReasoningCapabilities(bot)||(cached?.effectiveModel===botModel(bot)?cached.reasoning:null);}
-function inferenceModelName(bot,model=bot.model){const connection=connectionById(bot.connectionId),id=model||connection?.defaultModel||'',cached=reasoningCatalogs.get(bot.id),entry=(cached?.models||connection?.models||[]).find(item=>item.id===id);return entry?.name||id||'Provider default';}
+function inferenceModelName(bot,model=bot.model){const connection=connectionById(bot.connectionId),id=model||connection?.defaultModel||'',cached=reasoningCatalogs.get(bot.id),entry=(cached?.models||connection?.models||[]).find(item=>item.id===id);if(entry?.name&&entry.name!==id)return entry.name;const local=window.StudioLocalModels;if(id&&local?.isLocal(connection))return local.shortModelName(id);return id||'Provider default';}
 function inferenceEffortName(bot,capabilities=inferenceCapabilities(bot),preference=reasoningPreference(bot)){
   const efforts=reasoningEfforts(capabilities);
   return preference==='auto'?(autoReasoningIsHigh(bot,capabilities)?'High':'Provider default'):efforts.includes(preference)?reasoningLabel(preference):'Provider default';
