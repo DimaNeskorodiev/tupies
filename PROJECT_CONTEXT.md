@@ -1,5 +1,9 @@
 # Tupies — project context
 
+## Desktop driver pin survives a reboot — 17 November 2026 (source only, not installed or released)
+
+During the beta 13 Mac rollout every Desktop action failed after a reboot with "The desktop driver changed" although the driver was untouched: the pin compared the APFS volume number (`st_dev`, 16777229 → 16777232) along with path, SHA-256 and inode. `lib/desktop-driver.mjs` now compares only path, SHA-256 and inode (`sameDriverIdentity`); `device` stays in the stored record so existing `data/desktop/config.json` files keep working without reconnecting. Task admission in `lib/desktop.mjs` binds the same device-free form and still accepts digests written by older journals, so re-saving the same driver after a reboot no longer drops access for admitted tasks. Changed bytes, a new inode (including a same-bytes copy), a different path or a missing file still refuse dispatch. New cases in `test/desktop-driver.test.mjs` and `test/desktop.test.mjs`; see [Desktop on this Mac](docs/desktop.md).
+
 ## Local models on the Mac, used from every engine — 17 November 2026 (source only, not installed or released)
 
 Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/local-models-20261117.md`, which was revised after an independent architecture review. Measurements: `docs/research/local-qwen38-27b-20261117.md`.
