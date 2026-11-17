@@ -27,7 +27,9 @@ import { applyExecutionInput } from './lib/exec/index.mjs';
 import { Integrations } from './lib/integrations.mjs';
 import { availableSearchFallbacks } from './lib/web-search.mjs';
 import { Channels } from './lib/channels.mjs';
-import { nativeApi, oauthCallback } from './lib/api-native.mjs';
+import { nativeApi, oauthCallback, recordConnectionTest } from './lib/api-native.mjs';
+import { InferenceRelay, connectionHostView } from './lib/inference-relay.mjs';
+import { SleepGuard } from './lib/sleep-guard.mjs';
 import { integrationOAuthCallback, integrationOAuthClientMetadata, oauthRedirectBase, OAUTH_CALLBACK_PATH, OAUTH_CLIENT_METADATA_PATH } from './lib/integration-oauth.mjs';
 import { LoopbackCallback } from './lib/oauth-callback.mjs';
 import { dashboard } from './lib/dashboard.mjs';
@@ -148,6 +150,10 @@ export async function createStudioServer(options={}) {
   // Nothing sits in front of an engine that terminates TLS itself, so no proxy may report client addresses.
   const access=await new Access(dataDir,{publicHost:publicOrigin?new URL(publicOrigin).host:'',...(tlsMode?{trustProxy:'none'}:options.trustProxy?{trustProxy:options.trustProxy}:{})}).init();
   const providers=options.providers || new Providers(store,options);
+  // Local models: a linked engine that hosts a runtime answers this engine's requests for it (lib/inference-relay.mjs).
+  // While a local model request runs here, a Mac stays awake (lib/sleep-guard.mjs); `sleepGuard:false` turns it off for tests.
+  const relay=new InferenceRelay({store,sync,options:options.relay,sleepGuard:options.sleepGuard===false?null:options.sleepGuard || new SleepGuard(),onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
+  sync.inference=relay;
   providers.oauth && (providers.oauth.refreshDelegate=connectionId=>sync.role()==='replica'?sync.delegateRefresh(connectionId):null);
   if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}
   const speech=new Speech(store,options);
@@ -162,7 +168,7 @@ export async function createStudioServer(options={}) {
     updateBot:(botId,input,{actor})=>{botIdle(botId);return store.mutate(async state=>{botIdle(botId);const index=state.bots.findIndex(b=>b.id===botId);ensure(index>=0,404,'Bot not found.');const updated=validateBot(input,state.bots[index]);validateBinding(updated,state,integrations);await validateSkillAssignments(store,state,updated);botIdle(botId);state.bots[index]=updated;store.audit('bot.updated',`${actor.name} updated ${updated.name}`,botId,{source:'agent'});return structuredClone(updated);});},
   };
   let updateWrites=0;
-  const maintenance=new UpdateMaintenance({held:updateHold,busy:()=>updateWrites>0 || ticking || sync.topologyChanging || runtime.starting.size>0 || runtime.submitting.size>0 || runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || runtime.tasks.size>0 || runtime.polling.size>0 || rooms.working.size>0 || rooms.submitting.size>0 || Object.values(store.state.runs).some(isActive) || Object.values(store.state.roomDrives || {}).some(isDriveActive) || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging'||attempt.status==='pending'&&attempt.expiresAt>Date.now()) || channels.receiving.size>0 || [...channels.requests.keys()].some(operation=>channels.requestMethods.get(operation)!=='getUpdates') || !!channels.tickPromise || !!notifications.delivery});
+  const maintenance=new UpdateMaintenance({held:updateHold,busy:()=>updateWrites>0 || ticking || sync.topologyChanging || runtime.starting.size>0 || runtime.submitting.size>0 || runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || runtime.tasks.size>0 || runtime.polling.size>0 || rooms.working.size>0 || rooms.submitting.size>0 || Object.values(store.state.runs).some(isActive) || Object.values(store.state.roomDrives || {}).some(isDriveActive) || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging'||attempt.status==='pending'&&attempt.expiresAt>Date.now()) || channels.receiving.size>0 || [...channels.requests.keys()].some(operation=>channels.requestMethods.get(operation)!=='getUpdates') || !!channels.tickPromise || !!notifications.delivery || relay.busy()});
   updatePaused=()=>maintenance.paused;
   // Settings → Version & updates. Reads the installed release and the signed channel; installing stays with the operator updater.
   const updates=new EngineUpdates({root:ROOT,maintenance,...options.updates});
@@ -171,12 +177,13 @@ export async function createStudioServer(options={}) {
   await runtime.recover();
   const rooms=new Rooms(store,runtime);runtime.roomManager=rooms;await rooms.recover();
   const channels=new Channels(store,runtime,{...options,publicUrl:publicOrigin,automation:()=>!maintenance.paused && sync.runsAutomation()});
-  sync.options.linkBusy=()=>runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging');
+  sync.options.linkBusy=()=>relay.busy() || runtime.compactions.size>0 || runtime.routineAdmissions.size>0 || !!providers.oauth?.refreshes?.size || [...(providers.oauth?.pending?.values() || [])].some(attempt=>attempt.status==='exchanging');
   sync.prepareLinkChange=()=>channels.pauseAutomation();
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
   const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport,updateHeld:()=>maintenance.paused}).init();
   await runtime.recoverAutonomous();
+  relay.start();
   sync.onNotificationReads = ids => notifications.markRead(ids);
   const bootstrapToken=options.bootstrapToken || randomBytes(24).toString('base64url');
   const sessions=new Map(), attempts=new WindowCounter(),skillImports=new Map();
@@ -313,7 +320,7 @@ export async function createStudioServer(options={}) {
         if(method==='POST' && pathname==='/api/logout'){sessions.delete(session.token);for(const [key,preview] of skillImports)if(preview.owner===session.token)skillImports.delete(key);if(session.device)sync.devices.sessions.delete(session.token);res.setHeader('Set-Cookie',`${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie?'; Secure':''}`);return json(res,{authenticated:false});}
         if(method==='GET' && pathname==='/api/state'){const state=store.publicState();
           // Engine-local: a ChatGPT authorization detached from its former home server cannot be used here (lib/sync oauthAccess).
-          state.connections=state.connections.map(connection=>sync.oauthAccess(connection)?{...connection,oauthBlocked:true}:connection);
+          state.connections=state.connections.map(connection=>({...connection,...connectionHostView(connection,sync),...(sync.oauthAccess(connection)?{oauthBlocked:true}:{})}));
           return json(res,{...state,missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),sync:sync.summary(),browser:runtime.browsers.status()});}
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
         if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,sync,updates,clientAddress:access.client(req)}))return;
@@ -596,7 +603,8 @@ export async function createStudioServer(options={}) {
       speech.close();
       await notifications.close();
       if(control){control.close();await fs.rm(controlFile,{force:true});}
-      // Ends open sync long-polls first so the listener can close promptly.
+      // Ends open sync long-polls first so the listener can close promptly; relayed model requests end with them.
+      await relay.close();
       await sync.close();
       await channels.close();
       // Open owner browser streams end now; their handoffs end with the runtime below.

@@ -1,0 +1,32 @@
+/* Models on the owner's Mac (public/local-models.js): the "On this Mac" card in Settings › Models and model badges. */
+.lm-card{padding:22px 24px;margin:6px 0 24px;display:grid;gap:14px;min-width:0}
+.lm-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.lm-card-head h2{margin:0 0 4px;font-size:20px;font-weight:550}
+.lm-card-head p{margin:0;color:var(--muted,#737b89);font-size:13px;line-height:1.5}
+.lm-card-head .secondary-button{flex:none}
+.lm-error:empty{display:none}
+.lm-runtimes{display:grid;gap:10px;min-width:0}
+.lm-runtime{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:16px;background:rgba(255,255,255,.28);min-width:0}
+.lm-runtime-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lm-runtime-head>div:first-child{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.lm-runtime h3{margin:0;font-size:15px;font-weight:600}
+.lm-runtime h3 small{font-weight:450;color:var(--muted,#737b89);font-size:11px}
+.lm-runtime .status-pill{display:inline-flex;margin-left:0}
+.lm-runtime-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lm-runtime-actions .tag{margin:0}
+.lm-models,.lm-hint{margin:0;font-size:12px;line-height:1.5;color:var(--muted,#737b89);overflow-wrap:anywhere}
+.lm-hint code,.lm-command code{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+.lm-command{display:flex;align-items:center;gap:8px;min-width:0;padding:6px 6px 6px 12px;border-radius:12px;background:rgba(84,96,121,.07)}
+.lm-command code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;color:var(--ink,#29313d)}
+.lm-command .text-button{flex:none;min-height:36px}
+/* Capability badges on local model rows in the picker. */
+.lm-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.lm-badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:550;line-height:16px;background:rgba(84,96,121,.1);color:var(--muted,#737b89)}
+.lm-badge.is-tools{background:rgba(83,123,99,.14);color:var(--green,#537b63)}
+.lm-badge.is-thinking{background:rgba(112,99,144,.14);color:#706390}
+.lm-badge.is-vision{background:rgba(70,118,160,.14);color:#466fa0}
+:is([data-theme=dark],[data-appearance=dark]) .lm-runtime{background:rgba(255,255,255,.04)}
+:is([data-theme=dark],[data-appearance=dark]) .lm-command{background:rgba(255,255,255,.06)}
+:is([data-theme=dark],[data-appearance=dark]) .lm-command code{color:inherit}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-appearance=light]) :is(.lm-runtime,.lm-command){background:rgba(255,255,255,.05)}:root:not([data-theme=light]):not([data-appearance=light]) .lm-command code{color:inherit}}
+@media(max-width:760px){.lm-card{padding:18px 16px}.lm-card-head{flex-wrap:wrap}.lm-card-head .secondary-button,.lm-runtime-actions button{min-height:44px}.lm-runtime-actions{width:100%}.lm-runtime-actions .primary-button{flex:1}}

@@ -1,5 +1,39 @@
 # Product roadmap
 
+## Local models on the Mac — 17 November 2026 (source only, not installed)
+
+Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was revised after an independent architecture review.
+
+1. **Measure the model first.**
+2. **Fix local inference in the engine:**
+   - real context size;
+   - Qwen3.8 recognized as a thinking model;
+   - separate total and first-token time limits;
+   - reviews with thinking off, without moving action review silently;
+   - a single re-send for invalid tool arguments.
+3. **Make the Mac the inference node for the VPS.** Generation is relayed over the existing sealed engine link: host-only connection edits, relayed model list and test, heartbeat and cancel, and `node_offline` going straight to the bot's fallback.
+4. **Add a Cloud | On my Mac toggle** in the composer picker and Bot settings.
+5. **Live status and sleep** (branch `work/local-models-status`, not installed): the chat says "Waiting for the Mac…", "Loading the model on this Mac…" or "Reading the conversation (about 24K tokens)…" while a local step waits; a Mac engine holds `caffeinate -i` while it runs local requests; embedding models are hidden from local model lists. "Loading" appears only when a runtime reports it; the engine does not yet detect a cold model load itself.
+
+**L0 measurement on MLX is done** ([results](research/local-qwen38-27b-20261117.md)):
+- Tool calls work.
+- Cold prefill is about 125 tok/s, so a prefix cache is required.
+- Tupies's chunked request bodies are refused by `mlx_lm.server` (HTTP 411).
+- 3 of 3 scored live eval cases passed on `mlx_vlm` with prefix caching.
+
+**Implemented in source on `feature/local-models-20261117`:**
+- L1: the engine changes listed above.
+- L2: the relay.
+- L3: the On this Mac card and the Cloud | On my Mac switch.
+
+**Remaining:**
+- native Ollama transport, once Ollama is measured;
+- the action-review thinking A/B;
+- a live Mac↔VPS relay check;
+- release.
+
+See [local models plan](plans/local-models-20261117.md).
+
 ## Live browser handoff — 16 November 2026 (source only)
 
 Shipped in source: the owner operates the bot's browser through a live view (stream plus input batches) instead of single screenshots, with a phone layout, popups, website dialogs, a non-blocking address bar and automatic reconnect; the task browser identifies as regular Chrome. Not done yet: acceptance on a real iPhone (WKWebView keyboard, SMS code autofill), over the real VPS network, and against real third-party sign-ins and CAPTCHAs; then a signed Engine release to the Mac and the VPS.
