@@ -62,7 +62,8 @@ test('a stalled ordinary model times out at its short idle limit while a reasoni
     });
   });
   const {store,providers:p}=await providers(t,{idleTimeouts:{standard:150,reasoning:1500}});
-  const connection={id:'c1',type:'custom',name:'Fixture',baseUrl:base,models:[{id:'plain'},{id:'think',reasoning:{supported:true,efforts:['low','high'],defaultEffort:'low',parameter:'reasoning',source:'provider'}}]};
+  // A loopback fixture standing in for a cloud service, so it keeps cloud timing (no local first-event allowance).
+  const connection={id:'c1',type:'custom',name:'Fixture',baseUrl:base,local:false,models:[{id:'plain'},{id:'think',reasoning:{supported:true,efforts:['low','high'],defaultEffort:'low',parameter:'reasoning',source:'provider'}}]};
   await store.mutate(state=>{state.connections.push(connection);});
   const started=Date.now();
   await assert.rejects(()=>p.complete(connection,{model:'plain',messages:[{role:'user',content:'hi'}]}),error=>{const failure=providerFailure(error);return failure?.code==='timeout' && failure.timeoutPhase==='idle';});
