@@ -13,6 +13,7 @@ Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was re
    - a single re-send for invalid tool arguments.
 3. **Make the Mac the inference node for the VPS.** Generation is relayed over the existing sealed engine link: host-only connection edits, relayed model list and test, heartbeat and cancel, and `node_offline` going straight to the bot's fallback.
 4. **Add a Cloud | On my Mac toggle** in the composer picker and Bot settings.
+5. **Live status and sleep** (branch `work/local-models-status`, not installed): the chat says "Waiting for the Mac…", "Loading the model on this Mac…" or "Reading the conversation (about 24K tokens)…" while a local step waits; a Mac engine holds `caffeinate -i` while it runs local requests; embedding models are hidden from local model lists. "Loading" appears only when a runtime reports it; the engine does not yet detect a cold model load itself.
 
 **L0 measurement on MLX is done** ([results](research/local-qwen38-27b-20261117.md)):
 - Tool calls work.

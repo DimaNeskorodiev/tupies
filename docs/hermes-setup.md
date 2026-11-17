@@ -23,9 +23,11 @@ For Ollama, run the local service with a tool-capable model and use its OpenAI-c
 
 Each runtime shows one of three states:
 
-- **Running · N models.** **Use** adds it as a provider in one click, named “Mac · Ollama” or “Mac · MLX”, with its first chat model as the default, and checks it once. A runtime that is already added shows **Added as …** and **Use for a bot**.
+- **Running · N models.** **Use** adds it as a provider in one click, named “Mac · Ollama” or “Mac · MLX”, with its first chat model as the default, and checks it once. Embedding models the runtime also serves (for example `sentence-transformers/all-MiniLM-L6-v2` or `nomic-embed-text`) cannot chat: they are not counted, never become the default, and the model picker does not list them for local providers. A runtime that is already added shows **Added as …** and **Use for a bot**.
 - **Not running.** A copyable start command: `ollama serve`, or `mlx_lm.server --model <model> --port 8080`. For images and a prefix cache, the alternative is `APC_ENABLED=1 mlx_vlm.server --model <model> --port 8080`.
 - **Not installed.** A link to [Ollama](https://ollama.com/download) or [MLX LM](https://github.com/ml-explore/mlx-lm). Ollama is looked for in its usual install places. MLX often lives in a Python virtual environment, so when it is not found the card shows both the start command and the link.
+
+While a bot's step runs on a local model, the chat says what it is waiting for: "Waiting for this Mac…" when other requests are ahead in the queue, "Loading the model on this Mac…", "Reading the conversation (about 24K tokens)…", and then the streamed answer. While a request runs, the Mac is kept from idle sleep (`caffeinate`, ended 30 s after the last request). A closed lid on battery still sleeps the Mac; a bot used from the home server then gets its fallback model's answer, or stops with "The Mac is offline" (see [Engines, devices and sync](sync.md#local-models-hosted-by-a-linked-engine)).
 
 Tupies never starts a runtime, never downloads weights and never probes another machine. On a server (a VPS) the card lists the local providers the paired Mac hosts, with **Mac online** or **Mac offline**, or explains that local models run on the Mac. Choose the model for a bot with **On my Mac** in the model picker (see [Model and reasoning](chat-controls.md#model-and-reasoning)).
 

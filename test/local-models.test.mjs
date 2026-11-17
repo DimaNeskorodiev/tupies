@@ -201,10 +201,10 @@ test('an MLX model list gets window, images and reasoning from the family preset
   const f=await server(t,(_req,res)=>json(res,{object:'list',data:[{id:QWEN,object:'model',created:1},{id:'mlx-community/bge-small-en'},{id:'qwen3.8-declared',context_length:131_072,input_modalities:['text']}]}));
   const {providers,connection}=local(t,f.origin);
   const {models}=await providers.models(connection);
-  const [qwen,embedding,declared]=models;
+  const [qwen,declared]=models;
+  assert.equal(models.some(model=>model.id==='mlx-community/bge-small-en'),false,'an embedding model is not offered as a chat model');
   assert.equal(qwen.contextWindow,262_144);assert.equal(qwen.contextSource,'preset');assert.deepEqual(qwen.images,{supported:true,source:'preset'});
   assert.equal(qwen.reasoning.parameter,LOCAL_THINKING_PARAMETER);assert.equal(qwen.reasoning.defaultEffort,'xhigh');
-  assert.equal(embedding.contextWindow,undefined);assert.equal(embedding.images,undefined);assert.equal(embedding.reasoning.supported,false);
   assert.equal(declared.contextWindow,131_072);assert.equal(declared.contextSource,undefined);assert.deepEqual(declared.images,{supported:false,source:'provider'});
   assert.deepEqual(localCatalogFacts(connection,QWEN),{family:'qwen3.8',contextWindow:262_144,images:true,tools:true,reasoning:true});
   assert.equal(localCatalogFacts({type:'openrouter'},QWEN),null);
