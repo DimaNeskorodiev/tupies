@@ -220,7 +220,7 @@ test('the local connection test checks prefix reuse with two tiny thinking-off r
     const probes=f.requests.filter(item=>item.url.endsWith('/chat/completions'));
     assert.equal(probes.length,2);assert.deepEqual(probes[0].body,probes[1].body);
     assert.equal(probes[0].body.max_tokens,1);assert.equal(probes[0].body.stream,false);assert.deepEqual(probes[0].body.chat_template_kwargs,{enable_thinking:false});
-    assert.equal(providers.localQueue.calls.length,0);
+    assert.equal(providers.localQueue.calls.length,1,'both probe requests wait their turn once, as background work');assert.equal(providers.localQueue.calls[0].priority,'background');
   });
   await t.test('no reuse',async t=>{
     const f=await server(t,(req,res)=>req.url.endsWith('/models')?json(res,catalog):json(res,{...done,usage:{prompt_tokens:610,prompt_tokens_details:{cached_tokens:0}}}));

@@ -115,6 +115,10 @@ A provider connection created with a local preset (Ollama, MLX LM, or a loopback
 - **Busy and status.** A relayed job counts as busy for unlink and updates on the host. The hub reports host online/queue state from its own memory (`host` on each connection in `/api/state` and in `GET /api/sync/status` → `inference`); presence carries nothing extra.
 - **Scope.** Only hub → host relay: a second replica cannot use the Mac's model, and a model hosted by the home server is dialled only there. The host only generates text; tools, approvals and the loop stay with the engine that runs the task.
 
+**Known limit.** A connection record is one synced document, and the newest edit wins. If a non-host engine edits it (name, default model) from a stale copy, it can undo a recent change made on the host, such as a new address. Make address changes on the Mac that hosts the model, then let both engines sync before editing elsewhere.
+
+Reviewed 17 November 2026: unknown tool names from the host are returned to the engine (which answers them with a tool error, as for a direct local run); a job still waiting for a busy host fails only when the host stops claiming; shutting down aborts relayed requests without recording a fallback; queue-full and too-large requests carry failure codes; only reasoning items and numeric usage cross from the host.
+
 ## Reaching your engines
 
 | Option | Good for | Notes |
