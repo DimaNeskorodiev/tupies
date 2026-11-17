@@ -251,3 +251,13 @@ test('the local connection test checks prefix reuse with two tiny thinking-off r
     assert.equal(Object.hasOwn(result,'prefixCache'),false);assert.equal(f.requests.length,1);
   });
 });
+
+test('an owner can mark a loopback compatible endpoint as not local, and only a custom one',()=>{
+  const providers=new Providers(makeStore(),{});
+  const proxy=providers.validate({type:'custom',name:'Local proxy',baseUrl:'http://127.0.0.1:4000/v1',local:false});
+  assert.equal(proxy.local,false);assert.equal(isLocalConnection(proxy),false);
+  assert.equal(isLocalConnection({type:'custom',baseUrl:'http://127.0.0.1:4000/v1'}),true);
+  const back=providers.validate({local:null},proxy);assert.equal(back.local,undefined);assert.equal(isLocalConnection(back),true);
+  const mlx=providers.validate({type:'mlx',local:false});assert.equal(mlx.local,undefined);assert.equal(isLocalConnection(mlx),true);
+  assert.throws(()=>providers.validate({type:'custom',baseUrl:'http://127.0.0.1:4000/v1',local:'yes'}),/Local must be/);
+});

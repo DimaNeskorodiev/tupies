@@ -70,6 +70,7 @@ A connection uses `{name,type,baseUrl?,apiKey?,defaultModel?,maxOutputTokens?,co
 | PATCH /api/connections/{id} | Edit provider metadata/model; type/destination changes require appropriate fresh credentials. |
 | DELETE /api/connections/{id} | Remove an unused provider. Active tasks and assigned bots must be resolved first. |
 | POST /api/connections/{id}/test | Fetch model metadata without a paid inference request. |
+| POST /api/connections/{id}/host | `{confirm:true}`: this engine becomes the host of a local-model connection (Ollama, MLX, loopback). Refused while the current host is online. Connections in `/api/state` and these routes carry `local` and `host:{nodeId,name,online,here,queue?}` or `null`; a connection hosted elsewhere lists its synced models, relays `test` through the home server and refuses `type`/`baseUrl` edits. See [Sync](sync.md#local-models-hosted-by-a-linked-engine). |
 | GET /api/connections/{id}/models | Current provider model choices. |
 | POST /api/connections/{id}/default-model | Validate `{model,applyToAllBots?}` against the current catalog; save workspace/provider defaults atomically. applyToAllBots defaults to true and makes all existing bots inherit; false preserves individual model/provider overrides. Active affected tasks must finish first. |
 | POST /api/connections/{id}/login | Start ChatGPT OAuth, return pending authUrl/loginId/message. |

@@ -104,6 +104,17 @@ Copied ChatGPT grants remain owned by the former home: this copy cannot use/refr
 
 The public engine metadata advertises `protocols: {deviceSession:2,devicePairing:1,enginePairing:2,sync:2}`. Sealed sync routes require `X-Tupies-Sync-Version: 2` and the current `X-Tupies-Key-Epoch`; an epoch conflict leads to individual key recovery and bounded retry, not old-key fallback. `POST /api/sync/key` and `POST /api/sync/revoke-engine` require a currently authorized engine bearer. These control envelopes do not expose the plaintext group key.
 
+## Local models hosted by a linked engine
+
+A provider connection created with a local preset (Ollama, MLX LM, or a loopback `custom` address) stores `host: <nodeId>` of the engine that created it, usually the Mac. The record replicates like any connection, but only the host dials its `baseUrl`; connections without `host` (older local connections) keep dialling locally on every engine. `lib/inference-relay.mjs` decorates the Providers instance (`complete`, `models`, `test`, reviews) — `lib/providers.mjs` is unchanged.
+
+- **Host-only writes.** Only the host may change `type` or `baseUrl` (other engines get 409); edits elsewhere keep the host's `status`, `models`, `error` and `testedAt`. Learned context windows, image refusals and output parameters are written only by the engine that dialled. `POST /api/connections/{id}/host` with `{confirm:true}` makes this engine the host (for a Mac restored with a new identity); it is refused while the current host is online.
+- **Other engines.** Model lists come from the synced record. On the home server, `test` and `complete` become in-memory jobs for the host; on any other engine they fail with `node_offline`.
+- **Relay.** The host long-polls `POST /api/sync/inference/claim` (sealed `{node,v,wait,capacity}` → `{node,v,jobs:[{id,v,kind,priority,connectionId,request}]}`); the hub hands a job only to the engine whose node id equals the connection's `host`. The claim wait gives up update admission like the exchange and stays outside `securityOperation`. The host runs each job through its own runtime queue (at most two requests per runtime, interactive before background reviews, shared with its own tasks) and posts sealed batches to `POST /api/sync/inference/events` (`{node,v,job,seq,events}` → `{action:'continue'|'cancel'|'unknown'}`): deltas and reasoning at most every 250 ms, a `state` heartbeat (`queued`, `reading`, `generating`) at least every 3 s, then the result or error. The hub drops duplicate sequence numbers and fails a gap as `stream_interrupted`. The host aborts on `cancel` or `unknown`, so it also stops after a hub restart.
+- **Failures.** `node_offline` (host not claiming), `node_lost` (no batch for 20 s) and `node_incompatible` (relay protocol mismatch). The first two skip automatic retries and go once to the bot's fallback model; without one the task fails with "The Mac that runs this model … is offline". Nothing is replayed.
+- **Busy and status.** A relayed job counts as busy for unlink and updates on the host. The hub reports host online/queue state from its own memory (`host` on each connection in `/api/state` and in `GET /api/sync/status` → `inference`); presence carries nothing extra.
+- **Scope.** Only hub → host relay: a second replica cannot use the Mac's model, and a model hosted by the home server is dialled only there. The host only generates text; tools, approvals and the loop stay with the engine that runs the task.
+
 ## Reaching your engines
 
 | Option | Good for | Notes |
