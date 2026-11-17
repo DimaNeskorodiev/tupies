@@ -38,10 +38,32 @@ Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/
 - **Cloud | On my Mac switch** in the composer picker and Bot settings. It is disabled without a local provider and shows "Mac offline" when the host is gone. Model rows have Thinking, Vision and window badges.
 - **Chat run status** for `node_offline` / `node_lost`.
 
+**Live status and sleep:**
+- The chat shows "Waiting for this Mac…", "Reading the conversation (about N tokens)…" and the relayed host's name while a local or relayed step waits.
+- `lib/sleep-guard.mjs` holds `caffeinate -i -w <pid>` on macOS while local or relayed work runs, with a 30 s grace after the last request.
+- Embedding models are hidden from local model lists.
+
+**Independent code review** of the integrated diff found no high-severity issues. Fixed:
+- an invented tool name no longer fails a relayed task;
+- a job queued behind a busy host fails only if the host stops claiming;
+- shutdown aborts without recording a fallback;
+- queue-full and too-large requests carry failure codes;
+- only reasoning items and numeric usage cross from the host;
+- action review is interactive work;
+- the prefix-cache probe is queued, bounded and skipped for Ollama;
+- loopback `custom` connections saved before this change keep cloud behaviour (`local:false`, once).
+
+Documented as a known limit: last-writer-wins edits from a non-host.
+
 **Verification:**
-- full `npm test` 2,709/2,709 on the integrated branch;
+- full `npm test` 2,722/2,722 on the integrated branch;
 - `npm run check`;
-- a browser check on a disposable engine with a fake MLX runtime: card, Use, picker switch, reasoning slider, and a chat turn that sent `Content-Length`, thinking, sampling and the 16K floor.
+- browser checks on a disposable engine with a fake MLX runtime and the owner's real Ollama:
+  - the card, with an Ollama that lists only a `:cloud` model reported as having no local models;
+  - Use;
+  - the picker switch and the reasoning slider;
+  - a chat turn that sent `Content-Length`, thinking, sampling and the 16K floor;
+  - the live "Reading the conversation" status.
 
 **Not done:**
 - native Ollama `/api/chat` with `num_ctx`;
