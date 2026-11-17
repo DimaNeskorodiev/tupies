@@ -145,6 +145,10 @@ The deterministic regression fixtures reproduce a requirement that the former mi
 - Only the model call repeats; no tool runs again. A second overflow in the same task fails it.
 - It records a `context.overflow` event.
 
+## When a model returns invalid tool arguments
+
+A provider rejects a response whose tool-call arguments are not valid JSON objects (failure code `arguments_rejected`), so nothing from it is stored and no tool from it runs. The engine sends the same model step once more and records a `model.arguments_rejected` event. A second rejection in the same step ends it as before. This applies to every provider, because an invalid call kept in history would break providers that re-parse it later.
+
 ## Prompt caching
 
 - **OpenAI Responses / ChatGPT:** `prompt_cache_key` is a 32-character digest per bot, so no bot name or id leaves the engine.
