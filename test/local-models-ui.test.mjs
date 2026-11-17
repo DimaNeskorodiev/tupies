@@ -56,16 +56,19 @@ test('local model names, capability badges and the no-tools explanation come fro
   assert.equal(local.failureText('node_lost'),'The Mac is offline');assert.equal(local.failureText('rate_limit','x'),'');
 });
 
-function cardHarness({runtimes,platform='darwin',connections=[],fail=false}={}){
-  const h=page('<main id="main"></main>');const requests=[],toasts=[];let refreshed=0;
-  const ctx={data:{connections,bots:[]},icon:name=>`<i data-icon="${name}"></i>`,errorText:error=>error.message,toast:(message,error)=>toasts.push({message,error:!!error}),refresh:async()=>{refreshed++;},
+function cardHarness({runtimes,platform='darwin',connections=[],fail=false,hash='',bots=[],engine,macs,created=body=>({id:'provider_new',...body}),patchFail=''}={}){
+  const h=page('<main id="main"></main>');const requests=[],toasts=[],returns=[];let refreshed=0;
+  if(hash)h.win.location.hash=hash;
+  const ctx={data:{connections,bots},icon:name=>`<i data-icon="${name}"></i>`,errorText:error=>error.message,toast:(message,error)=>toasts.push({message,error:!!error}),refresh:async()=>{refreshed++;},
+    returnToChat:(botId,notice)=>returns.push({botId,notice}),
     api:async(path,options={})=>{requests.push(plain({path,...options}));
-      if(path==='/api/local-runtimes'){if(fail)throw new Error('Engine unavailable.');return {platform,runtimes};}
-      if(path==='/api/connections'&&options.method==='POST')return {id:'provider_new',...options.body};
+      if(path.startsWith('/api/local-runtimes')){if(fail)throw new Error('Engine unavailable.');return {platform,runtimes,...(engine?{engine}:{}),...(macs?{macs}:{})};}
+      if(path==='/api/connections'&&options.method==='POST')return created(options.body);
       if(path==='/api/connections/provider_new/test')return {connected:true,models:[]};
+      if(/^\/api\/bots\/[^/]+\/inference$/.test(path)&&options.method==='PATCH'){if(patchFail)throw new Error(patchFail);return {bot:{id:path.split('/')[3],...options.body}};}
       throw new Error(`Unexpected fixture request: ${path}`);}};
   const main=h.doc.querySelector('#main');main.innerHTML=h.local.card(ctx);h.local.mount(ctx,main);
-  return {...h,ctx,main,requests,toasts,refreshed:()=>refreshed};
+  return {...h,ctx,main,requests,toasts,returns,refreshed:()=>refreshed};
 }
 const ollamaRunning={type:'ollama',name:'Ollama',baseUrl:'http://127.0.0.1:11434/v1',running:true,version:'0.13.0',installed:true,models:[{id:'nomic-embed-text:latest',embedding:true},{id:'qwen3.8:27b',parameterSize:'27.8B'},{id:'llama3.2:3b'}],startCommand:'ollama serve',alternativeCommands:[],installUrl:'https://ollama.com/download'};
 const mlxStopped={type:'mlx',name:'MLX LM',baseUrl:'http://127.0.0.1:8080/v1',running:false,installed:null,models:[],startCommand:'mlx_lm.server --model <model> --port 8080',alternativeCommands:['APC_ENABLED=1 mlx_vlm.server --model <model> --port 8080'],installUrl:'https://github.com/ml-explore/mlx-lm'};
@@ -113,11 +116,27 @@ function scopePicker({connections,model='',connectionId,form=false,storage=true,
   return {...h,root,controller,loads,saves,segment,options:()=>[...root.querySelectorAll('.mp-provider-select option')].map(option=>option.value),note:()=>root.querySelector('.mp-scope-note').textContent.trim()};
 }
 
-test('the Cloud | On my Mac toggle is disabled with a setup link when no local model exists',async t=>{
+test('On my Mac without a local model offers setup instead of a dead end, for this bot',async t=>{
   const h=scopePicker({connections:[openrouter],connectionId:openrouter.id,model:'qwen/qwen3-coder'});t.after(()=>h.win.close());await settle();
-  assert.equal(h.segment('cloud').getAttribute('aria-pressed'),'true');assert.equal(h.segment('local').disabled,true);
-  assert.match(h.note(),/No model runs on your Mac yet/);assert.equal(h.root.querySelector('.mp-scope-setup').dataset.nav,'/connections');
+  const href='/connections?setup=local&bot=bot_atlas';
+  assert.equal(h.segment('cloud').getAttribute('aria-pressed'),'true');assert.equal(h.segment('local').disabled,false,'On my Mac stays available');
+  assert.match(h.note(),/^No model on your Mac yet\. Set one up$/);assert.equal(h.root.querySelector('.mp-scope-setup').dataset.nav,href);
   assert.equal(h.segment('local').getAttribute('aria-describedby'),'p-scope-note');
+  const setup=h.root.querySelector('[data-mp-setup]');assert.equal(setup.hidden,true);
+  h.segment('local').click();await settle();
+  assert.equal(h.segment('local').getAttribute('aria-pressed'),'true');assert.equal(setup.hidden,false);assert.equal(h.note(),'');
+  assert.equal(h.root.querySelector('.mp-provider').hidden,true);assert.equal(h.root.querySelector('.mp-model').hidden,true);
+  assert.match(setup.textContent,/No model on your Mac yet/);
+  const button=setup.querySelector('.mp-setup-button');assert.equal(button.dataset.nav,href);assert.equal(button.dataset.localSetup,'bot_atlas');assert.match(button.textContent,/^Set up a model on your Mac$/);
+  assert.equal(h.doc.activeElement,button,'the button is focused');assert.equal(h.saves.length,0,'nothing is saved');assert.equal(h.loads.includes(undefined),false);
+  h.segment('cloud').click();await settle();
+  assert.equal(setup.hidden,true);assert.equal(h.root.querySelector('.mp-provider').hidden,false);assert.deepEqual(h.options(),[openrouter.id]);
+
+  // Bot settings for a new bot: the setup link carries no bot, and the form keeps its values.
+  const form=scopePicker({connections:[openrouter],connectionId:openrouter.id,model:'qwen/qwen3-coder',form:true,memoryKey:''});t.after(()=>form.win.close());await settle();
+  form.segment('local').click();await settle();
+  assert.equal(form.root.querySelector('.mp-setup-button').dataset.nav,'/connections?setup=local');
+  assert.equal(form.doc.querySelector('.mp-provider-select').value,openrouter.id);assert.equal(form.doc.querySelector('.mp-model-value').value,'qwen/qwen3-coder');
 });
 
 test('On my Mac lists only local providers with badges; Cloud goes back to the saved provider',async t=>{
@@ -242,4 +261,142 @@ test('a local step’s live state reads as plain text in the chat strip, by wher
   assert.equal(label({elapsedMs:45_000}),'waiting for model · 45 s','cloud waits keep their words');
   assert.equal(label({state:'generating',elapsedMs:15_000}),'waiting for model · 15 s','an unknown state is not shown as a local state');
   assert.equal(h.run(`runActivity({events:[{type:'model.started',step:1},${JSON.stringify({type:'model.waiting',createdAt:at,state:'reading',tokens:100})},{type:'model.resumed',step:1}]}).wait`),null,'streamed text clears the notice');
+});
+
+const roki={id:'bot_roki',name:'Roki',connectionId:'provider_openrouter',model:'deepseek/deepseek-v4-pro'};
+const mlxRunning={type:'mlx',name:'MLX LM',baseUrl:'http://127.0.0.1:8080/v1',running:true,installed:true,models:[{id:'mlx-community/Qwen3.8-27B-4bit'},{id:'mlx-community/Qwen3-Embedding-0.6B',embedding:true}],startCommand:'mlx_lm.server --model <model> --port 8080',alternativeCommands:[],installUrl:'https://github.com/ml-explore/mlx-lm'};
+
+test('arriving from the chat focuses the setup card; Use switches the bot and offers Back to chat',async t=>{
+  const h=cardHarness({runtimes:[ollamaRunning,mlxStopped],hash:'#/connections?setup=local&bot=bot_roki',bots:[roki]});t.after(()=>h.win.close());await settle();
+  const card=h.main.querySelector('[data-local-models]');
+  assert.ok(card.classList.contains('is-setup'),'the card is highlighted');assert.ok(card.classList.contains('is-arriving'));assert.equal(card.getAttribute('tabindex'),'-1');
+  assert.equal(h.doc.activeElement,card,'the card has focus');
+  assert.match(card.querySelector('.lm-setup-line').textContent,/Choose Use next to a running model, and Roki switches to it\. There is nothing to fill in\./);
+  card.querySelector('[data-runtime="ollama"] [data-local-action="use"]').click();await settle();
+  assert.deepEqual(h.requests.map(item=>[item.method||'GET',item.path]),[['GET','/api/local-runtimes'],['POST','/api/connections'],['POST','/api/connections/provider_new/test'],['PATCH','/api/bots/bot_roki/inference']]);
+  assert.deepEqual(h.requests.at(-1).body,{connectionId:'provider_new',model:'qwen3.8:27b'});
+  const done=card.querySelector('.lm-done');assert.equal(done.getAttribute('role'),'status');assert.match(done.textContent,/Roki now uses Qwen3\.8 27B on your Mac\./);
+  const back=done.querySelector('[data-local-action="back"]');assert.match(back.textContent,/Back to chat/);assert.equal(h.doc.activeElement,back,'Back to chat takes focus');
+  assert.equal(h.toasts.length,0,'the result is said in the card, not twice');
+  back.click();assert.deepEqual(h.returns,[{botId:'bot_roki',notice:'Roki now uses Qwen3.8 27B on your Mac.'}]);
+});
+
+test('a runtime that is already added switches the setup bot in one click; a refused switch says so',async t=>{
+  const added={...macMlx,id:'provider_mac_ollama',name:'Mac · Ollama',type:'ollama',baseUrl:'http://127.0.0.1:11434/v1',defaultModel:'qwen3.8:27b'};
+  const h=cardHarness({runtimes:[ollamaRunning,mlxStopped],connections:[added],hash:'#/connections?setup=local&bot=bot_roki',bots:[roki],patchFail:'Wait for this bot’s current task to finish before switching its provider.'});t.after(()=>h.win.close());await settle();
+  const button=h.main.querySelector('[data-runtime="ollama"] [data-local-action="assign"]');assert.equal(button.textContent,'Use for Roki');
+  button.click();await settle();
+  assert.deepEqual(h.requests.at(-1),{path:'/api/bots/bot_roki/inference',method:'PATCH',body:{connectionId:'provider_mac_ollama',model:'qwen3.8:27b'}});
+  const done=h.main.querySelector('.lm-done');assert.ok(done.classList.contains('is-warning'));assert.match(done.textContent,/Mac · Ollama is added, but Roki couldn’t switch to it: Wait for this bot’s current task/);
+  done.querySelector('[data-local-action="back"]').click();assert.deepEqual(h.returns,[{botId:'bot_roki',notice:''}]);
+});
+
+test('the engine’s own check and automatic default model are used; a failed check is shown, not hidden',async t=>{
+  const h=cardHarness({runtimes:[ollamaRunning,mlxStopped],created:body=>({id:'provider_new',...body,defaultModel:'llama3.2:3b',test:{connected:false,error:'Model list timed out.'}}),hash:'#/connections?setup=local&bot=bot_roki',bots:[roki]});t.after(()=>h.win.close());await settle();
+  h.main.querySelector('[data-local-action="use"]').click();await settle();
+  assert.equal(h.requests.some(item=>item.path.endsWith('/test')),false,'the engine already checked it');
+  assert.deepEqual(h.requests.at(-1).body,{connectionId:'provider_new',model:'llama3.2:3b'});
+  assert.match(h.toasts.at(-1).message,/Mac · Ollama added, but its first check failed: Model list timed out\. Test it again below\./);assert.equal(h.toasts.at(-1).error,true);
+});
+
+test('on the home server the card lists the linked Mac’s runtimes, and Use adds them for that Mac',async t=>{
+  const engine={nodeId:'node_vps',name:'VPS',role:'hub',platform:'linux'};
+  const h=cardHarness({platform:'linux',engine,runtimes:[{...ollamaRunning,running:false,installed:null,models:[]}],macs:[{nodeId:'node_mac',name:'Studio <Mac>',online:true,checkedAt:new Date().toISOString(),runtimes:[{...ollamaRunning,running:false,models:[]},mlxRunning]}]});t.after(()=>h.win.close());await settle();
+  const card=h.main.querySelector('[data-local-models]');assert.equal(card.querySelector('h2').textContent,'On your Mac');
+  assert.match(card.querySelector('.lm-mac-name').textContent,/^Studio <Mac>Online$/);assert.equal(card.querySelector('.lm-mac-name').innerHTML.includes('<Mac>'),false,'runtime-provided names are escaped');
+  assert.equal(card.querySelector('[data-runtime="ollama"]:not([data-node])'),null,'the server’s own stopped runtime is not offered');
+  const mlx=card.querySelector('[data-runtime="mlx"][data-node="node_mac"]');assert.match(mlx.textContent,/Running · 1 model(?!s)/);
+  assert.match(card.querySelector('[data-runtime="ollama"][data-node="node_mac"]').textContent,/Start it in Terminal on Studio <Mac>, then check again/);
+  mlx.querySelector('[data-local-action="use"]').click();await settle();
+  assert.deepEqual(h.requests.find(item=>item.path==='/api/connections').body,{type:'mlx',name:'Mac · MLX',baseUrl:'http://127.0.0.1:8080/v1',hostNodeId:'node_mac',defaultModel:'mlx-community/Qwen3.8-27B-4bit'});
+  card.querySelector('[data-local-action="refresh"]').click();await settle();
+  assert.equal(h.requests.at(-1).path,'/api/local-runtimes?refresh=1','Check again asks the engine to look now');
+});
+
+test('the home server explains an offline Mac, a Mac that could not list its models, and no linked Mac',async t=>{
+  const engine={nodeId:'node_vps',name:'VPS',role:'hub',platform:'linux'};
+  const offline=cardHarness({platform:'linux',engine,runtimes:[],macs:[{nodeId:'node_mac',name:'Studio Mac',online:false,checkedAt:null,runtimes:[]}]});t.after(()=>offline.win.close());await settle();
+  const row=offline.main.querySelector('[data-mac="node_mac"]');assert.match(row.textContent,/Offline/);assert.match(row.textContent,/Open Tupies on Studio Mac and keep the Mac awake, then choose Check again/);assert.equal(offline.main.querySelector('[data-local-action="use"]'),null);
+  const older=cardHarness({platform:'linux',engine,runtimes:[],macs:[{nodeId:'node_mac',name:'Studio Mac',online:true,checkedAt:null,runtimes:[],error:'Studio Mac runs an older Tupies Engine that cannot list its local models. Update it, then check again.'}]});t.after(()=>older.win.close());await settle();
+  assert.match(older.main.querySelector('.lm-mac-error').textContent,/older Tupies Engine/);assert.doesNotMatch(older.main.textContent,/didn’t report/);
+  const none=cardHarness({platform:'linux',engine,runtimes:[],macs:[]});t.after(()=>none.win.close());await settle();
+  assert.match(none.main.textContent,/No Mac is linked to this engine yet\. Open Tupies on your Mac, link it to this engine in Settings › Devices & sync/);
+});
+
+function dialogHarness({runtimes=[mlxRunning],platform='darwin',engine,macs,hash=''}={}){
+  const bot={id:'bot_atlas',name:'Atlas',connectionId:'provider_openrouter',model:'',tools:[],skills:[],enabled:true};
+  const h=appHarness({connections:[openrouter],bot});const requests=[];
+  if(hash)h.win.location.hash=hash;
+  h.win.fixtureApi=async(path,options={})=>{requests.push(plain({path,...options}));
+    if(path.startsWith('/api/local-runtimes'))return {platform,runtimes,...(engine?{engine}:{}),...(macs?{macs}:{})};
+    if(path==='/api/connections'&&options.method==='POST')return {id:'provider_new',...options.body,defaultModel:'mlx-community/Qwen3.8-27B-4bit',test:{connected:true,models:1}};
+    if(path==='/api/bots/bot_atlas/inference')return {bot:{...bot,...options.body}};
+    throw new Error(`Unexpected fixture request: ${path}`);};
+  h.run('api=(...args)=>fixtureApi(...args)');
+  return {...h,requests,form:()=>h.doc.querySelector('#connection-form')};
+}
+
+test('Connect MLX shows what was found and one Connect button; Advanced is closed and no default model is asked',async t=>{
+  const h=dialogHarness();t.after(()=>h.win.close());
+  h.run("connectionDialog(undefined,'mlx')");await settle();
+  const form=h.form();
+  assert.equal(h.doc.querySelector('dialog').getAttribute('aria-label'),'Connect MLX LM');
+  assert.deepEqual([...form.querySelectorAll('input,select')].filter(node=>node.type!=='hidden'&&!node.closest('details')).map(node=>node.name),[],'no visible fields outside Advanced');
+  assert.equal(form.querySelector('[name=defaultModel]'),null);
+  const advanced=form.querySelector('details.advanced-fields');assert.equal(advanced.open,false);assert.equal(advanced.querySelector('summary').textContent,'Advanced');
+  assert.deepEqual([...advanced.querySelectorAll('[name]')].map(node=>node.name),['baseUrl','contextWindow','imageInput']);assert.equal(form.querySelector('[name=baseUrl]').required,false);
+  assert.match(form.querySelector('[data-local-detect]').textContent,/Running on this Mac · 1 model.*Connect adds it as “Mac · MLX” with Qwen3\.8 27B as the default model/);
+  assert.equal(form.querySelector('button[type=submit]').textContent,'Connect');
+  form.requestSubmit();await settle();
+  const create=h.requests.find(item=>item.path==='/api/connections');
+  assert.deepEqual(create.body,{type:'mlx',name:'Mac · MLX',contextWindow:'',imageInput:'auto'},'no defaultModel, address or host: the engine fills them in');
+  assert.equal(h.requests.some(item=>item.path.endsWith('/test')),false);
+});
+
+test('Connect from a setup link switches the bot; on the home server it connects the linked Mac’s runtime',async t=>{
+  const setup=dialogHarness({hash:'#/connections?setup=local&bot=bot_atlas'});t.after(()=>setup.win.close());
+  setup.run("connectionDialog(undefined,'mlx')");await settle();setup.form().requestSubmit();await settle();
+  assert.deepEqual(setup.requests.at(-1),{path:'/api/bots/bot_atlas/inference',method:'PATCH',body:{connectionId:'provider_new',model:'mlx-community/Qwen3.8-27B-4bit'}});
+
+  const engine={nodeId:'node_vps',name:'VPS',role:'hub',platform:'linux'};
+  const hub=dialogHarness({platform:'linux',engine,runtimes:[],macs:[{nodeId:'node_mac',name:'Studio Mac',online:true,checkedAt:'x',runtimes:[mlxRunning]}]});t.after(()=>hub.win.close());
+  hub.run("connectionDialog(undefined,'mlx')");await settle();
+  assert.match(hub.form().querySelector('[data-local-detect]').textContent,/Running on Studio Mac · 1 model/);
+  hub.form().requestSubmit();await settle();
+  assert.deepEqual(hub.requests.find(item=>item.path==='/api/connections').body,{type:'mlx',name:'Mac · MLX',hostNodeId:'node_mac',contextWindow:'',imageInput:'auto'});
+});
+
+test('Connect explains a stopped runtime, an offline Mac and no linked Mac, and Check again looks again',async t=>{
+  const stopped=dialogHarness({runtimes:[mlxStopped]});t.after(()=>stopped.win.close());
+  stopped.run("connectionDialog(undefined,'mlx')");await settle();
+  const box=stopped.form().querySelector('[data-local-detect]');
+  assert.match(box.textContent,/MLX isn’t running on this Mac\. Start it in Terminal, then check again:/);assert.equal(box.querySelector('code').textContent,'mlx_lm.server --model <model> --port 8080');
+  assert.match(box.textContent,/Open Advanced/);assert.equal(stopped.form().querySelector('details.advanced-fields').open,false);
+  box.querySelector('[data-local-action="detect"]').click();await settle();
+  assert.equal(stopped.requests.at(-1).path,'/api/local-runtimes?refresh=1');
+
+  const engine={nodeId:'node_vps',name:'VPS',role:'hub',platform:'linux'};
+  const offline=dialogHarness({platform:'linux',engine,runtimes:[],macs:[{nodeId:'node_mac',name:'Studio Mac',online:false,checkedAt:null,runtimes:[]}]});t.after(()=>offline.win.close());
+  offline.run("connectionDialog(undefined,'ollama')");await settle();
+  assert.match(offline.form().querySelector('[data-local-detect]').textContent,/Studio Mac is offline.*Open Tupies on your Mac so this engine can reach it/);
+  const none=dialogHarness({platform:'linux',engine,runtimes:[],macs:[]});t.after(()=>none.win.close());
+  none.run("connectionDialog(undefined,'ollama')");await settle();
+  assert.match(none.form().querySelector('[data-local-detect]').textContent,/No Mac is linked to this engine yet/);
+  assert.equal(none.form().querySelector('[name=hostNodeId]').disabled,true);
+});
+
+test('Set up a model on your Mac keeps the chat draft and opens the setup card route',async t=>{
+  const bot={id:'bot_atlas',name:'Atlas',connectionId:openrouter.id,model:'',tools:[],skills:[],enabled:true};
+  const h=appHarness({connections:[openrouter],bot});t.after(()=>h.win.close());
+  h.run("window.StudioModelPicker.configure({connections:()=>data.connections,catalog:()=>providerCatalog,icon:()=>''})");
+  h.doc.querySelector('#app').innerHTML=`<form id="message-form" data-id="bot_atlas"><textarea id="message-input">Half-written idea</textarea></form><div id="host"></div>`;
+  h.doc.querySelector('#host').innerHTML=h.picker.markup({id:'p',connectionId:openrouter.id,inline:true,memoryKey:'bot_atlas'});
+  const root=h.doc.querySelector('[data-model-picker]');h.picker.attach(root,{onSelect:async next=>next});
+  root.querySelector('[data-mp-scope="local"]').click();await settle();
+  root.querySelector('.mp-setup-button').click();await settle();
+  assert.equal(h.win.location.hash,'#/connections?setup=local&bot=bot_atlas');
+  assert.equal(h.run('route().view'),'connections','the query does not change the view');assert.equal(h.run('route().id'),undefined);
+  h.run("returnToChat('bot_atlas','Atlas now uses Qwen3.8 27B on your Mac.')");
+  assert.equal(h.win.location.hash,'#/bot/bot_atlas');
+  assert.deepEqual(plain(h.run('({botId:pendingBotDraft.botId,text:pendingBotDraft.text,notice:pendingBotDraft.notice})')),{botId:'bot_atlas',text:'Half-written idea',notice:'Atlas now uses Qwen3.8 27B on your Mac.'});
 });
