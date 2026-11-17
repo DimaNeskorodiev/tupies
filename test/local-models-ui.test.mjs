@@ -190,3 +190,13 @@ test('the page loads the local-models script before the picker, and the styles r
   assert.match(pickerCss,/@media\(max-width:760px\)\{\.mp-scope-option\{min-height:44px\}\}/);assert.match(pickerCss,/prefers-reduced-motion:reduce\)\{\.mp-scope-option\{transition:none\}/);
   assert.match(localCss,/@media\(max-width:760px\)/);assert.match(localCss,/\.lm-command code\{[^}]*overflow-x:auto/);
 });
+
+test('Ollama cloud models are not counted or offered as local, and say where they run',async t=>{
+  const runtime={...ollamaRunning,models:[{id:'gemma4:cloud',cloud:true},{id:'qwen3.8:27b'}]};
+  const h=cardHarness({runtimes:[runtime,mlxStopped]});t.after(()=>h.win.close());
+  await settle();
+  const ollama=h.main.querySelector('[data-local-models] [data-runtime="ollama"]');
+  assert.match(ollama.textContent,/Running · 1 model(?!s)/);assert.match(ollama.textContent,/1 cloud model runs on ollama\.com, not on this Mac/);
+  assert.doesNotMatch(ollama.querySelector('.lm-models').textContent,/Gemma/i);
+  assert.deepEqual([...h.win.StudioLocalModels.modelBadges({id:'gemma4:cloud'})].map(item=>item.label),['Runs on ollama.com']);
+});

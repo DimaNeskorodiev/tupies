@@ -91,3 +91,15 @@ test('GET /api/local-runtimes requires the owner session and returns the detecti
   assert.equal(body.runtimes[0].models[0].id,'qwen3.8:27b');
   assert.equal((await fetch(`${url}/api/local-runtimes`,{method:'POST',signal:AbortSignal.timeout(10000),headers:{Cookie:cookie,'Content-Type':'application/json'},body:'{}'})).status>=400,true,'the route is read-only');
 });
+
+test('Ollama cloud models are marked as not local',async t=>{
+  const f=await fixture(t,(req,res)=>{
+    res.setHeader('content-type','application/json');
+    if(req.url==='/api/version')return res.end(JSON.stringify({version:'0.40.16'}));
+    if(req.url==='/api/tags')return res.end(JSON.stringify({models:[{name:'gemma4:cloud',model:'gemma4:cloud',remote_model:'gemma4:31b',remote_host:'https://ollama.example:443',size:387},{name:'mystery:latest',model:'mystery:latest',remote_host:'https://ollama.example:443'},{name:'qwen3.8:27b',model:'qwen3.8:27b',size:17_700_000_000}]}));
+    res.writeHead(404);res.end('{}');
+  });
+  const result=await detectLocalRuntimes({urls:{ollama:f.origin,mlx:'http://127.0.0.1:9'},timeoutMs:500,platform:'darwin',exists:async()=>true});
+  const ollama=result.runtimes.find(item=>item.type==='ollama');
+  assert.deepEqual(ollama.models.map(model=>[model.id,!!model.cloud]),[['gemma4:cloud',true],['mystery:latest',true],['qwen3.8:27b',false]]);
+});
