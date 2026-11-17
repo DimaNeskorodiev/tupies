@@ -45,7 +45,8 @@ test('real provider failures persist only static metadata in the active run and 
   ];
   for(const [name,handler,expected,options] of cases)await t.test(name,async t=>{
     const f=await fixture(t,handler,options),run=await f.run();assert.equal(run.status,'failed');assert.deepEqual(run.failure,expected);assert.deepEqual(f.store.state.runHistory.bot_atlas[0].failure,expected);
-    assert.equal(f.requests.length,1,'failure observability must never retry inference or replay actions');assert.equal(run.workRecords?.length || 0,0);
+    // Invalid tool-argument JSON is the one failure that re-sends the same model request once; no action is replayed.
+    assert.equal(f.requests.length,name==='arguments_rejected'?2:1,'failure observability must never retry inference or replay actions');assert.equal(run.workRecords?.length || 0,0);
     const disk=JSON.parse(await fs.readFile(f.store.file,'utf8'));assert.deepEqual(disk.runs.bot_atlas.failure,expected);assert.ok(!JSON.stringify(disk).includes(SECRET));
   });
 });
