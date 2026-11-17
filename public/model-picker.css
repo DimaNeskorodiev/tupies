@@ -70,3 +70,17 @@
 .inference-panel .mp-scope-note{color:var(--ip-muted)}
 @media(max-width:760px){.mp-scope-option{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.mp-scope-option{transition:none}}
+/* On my Mac with no local provider yet: one line and a button to the setup card in Settings › Models. */
+.model-picker .field[hidden],.mp-setup[hidden]{display:none}
+.mp-setup{display:grid;gap:6px;justify-items:start;padding:14px 16px;border:1px solid var(--line,rgba(84,96,121,.12));border-radius:16px;background:rgba(255,255,255,.3)}
+.mp-setup p{margin:0}
+.mp-setup-title{font-size:14px;font-weight:600;color:var(--ink,#29313d)}
+.mp-setup-text{font-size:12px;line-height:1.45;color:var(--muted,#737b89)}
+.mp-setup-button{margin-top:4px}
+.inference-panel .mp-setup{background:var(--ip-hover);border-color:var(--ip-line)}
+.inference-panel .mp-setup-title{color:var(--ip-text)}
+.inference-panel .mp-setup-text{color:var(--ip-muted)}
+:is([data-theme=dark],[data-appearance=dark]) .mp-setup{background:rgba(255,255,255,.05)}
+:is([data-theme=dark],[data-appearance=dark]) .mp-setup-title{color:inherit}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-appearance=light]) .mp-setup{background:rgba(255,255,255,.05)}:root:not([data-theme=light]):not([data-appearance=light]) .mp-setup-title{color:inherit}}
+@media(max-width:760px){.mp-setup-button{width:100%;min-height:44px;justify-content:center}}
