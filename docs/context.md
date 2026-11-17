@@ -81,7 +81,7 @@ A member that joins later starts with that bounded recent history. The prompt al
 
 `lib/context-budget.mjs` works out the limits for a bot on a model, in tokens, with Codex's thresholds:
 
-- **Window:** an owner-set `contextWindow` on the connection wins. Otherwise the window from the provider's catalog applies (`context_window`, `context_length` and similar fields, cached on `connection.models`), then a small table of known model families, then **128K** for an unknown model. Guessing too high fails requests; guessing too low only compacts earlier.
+- **Window:** an owner-set `contextWindow` on the connection wins. Otherwise the window from the provider's catalog applies (`context_window`, `context_length` and similar fields, cached on `connection.models`), then a small table of known model families, then **128K** for an unknown model. A local runtime (Ollama, MLX, or a compatible service on loopback) with no stated window gets **32K**, never more than the model's native window: a cold long prompt can exhaust a 48 GB Mac's memory (`lib/local-models.mjs`, measured in `docs/research/local-qwen38-27b-20261117.md`). Chat options warns from 64K on local connections. Guessing too high fails requests; guessing too low only compacts earlier.
 - **Ceiling:** by default at most **272K** of a larger window is used, because every step resends the whole context. A bot's `contextLimit` can be `''` (automatic, 272K ceiling), `'128k'` or `'max'` (the full window).
 - **Usable:** 95% of the effective window, less the output reservation when that is smaller. A context above this is refused.
 - **Compaction point (`compactAt`):** summary compaction starts at a per-bot threshold, by default **55%** of the effective window, and with the default threshold never later than **128K tokens** (`COMPACT_CEILING`), even with the model's full window. Every step resends the whole history, so a 1M window with a 55% trigger let a chat grow to ~300K tokens per step (the Finance bot, 9 November 2026). An explicit `compactThreshold` (a whole percent 30–90 in **Bot settings › Advanced › Summarize older messages**) is honoured as set. For a ChatGPT-subscription model with a 272K window: 258,400 usable tokens, summaries from 128,000.
@@ -169,7 +169,7 @@ A routine that finishes without any model call (a report-mode workflow of script
 
 ## Owner controls
 
-- **Settings › Models › provider › Advanced endpoint settings › Context window (tokens):** for local or compatible services that run a model with a smaller context than it supports (for example Ollama's `num_ctx`). Ollama does not report its window, so set it there.
+- **Settings › Models › provider › Advanced endpoint settings › Context window (tokens):** for local or compatible services that run a model with a smaller context than it supports (for example Ollama's `num_ctx`). Ollama does not report its window, so set it there. Without a setting, local connections assume 32K.
 - **Chat options:**
   - the selected model's window and the point where older material gets organized;
   - a **Conversation** section with the active chat's estimated size, when it was last summarized, and **Summarize older messages** and **New chat**.
