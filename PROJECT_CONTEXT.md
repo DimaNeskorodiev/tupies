@@ -1,5 +1,27 @@
 # Tupies — project context
 
+## Phone alerts stopped; approval and other attention alerts — 19 November 2026 (source only, not installed or released)
+
+Branch `fix/notifications-20261119` from `main` `dde7da9`. Details: [docs/notifications.md](docs/notifications.md).
+
+**Root cause (read-only VPS check with the owner's OK).** The VPS (beta 13) has `STUDIO_APNS_ENVIRONMENT=sandbox` and only the Sandbox-only key "Tupies iPhone Sandbox". The iPhone registration is now `production` (a Release-configuration build, `APS_ENVIRONMENT=production`). `Notifications.add()` skipped every event for that registration as `environment_mismatch` without an outbox entry. The last alert was sent on 16 November at 12:38 UTC. Nothing else in the pipeline was broken: a real chat run through `createStudioServer` delivers a push on clean `main`. "On the computer" is the same iPhone alert (the Mac app has no notifications of its own).
+
+**Fix in source:**
+- `lib/apns.mjs` serves sandbox and production at once. Each environment has its own key, provider token and HTTP/2 session. New settings: `STUDIO_APNS_ENVIRONMENT=both` and `STUDIO_APNS_{PRODUCTION,SANDBOX}_KEY_FILE/_KEY_ID`. Alerts are sent at priority 10.
+- Missed alerts are recorded instead of dropped: `registration.undelivered`, the phone status line, engine-log records (`push.transport`, `push.undelivered`, `push.restored`, `push.rejected`, `push.registration`), `GET /api/notifications/health`, `pushAlert` in `/api/state`, and a **Phone alerts** card in Settings → Devices & sync (`public/notification-health.js`) with a warning dot on the Settings overview.
+
+**New alert types (`lib/attention-text.mjs`, argument-free text):**
+- approvals in every lane the owner decides;
+- browser help in the owner's chat;
+- failed owner-chat tasks;
+- pending skill suggestions.
+
+Approval cards send an exact `approvalId` read receipt. Approval and browser prompts now carry `createdAt`.
+
+**Still needed on the VPS (owner action, then deploy):** add a key allowed to use Production (Apple Developer → Keys → APNs, environment Production or Sandbox & Production, topic `dev.tupies.app`), and set `STUDIO_APNS_PRODUCTION_KEY_FILE` and `STUDIO_APNS_PRODUCTION_KEY_ID` in `/etc/hermes-studio/apns.env`. The other option is a development build on the iPhone. Physical delivery after the change is unverified.
+
+**Verification:** `test/notification-delivery.test.mjs` (5), `test/notification-attention.test.mjs` (10), `test/apns.test.mjs` (+3) and a new receipt case in `test/notification-reads-ui.test.mjs`. The browser-handoff expectation in `test/notifications.test.mjs` was changed on purpose: handoffs outside the owner's chat stay quiet. Full suite: see the PR.
+
 ## Local models on the Mac, used from every engine — 17 November 2026 (source only, not installed or released)
 
 Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/local-models-20261117.md`, which was revised after an independent architecture review. Measurements: `docs/research/local-qwen38-27b-20261117.md`.

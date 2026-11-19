@@ -112,7 +112,7 @@ Until this is done the iPhone app is built and installed from Xcode as before, a
 
 Things that change when the phone moves from an Xcode build to TestFlight:
 
-- **Push notifications** use Apple's production service. Set `STUDIO_APNS_ENVIRONMENT=production` and `STUDIO_APNS_TOPIC=dev.tupies.app` on the home server, then switch notifications off and on again on the phone so it registers afresh.
+- **Push notifications** use Apple's production service. Any Release-configuration build does too, including one installed from Xcode without `APS_ENVIRONMENT=development`. The home server needs a key that may use production: add `STUDIO_APNS_PRODUCTION_KEY_FILE` and `STUDIO_APNS_PRODUCTION_KEY_ID` next to the existing sandbox key (or set `STUDIO_APNS_ENVIRONMENT=both` when the one key covers Sandbox & Production), restart the engine and open the phone app once so it registers again. Settings → Devices & sync → Phone alerts shows whether the phone's build and the engine's key match. From 16 to 19 November 2026 a Release build on the owner's iPhone met a Sandbox-only key and alerts stopped without a visible error; see [notifications](notifications.md).
 - **Builds expire after 90 days.** Upload a new one before then, even without changes: Actions → Release → Run workflow, choosing the tag.
 - **Build numbers are single-use.** Apple refuses a number it has seen; `--check` in CI already prevents reusing one.
 - The upload job is written against Apple's documented `xcodebuild -exportArchive` upload and has compiled and archived unsigned on this project, but it has **not yet run with real credentials**. Treat its first run as the test.
