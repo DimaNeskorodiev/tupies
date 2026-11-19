@@ -18,7 +18,9 @@ Branch `fix/notifications-20261119` from `main` `dde7da9`. Details: [docs/notifi
 
 Approval cards send an exact `approvalId` read receipt. Approval and browser prompts now carry `createdAt`.
 
-**Still needed on the VPS (owner action, then deploy):** add a key allowed to use Production (Apple Developer → Keys → APNs, environment Production or Sandbox & Production, topic `dev.tupies.app`), and set `STUDIO_APNS_PRODUCTION_KEY_FILE` and `STUDIO_APNS_PRODUCTION_KEY_ID` in `/etc/hermes-studio/apns.env`. The other option is a development build on the iPhone. Physical delivery after the change is unverified.
+**VPS key switched, 19 November 2026 10:14 CET (owner's go-ahead).** The owner created APNs key "Tupies Prod" (Sandbox & Production, topic `dev.tupies.app`). It was copied over stdin to `/var/lib/hermes-studio/apns/` (owner `studio`, mode 0600, checksum verified). In `/etc/hermes-studio/apns.env` only three lines changed: `KEY_FILE`, `KEY_ID` and `STUDIO_APNS_ENVIRONMENT=production`. The previous file is `/etc/hermes-studio/apns.env.before-prod-20261119`, and the old Sandbox key file stays in place. The engine was restarted while idle (0 active runs, updater inactive) and came up clean. A probe to Apple production with a dummy device token returned `400 BadDeviceToken`, so the key is accepted.
+
+This is still beta 13, which serves one environment, so Xcode development builds get no alerts until this branch ships. After it ships, set `STUDIO_APNS_ENVIRONMENT=both`. Rollback: copy the `before-prod` file back and restart.
 
 **Verification:** `test/notification-delivery.test.mjs` (5), `test/notification-attention.test.mjs` (10), `test/apns.test.mjs` (+3) and a new receipt case in `test/notification-reads-ui.test.mjs`. The browser-handoff expectation in `test/notifications.test.mjs` was changed on purpose: handoffs outside the owner's chat stay quiet. Full suite: see the PR.
 
