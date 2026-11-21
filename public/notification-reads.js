@@ -29,11 +29,13 @@
       const messages = new Map((mission ? [] : current.messages || []).filter(row => row.role === 'assistant' && !row.partial && row.kind !== 'progress').map(row => [row.id, row]));
       const question = (current.view === 'bot' || missionOwner) && current.run?.status === 'waiting_for_input' && current.run.pending_controls?.find(control => control.kind === 'question');
       if (question) messages.set(question.prompt_id, {id:question.prompt_id,question:true});
+      const approval = current.view === 'bot' && current.run?.status === 'waiting_for_approval' && current.run.pending_controls?.find(control => control.kind === 'approval');
+      if (approval) messages.set(approval.prompt_id, {id:approval.prompt_id,approval:true});
       else if(attention)messages.set(attention.attentionId,{id:attention.attentionId,mission:true});
       const groups = new Map(), onScreen = new Set();
-      for (const node of thread.querySelectorAll('[data-search-message-id],[data-notification-question-id],[data-notification-attention-id]')) {
+      for (const node of thread.querySelectorAll('[data-search-message-id],[data-notification-question-id],[data-notification-approval-id],[data-notification-attention-id]')) {
         if(node.dataset.notificationAttentionId&&node.dataset.notificationMissionId!==current.id)continue;
-        const message = messages.get(node.dataset.searchMessageId || node.dataset.notificationQuestionId || node.dataset.notificationAttentionId);
+        const message = messages.get(node.dataset.searchMessageId || node.dataset.notificationQuestionId || node.dataset.notificationApprovalId || node.dataset.notificationAttentionId);
         if (!message) continue;
         const botId = mission ? current.botId : current.view === 'room' ? message.botId : current.id;
         const key = `${current.view}:${current.id}:${message.id}`, rect = node.getBoundingClientRect();
@@ -41,7 +43,7 @@
         onScreen.add(key);
         if (!visibleSince.has(key)) visibleSince.set(key, now());
         if (now() - visibleSince.get(key) < dwellMs) continue;
-        const group = groups.get(botId) || []; group.push({id:message.id, key, question:!!message.question,mission:!!message.mission}); groups.set(botId, group);
+        const group = groups.get(botId) || []; group.push({id:message.id, key, question:!!message.question,approval:!!message.approval,mission:!!message.mission}); groups.set(botId, group);
       }
       for (const key of visibleSince.keys()) if (!onScreen.has(key)) visibleSince.delete(key);
       if (pending || now() < retryAt) return;
@@ -50,7 +52,7 @@
       const [botId, rows] = entry, attentionRow=rows.find(row=>row.mission),batch=attentionRow?[attentionRow]:rows.slice(-20),version=generation;
       pending = true;
       try {
-        await current.api('/api/notifications/read', {method:'POST', body:attentionRow?{botId,missionId:current.id,attentionId:attentionRow.id,messageIds:[]}:{botId, ...(current.view === 'room' ? {roomId:current.id} : {}), messageIds:batch.filter(row => !row.question).map(row => row.id), ...(batch.some(row => row.question) ? {questionId:batch.find(row => row.question).id} : {})}});
+        await current.api('/api/notifications/read', {method:'POST', body:attentionRow?{botId,missionId:current.id,attentionId:attentionRow.id,messageIds:[]}:{botId, ...(current.view === 'room' ? {roomId:current.id} : {}), messageIds:batch.filter(row => !row.question && !row.approval).map(row => row.id), ...(batch.some(row => row.question) ? {questionId:batch.find(row => row.question).id} : {}), ...(batch.some(row => row.approval) ? {approvalId:batch.find(row => row.approval).id} : {})}});
         if (generation === version && context().generation === version) {
           for (const row of batch) sent.add(row.key);
           current.onRead?.({view:current.view, id:current.id, botId, messageIds:batch.map(row => row.id)});

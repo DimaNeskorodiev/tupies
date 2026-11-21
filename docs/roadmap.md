@@ -1,5 +1,15 @@
 # Product roadmap
 
+## Phone alerts — 19 November 2026 (source only, not installed)
+
+Alerts stopped on 16 November. The iPhone runs a Release build, which uses Apple's production push service, and the home server has only a Sandbox key. Branch `fix/notifications-20261119`:
+- serves both Apple environments, with an optional per-environment key;
+- records and shows missed alerts: the phone status, Settings → Devices & sync → Phone alerts, and the engine log;
+- sends at priority 10;
+- adds alerts for approvals in every owner-decided lane, browser help, failed chat tasks and skill suggestions.
+
+Remaining: a Production APNs key on the VPS (owner, Apple Developer) and a deploy, then a physical check. Later: an iPhone switch for approval alerts and approve/deny actions on the alert itself, which needs an authenticated native action path.
+
 ## Local models on the Mac — 17 November 2026 (installed on Mac and VPS as Engine beta 13)
 
 Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was revised after an independent architecture review.

@@ -57,3 +57,7 @@
   .pairing-qr{max-width:240px;margin:0 auto}
 }
 .auth-steps{margin:0 0 6px;padding-left:20px;display:grid;gap:10px;font-size:12px;line-height:1.7;color:#66778a}.auth-steps code{white-space:nowrap;font-size:11px;padding:1px 5px;border-radius:5px;background:#ffffff8c;border:1px solid #dfe4ec}
+/* Settings › Devices & sync › Phone alerts (public/notification-health.js) */
+[data-push-health] .status-pill.tag{margin:0;font-style:normal}
+[data-push-health] .device-list li span.push-health-note{font-size:11px;line-height:1.45;color:#7f8897}
+[data-push-health] .device-list li:has(.status-pill.error) span.push-health-note{color:#a86e5c}

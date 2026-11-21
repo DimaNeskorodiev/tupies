@@ -1,5 +1,25 @@
 # iPhone notifications
 
+**Alerts stopped, approvals and both Apple environments — 19 November 2026, source only (branch `fix/notifications-20261119`, not installed).**
+
+*Why alerts stopped.* From 16 November the owner's iPhone ran a Release-configuration build (`APS_ENVIRONMENT=production`) and registered a production push token. The home server's only key is the Sandbox-only "Tupies iPhone Sandbox" key with `STUDIO_APNS_ENVIRONMENT=sandbox`. Every reply, routine and question was skipped as `environment_mismatch` before it reached the outbox, so nothing failed visibly: the last alert left the VPS on 16 November at 12:38 UTC. Only the phone's own Settings → Notifications line mentioned the mismatch.
+
+*What changed.*
+- **Both environments.** `lib/apns.mjs` keeps a key, provider token and HTTP/2 session per environment. `STUDIO_APNS_ENVIRONMENT` accepts `sandbox`, `production` or `both`; `STUDIO_APNS_PRODUCTION_KEY_FILE`/`_KEY_ID` (and the `SANDBOX` pair) add a key for one environment next to the shared one. Each alert goes to the environment its phone registered.
+- **No silent drops.** An alert an enrolled phone wanted but this engine cannot send is counted on the registration (`missed`), written once to the engine log (`push.undelivered`, then `push.restored` or `push.rejected`), shown on the phone's status line and in **Settings → Devices & sync → Phone alerts**, and flagged with a dot on the Settings overview. The engine log also records the push setup at every start (`push.transport`).
+- **Priority 10.** Alerts are sent with `apns-priority: 10` (immediate). Apple may group, throttle or drop priority-5 alerts.
+- **New alert types** (all argument-free, static text, re-checked just before sending and cancelled when resolved during the eight-second grace period):
+  - *Approval required* in every lane the owner decides — direct chat, routine runs, rooms, teammates, Telegram and study — with a plain-word action such as "Needs your approval to create a routine", "… to run a saved script", "… to save a script", "… to use Gmail: send message". Engine check-ins say "Reached its task budget" or "Paused at a checkpoint". Commands, paths, hosts, scripts, prompts, the bot's own summary and the browser reason never leave the engine. A routine's approval uses the routine switch and route; everything else uses Bot replies. A Mission lead's approval stays with Mission attention; its teammates' approvals alert here.
+  - *Browser help* in the owner's chat: "Needs your help in the browser."
+  - *Failed task* in the owner's chat (status `failed`, no final reply): "Couldn't finish the task. Open the chat for details." Stop, restarts (`interrupted`), teammates and background reviews stay quiet.
+  - *Skill suggestion* waiting for review: "Suggests a new skill. Review it in the bot's profile." Memory suggestions stay quiet.
+- **Attended approvals.** A visible approval card in a focused, attended chat sends an `approvalId` receipt that mutes only that alert, the same way question cards do.
+- Approval and browser prompts now carry `createdAt`.
+
+*To restore alerts on the VPS* the engine needs this release plus a key allowed to use Production: in Apple Developer → Keys create an APNs key for `dev.tupies.app` with environment **Production** (or **Sandbox & Production**), put the `.p8` beside the current key (`/var/lib/hermes-studio/apns/`, owner `studio`, mode 0600), add `STUDIO_APNS_PRODUCTION_KEY_FILE` and `STUDIO_APNS_PRODUCTION_KEY_ID` to `/etc/hermes-studio/apns.env`, restart the engine and open the iPhone app once. Installing an Xcode development build on the phone (`APS_ENVIRONMENT=development`) also works with the current Sandbox key. Physical delivery after either step is unverified.
+
+*Done on 19 November 2026 at 10:14 CET.* The VPS now uses a new Sandbox & Production key with `STUDIO_APNS_ENVIRONMENT=production`, on beta 13. Apple accepted the key for production: a dummy-token probe returned `BadDeviceToken`. The backup of the earlier configuration is `apns.env.before-prod-20261119`. Once this branch ships, switch to `both`.
+
 **Mission attention, 1 November 2026 — source only.** The owner-bound Mission coordinator uses the existing message preference and home-only delivery path for exact current questions, approvals, substantive blockers and committed replies. Approval identities bind the current run, prompt and generation; blocker identities bind contract/attempt/episode and substantive reason. Resolution, revision, retry and Stop invalidate stale delivery. Heartbeats and normal waits stay quiet, and final replies remain the sole completion notification. Delegated/foreign-owner tasks cannot request Mission question attendance. A visible local Mission question uses the same prompt receipt and attended-window/dwell guards as chat; the receipt contains no message IDs and cannot clear transcript unread state. Answer/Skip/Stop/replacement invalidates stale delivery. Payload `missionId` is optional presentation metadata; the existing native route opens Bot Chat and its shared Mission card. Execution-engine-local controls are not synced or forwarded. New operational/native/APNs delivery is not established by these fixtures.
 
 **Question alerts, 1 November 2026 — source only.** A live `ask_user` prompt in a direct chat now creates one message-category alert per exact prompt: the bot's name/avatar and “Needs your answer. Open the chat to respond.” It uses the existing **Bot replies** preference, enrollment boundary, delivery authority, grace period and chat route. Question text and choices are not stored in the outbox or sent to Apple. Answering, skipping, Stop or a changed prompt cancels stale pending delivery. An exact question-card receipt suppresses the alert only after the same attended-window and visible-dwell checks as replies. The final response has a separate notification identity; answer/direction records cannot replace the originating request during classification. Progress updates remain quiet.
@@ -59,6 +79,15 @@ STUDIO_APNS_TOPIC=dev.tupies.app
 STUDIO_APNS_ENVIRONMENT=sandbox
 ```
 
+One engine can serve both Apple environments. A development build installed from Xcode registers a sandbox token; Release, TestFlight and App Store builds register a production token. Use `STUDIO_APNS_ENVIRONMENT=both` when the key above is allowed to use Sandbox & Production, or add a second key for one environment:
+
+```dotenv
+STUDIO_APNS_PRODUCTION_KEY_FILE=/private/operator/path/AuthKey_PRODUCTION.p8
+STUDIO_APNS_PRODUCTION_KEY_ID=YOURKEYID2
+```
+
+Setting a per-environment key enables that environment, whatever `STUDIO_APNS_ENVIRONMENT` says. A broken key for one environment leaves the other working; Settings → Devices & sync → Phone alerts names the environment whose key cannot be used.
+
 `npm start` reads an optional `.env`. A systemd service must receive the variables through its private environment file or service configuration. A container needs explicit environment entries and a read-only mount for the key; it must not bake the key into its image. Changing these variables requires an engine restart, so check active tasks and preserve the complete data tree first.
 
 The provider connects only to Apple's fixed sandbox or production HTTP/2 endpoint with normal TLS validation. No third-party relay or runtime dependency is required. Missing or invalid configuration leaves push unavailable and does not prevent normal bot work. A key for the wrong environment cannot deliver to the installed app's token.
@@ -75,7 +104,7 @@ Only the paired iPhone/iPad's bearer session can manage its registration. The we
 
 ## Delivery behavior
 
-Alerts are generated from live direct-chat questions, committed final direct-chat and team-room replies, completed/failed/interrupted routine tasks and confirmed admission errors, not from streaming tokens or inferred progress. Private teammate work and messages belonging to other people's Telegram sessions are excluded. Existing history is baselined and per-kind enrollment boundaries exclude events observed before enablement. Late imports older than five minutes before enrollment are excluded; the small allowance accommodates engine clock skew. In current source, exact attended-chat read receipts suppress delivery during the grace period, and the native app also suppresses presentation when its matching authenticated conversation is foreground with no dialog covering it.
+Alerts are generated from live direct-chat questions, approval cards in every owner-decided lane, browser handoffs in the owner's chat, failed owner-chat tasks, pending skill suggestions, committed final direct-chat and team-room replies, completed/failed/interrupted routine tasks and confirmed admission errors, not from streaming tokens or inferred progress. Private teammate work and messages belonging to other people's Telegram sessions are excluded. Existing history is baselined and per-kind enrollment boundaries exclude events observed before enablement. Late imports older than five minutes before enrollment are excluded; the small allowance accommodates engine clock skew. In current source, exact attended-chat read receipts suppress delivery during the grace period, and the native app also suppresses presentation when its matching authenticated conversation is foreground with no dialog covering it.
 
 Registration tokens are sealed with the engine's vault key in a separate `notifications.json` file. Registrations, delivery intentions, cursors and persisted read IDs are local to that engine and do not enter workspace documents or the public state API. Only bounded ephemeral receipts travel across a linked engine’s sealed exchange. Include this file in a complete private backup, alongside the vault key. Keep the operator's APNs key protected separately; it does not sync.
 

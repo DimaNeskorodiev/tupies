@@ -165,7 +165,9 @@ Choosing a segment works like choosing a provider:
 - Going back to a segment lands on the bot's saved provider, or on the provider and model last used there, marked **Last used here**. That memory is per bot and kept only in this browser.
 - While a task runs, the switch is locked together with the provider list.
 
-When no local provider exists, **On my Mac** is disabled. The line under it says so and links to **Settings › Models**, where the **On this Mac** card sets one up ([Models on your Mac](hermes-setup.md#models-on-your-mac-ollama-and-mlx)).
+When no local provider exists, **On my Mac** still opens. Instead of a provider list it shows **No model on your Mac yet** and **Set up a model on your Mac**; under **Cloud** the line under the switch says the same with **Set one up**. Nothing is chosen or saved by opening it. The button goes to **Settings › Models** at `#/connections?setup=local&bot=‹bot id›` (without `bot` for a bot that is not saved yet), where the setup card is focused and ringed ([Models on your Mac](hermes-setup.md#models-on-your-mac-ollama-and-mlx)). The unsent chat draft is kept in this browser tab.
+
+On the setup card, **Use** next to a running runtime adds it and switches that bot to the new provider's default model through the same validated route as the chat panel (`PATCH /api/bots/{id}/inference`). The card then says, for example, **Roki now uses Qwen3.8 27B on your Mac.** with **Back to chat**, which returns to the chat with the draft put back. A runtime that is already added shows **Use for ‹bot›** instead. If the switch is refused (for example while the bot's task runs), the card says so and the provider stays added.
 
 A local provider hosted by another engine shows **Mac offline** when that Mac is not connected, both on the switch and in the provider list. The line under the switch says that tasks use the bot's fallback model until the Mac is back, or stop if there is none.
 

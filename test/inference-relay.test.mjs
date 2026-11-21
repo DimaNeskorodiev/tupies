@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
@@ -213,6 +214,121 @@ test('the claim wait does not block home server updates; a relayed job blocks un
   const ready=await updateControl(mac.directory,'update-claim');assert.equal(ready.ready,true);await updateControl(mac.directory,'update-release',ready.token);
 });
 
+// ---- Local runtimes on a linked Mac, seen and added from the home server -----------------------
+
+// Fixture runtimes on random loopback ports. No real Ollama or MLX server is started or contacted.
+async function runtimeFixture(t,handler){
+  const hits=[];const server=http.createServer((req,res)=>{hits.push(req.url);handler(req,res);});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  t.after(()=>new Promise(resolve=>{server.closeAllConnections?.();server.close(()=>resolve());}));
+  return {origin:`http://127.0.0.1:${server.address().port}`,hits};
+}
+async function closedPort(){const server=http.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const {port}=server.address();await new Promise(resolve=>server.close(resolve));return `http://127.0.0.1:${port}`;}
+const sendJson=(res,body,status=200)=>{res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(body));};
+const fixtureOllama=(req,res)=>{
+  if(req.url==='/api/version')return sendJson(res,{version:'0.13.0'});
+  if(req.url==='/api/tags')return sendJson(res,{models:[{name:'qwen3.8:27b',model:'qwen3.8:27b',size:17_700_000_000,details:{family:'qwen35',parameter_size:'27.8B',quantization_level:'Q4_K_M'}},{name:'nomic-embed-text:latest',model:'nomic-embed-text:latest',details:{family:'nomic-bert'}}]});
+  sendJson(res,{error:'not found'},404);
+};
+const noInstall={exists:async()=>false,pathEnv:'',home:'/nonexistent-home'};
+/** A home server and a Mac with no connections yet. The Mac's runtime check sees a fixture Ollama; MLX and the home server's own runtimes are stopped. */
+async function macWithRuntimes(t) {
+  const ollama=await runtimeFixture(t,fixtureOllama),closed=await closedPort();
+  const hub=await engine(t,{localRuntimes:{urls:{ollama:closed,mlx:closed},platform:'linux'}});
+  const mac=await engine(t,{localRuntimes:{urls:{ollama:ollama.origin,mlx:closed},platform:'darwin',...noInstall}});
+  return {hub,mac,ollama,closed};
+}
+const linkAndClaim=async(hub,mac)=>{await link(hub,mac);await eventually(()=>hub.app.sync.inference.hostOnline(mac.app.sync.nodeId) && hub.app.sync.inference.kinds.get(mac.app.sync.nodeId)?.has('detect'));};
+
+test('the home server lists a linked Mac’s local runtimes through the relay, caches them for 30 s and refreshes on request',async t=>{
+  const {hub,mac,ollama}=await macWithRuntimes(t);
+  const alone=(await hub.request('/api/local-runtimes')).body;
+  assert.deepEqual(alone.macs,[]);assert.equal(alone.engine.role,'standalone');assert.equal(alone.engine.nodeId,hub.app.sync.nodeId);assert.equal(alone.engine.platform,process.platform);
+  assert.equal(alone.runtimes.some(item=>item.running),false,'The home server reports only its own (stopped) runtimes.');
+
+  // A Mac claims relay jobs as soon as it is linked, even before it hosts a connection.
+  await linkAndClaim(hub,mac);
+  const listed=(await hub.request('/api/local-runtimes')).body;
+  assert.equal(listed.engine.role,'hub');assert.equal(listed.macs.length,1);
+  const [entry]=listed.macs;
+  assert.equal(entry.nodeId,mac.app.sync.nodeId);assert.equal(entry.online,true);assert.ok(entry.name);assert.ok(Date.parse(entry.checkedAt));assert.equal(entry.error,undefined);
+  const runtime=entry.runtimes.find(item=>item.type==='ollama');
+  assert.equal(runtime.running,true);assert.equal(runtime.baseUrl,`${ollama.origin}/v1`);assert.equal(runtime.version,'0.13.0');assert.equal(runtime.installed,true);assert.equal(runtime.startCommand,'ollama serve');
+  assert.deepEqual(runtime.models.map(model=>[model.id,!!model.embedding]),[['qwen3.8:27b',false],['nomic-embed-text:latest',true]]);
+  assert.equal(entry.runtimes.find(item=>item.type==='mlx').running,false);
+  assert.doesNotMatch(JSON.stringify(entry),/nonexistent-home|pathEnv|platform/,'No paths or environment cross from the Mac.');
+  assert.equal(hub.model.modelCalls+mac.model.modelCalls,0,'Detection never runs a connection test.');
+  const asked=ollama.hits.length;assert.ok(asked>=2);
+
+  assert.deepEqual((await hub.request('/api/local-runtimes')).body.macs,listed.macs,'A second look within 30 s reuses the check.');
+  assert.equal(ollama.hits.length,asked);
+  const refreshed=(await hub.request('/api/local-runtimes?refresh=1')).body.macs[0];
+  assert.ok(ollama.hits.length>asked,'refresh=1 asks the Mac again.');assert.equal(refreshed.online,true);
+
+  // The Mac itself is a replica: it lists only its own runtimes.
+  const own=(await mac.request('/api/local-runtimes')).body;
+  assert.equal(own.engine.role,'replica');assert.deepEqual(own.macs,[]);assert.equal(own.runtimes.find(item=>item.type==='ollama').running,true);
+
+  // A Mac that stops claiming is offline and lists nothing.
+  await mac.app.sync.inference.close();
+  await eventually(()=>!hub.app.sync.inference.hostOnline(mac.app.sync.nodeId));
+  const offline=(await hub.request('/api/local-runtimes')).body.macs[0];
+  assert.deepEqual({online:offline.online,checkedAt:offline.checkedAt,runtimes:offline.runtimes},{online:false,checkedAt:null,runtimes:[]});
+});
+
+test('a linked engine that does not advertise runtime checks gets a clear error, not a job',async t=>{
+  const {hub,mac}=await macWithRuntimes(t);
+  await mac.app.sync.inference.close();
+  mac.app.sync.inference=null;
+  const {InferenceRelay:Relay}=await import('../lib/inference-relay.mjs');
+  // An engine from before `detect` claims without `kinds`.
+  const older=new Relay({store:mac.app.store,sync:mac.app.sync,options:{...RELAY,kinds:['complete','test']}});mac.app.sync.inference=older;older.start();t.after(()=>older.close());
+  await link(hub,mac);
+  await eventually(()=>hub.app.sync.inference.hostOnline(mac.app.sync.nodeId));
+  const entry=(await hub.request('/api/local-runtimes')).body.macs[0];
+  assert.equal(entry.online,true);assert.deepEqual(entry.runtimes,[]);assert.match(entry.error,/older Tupies Engine/);
+  assert.equal(hub.app.sync.inference.jobs.size,0);
+});
+
+test('the home server adds a Mac’s running runtime: the Mac hosts it, tests it and picks the first chat model',async t=>{
+  const {hub,mac,ollama}=await macWithRuntimes(t);
+  const add=(engine,body)=>engine.request('/api/connections',{method:'POST',body});
+  const standalone=await add(hub,{type:'ollama',hostNodeId:mac.app.sync.nodeId});
+  assert.equal(standalone.status,409);assert.match(standalone.body.error,/Only the home server/);
+
+  await linkAndClaim(hub,mac);
+  const node=mac.app.sync.nodeId;
+  const unchecked=await add(hub,{type:'ollama',hostNodeId:node});
+  assert.equal(unchecked.status,409);assert.match(unchecked.body.error,/Check the local models/);
+  await hub.request('/api/local-runtimes');
+  assert.equal((await add(hub,{type:'openai',hostNodeId:node,apiKey:'plainly-fake-test-key'})).status,400);
+  const stopped=await add(hub,{type:'mlx',hostNodeId:node});assert.equal(stopped.status,409);assert.match(stopped.body.error,/MLX is not running/);
+  const elsewhere=await add(hub,{type:'ollama',hostNodeId:node,baseUrl:'http://127.0.0.1:9/v1'});assert.equal(elsewhere.status,409);assert.match(elsewhere.body.error,/No running Ollama answers/);
+  assert.equal((await add(hub,{type:'ollama',hostNodeId:'node_not_linked'})).status,404);
+  assert.equal(hub.app.store.state.connections.length,0,'Refusals create nothing.');
+
+  mac.model.listing=async()=>({models:[{id:'nomic-embed-text:latest'},{id:'gemma4:cloud'},{id:'qwen3.8:27b',name:'Qwen3.8 27B'},{id:'llama3.2:3b'}],source:'provider'});
+  const created=await add(hub,{type:'ollama',hostNodeId:node});
+  assert.equal(created.status,201,JSON.stringify(created.body));
+  assert.equal(created.body.name,'Mac · Ollama');assert.equal(created.body.baseUrl,`${ollama.origin}/v1`);
+  assert.equal(created.body.host.nodeId,node);assert.equal(created.body.host.here,false);
+  assert.equal(created.body.defaultModel,'qwen3.8:27b','Embedding and cloud models are skipped.');
+  assert.deepEqual(created.body.test,{connected:true,relayed:true,models:4});
+  assert.equal(hub.model.modelCalls,0,'The home server never dials the Mac’s runtime.');assert.equal(mac.model.modelCalls,1);
+  const id=created.body.id;
+  // The Mac wrote its record (models, status, default model); the home server sees it through sync.
+  assert.equal(mac.app.store.state.connections.find(item=>item.id===id).defaultModel,'qwen3.8:27b');
+  await eventually(()=>{const record=hub.app.store.state.connections.find(item=>item.id===id);return record?.defaultModel==='qwen3.8:27b' && record.status==='connected' && record.models?.length===4 && record.host===node;});
+
+  // A replica cannot add a model for another engine.
+  const fromMac=await add(mac,{type:'ollama',hostNodeId:hub.app.sync.nodeId});assert.equal(fromMac.status,409);assert.match(fromMac.body.error,/Only the home server/);
+
+  // An offline Mac is refused, even with a recent check.
+  await mac.app.sync.inference.close();
+  await eventually(()=>!hub.app.sync.inference.hostOnline(node));
+  const offline=await add(hub,{type:'ollama',hostNodeId:node});assert.equal(offline.status,409);assert.match(offline.body.error,/offline/);
+});
+
 // ---- Protocol handlers with a fake hub link ---------------------------------------------------
 
 function fakeHub() {
@@ -254,6 +370,35 @@ test('a version mismatch from the claimant marks the host incompatible and fails
   await assert.rejects(queued,error=>providerFailure(error)?.code==='node_incompatible');
   await assert.rejects(relay.relay('complete',{id:'local',host:'node_mac'},{model:MODEL,messages:userMessage}),error=>providerFailure(error)?.code==='node_incompatible');
   await claim();assert.equal(relay.incompatible.has('node_mac'),false,'An updated claimant clears the mark.');
+});
+
+test('a detect job carries no connection; the hub keeps only known loopback runtimes and bounds a silent Mac',async t=>{
+  const {relay,store,claim,post}=fakeHub();t.after(()=>relay.close());
+  store.state.devices=[{id:'dev_mac',kind:'engine',nodeId:'node_mac',pairedVia:'node_hub',name:'Studio Mac'}];
+  await claim({kinds:['complete','test','detect']});
+  const pending=relay.linkedRuntimes();
+  const {jobs}=await claim({kinds:['complete','test','detect']});
+  assert.equal(jobs.length,1);assert.equal(jobs[0].kind,'detect');assert.equal(jobs[0].connectionId,null);assert.deepEqual(jobs[0].request,{});
+  const reply=await post(jobs[0].id,1,[{type:'result',result:{platform:'darwin',checkedAt:'2026-11-17T10:00:00.000Z',home:'/Users/owner',runtimes:[
+    {type:'mlx',baseUrl:'http://127.0.0.1:8080/v1',running:true,models:[{id:'mlx-community/Qwen3.8-27B-4bit',path:'/Users/owner/.cache/model'}],installed:null,startCommand:'rm -rf /',env:{HF_TOKEN:'x'}},
+    {type:'ollama',baseUrl:'http://10.0.0.5:11434/v1',running:true,models:[]},
+    {type:'vllm',baseUrl:'http://127.0.0.1:8000/v1',running:true,models:[]},
+  ]}}]);
+  assert.equal(reply.action,'continue');
+  const [entry]=await pending;
+  assert.deepEqual({nodeId:entry.nodeId,name:entry.name,online:entry.online,checkedAt:entry.checkedAt},{nodeId:'node_mac',name:'Studio Mac',online:true,checkedAt:'2026-11-17T10:00:00.000Z'});
+  assert.equal(entry.runtimes.length,1,'Unknown runtime types and non-loopback addresses are dropped.');
+  assert.deepEqual(entry.runtimes[0].models,[{id:'mlx-community/Qwen3.8-27B-4bit'}]);
+  assert.equal(entry.runtimes[0].startCommand,'mlx_lm.server --model <model> --port 8080','Start commands come from the home server’s own table.');
+  assert.doesNotMatch(JSON.stringify(entry),/Users|HF_TOKEN|rm -rf/);
+  assert.equal(relay.hostedRuntime({hostNodeId:'node_mac',type:'mlx'}).baseUrl,'http://127.0.0.1:8080/v1','The detected address is the default.');
+
+  // A Mac that claims but never answers fails within the detection bound; nothing is left queued.
+  relay.options.detectTimeoutMs=150;
+  const started=Date.now(),[silent]=await relay.linkedRuntimes({refresh:true});
+  assert.ok(Date.now()-started<2000);assert.equal(silent.online,true);assert.deepEqual(silent.runtimes,[]);assert.match(silent.error,/did not answer/);
+  assert.equal(relay.jobs.size,0);
+  assert.throws(()=>relay.hostedRuntime({hostNodeId:'node_mac',type:'mlx'}),/Check the local models/);
 });
 
 test('the host queue runs at most two requests per runtime, interactive work before background reviews',async()=>{
