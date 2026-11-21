@@ -5,7 +5,7 @@ import { generateKeyPairSync, verify } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { APNs } from '../lib/apns.mjs';
+import { APNs, parseEnvironments } from '../lib/apns.mjs';
 
 const pair = generateKeyPairSync('ec',{namedCurve:'prime256v1'});
 const PRIVATE = pair.privateKey.export({type:'pkcs8',format:'pem'});
@@ -65,7 +65,7 @@ test('APNs signs a valid ES256 JWT and sends bounded alert metadata only to fixe
   assert.deepEqual(f.connections[0].settings,{rejectUnauthorized:true,minVersion:'TLSv1.2',servername:'api.sandbox.push.apple.com'});
   const stream=f.streams[0],headers=stream.headers;
   assert.equal(headers[':method'],'POST');assert.equal(headers[':path'],'/3/device/'+DEVICE_TOKEN);
-  assert.equal(headers['apns-topic'],'dev.tupies.app');assert.equal(headers['apns-push-type'],'alert');assert.equal(headers['apns-priority'],'5');
+  assert.equal(headers['apns-topic'],'dev.tupies.app');assert.equal(headers['apns-push-type'],'alert');assert.equal(headers['apns-priority'],'10');
   assert.equal(headers['apns-expiration'],String(now/1000+86400));assert.match(headers['apns-id'],/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
   assert.equal(Buffer.byteLength(headers['apns-collapse-id']),64);assert.equal(headers['content-length'],String(stream.body.length));assert.deepEqual(JSON.parse(stream.body),PAYLOAD);
   const token=headers.authorization.replace(/^bearer /,''),[head,claims,signature]=token.split('.');
@@ -136,4 +136,43 @@ test('APNs retires an idle/GOAWAY connection and a timeout has an unknown delive
   const keepAlive=setTimeout(()=>{},1000);
   try {await assert.rejects(timeout.provider.send(request()),{code:'apns_delivery_unknown'});assert.equal(timeout.streams.length,1);}
   finally {clearTimeout(keepAlive);timeout.provider.close();}
+});
+
+test('APNs serves both Apple environments: a Release/TestFlight iPhone registers production, an Xcode build sandbox',async()=>{
+  assert.deepEqual(parseEnvironments('sandbox'),['sandbox']);assert.deepEqual(parseEnvironments('Production'),['production']);
+  for(const value of ['both','sandbox,production','production sandbox'])assert.deepEqual(parseEnvironments(value),['sandbox','production']);
+  for(const value of ['','staging','sandbox,https://attacker.invalid'])assert.equal(parseEnvironments(value),null);
+  // One shared key listed for both environments: one session and one provider token per environment.
+  const both=fixture({environment:'sandbox,production'});await both.provider.init();
+  assert.deepEqual(both.provider.environments,['sandbox','production']);assert.equal(both.provider.supports('production'),true);
+  await both.provider.send(request());await both.provider.send(request({environment:'production',eventId:'production-event'}));
+  assert.deepEqual(both.connections.map(item=>item.url),['https://api.sandbox.push.apple.com','https://api.push.apple.com']);
+  await both.provider.send(request({environment:'production',eventId:'again'}));assert.equal(both.connections.length,2,'each environment keeps its own persistent session');
+  both.provider.close();assert.deepEqual(both.provider.environments,[]);
+});
+
+test('APNs uses an environment-restricted production key next to the existing sandbox key',async()=>{
+  const production=generateKeyPairSync('ec',{namedCurve:'prime256v1'});
+  const files={'operator-private-key.p8':PRIVATE,'production-key.p8':production.privateKey.export({type:'pkcs8',format:'pem'})};
+  // The VPS keeps STUDIO_APNS_ENVIRONMENT=sandbox; adding the production key enables production too.
+  const f=fixture({environment:undefined,env:{STUDIO_APNS_ENVIRONMENT:'sandbox',STUDIO_APNS_PRODUCTION_KEY_FILE:'production-key.p8',STUDIO_APNS_PRODUCTION_KEY_ID:'PROD123456'},readKey:async file=>files[file]});
+  await f.provider.init();assert.deepEqual(f.provider.environments,['sandbox','production']);
+  await f.provider.send(request());await f.provider.send(request({environment:'production',eventId:'production-event'}));
+  const kid=stream=>JSON.parse(Buffer.from(stream.headers.authorization.replace(/^bearer /,'').split('.')[0],'base64url')).kid;
+  assert.equal(kid(f.streams[0]),'KEY1234567');assert.equal(kid(f.streams[1]),'PROD123456');
+  const [head,claims,signature]=f.streams[1].headers.authorization.replace(/^bearer /,'').split('.');
+  assert.ok(verify('sha256',Buffer.from(`${head}.${claims}`),{key:production.publicKey,dsaEncoding:'ieee-p1363'},Buffer.from(signature,'base64url')));
+  f.provider.close();
+  // Only a production key configured: production works and sandbox is reported as a mismatch, not an invalid setup.
+  const only=fixture({keyFile:'',keyId:'',environment:undefined,env:{STUDIO_APNS_PRODUCTION_KEY_FILE:'production-key.p8',STUDIO_APNS_PRODUCTION_KEY_ID:'PROD123456'},readKey:async file=>files[file]});
+  await only.provider.init();assert.deepEqual(only.provider.environments,['production']);assert.equal(only.provider.reasonFor('sandbox'),'environment_mismatch');
+  await assert.rejects(only.provider.send(request()),{code:'apns_environment_mismatch'});assert.equal(only.connections.length,0);only.provider.close();
+});
+
+test('APNs keeps a working environment when the other environment key is broken and says which one',async()=>{
+  const f=fixture({environment:undefined,env:{STUDIO_APNS_PRODUCTION_KEY_FILE:'missing.p8',STUDIO_APNS_PRODUCTION_KEY_ID:'PROD123456'},readKey:async file=>{if(file==='missing.p8')throw new Error('ENOENT private path');return PRIVATE;}});
+  await f.provider.init();
+  assert.equal(f.provider.available,true);assert.deepEqual(f.provider.environments,['sandbox']);
+  assert.deepEqual(f.provider.invalidEnvironments,['production']);assert.equal(f.provider.reasonFor('production'),'invalid_configuration');assert.equal(f.provider.reasonFor('sandbox'),null);
+  await assert.rejects(f.provider.send(request({environment:'production'})),{code:'apns_environment_mismatch'});f.provider.close();
 });

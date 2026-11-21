@@ -106,3 +106,13 @@ test('remote/mismatched attention, wrong generation and covered or inactive Miss
   await f.reader.tick();f.advance(700);await f.reader.tick();assert.equal(f.calls.length,0,bad);
  }
 });
+
+test('an approval card mutes only its own phone alert while visible in an attended chat',async t=>{
+  const f=fixture(t);f.context.messages=[];
+  f.context.run={status:'waiting_for_approval',pending_controls:[{kind:'approval',prompt_id:'approval_current'}]};
+  const node=f.win.document.querySelector('article');node.removeAttribute('data-search-message-id');node.dataset.notificationApprovalId='approval_current';
+  await f.reader.tick();f.advance(700);f.focus(false);await f.reader.tick();assert.equal(f.calls.length,0,'an unfocused window cannot acknowledge');
+  f.focus(true);await f.reader.tick();f.advance(700);await f.reader.tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(f.calls[0][1].body)),{botId:'bot_atlas',messageIds:[],approvalId:'approval_current'});
+  f.context.run.pending_controls=[{kind:'approval',prompt_id:'approval_new'}];f.advance(700);await f.reader.tick();assert.equal(f.calls.length,1,'an old card cannot acknowledge a newer approval');
+});
