@@ -1,10 +1,14 @@
 # Tupies — project context
 
-## CI Chrome warm-up through the Engine's own start — 17 November 2026 (CI tooling only; nothing reaches an Engine)
+## CI Chrome warm-up through the Engine's own start — 17 November 2026 (CI tooling and rebuilt Engine guide)
 
 - **Problem.** The first browser test ("form fields use real DOM updates…") failed on GitHub runners with "The browser did not answer Browser.getVersion in time" (CI on `main` after PR #70, PR #73, and the beta 10 and 11 release jobs), always passing on rerun. That blocks automatic betas until someone reruns the job.
 - **Cause.** Some freshly provisioned runners are slow for their first minute or two. Across 18 Tests-job logs, the old one-shot warm-up (`chrome --dump-dom about:blank`) took 6–7 s on normal runners and 11–23 s on slow ones, and on the slow ones the next one to three Engine browser starts took over 15 s before starts dropped to about a second. The one-shot warm-up also ran with the runner's own home folder and default flags, not the Engine's private profile, so it did not exercise the Engine's start.
 - **Fix.** `scripts/warm-browser.mjs` (run after `npm ci` in `ci.yml` Tests and in `release.yml`'s Engine job) starts real task browsers through `BrowserSession.start` until one starts in under 5 s, for at most 3 minutes and 12 starts, and logs each start's time. The Engine's 15 s limit and every test are unchanged; a runner that stays slow only produces a warning, so real failures still show. See `docs/releases.md` → Chrome warm-up.
+
+## Desktop driver pin survives a reboot — 17 November 2026 (source only, not installed or released)
+
+During the beta 13 Mac rollout every Desktop action failed after a reboot with "The desktop driver changed" although the driver was untouched: the pin compared the APFS volume number (`st_dev`, 16777229 → 16777232) along with path, SHA-256 and inode. `lib/desktop-driver.mjs` now compares only path, SHA-256 and inode (`sameDriverIdentity`); `device` stays in the stored record so existing `data/desktop/config.json` files keep working without reconnecting. Task admission in `lib/desktop.mjs` binds the same device-free form and still accepts digests written by older journals, so re-saving the same driver after a reboot no longer drops access for admitted tasks. Changed bytes, a new inode (including a same-bytes copy), a different path or a missing file still refuse dispatch. New cases in `test/desktop-driver.test.mjs` and `test/desktop.test.mjs`; see [Desktop on this Mac](docs/desktop.md).
 
 ## Local models on the Mac, used from every engine — 17 November 2026 (source only, not installed or released)
 
