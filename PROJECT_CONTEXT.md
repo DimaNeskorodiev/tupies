@@ -1,5 +1,49 @@
 # Tupies — project context
 
+## Phone alerts stopped; approval and other attention alerts — 19 November 2026 (source only, not installed or released)
+
+Branch `fix/notifications-20261119` from `main` `dde7da9`. Details: [docs/notifications.md](docs/notifications.md).
+
+**Root cause (read-only VPS check with the owner's OK).** The VPS (beta 13) has `STUDIO_APNS_ENVIRONMENT=sandbox` and only the Sandbox-only key "Tupies iPhone Sandbox". The iPhone registration is now `production` (a Release-configuration build, `APS_ENVIRONMENT=production`). `Notifications.add()` skipped every event for that registration as `environment_mismatch` without an outbox entry. The last alert was sent on 16 November at 12:38 UTC. Nothing else in the pipeline was broken: a real chat run through `createStudioServer` delivers a push on clean `main`. "On the computer" is the same iPhone alert (the Mac app has no notifications of its own).
+
+**Fix in source:**
+- `lib/apns.mjs` serves sandbox and production at once. Each environment has its own key, provider token and HTTP/2 session. New settings: `STUDIO_APNS_ENVIRONMENT=both` and `STUDIO_APNS_{PRODUCTION,SANDBOX}_KEY_FILE/_KEY_ID`. Alerts are sent at priority 10.
+- Missed alerts are recorded instead of dropped: `registration.undelivered`, the phone status line, engine-log records (`push.transport`, `push.undelivered`, `push.restored`, `push.rejected`, `push.registration`), `GET /api/notifications/health`, `pushAlert` in `/api/state`, and a **Phone alerts** card in Settings → Devices & sync (`public/notification-health.js`) with a warning dot on the Settings overview.
+
+**New alert types (`lib/attention-text.mjs`, argument-free text):**
+- approvals in every lane the owner decides;
+- browser help in the owner's chat;
+- failed owner-chat tasks;
+- pending skill suggestions.
+
+Approval cards send an exact `approvalId` read receipt. Approval and browser prompts now carry `createdAt`.
+
+**VPS key switched, 19 November 2026 10:14 CET (owner's go-ahead).** The owner created APNs key "Tupies Prod" (Sandbox & Production, topic `dev.tupies.app`). It was copied over stdin to `/var/lib/hermes-studio/apns/` (owner `studio`, mode 0600, checksum verified). In `/etc/hermes-studio/apns.env` only three lines changed: `KEY_FILE`, `KEY_ID` and `STUDIO_APNS_ENVIRONMENT=production`. The previous file is `/etc/hermes-studio/apns.env.before-prod-20261119`, and the old Sandbox key file stays in place. The engine was restarted while idle (0 active runs, updater inactive) and came up clean. A probe to Apple production with a dummy device token returned `400 BadDeviceToken`, so the key is accepted.
+
+This is still beta 13, which serves one environment, so Xcode development builds get no alerts until this branch ships. After it ships, set `STUDIO_APNS_ENVIRONMENT=both`. Rollback: copy the `before-prod` file back and restart.
+
+**Verification:** `test/notification-delivery.test.mjs` (5), `test/notification-attention.test.mjs` (10), `test/apns.test.mjs` (+3) and a new receipt case in `test/notification-reads-ui.test.mjs`. The browser-handoff expectation in `test/notifications.test.mjs` was changed on purpose: handoffs outside the owner's chat stay quiet. Full suite: see the PR.
+
+## Simpler local-model setup — 17 November 2026 (source only, not installed)
+
+Branch `feature/local-models-ux-20261117` from `main` `dde7da9`. The owner found the setup unusable: from the VPS UI the dialog asked for a name, default model, endpoint, window and image input, and "On my Mac" in the chat was a dead end.
+
+- **From the chat.** "On my Mac" with no local model shows **Set up a model on your Mac**. It opens Settings › Models with the setup card focused (`#/connections?setup=local&bot=…`). **Use** adds the runtime and switches that bot to its model, then **Back to chat** restores the draft.
+- **On the home server.** The card reads "On your Mac" and lists the linked Mac's runtimes. The hub asks the Mac through a new relay job kind `detect` (cached 30 s; `GET /api/local-runtimes` gains `engine` and `macs`). **Use** creates a connection hosted by the Mac (`POST /api/connections` with `hostNodeId`), and the hub tests it through the relay.
+- **No form.** A new Ollama/MLX connection gets its default model chosen automatically (the first chat model). The manual Connect dialog shows only status and **Connect**; address, window and image input sit under a closed **Advanced**.
+- **This Mac in the Mac app** was red because the external engine on 4311 had not run since the 16 November reboot. The app may not start an external engine; a launch agent is prepared separately.
+- **Verified:** `npm test` 2,737/2,737; a browser walk on a disposable engine (chat → setup card → Use → bot switched → Back to chat; Connect dialog with no fields).
+
+## CI Chrome warm-up through the Engine's own start — 17 November 2026 (CI tooling and rebuilt Engine guide)
+
+- **Problem.** The first browser test ("form fields use real DOM updates…") failed on GitHub runners with "The browser did not answer Browser.getVersion in time" (CI on `main` after PR #70, PR #73, and the beta 10 and 11 release jobs), always passing on rerun. That blocks automatic betas until someone reruns the job.
+- **Cause.** Some freshly provisioned runners are slow for their first minute or two. Across 18 Tests-job logs, the old one-shot warm-up (`chrome --dump-dom about:blank`) took 6–7 s on normal runners and 11–23 s on slow ones, and on the slow ones the next one to three Engine browser starts took over 15 s before starts dropped to about a second. The one-shot warm-up also ran with the runner's own home folder and default flags, not the Engine's private profile, so it did not exercise the Engine's start.
+- **Fix.** `scripts/warm-browser.mjs` (run after `npm ci` in `ci.yml` Tests and in `release.yml`'s Engine job) starts real task browsers through `BrowserSession.start` until one starts in under 5 s, for at most 3 minutes and 12 starts, and logs each start's time. The Engine's 15 s limit and every test are unchanged; a runner that stays slow only produces a warning, so real failures still show. See `docs/releases.md` → Chrome warm-up.
+
+## Desktop driver pin survives a reboot — 17 November 2026 (source only, not installed or released)
+
+During the beta 13 Mac rollout every Desktop action failed after a reboot with "The desktop driver changed" although the driver was untouched: the pin compared the APFS volume number (`st_dev`, 16777229 → 16777232) along with path, SHA-256 and inode. `lib/desktop-driver.mjs` now compares only path, SHA-256 and inode (`sameDriverIdentity`); `device` stays in the stored record so existing `data/desktop/config.json` files keep working without reconnecting. Task admission in `lib/desktop.mjs` binds the same device-free form and still accepts digests written by older journals, so re-saving the same driver after a reboot no longer drops access for admitted tasks. Changed bytes, a new inode (including a same-bytes copy), a different path or a missing file still refuse dispatch. New cases in `test/desktop-driver.test.mjs` and `test/desktop.test.mjs`; see [Desktop on this Mac](docs/desktop.md).
+
 ## Local models on the Mac, used from every engine — 17 November 2026 (installed on Mac and VPS as Engine beta 13)
 
 **Installed 17 November 2026.**
@@ -7,7 +51,7 @@
 - **VPS** installed it with its own update timer at 14:54 CET (NRestarts 0).
 - **Mac** was rolled out with the reviewed operator scripts: a candidate from `dde7da9` (2,723/2,723 tests on Node 22.23.4), an encrypted stopped backup, a held start, verification of 8,902 preserved runtime entries, then activation.
 - **The Mac engine had been down since a reboot on 16 November.** It is started detached and is not a launch agent, so it does not come back after a reboot.
-- **Desktop driver pin.** The rollout's Desktop driver pin check failed only because the APFS device number (`st_dev`) changed with that reboot. With the owner's approval, the operator check ignores `device`. The Engine's own check in `lib/desktop-driver.mjs` still compares it, so Desktop actions ask to reconnect the driver after a reboot (follow-up).
+- **Desktop driver pin.** The rollout's Desktop driver pin check failed only because the APFS device number (`st_dev`) changed with that reboot. With the owner's approval, the operator check ignores `device`. At that installation, the Engine's own check in `lib/desktop-driver.mjs` still compared it and Desktop actions asked to reconnect after a reboot. PR #72 subsequently fixed the source pin check; that source checkpoint is recorded above and does not rewrite the beta 13 installation receipt.
 - **Live relay check** (a VPS bot answered by the model on the Mac) is still to do.
 
 Branch `feature/local-models-20261117` from `main` `633c683`. Plan: `docs/plans/local-models-20261117.md`, which was revised after an independent architecture review. Measurements: `docs/research/local-qwen38-27b-20261117.md`.

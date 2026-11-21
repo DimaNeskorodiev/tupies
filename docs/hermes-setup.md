@@ -16,7 +16,7 @@ For Ollama, run the local service with a tool-capable model and use its OpenAI-c
 
 ### Models on your Mac (Ollama and MLX)
 
-**Settings › Models** opens with an **On this Mac** card. The engine checks only this machine's loopback interface, with a short timeout (`GET /api/local-runtimes`), for:
+**Settings › Models** opens with an **On this Mac** card. It is the main way to add a model on your Mac: one **Use** per running runtime, nothing to fill in. The engine checks only this machine's loopback interface, with a short timeout (`GET /api/local-runtimes`, cached for 30 s; **Check again** asks it to look now), for:
 
 - **Ollama** on `http://127.0.0.1:11434` (`/api/version`, `/api/tags`);
 - **MLX LM** or **MLX VLM** on `http://127.0.0.1:8080` (`/v1/models`, and `/health`, which `mlx_vlm.server` exposes).
@@ -29,7 +29,11 @@ Each runtime shows one of three states:
 
 While a bot's step runs on a local model, the chat says what it is waiting for: "Waiting for this Mac…" when other requests are ahead in the queue, "Loading the model on this Mac…", "Reading the conversation (about 24K tokens)…", and then the streamed answer. While a request runs, the Mac is kept from idle sleep (`caffeinate`, ended 30 s after the last request). A closed lid on battery still sleeps the Mac; a bot used from the home server then gets its fallback model's answer, or stops with "The Mac is offline" (see [Engines, devices and sync](sync.md#local-models-hosted-by-a-linked-engine)).
 
-Tupies never starts a runtime, never downloads weights and never probes another machine. On a server (a VPS) the card lists the local providers the paired Mac hosts, with **Mac online** or **Mac offline**, or explains that local models run on the Mac. Choose the model for a bot with **On my Mac** in the model picker (see [Model and reasoning](chat-controls.md#model-and-reasoning)).
+Tupies never starts a runtime and never downloads weights. On the home server (a VPS that Macs link to) the card is titled **On your Mac** and lists each linked Mac with the runtimes that Mac found on its own loopback, checked through the relay. **Use** there adds the runtime for that Mac (`hostNodeId`), named “Mac · Ollama” or “Mac · MLX”, and bots on the server reach it through the Mac. A Mac that is offline says to open Tupies on it; a Mac running an older engine says to update it; with no linked Mac the card says to open Tupies on the Mac and link it in **Settings › Devices & sync**. A server that is not a home server lists the local providers the paired Mac hosts, with **Mac online** or **Mac offline**, or explains that local models run on the Mac. Choose the model for a bot with **On my Mac** in the model picker (see [Model and reasoning](chat-controls.md#model-and-reasoning)).
+
+From the chat, **Set up a model on your Mac** opens this card focused, for the bot you were talking to: **Use** then also switches that bot to the new model, and **Back to chat** returns with your draft.
+
+**Add provider › Ollama** or **MLX LM (Mac)** asks for nothing. It shows what was found (for example **Running on this Mac · 3 models**, or **Running on Studio Mac** on the home server), what Connect will add, and one **Connect** button. The name, address and default model are chosen automatically: the engine picks the first chat model and checks the new provider once. If the runtime is not running, the dialog says so with the start command and **Check again**. A custom address, the context window and image input are under **Advanced**, closed by default. Editing a saved Ollama or MLX provider keeps its name and default model, with the same fields under **Advanced**.
 
 ## ChatGPT / Codex subscription
 

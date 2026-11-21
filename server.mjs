@@ -152,7 +152,7 @@ export async function createStudioServer(options={}) {
   const providers=options.providers || new Providers(store,options);
   // Local models: a linked engine that hosts a runtime answers this engine's requests for it (lib/inference-relay.mjs).
   // While a local model request runs here, a Mac stays awake (lib/sleep-guard.mjs); `sleepGuard:false` turns it off for tests.
-  const relay=new InferenceRelay({store,sync,options:options.relay,sleepGuard:options.sleepGuard===false?null:options.sleepGuard || new SleepGuard(),onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
+  const relay=new InferenceRelay({store,sync,options:options.relay,sleepGuard:options.sleepGuard===false?null:options.sleepGuard || new SleepGuard(),localRuntimes:options.localRuntimes ?? providers.options?.localRuntimes ?? null,onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
   sync.inference=relay;
   providers.oauth && (providers.oauth.refreshDelegate=connectionId=>sync.role()==='replica'?sync.delegateRefresh(connectionId):null);
   if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}
@@ -181,7 +181,9 @@ export async function createStudioServer(options={}) {
   sync.prepareLinkChange=()=>channels.pauseAutomation();
   await channels.recover?.();
   const notificationTransport=options.notifications?.transport || await new APNs(options.apns).init();
-  const notifications=await new Notifications(store,{...options.notifications,sync,transport:notificationTransport,updateHeld:()=>maintenance.paused}).init();
+  const notifications=await new Notifications(store,{log:record=>runtime.engineLog?.write(record),...options.notifications,sync,transport:notificationTransport,updateHeld:()=>maintenance.paused}).init();
+  // One line per start in the engine log, so a missing or wrong Apple push setup is visible without a phone.
+  try{runtime.engineLog?.write({kind:'push.transport',configured:!!notificationTransport.available,environments:notificationTransport.environments || (notificationTransport.available?[notificationTransport.environment]:[]),...(notificationTransport.invalidEnvironments?.length?{invalid:notificationTransport.invalidEnvironments}:{}),...(notificationTransport.available?{}:{reason:notificationTransport.reason || 'not_configured'})});}catch { /* Diagnostics never block startup. */ }
   await runtime.recoverAutonomous();
   relay.start();
   sync.onNotificationReads = ids => notifications.markRead(ids);
@@ -321,7 +323,7 @@ export async function createStudioServer(options={}) {
         if(method==='GET' && pathname==='/api/state'){const state=store.publicState();
           // Engine-local: a ChatGPT authorization detached from its former home server cannot be used here (lib/sync oauthAccess).
           state.connections=state.connections.map(connection=>({...connection,...connectionHostView(connection,sync),...(sync.oauthAccess(connection)?{oauthBlocked:true}:{})}));
-          return json(res,{...state,missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),sync:sync.summary(),browser:runtime.browsers.status()});}
+          return json(res,{...state,missionsAdmission:runtime.missions.enabled(),unreadBots:notifications.unreadBots(),pendingBotItems:notifications.pendingBotItems(),pushAlert:notifications.alert(),sync:sync.summary(),browser:runtime.browsers.status()});}
         if(method==='GET' && pathname==='/api/dashboard'){const busy=sync.summary().busy;return pollReply(req,res,'dashboard',busy,()=>dashboard(store,{busy}));}
         if(await nativeApi(req,res,url,{store,providers,speech,integrations,channels,runtime,rooms,body,json,signInCallback,sync,updates,clientAddress:access.client(req)}))return;
         // After an uncertain send, the browser asks whether the engine received its message before sending it again.
