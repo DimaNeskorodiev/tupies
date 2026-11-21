@@ -45,13 +45,15 @@ Runs on every pull request and on every merge to `main`.
 | Job | What it proves | Runs |
 | --- | --- | --- |
 | **What to update** | The table above; version numbers agree; no build number is reused | always |
-| **Tests** | `npm run check` and the whole suite through `scripts/verify-release-tests.mjs`, the same command the release uses | always |
+| **Tests** | `npm run check` and the whole suite through `scripts/verify-release-tests.mjs`, the same command the release uses, after `scripts/warm-browser.mjs` has warmed Chrome | always |
 | **Linux command sandbox** | Bot commands stay inside bubblewrap, directly and under the server's systemd hardening | always |
 | **Workshop container** | Bot-proposed Engine changes are verified in a locked-down container (`scripts/accept-engine-verifier.mjs`) | always |
 | **iPhone and Mac apps** | Swift logic tests, then both apps compile without signing | when `apps/apple/` changed (on a pull request or a merge to `main`), or when CI is started by hand |
 | **CI passed** | Every job above passed or did not apply | always |
 
 The container image holds only the Engine's own sources, and it refuses skipped tests, so a test under `test/` must not read `apps/apple/` or `.github/`; checks on those belong in **What to update** or **iPhone and Mac apps**.
+
+**Chrome warm-up.** A freshly provisioned runner is sometimes slow for its first minute or two. On those runners the first one to three Engine browser starts missed the Engine's 15-second `Browser.getVersion` limit, which failed the first browser test (CI on `main` after PR #70, PR #73, Engine betas 10 and 11) until the job was rerun. Before the suite, CI and the release's Engine job run `node scripts/warm-browser.mjs`. It starts real task browsers with the Engine's own flags, private profile and limits until one starts in under 5 seconds, for at most 3 minutes and 12 starts, and prints each start's time. It changes no limit and does not fail on a slow runner; it only warns, and the tests then report what they see. It fails only when no Chrome is installed, because the browser tests would otherwise be skipped silently.
 
 `CI passed` is the one check the `main` ruleset should require. Because the suite now runs on a GitHub runner before merge, a test that is too slow or flaky there fails the pull request instead of failing a release after its tag is public.
 
