@@ -4,7 +4,7 @@
 
 Branch `feature/local-models-ux-20261117` from `main` `dde7da9`. The owner found the setup unusable: from the VPS UI the dialog asked for a name, default model, endpoint, window and image input, and "On my Mac" in the chat was a dead end.
 
-- **From the chat.** "On my Mac" with no local model shows **Set up a model on your Mac**. It opens Settings › Models with the setup card focused (`#/connections?setup=local&bot=…`). **Use** adds the runtime and switches that bot to its model, then **Back to chat** restores the draft.
+- **From the chat.** "On my Mac" with no local model shows **Set up a model on your Mac**. It opens Settings › Models with the setup card focused (`#/connections?setup=local&bot=…`). **Use** adds the runtime and switches that bot to its model, then **Back to chat** restores the draft once, preserving text already restored by navigation or a newer unsent draft.
 - **On the home server.** The card reads "On your Mac" and lists the linked Mac's runtimes. The hub asks the Mac through a new relay job kind `detect` (cached 30 s; `GET /api/local-runtimes` gains `engine` and `macs`). **Use** creates a connection hosted by the Mac (`POST /api/connections` with `hostNodeId`), and the hub tests it through the relay.
 - **No form.** A new Ollama/MLX connection gets its default model chosen automatically (the first chat model). The manual Connect dialog shows only status and **Connect**; address, window and image input sit under a closed **Advanced**.
 - **This Mac in the Mac app** was red because the external engine on 4311 had not run since the 16 November reboot. The app may not start an external engine; a launch agent is prepared separately.
