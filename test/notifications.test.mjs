@@ -51,9 +51,10 @@ test('only the exact current question can be marked read; final replies retain t
   await f.reply('after_question',{at:8001});f.advance(8001);await f.notifications.flush();assert.equal(f.sent.length,1);
 });
 
-test('baseline questions, browser handoffs, non-chat lanes and progress messages stay quiet', async t => {
+// Browser handoffs in the owner's chat now alert (test/notification-attention.test.mjs); in other lanes they stay quiet.
+test('baseline questions, non-chat lanes and progress messages stay quiet', async t => {
   const f=await fixture(t,{seed:state=>{state.runs.bot_atlas=questionRun();}});await f.notifications.register(f.device,enrollment());await f.notifications.flush();
-  for(const overrides of [{source:'delegation'},{source:'routine'},{sessionId:'bot_atlas--telegram-private'},{stopRequested:true},{pending_controls:[{kind:'browser',prompt_id:'browser_first'}]}]) {
+  for(const overrides of [{source:'delegation'},{source:'routine'},{sessionId:'bot_atlas--telegram-private'},{stopRequested:true},{source:'delegation',pending_controls:[{kind:'browser',prompt_id:'browser_first'}]}]) {
     await f.store.mutate(state=>{state.runs.bot_atlas=questionRun({id:`run_case_${f.notifications.state.sequence}`, ...overrides});});await f.notifications.flush();
   }
   await f.store.mutate(state=>{state.messages.bot_atlas=[{id:'owner_progress',role:'user',source:'chat',runId:'run_progress',createdAt:iso(0)},{id:'message_progress',role:'assistant',kind:'progress',runId:'run_progress',createdAt:iso(0),content:'Checking.'}];});await f.notifications.flush();
