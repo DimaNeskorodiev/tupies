@@ -152,7 +152,7 @@ export async function createStudioServer(options={}) {
   const providers=options.providers || new Providers(store,options);
   // Local models: a linked engine that hosts a runtime answers this engine's requests for it (lib/inference-relay.mjs).
   // While a local model request runs here, a Mac stays awake (lib/sleep-guard.mjs); `sleepGuard:false` turns it off for tests.
-  const relay=new InferenceRelay({store,sync,options:options.relay,sleepGuard:options.sleepGuard===false?null:options.sleepGuard || new SleepGuard(),onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
+  const relay=new InferenceRelay({store,sync,options:options.relay,sleepGuard:options.sleepGuard===false?null:options.sleepGuard || new SleepGuard(),localRuntimes:options.localRuntimes ?? providers.options?.localRuntimes ?? null,onHostTest:(connectionId,outcome)=>recordConnectionTest(store,connectionId,outcome)}).install(providers);
   sync.inference=relay;
   providers.oauth && (providers.oauth.refreshDelegate=connectionId=>sync.role()==='replica'?sync.delegateRefresh(connectionId):null);
   if(providers.oauth){providers.oauth.credentialAccess=connection=>sync.oauthAccess(connection);providers.oauth.assertAuthorization=()=>sync.assertAdmission();providers.oauth.onAuthorized=connectionId=>sync.authorizeOAuth(connectionId);}
