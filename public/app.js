@@ -457,10 +457,10 @@ function renderSettings(){
 }
 // Dashboard and bot profile live in their own scripts; they render from cache, then mount to load fresh data.
 const studioContext=()=>({data,api,esc,icon,avatar,botById,botTeammates,sortBotsByMessage,botStatus,statusPill,relative,timeLabel,shortDate,scheduleLabel,toast,errorText,openDialog,closeDialog,documentPreview,fileEditor,previewFormats,navigate,route,openBotDraft,returnToChat,routineDialog,botSettingsForm,refresh,renderApp,settingsHeading,importDialog,viewSkill,confirmDelete,missionControls});
-function openBotDraft(botId,text,{notice='Script request added to the chat draft. Review it, then Send.'}={}){
+function openBotDraft(botId,text,{notice='Script request added to the chat draft. Review it, then Send.',restore=false}={}){
   if(!auth?.authenticated||!botById(botId)||typeof text!=='string'||!text.trim())return false;
   if(text.length>20000){toast('This script request exceeds the chat draft limit. Use fewer arguments or prepare a routine.',true);return false;}
-  pendingBotDraft={botId,text,notice,generation:sendSessionGeneration};const current=route();
+  pendingBotDraft={botId,text,notice,restore,generation:sendSessionGeneration};const current=route();
   if(current.view==='bot'&&current.id===botId)applyPendingBotDraft(current);else navigate(`/bot/${encodeURIComponent(botId)}`);
   return true;
 }
@@ -470,14 +470,15 @@ let setupReturn=null;
 function rememberSetupReturn(botId){const form=$('#message-form'),field=$('#message-input');setupReturn=botId?{botId,text:form?.dataset.id===botId&&field?field.value:'',generation:sendSessionGeneration}:null;}
 function returnToChat(botId,notice=''){
   const saved=setupReturn;setupReturn=null;if(!botById(botId))return;
-  if(saved?.botId===botId&&saved.generation===sendSessionGeneration&&saved.text.trim()&&openBotDraft(botId,saved.text,{notice:notice||'Your draft is back. Review it, then Send.'}))return;
+  if(saved?.botId===botId&&saved.generation===sendSessionGeneration&&saved.text.trim()&&openBotDraft(botId,saved.text,{notice:notice||'Your draft is back. Review it, then Send.',restore:true}))return;
   navigate(`/bot/${encodeURIComponent(botId)}`);if(notice)toast(notice);
 }
 function applyPendingBotDraft(current=route()){
   const draft=pendingBotDraft;if(!draft)return;
   if(draft.generation!==sendSessionGeneration||!auth?.authenticated||current.view!=='bot'||current.id!==draft.botId){pendingBotDraft=null;return;}
   const form=$('#message-form'),field=$('#message-input');if(!field||form?.dataset.id!==draft.botId)return;
-  pendingBotDraft=null;const next=field.value?`${field.value}\n\n${draft.text}`:draft.text;
+  // The navigation draft controller may already have restored this text, or a newer draft.
+  pendingBotDraft=null;const next=draft.restore?(field.value||draft.text):field.value?`${field.value}\n\n${draft.text}`:draft.text;
   if(next.length>20000){toast('Your existing draft is too long to append this script request. Shorten it first; your text is unchanged.',true);return;}
   field.value=next;field.dispatchEvent(new Event('input',{bubbles:true}));field.focus();
   toast(draft.notice||'Request added to the chat draft. Review it, then Send.');
