@@ -399,4 +399,22 @@ test('Set up a model on your Mac keeps the chat draft and opens the setup card r
   h.run("returnToChat('bot_atlas','Atlas now uses Qwen3.8 27B on your Mac.')");
   assert.equal(h.win.location.hash,'#/bot/bot_atlas');
   assert.deepEqual(plain(h.run('({botId:pendingBotDraft.botId,text:pendingBotDraft.text,notice:pendingBotDraft.notice})')),{botId:'bot_atlas',text:'Half-written idea',notice:'Atlas now uses Qwen3.8 27B on your Mac.'});
+  h.run('applyPendingBotDraft()');
+  assert.equal(h.doc.querySelector('#message-input').value,'Half-written idea','the navigation controller already restored this draft; setup must not append it again');
+  assert.equal(h.run('pendingBotDraft'),null);
+});
+
+
+test('returning from local setup restores a missing draft and preserves a newer one without submitting',t=>{
+  const bot={id:'bot_atlas',name:'Atlas',connectionId:openrouter.id,model:'',tools:[],skills:[],enabled:true};
+  const h=appHarness({connections:[openrouter],bot});t.after(()=>h.win.close());
+  h.doc.querySelector('#app').innerHTML='<form id="message-form" data-id="bot_atlas"><textarea id="message-input">Original idea</textarea></form>';
+  const field=h.doc.querySelector('#message-input');let submissions=0;field.form.addEventListener('submit',()=>submissions++);
+  for(const current of ['', 'A newer unsent idea']){
+    field.value='Original idea';h.run('rememberSetupReturn("bot_atlas")');
+    h.win.history.replaceState(null,'','http://studio.local/#/connections?setup=local&bot=bot_atlas');
+    field.value=current;h.run('returnToChat("bot_atlas")');h.run('applyPendingBotDraft()');
+    assert.equal(field.value,current||'Original idea');
+  }
+  assert.equal(submissions,0);
 });
