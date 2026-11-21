@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {Desktop} from '../lib/desktop.mjs';
 
 import {desktopFixture} from './desktop-fixture.mjs';
@@ -97,4 +98,10 @@ test('new application assignments cannot expand an already admitted task',async 
 test('owner driver replacement requires a new task and cannot loosen a resumed snapshot',async t=>{
   const f=await desktopFixture(t),identity=f.desktop.config.identity,newPath=path.join(f.root,'replacement-driver');f.desktop.options.identity=async()=>[{...identity[0],path:newPath,sha256:'c'.repeat(64)},identity[1]];
   await f.desktop.configure({enabled:true,executable:newPath,apps:[{name:'Fixture',botIds:['bot_atlas']}]});assert.equal(f.desktop.hasAccess(f.scope.runId,f.scope.botId),false);await assert.rejects(f.observe(),/original desktop snapshot/);const restored=new Desktop(f.store,f.desktop.options);await restored.init();assert.equal(restored.hasAccess(f.scope.runId,f.scope.botId),false);await assert.rejects(restored.observe({appId:f.appId,windowId:'w-1'},{runId:'legacy_run',botId:'bot_atlas'}),/original desktop snapshot/);await restored.admit('new_run','bot_atlas');assert.equal(restored.hasAccess('new_run','bot_atlas'),true);await restored.close();
+});
+test('re-pinning the same driver after a reboot keeps admitted tasks; legacy journals stay valid',async t=>{
+  const f=await desktopFixture(t),identity=f.desktop.config.identity;f.desktop.options.identity=async()=>identity.map(file=>({...file,device:file.device+3}));
+  await f.desktop.configure({enabled:true,executable:identity[0].path,apps:[{name:'Fixture',botIds:['bot_atlas']}]});assert.notEqual(f.desktop.config.identity[0].device,identity[0].device);assert.equal(f.desktop.hasAccess(f.scope.runId,f.scope.botId),true);
+  const legacy=f.desktop.admissions.get(f.scope.runId);legacy.driverDigest=createHash('sha256').update(JSON.stringify(f.desktop.config.identity)).digest('hex');assert.equal(f.desktop.hasAccess(f.scope.runId,f.scope.botId),true);
+  f.desktop.options.identity=async()=>identity.map(file=>({...file,inode:file.inode+10}));await f.desktop.configure({enabled:true,executable:identity[0].path,apps:[{name:'Fixture',botIds:['bot_atlas']}]});assert.equal(f.desktop.hasAccess(f.scope.runId,f.scope.botId),false);
 });
