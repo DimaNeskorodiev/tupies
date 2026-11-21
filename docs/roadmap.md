@@ -2,15 +2,15 @@
 
 ## Phone alerts — 19 November 2026 (source only, not installed)
 
-Alerts stopped on 16 November. The iPhone runs a Release build, which uses Apple's production push service, and the home server has only a Sandbox key. Branch `fix/notifications-20261119`:
+Alerts stopped on 16 November: the iPhone ran a Release build using Apple's production push service while the home server had only a Sandbox key. The operator switched the VPS to a Sandbox & Production key with the production environment on 19 November; the beta 13 Engine still serves one environment at a time. Branch `fix/notifications-20261119`:
 - serves both Apple environments, with an optional per-environment key;
 - records and shows missed alerts: the phone status, Settings → Devices & sync → Phone alerts, and the engine log;
 - sends at priority 10;
 - adds alerts for approvals in every owner-decided lane, browser help, failed chat tasks and skill suggestions.
 
-Remaining: a Production APNs key on the VPS (owner, Apple Developer) and a deploy, then a physical check. Later: an iPhone switch for approval alerts and approve/deny actions on the alert itself, which needs an authenticated native action path.
+Remaining: release and install the new Engine, switch its APNs environment to `both`, then physically check the new alert types and both app build configurations. Later: an iPhone switch for approval alerts and approve/deny actions on the alert itself, which needs an authenticated native action path.
 
-## Local models on the Mac — 17 November 2026 (source only, not installed)
+## Local models on the Mac — 17 November 2026 (installed on Mac and VPS as Engine beta 13)
 
 Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was revised after an independent architecture review.
 
@@ -23,7 +23,7 @@ Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was re
    - a single re-send for invalid tool arguments.
 3. **Make the Mac the inference node for the VPS.** Generation is relayed over the existing sealed engine link: host-only connection edits, relayed model list and test, heartbeat and cancel, and `node_offline` going straight to the bot's fallback.
 4. **Add a Cloud | On my Mac toggle** in the composer picker and Bot settings.
-5. **Live status and sleep** (branch `work/local-models-status`, not installed): the chat says "Waiting for the Mac…", "Loading the model on this Mac…" or "Reading the conversation (about 24K tokens)…" while a local step waits; a Mac engine holds `caffeinate -i` while it runs local requests; embedding models are hidden from local model lists. "Loading" appears only when a runtime reports it; the engine does not yet detect a cold model load itself.
+5. **Live status and sleep** (included in the beta 13 installation): the chat says "Waiting for the Mac…", "Loading the model on this Mac…" or "Reading the conversation (about 24K tokens)…" while a local step waits; a Mac engine holds `caffeinate -i` while it runs local requests; embedding models are hidden from local model lists. "Loading" appears only when a runtime reports it; the engine does not yet detect a cold model load itself.
 
 **L0 measurement on MLX is done** ([results](research/local-qwen38-27b-20261117.md)):
 - Tool calls work.
@@ -39,8 +39,7 @@ Ollama and MLX LM on the owner's Mac, starting with Qwen3.8-27B. The plan was re
 **Remaining:**
 - native Ollama transport, once Ollama is measured;
 - the action-review thinking A/B;
-- a live Mac↔VPS relay check;
-- release.
+- a live Mac↔VPS relay check. The base local-model implementation shipped in beta 13; the simpler setup in PR #73 remains a separate source change until its release.
 
 See [local models plan](plans/local-models-20261117.md).
 
