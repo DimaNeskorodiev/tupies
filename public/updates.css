@@ -1,24 +1,86 @@
-/* Settings › Version & updates. Quiet, no motion. */
-.updates-body{display:grid;gap:14px;max-width:720px}
-.updates-card{display:grid;gap:14px;padding:18px}
-.updates-card>header{display:flex;align-items:flex-start;gap:12px;min-width:0}
-.updates-card>header>.setup-icon{flex:none}
-.updates-card>header>div{display:grid;gap:3px;min-width:0}
-.updates-card h3{margin:0;font-size:13px;font-weight:600;color:var(--muted,#737b89)}
-.updates-version{margin:0;font-size:19px;font-weight:650;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.updates-card small{color:var(--muted,#737b89);font-size:12px;line-height:1.45}
-.updates-state{display:grid;gap:4px;padding:12px 14px;border-radius:14px;border:1px solid var(--line,rgba(84,96,121,.12));background:rgba(125,135,155,.08)}
-.updates-state>strong{font-size:14px;font-weight:650}
-.updates-state>p{margin:0;color:var(--muted,#737b89);font-size:13px;line-height:1.5}
-/* State is said in words; the bar on the left only repeats it. */
-.updates-state.good{border-left:3px solid var(--green,#537b63)}
-.updates-state.attention{border-left:3px solid #b5701f}
-.updates-card>footer{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
-.updates-card>footer>button,.updates-card>footer>a{min-height:44px;text-decoration:none}
-.updates-checked{margin-left:auto}
-.updates-how,.updates-note{margin:0;color:var(--muted,#737b89);font-size:13px;line-height:1.5}
-.updates-note{padding:0 4px}
+/* Settings › Version & updates. One answer on top, then one row per part with its own action. Motion only while busy. */
+.updates-body{display:grid;gap:14px;max-width:760px}
+.updates-body svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Summary */
+.updates-summary{display:flex;align-items:center;gap:16px;padding:20px 22px}
+.updates-summary>div{display:grid;gap:3px;min-width:0;flex:1}
+.updates-summary h3{margin:0;font-size:17px;font-weight:650;letter-spacing:-.01em;color:var(--ink,#1f2733)}
+.updates-summary p{margin:0;color:var(--muted,#737b89);font-size:13px;line-height:1.45}
+.updates-summary>.secondary-button{flex:none;min-height:40px}
+/* Tone colours are variables so the dark theme (explicit, or the system's on a phone) only swaps values. */
+.updates-body{
+  --u-good:#1d7041;--u-good-bg:linear-gradient(180deg,#effaf3,#ddf3e5);--u-good-glow:0 4px 12px -6px rgba(34,165,90,.45);
+  --u-attention:#a24f0c;--u-attention-bg:linear-gradient(180deg,#fff7ee,#ffe9d2);--u-attention-glow:0 4px 12px -6px rgba(240,140,27,.5);
+  --u-busy:#4b44e0;--u-busy-bg:linear-gradient(180deg,#f4f3ff,#e7e6ff);--u-busy-glow:0 4px 12px -6px rgba(98,86,255,.5);
+  --u-error:#b23a33;--u-error-bg:linear-gradient(180deg,#fff4f3,#fbe1df);--u-error-glow:0 4px 12px -6px rgba(229,83,75,.45);
+  --u-neutral-bg:rgba(125,135,155,.12);--u-rim:inset 0 1px 0 #fff;
+}
+.updates-summary-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;flex:none;color:var(--u-good);background:var(--u-good-bg);box-shadow:var(--u-rim),var(--u-good-glow)}
+.updates-summary-icon svg{width:21px;height:21px;stroke-width:2}
+.updates-summary.tone-attention .updates-summary-icon{color:var(--u-attention);background:var(--u-attention-bg);box-shadow:var(--u-rim),var(--u-attention-glow)}
+.updates-summary.tone-attention .updates-summary-icon svg{transform:rotate(-90deg)}
+.updates-summary.tone-busy .updates-summary-icon{color:var(--u-busy);background:var(--u-busy-bg);box-shadow:var(--u-rim),var(--u-busy-glow)}
+.updates-summary.tone-error .updates-summary-icon{color:var(--u-error);background:var(--u-error-bg);box-shadow:var(--u-rim),var(--u-error-glow)}
+.updates-summary.tone-neutral .updates-summary-icon{color:var(--muted,#737b89);background:var(--u-neutral-bg);box-shadow:none}
+.updates-summary-icon.spinning svg{animation:updates-spin 1.1s linear infinite}
+
+/* One row per part */
+.updates-list{display:grid;padding:4px 0}
+.updates-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:14px;padding:18px 22px}
+.updates-row+.updates-row{border-top:1px solid var(--line,rgba(84,96,121,.12))}
+.updates-row>.setup-icon{flex:none;margin-top:2px}
+.updates-main{display:grid;gap:2px;min-width:0}
+.updates-eyebrow{margin:0 0 2px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted,#8b92a2);overflow-wrap:anywhere}
+.updates-main h3{margin:0;font-size:15px;font-weight:650;color:var(--ink,#1f2733)}
+.updates-meta{margin:0;color:var(--muted,#737b89);font-size:13px;line-height:1.45;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.updates-detail{display:grid;gap:4px;margin-top:8px}
+.updates-detail p{margin:0;color:var(--muted,#737b89);font-size:13px;line-height:1.5}
+.updates-detail strong{color:var(--ink,#1f2733);font-weight:600}
+.updates-aside{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:max-content}
+.updates-aside>.status-pill{margin:2px 0 0}
+.updates-aside>.primary-button,.updates-aside>.secondary-button{min-height:40px;text-decoration:none;white-space:nowrap}
+/* The one action of a row stands out with the theme's own blue, in light and dark alike. */
+body.pearl-studio .updates-aside>.primary-button{color:var(--pearl-blue,#225fba);background:var(--pearl-blue-soft,rgba(198,221,255,.58));border-color:transparent;font-weight:650;box-shadow:none}
+body.pearl-studio .updates-aside>.primary-button:hover:not(:disabled){color:var(--pearl-blue,#225fba);background:var(--pearl-blue-soft,rgba(198,221,255,.58));filter:saturate(1.25) brightness(.98)}
+.updates-link{color:var(--accent-ink,#3f5fa8);font-weight:600;text-decoration:none}
+.updates-link:hover,.updates-link:focus-visible{text-decoration:underline}
+.updates-progress{display:flex;align-items:center;gap:8px;color:var(--ink,#1f2733)!important;font-weight:550}
+.updates-spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(98,86,255,.25);border-top-color:#6c63ff;animation:updates-spin .9s linear infinite;flex:none}
+
+.updates-trust{display:flex;align-items:center;gap:8px;margin:2px 6px 0;color:var(--muted,#737b89);font-size:12px;line-height:1.45}
+.updates-trust svg{width:15px;height:15px}
+.updates-note{margin:0;padding:0 4px;color:var(--muted,#737b89);font-size:13px;line-height:1.5}
+
+@keyframes updates-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.updates-summary-icon.spinning svg,.updates-spinner{animation:none}}
+
+/* Dark: the same two ways the pearl theme turns dark (an explicit choice, or the system's on a phone). */
+:is([data-theme=dark],[data-appearance=dark]) .updates-body{
+  --u-good:#8fe0ae;--u-good-bg:rgba(60,170,105,.18);--u-attention:var(--pearl-amber,#ffd19e);--u-attention-bg:var(--pearl-amber-soft,rgba(205,132,58,.17));
+  --u-busy:#b9b4ff;--u-busy-bg:rgba(108,99,255,.2);--u-error:#ffb4ae;--u-error-bg:rgba(229,83,75,.18);--u-neutral-bg:rgba(170,185,215,.12);
+  --u-rim:0 0 0 transparent;--u-good-glow:0 0 0 transparent;--u-attention-glow:0 0 0 transparent;--u-busy-glow:0 0 0 transparent;--u-error-glow:0 0 0 transparent;
+}
+:is([data-theme=dark],[data-appearance=dark]) .updates-link{color:var(--pearl-blue,#9fc5ff)}
+@media (prefers-color-scheme:dark) and (max-width:760px),(prefers-color-scheme:dark) and (max-height:500px) and (pointer:coarse){
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .updates-body{
+    --u-good:#8fe0ae;--u-good-bg:rgba(60,170,105,.18);--u-attention:var(--pearl-amber,#ffb866);--u-attention-bg:var(--pearl-amber-soft,rgba(255,160,70,.16));
+    --u-busy:#b9b4ff;--u-busy-bg:rgba(108,99,255,.2);--u-error:#ffb4ae;--u-error-bg:rgba(229,83,75,.18);--u-neutral-bg:rgba(170,185,215,.12);
+    --u-rim:0 0 0 transparent;--u-good-glow:0 0 0 transparent;--u-attention-glow:0 0 0 transparent;--u-busy-glow:0 0 0 transparent;--u-error-glow:0 0 0 transparent;
+  }
+  html:not([data-theme=light]):not([data-appearance=light]) body.pearl-studio:not([data-theme=light]):not([data-appearance=light]) .updates-link{color:var(--pearl-blue,#8ab4ff)}
+}
+
+/* Narrow: actions move under the text and stay easy to tap */
+@media(max-width:760px){
+  .updates-summary{flex-wrap:wrap;padding:18px}
+  .updates-summary>.secondary-button{flex-basis:100%;justify-content:center}
+  .updates-row{grid-template-columns:auto minmax(0,1fr);padding:16px 18px}
+  .updates-aside{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center;min-width:0}
+  .updates-aside>.status-pill{order:-1}
+  .updates-aside>.primary-button,.updates-aside>.secondary-button{min-height:44px}
+}
+
 .updates-banner{position:fixed;z-index:60;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;max-width:calc(100vw - 24px);padding:10px 12px 10px 16px;border-radius:18px;background:#1f2733;color:#fff;font-size:13px;box-shadow:0 10px 34px rgba(20,24,32,.28)}
 .updates-banner>.primary-button{min-height:36px;padding:0 14px}
 .updates-banner>.text-button{min-height:36px;color:#fff}
-@media(max-width:760px){.updates-checked{margin-left:0;flex-basis:100%}}

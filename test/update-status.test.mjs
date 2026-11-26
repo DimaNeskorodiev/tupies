@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {generateKeyPairSync} from 'node:crypto';
 import {createStudioServer} from '../server.mjs';
-import {EngineUpdates,releaseLabel} from '../lib/update-status.mjs';
+import {EngineUpdates,releaseLabel,parseMacAppcast} from '../lib/update-status.mjs';
 import {signedManifest} from '../lib/update-artifacts.mjs';
 import {classify,projectVersion,versionProblems,markdown,releaseOutcome,mergeReleaseNotes} from '../scripts/update-impact.mjs';
 
@@ -115,6 +115,36 @@ test('the update routes need the owner’s session and report the native app bui
   const checked=await (await fetch(url+'/api/update/check',{method:'POST',headers,body:'{}'})).json();
   assert.equal(checked.updateAvailable,true);assert.equal(checked.latest.label,'0.5.0 beta 11');
   assert.equal((await fetch(url+'/api/update/install',{method:'POST',headers,body:'{}'})).status,409);
+});
+
+const REPO='https://github.com/fixture-owner/fixture-repo',ENGINE_FEED=`${REPO}/releases/download/update-feeds/engine-beta-linux-x64.json`,MAC_FEED=`${REPO}/releases/download/update-feeds/mac-beta.xml`;
+const appcastItem=(build,{tag=`v0.5.0-beta.${build}`,url=`${REPO}/releases/download/${tag}/Tupies.dmg`,version='0.5.0'}={})=>`<item><title>Tupies ${version}</title><pubDate>Wed, 25 Nov 2026 10:00:00 +0000</pubDate><sparkle:version>${build}</sparkle:version><sparkle:shortVersionString>${version}</sparkle:shortVersionString><enclosure url="${url}" length="1" type="application/octet-stream" sparkle:edSignature="fixture"/></item>`;
+const appcast=(...items)=>`<?xml version="1.0"?><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel>${items.join('')}</channel></rss>`;
+
+test('the Mac channel names its newest published build, with links only into the same repository',()=>{
+  const feedURL=new URL(MAC_FEED);
+  const newest=parseMacAppcast(appcast(appcastItem(16),appcastItem(18),appcastItem(17)),feedURL);
+  assert.deepEqual(newest,{version:'0.5.0',build:18,publishedAt:'2026-11-25T10:00:00.000Z',downloadURL:`${REPO}/releases/download/v0.5.0-beta.18/Tupies.dmg`,notesURL:`${REPO}/releases/tag/v0.5.0-beta.18`});
+  for(const url of ['https://github.com/someone-else/repo/releases/download/v1/Tupies.dmg','https://evil.example/fixture-owner/fixture-repo/releases/download/v1/Tupies.dmg',`${REPO}/releases/download/v1/Tupies.zip`,`${REPO}/releases/download/v1/Tupies.dmg?x=1`,'javascript:alert(1)'])
+    assert.equal(parseMacAppcast(appcast(appcastItem(19,{url})),feedURL),null,url);
+  assert.equal(parseMacAppcast(appcast(appcastItem('x')),feedURL),null);
+  assert.equal(parseMacAppcast(appcast(appcastItem(19)),new URL('https://updates.example/mac-beta.xml')),null);
+});
+
+test('a check reports the engine’s name, release notes and the published Mac build, and survives a missing Mac channel',async t=>{
+  const root=await installedCopy(t,{release:beta10,apps:{schema:1,mac:{version:'0.5.0',build:20,minimumBuild:10}}});
+  await fs.writeFile(path.join(root,'assets/updates/release-channels.json'),JSON.stringify({schema:1,channel:'beta',engine:{feedURL:ENGINE_FEED,publicKey},mac:{feedURL:MAC_FEED,publicKey:'fixture'}}));
+  const engineFeed=feed(manifest());let macStatus=200;
+  const fetcher=async(url,...rest)=>String(url)===MAC_FEED?new Response(appcast(appcastItem(18)),{status:macStatus}):engineFeed(url,...rest);
+  const updates=new EngineUpdates({root,env:{},clock:()=>NOW,fetcher,engineName:()=>'Fixture server'});
+  const checked=await updates.check();
+  assert.equal(checked.engine.name,'Fixture server');
+  assert.equal(checked.latest.notesURL,`${REPO}/releases/tag/v0.5.0-engine.beta.11`);
+  // The source expects build 20, but only build 18 was published: the page may only offer 18.
+  assert.deepEqual([checked.apps.mac.build,checked.apps.mac.published.build,checked.apps.mac.published.downloadURL],[20,18,`${REPO}/releases/download/v0.5.0-beta.18/Tupies.dmg`]);
+  macStatus=500;
+  const again=await updates.check();
+  assert.equal(again.error,'');assert.equal(again.updateAvailable,true);assert.equal(again.apps.mac.published.build,18,'the last known Mac build is kept');
 });
 
 test('a change is sorted into Engine, iPhone app and Mac app; documentation and tests reach none',()=>{
