@@ -1,5 +1,18 @@
 # Tupies — project context
 
+## Version & updates page, redesigned — 26 November 2026 (source only, not installed or released)
+
+Branch `feature/updates-page-redesign` from `main` `0ac7bd6`. Details: [docs/releases.md](docs/releases.md#in-the-app-settings--version--updates).
+
+- **Page.** One summary answers first (up to date / N updates ready / updating / could not check), then one row per part (Engine with its name, the app around the page) with a status pill and its own action: **Update now** for the Engine where the server takes requests, **Update now** (Sparkle) for Mac app 17+, **Download** of the published DMG for older Mac apps and in a plain browser, **Open TestFlight** on the iPhone. "What's new" links go to the release page. Dark theme (explicit and phone system dark), phone width and reduced motion are covered.
+- **Honest app state.** The check now also reads the Mac Sparkle appcast (`parseMacAppcast` in `lib/update-status.mjs`, display only, links limited to the feed's own repository). The page offers only a build that was published; before, it offered Mac build 17 from `native-apps.json` while the channel still had 16.
+- **Verified here.** `test/update-status.test.mjs` and `test/updates-ui.test.mjs` (18/18) and the syntax check; the page in the in-app browser on a disposable engine with mocked states (up to date, both updates, Update now → updating, Mac 17 with a newer build, older Mac app, plain browser, failed check), desktop and phone, light and dark.
+- **Not done.** No Mac app build 17 is published yet, so on the owner's Mac (an older build) the Mac row shows the published build and Tupies → Check for Updates…; **Update now** for the VPS Engine needs the request path unit installed there (step 7 of the VPS bootstrap in `docs/updates.md`).
+
+## Public repository made shareable — 26 November 2026
+
+The public repository was recreated under the same name with rewritten history: every commit uses the GitHub noreply identity, and the owner's server code and phone model were removed from all past files. The previous repository is private (`tupies-archive`) with the old pull requests; pull request numbers restarted at 1 and old `/pull/N` links in these notes refer to the archive. The four needed releases (`update-feeds`, `v0.5.0-engine.beta.14`, `v0.5.0-engine.beta.2`, `v0.5.0-beta.2`) were republished with identical files, so update URLs did not change, and the signing secrets were set again in the `engine-updates` and `mac-updates` environments. Engine beta 15 (anonymous requests can no longer postpone updates; personal details removed from the docs) was released from the new repository and installed on the VPS. Merge with **Rebase and merge** (`gh pr merge --rebase`), which writes no merge commit.
+
 ## Phone alerts stopped; approval and other attention alerts — 19 November 2026 (source only, not installed or released)
 
 Branch `fix/notifications-20261119` from `main` `dde7da9`. Details: [docs/notifications.md](docs/notifications.md).

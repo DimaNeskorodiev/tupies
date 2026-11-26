@@ -92,11 +92,13 @@ The Engine job depends on nothing else, so a problem describing the release neve
 
 ## In the app: Settings → Version & updates
 
-- **Tupies Engine** shows the installed release, **Check for updates** (reads the signed release channel and verifies it with the public key shipped in `assets/updates/release-channels.json`) and, where the server allows it, **Update now**.
-- **iPhone app / Mac app** shows the app's own version and build when the page is open in the app, and says when a newer build exists or is required. On the iPhone it points to TestFlight; on the Mac it opens Sparkle's own check.
+- **One answer first.** A summary says "Everything is up to date", "An update is ready" / "2 updates are ready", "Updating Tupies…" or "Could not check just now", with **Check now**. A failed check after a good one never claims everything is current.
+- **Tupies Engine** (with the engine's name, e.g. "Home server") shows the installed release, whether a newer one exists with a **What's new** link to its release page, how it arrives, and **Update now** where the server takes the request. After Update now the row follows the update (waiting for tasks, installing, restarting) and the page reloads when the engine is back.
+- **Mac app / iPhone app** compare the app's own build with what was actually **published**: the newest build in the Mac Sparkle channel (`update-feeds/mac-beta.xml`, read during the check) or a TestFlight link. A build that only exists in `native-apps.json` is never offered; `minimumBuild` there still marks an update as required. Mac app 17+ gets **Update now**, which opens Sparkle's own update; an older Mac app, which cannot be asked from the page, gets **Download** for the published DMG.
+- **In a browser** (no app around the page) the page offers **Tupies for Mac → Download** for the published build, which is the simplest link to give a new tester.
 - A page left open across an Engine update shows "Tupies was updated — Reload" the next time it comes to the front.
 
-The Engine routes are `GET /api/update`, `POST /api/update/check` and `POST /api/update/install` (`lib/update-status.mjs`), all behind the owner's session. None of them downloads or installs code.
+The Engine routes are `GET /api/update`, `POST /api/update/check` and `POST /api/update/install` (`lib/update-status.mjs`), all behind the owner's session. None of them downloads or installs code. The check also reads the Mac appcast for display only (Sparkle verifies the archive itself before installing); its download and release links are accepted only inside the feed's own GitHub repository, and an unreachable Mac channel never fails the Engine check.
 
 **Update now** asks, it does not install. The Engine writes a timestamp to the file named by `STUDIO_UPDATE_REQUEST_FILE`; a systemd path unit ([`tupies-update-request.path`](tupies-update-request.path)) then starts the same root-owned updater the timer runs. That updater still verifies the signature, waits for an idle Engine and takes its encrypted backup. Without the variable the button is not shown and the page says how updates arrive: by the server's timer (about every 30 minutes), with the Mac app, or by hand. Setting it up is step 7 of the [VPS bootstrap](updates.md#vps-bootstrap).
 
