@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual, createHash, scrypt as scryptCallback } from 'node:crypto';
 import { brotliCompress, gzip, constants as zlib } from 'node:zlib';
 import { promisify } from 'node:util';
+import { finished } from 'node:stream';
 import { Store, HttpError, ensure, string, now, id, atomicWrite, parseSkillPackage, DEFAULT_BOT_TOOLS, TOOL_GROUPS_VERSION, upgradeReasoningPreference } from './lib/store.mjs';
 import { getWorkspaceRoot } from './lib/agent-tools.mjs';
 import { ensureWorkspaceLayout } from './lib/workspace-layout.mjs';
@@ -273,19 +274,41 @@ export async function createStudioServer(options={}) {
       finally {maintenance.assertAdmission();if(counted&&!busy){busy=true;updateWrites++;}}
     };
   }
+  /**
+   * Public setup, sign-in, pairing and sign-in callbacks answer anyone, so they postpone updates only from the moment
+   * their credential or proof is verified, right before their state change. `begin` refuses while an update is being
+   * prepared; the hold then lasts until both the request's work and its reply have ended (or the client went away).
+   * Anonymous, wrong or slowly sent requests never count as busy.
+   */
+  function publicWrite(res) {
+    let settle=null,ended=false;
+    return {
+      begin:()=>{
+        if(settle)return;
+        maintenance.assertAdmission();if(ended)return;updateWrites++;
+        let open=2;const release=()=>{if(--open===0)updateWrites--;};
+        settle=release;
+        // finished() also reports a reply that already ended or a connection that already closed.
+        finished(res,()=>release());
+      },
+      end:()=>{if(ended)return;ended=true;settle?.();},
+    };
+  }
   const handler=async(req,res)=>{
     headers(res);
+    const write=publicWrite(res);
     try {
       verifyHost(req);verifyOrigin(req);
       const url=new URL(req.url,`http://${req.headers.host}`),pathname=url.pathname;
       const method=req.method;
-      if(method==='POST'&&['/api/pair','/api/device/session','/api/setup','/api/login'].includes(pathname)||method==='GET'&&['/auth/device','/auth/callback',OAUTH_CALLBACK_PATH].includes(pathname))trackUpdateRequest(res);
-      if(method==='GET' && pathname==='/auth/callback'){await oauthCallback(req,res,url,providers);return;}
+      // A reserved or held engine refuses these at once, before any body is read; they hold updates only via write.begin.
+      if(method==='POST'&&['/api/pair','/api/device/session','/api/setup','/api/login'].includes(pathname)||method==='GET'&&['/auth/device','/auth/callback',OAUTH_CALLBACK_PATH].includes(pathname))maintenance.assertAdmission();
+      if(method==='GET' && pathname==='/auth/callback'){await oauthCallback(req,res,url,providers,{beforeWrite:write.begin});return;}
       // The provider's redirect is a cross-site navigation that never carries the SameSite=Strict session, so the single-use state is its authority.
-      if(method==='GET' && pathname===OAUTH_CALLBACK_PATH && integrations.oauth){await integrationOAuthCallback(req,res,url,integrations);return;}
+      if(method==='GET' && pathname===OAUTH_CALLBACK_PATH && integrations.oauth){await integrationOAuthCallback(req,res,url,integrations,{beforeWrite:write.begin});return;}
       // A sign-in server fetches the client ID metadata document without a session; it holds only the public origin and return address.
       if(method==='GET' && pathname===OAUTH_CLIENT_METADATA_PATH && integrations.oauth){integrationOAuthClientMetadata(req,res,integrations);return;}
-      if(await syncPublicApi(req,res,url,{sync,body,json,login,rateLimit,access}))return;
+      if(await syncPublicApi(req,res,url,{sync,body,json,login,rateLimit,access,beforeWrite:write.begin}))return;
       if(method==='GET' && pathname==='/api/auth') {
         const session=getSession(req);return json(res,{setupRequired:!store.state.password,authenticated:!!session,csrf:session?.csrf || null,passwordSignIn:access.passwordAllowed(req)});
       }
@@ -296,6 +319,7 @@ export async function createStudioServer(options={}) {
           const input=await body(req);
           wrong=!safeEqual(input.token,bootstrapToken);ensure(!wrong,403,'The setup token is incorrect. Copy it from the Tupies terminal.');
           const password=string(input.password,'Password',1024);ensure(password.length>=12,400,'Use a password of at least 12 characters.');
+          write.begin();
           const salt=randomBytes(16).toString('hex'),hash=(await scrypt(password,salt,64)).toString('hex');
           await store.mutate(state=>{ensure(!state.password,409,'Tupies is already set up.');state.password={salt,hash};store.audit('security.setup','Workspace password created');});
           attempts.delete(addressBucket(access.client(req)));return json(res,login(res),201);
@@ -309,6 +333,7 @@ export async function createStudioServer(options={}) {
           const input=await body(req),password=string(input.password,'Password',1024);
           const hash=(await scrypt(password,store.state.password.salt,64)).toString('hex');
           wrong=!safeEqual(hash,store.state.password.hash);ensure(!wrong,401,'Incorrect password.');
+          write.begin();
           attempts.delete(addressBucket(access.client(req)));return json(res,login(res));
         } finally {if(!wrong)refund();}
       }
@@ -530,7 +555,7 @@ export async function createStudioServer(options={}) {
       if(!res.headersSent)json(res,{error:err instanceof HttpError ? store.redact(err.message) : 'An internal error occurred. Check the Tupies terminal.',...(err.code==='csrf_mismatch' || err instanceof HttpError && /^(oauth_[a-z_]{1,40}|not_auto_oauth|handoff_ended)$/.test(err.code || '')?{code:err.code}:{})},err.status || 500);
       else res.end();
       if(!(err instanceof HttpError) && options.logErrors!==false)console.error('Tupies internal error:',store.redact(err.stack || err.message));
-    }
+    } finally {write.end();}
   };
   const tlsContext=()=>({key:sync.identity.privateKey,cert:identityCertificate(sync.identity.privateKey,{hosts:[publicOrigin?new URL(publicOrigin).hostname:'']}),minVersion:'TLSv1.3'});
   const server=tlsMode?https.createServer(tlsContext(),handler):http.createServer(handler);
